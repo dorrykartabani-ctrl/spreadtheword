@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Edit — Go Spread The Word</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <!-- Battle-ready fonts for the overlay -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Oswald:wght@600&family=Lora:ital,wght@1,600&family=Bebas+Neue&family=Merriweather:ital,wght@1,700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'primary':       '#1E4060',
+            'primary-dim':   '#152E45',
+            'primary-light': '#2B5780',
+            'action':        '#E25B4D',
+            'action-dim':    '#C84A3E',
+            'gold':          '#D4A24C',
+            'gold-dim':      '#B88A3D',
+            'cream':         '#F7F4ED',
+            'dark':          '#16202A',
+            'text-dark':     '#1A1A1A',
+            'text-muted':    '#5C6B7A',
+            'text-light':    '#8E9AA8',
+            'border-soft':   'rgba(92, 107, 122, 0.15)',
+            'card-bg':       '#FFFFFF',
+            'surface':       '#F0EDE6',
+          },
+          fontFamily: {
+            'headline': ['Plus Jakarta Sans', 'sans-serif'],
+            'body':     ['Manrope', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Manrope', sans-serif;
+      background: #000;
+      -webkit-tap-highlight-color: transparent;
+      overflow: hidden;
+      height: 100dvh;
+      user-select: none;
+    }
+    .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .filled { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .tactical-gradient { background: linear-gradient(145deg, #152E45, #1E4060); }
+    .action-gradient   { background: linear-gradient(145deg, #E25B4D, #C84A3E); }
+
+    /* Quote text shadow */
+    .quote-shadow { text-shadow: 0 2px 12px rgba(0,0,0,0.6), 0 1px 3px rgba(0,0,0,0.4); }
+
+    /* No scrollbar */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Draggable quote overlay */
+    #quoteOverlay {
+      cursor: grab;
+      touch-action: none;
+      transition: border-color 0.2s;
+    }
+    #quoteOverlay:active { cursor: grabbing; }
+    #quoteOverlay.dragging { border-color: #D4A24C !important; }
+
+    /* Tool button active */
+    .tool-btn { transition: all 0.15s ease; }
+    .tool-btn.active {
+      background: #1E4060 !important;
+    }
+    .tool-btn.active span { color: white !important; }
+
+    /* Sub-panel slide up */
+    #subPanel {
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: translateY(100%);
+    }
+    #subPanel.open { transform: translateY(0); }
+
+    /* Font options */
+    .font-opt { transition: all 0.15s; cursor: pointer; }
+    .font-opt.selected { background: #1E4060; color: white; }
+
+    /* Color swatch */
+    .color-swatch {
+      width: 28px; height: 28px; border-radius: 50%;
+      cursor: pointer; transition: transform 0.15s;
+      border: 2px solid transparent;
+      flex-shrink: 0;
+    }
+    .color-swatch:active { transform: scale(0.9); }
+    .color-swatch.selected { border-color: white; transform: scale(1.15); }
+
+    /* Overlay text font options */
+    .font-jakarta   { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-playfair  { font-family: 'Playfair Display', serif; }
+    .font-oswald    { font-family: 'Oswald', sans-serif; }
+    .font-lora      { font-family: 'Lora', serif; }
+    .font-bebas     { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.05em; }
+    .font-merri     { font-family: 'Merriweather', serif; }
+
+    /* Safe area */
+    .pt-safe { padding-top: env(safe-area-inset-top, 12px); }
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); }
+  </style>
+</head>
+
+<body>
+
+<!-- ============================================================
+     BACKGROUND IMAGE (Full Screen Canvas)
+============================================================ -->
+<div id="bgCanvas" class="fixed inset-0 z-0 bg-cover bg-center transition-all duration-500"
+     style="background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80')">
+  <!-- Overlay -->
+  <div id="bgOverlay" class="absolute inset-0 bg-black/30 backdrop-blur-[1px] transition-all duration-300"></div>
+</div>
+
+<!-- ============================================================
+     TOP BAR
+============================================================ -->
+<header class="fixed top-0 left-0 right-0 h-14 z-50 flex items-center justify-between px-4 pt-safe">
+  <!-- Back -->
+  <button onclick="history.back()" class="w-10 h-10 flex items-center justify-center bg-black/30 backdrop-blur-md rounded-full transition-all active:scale-90">
+    <span class="material-symbols-outlined text-white text-[22px]">arrow_back</span>
+  </button>
+
+  <!-- Center label -->
+  <div class="bg-black/30 backdrop-blur-md px-4 py-1.5 rounded-full">
+    <span class="text-white text-xs font-body font-bold uppercase tracking-wider">Edit Your Word</span>
+  </div>
+
+  <!-- Change photo button -->
+  <button onclick="changePhoto()" class="bg-black/30 backdrop-blur-md text-white font-body font-bold text-sm px-4 py-2 rounded-full transition-all active:scale-95 hover:bg-black/50">
+    Change
+  </button>
+</header>
+
+<!-- ============================================================
+     QUOTE OVERLAY (Draggable)
+============================================================ -->
+<main class="relative z-10 h-[100dvh] flex items-center justify-center px-6">
+
+  <!-- Draggable Quote Block -->
+  <div id="quoteOverlay"
+       class="w-full max-w-sm border-2 border-dashed border-white/50 rounded-2xl p-6 flex flex-col items-center text-center"
+       style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+
+    <!-- Quote Mark -->
+    <span id="quoteMark" class="text-[48px] font-serif leading-none text-gold/80 mb-1 drop-shadow-lg">"</span>
+
+    <!-- Quote Text -->
+    <p id="quoteText"
+       class="font-headline font-bold text-[20px] text-white leading-relaxed quote-shadow tracking-tight font-jakarta">
+      Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go.
+    </p>
+
+    <!-- Scripture Reference -->
+    <p id="quoteRef" class="mt-4 font-body font-bold text-sm text-white/90 quote-shadow tracking-wider">
+      — JOSHUA 1:9
+    </p>
+
+  </div>
+
+</main>
+
+<!-- ============================================================
+     BOTTOM TOOLBAR
+============================================================ -->
+<footer class="fixed bottom-0 left-0 right-0 bg-card-bg z-50 shadow-[0_-8px_32px_rgba(0,0,0,0.15)]">
+
+  <!-- Sub Panel (slides up) -->
+  <div id="subPanel" class="absolute bottom-full left-0 right-0 bg-card-bg border-t border-border-soft">
+
+    <!-- FONT SUB-PANEL -->
+    <div id="panelFont" class="hidden p-4">
+      <p class="text-[10px] font-bold uppercase tracking-widest text-text-light mb-3 px-1">Choose Font</p>
+      <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+        <button onclick="setFont('font-jakarta', this)" class="font-opt font-jakarta selected bg-primary text-white text-sm font-bold px-4 py-2.5 rounded-xl whitespace-nowrap border border-border-soft">Jakarta</button>
+        <button onclick="setFont('font-playfair', this)" class="font-opt font-playfair bg-surface text-text-dark text-sm font-bold px-4 py-2.5 rounded-xl whitespace-nowrap border border-border-soft">Playfair</button>
+        <button onclick="setFont('font-oswald', this)" class="font-opt font-oswald bg-surface text-text-dark text-sm font-bold px-4 py-2.5 rounded-xl whitespace-nowrap border border-border-soft">Oswald</button>
+        <button onclick="setFont('font-lora', this)" class="font-opt font-lora bg-surface text-text-dark text-sm font-bold px-4 py-2.5 rounded-xl whitespace-nowrap border border-border-soft italic">Lora</button>
+        <button onclick="setFont('font-bebas', this)" class="font-opt font-bebas bg-surface text-text-dark text-sm px-4 py-2.5 rounded-xl whitespace-nowrap border border-border-soft">BEBAS</button>
+        <button onclick="setFont('font-merri', this)" class="font-opt font-merri bg-surface text-text-dark text-sm font-bold px-4 py-2.5 rounded-xl whitespace-nowrap border border-border-soft italic">Merriweather</button>
+      </div>
+    </div>
+
+    <!-- SIZE SUB-PANEL -->
+    <div id="panelSize" class="hidden p-4">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-text-light">Text Size</p>
+        <span id="sizeLabel" class="text-sm font-bold text-primary">20px</span>
+      </div>
+      <input type="range" id="sizeSlider" min="14" max="32" value="20"
+             oninput="setSize(this.value)"
+             class="w-full h-2 rounded-full accent-primary cursor-pointer">
+      <div class="flex justify-between text-[10px] text-text-light mt-1">
+        <span>Small</span><span>Large</span>
+      </div>
+    </div>
+
+    <!-- COLOR SUB-PANEL -->
+    <div id="panelColor" class="hidden p-4">
+      <p class="text-[10px] font-bold uppercase tracking-widest text-text-light mb-3">Text Color</p>
+      <div class="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+        <div class="color-swatch selected bg-white" onclick="setColor('#FFFFFF', this)" style="border-color:#1E4060"></div>
+        <div class="color-swatch bg-yellow-300" onclick="setColor('#FDE047', this)"></div>
+        <div class="color-swatch bg-gold" onclick="setColor('#D4A24C', this)" style="background:#D4A24C"></div>
+        <div class="color-swatch" onclick="setColor('#1E4060', this)" style="background:#1E4060"></div>
+        <div class="color-swatch bg-black" onclick="setColor('#000000', this)"></div>
+        <div class="color-swatch bg-red-400" onclick="setColor('#F87171', this)"></div>
+        <div class="color-swatch bg-blue-300" onclick="setColor('#93C5FD', this)"></div>
+        <div class="color-swatch bg-green-300" onclick="setColor('#86EFAC', this)"></div>
+        <div class="color-swatch bg-pink-300" onclick="setColor('#F9A8D4', this)"></div>
+      </div>
+    </div>
+
+    <!-- BLUR SUB-PANEL -->
+    <div id="panelBlur" class="hidden p-4">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-text-light">Background Blur</p>
+        <span id="blurLabel" class="text-sm font-bold text-primary">Low</span>
+      </div>
+      <input type="range" id="blurSlider" min="0" max="20" value="1"
+             oninput="setBlur(this.value)"
+             class="w-full h-2 rounded-full accent-primary cursor-pointer">
+      <div class="flex justify-between text-[10px] text-text-light mt-1">
+        <span>None</span><span>Heavy</span>
+      </div>
+    </div>
+
+    <!-- OVERLAY DARKNESS SUB-PANEL -->
+    <div id="panelDark" class="hidden p-4">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-text-light">Photo Darkness</p>
+        <span id="darkLabel" class="text-sm font-bold text-primary">30%</span>
+      </div>
+      <input type="range" id="darkSlider" min="0" max="80" value="30"
+             oninput="setDarkness(this.value)"
+             class="w-full h-2 rounded-full accent-primary cursor-pointer">
+      <div class="flex justify-between text-[10px] text-text-light mt-1">
+        <span>None</span><span>Dark</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Tools Row -->
+  <div class="flex items-center gap-2 px-4 py-3 overflow-x-auto no-scrollbar border-t border-border-soft">
+
+    <!-- Font -->
+    <button id="btnFont" onclick="togglePanel('Font')" class="tool-btn flex-shrink-0 w-[62px] h-14 bg-surface flex flex-col items-center justify-center rounded-2xl gap-0.5">
+      <span class="material-symbols-outlined text-primary text-[22px]">text_fields</span>
+      <span class="text-[9px] font-bold uppercase tracking-tight text-text-muted">Font</span>
+    </button>
+
+    <!-- Size -->
+    <button id="btnSize" onclick="togglePanel('Size')" class="tool-btn flex-shrink-0 w-[62px] h-14 bg-surface flex flex-col items-center justify-center rounded-2xl gap-0.5">
+      <span class="material-symbols-outlined text-primary text-[22px]">format_size</span>
+      <span class="text-[9px] font-bold uppercase tracking-tight text-text-muted">Size</span>
+    </button>
+
+    <!-- Color -->
+    <button id="btnColor" onclick="togglePanel('Color')" class="tool-btn flex-shrink-0 w-[62px] h-14 bg-surface flex flex-col items-center justify-center rounded-2xl gap-0.5">
+      <div class="w-6 h-6 rounded-full bg-white border-2 border-primary/30 shadow-sm"></div>
+      <span class="text-[9px] font-bold uppercase tracking-tight text-text-muted">Color</span>
+    </button>
+
+    <!-- Blur -->
+    <button id="btnBlur" onclick="togglePanel('Blur')" class="tool-btn flex-shrink-0 w-[62px] h-14 bg-surface flex flex-col items-center justify-center rounded-2xl gap-0.5">
+      <span class="material-symbols-outlined text-primary text-[22px]">water_drop</span>
+      <span class="text-[9px] font-bold uppercase tracking-tight text-text-muted">Blur</span>
+    </button>
+
+    <!-- Dark -->
+    <button id="btnDark" onclick="togglePanel('Dark')" class="tool-btn flex-shrink-0 w-[62px] h-14 bg-surface flex flex-col items-center justify-center rounded-2xl gap-0.5">
+      <span class="material-symbols-outlined text-primary text-[22px]">brightness_4</span>
+      <span class="text-[9px] font-bold uppercase tracking-tight text-text-muted">Dark</span>
+    </button>
+
+    <!-- Move -->
+    <button id="btnMove" onclick="togglePanel('Move')" class="tool-btn flex-shrink-0 w-[62px] h-14 bg-surface flex flex-col items-center justify-center rounded-2xl gap-0.5">
+      <span class="material-symbols-outlined text-primary text-[22px]">open_with</span>
+      <span class="text-[9px] font-bold uppercase tracking-tight text-text-muted">Move</span>
+    </button>
+
+    <!-- Align -->
+    <button id="btnAlign" onclick="cycleAlign()" class="tool-btn flex-shrink-0 w-[62px] h-14 bg-surface flex flex-col items-center justify-center rounded-2xl gap-0.5">
+      <span id="alignIcon" class="material-symbols-outlined text-primary text-[22px]">format_align_center</span>
+      <span class="text-[9px] font-bold uppercase tracking-tight text-text-muted">Align</span>
+    </button>
+
+  </div>
+
+  <!-- Next Button -->
+  <div class="px-5 pb-5 pt-1 pb-safe">
+    <button onclick="goNext()" class="w-full h-13 py-3.5 tactical-gradient text-white font-headline font-bold text-base rounded-2xl flex items-center justify-center gap-2 shadow-tactical active:scale-[0.98] transition-transform">
+      <span>Next — Add Hashtags</span>
+      <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+    </button>
+  </div>
+
+</footer>
+
+<!-- ============================================================
+     JAVASCRIPT
+============================================================ -->
+<script>
+
+  // ---- STATE ----
+  let currentPanel   = null;
+  let currentFont    = 'font-jakarta';
+  let currentColor   = '#FFFFFF';
+  let currentAlign   = 'center';
+  let isDragging     = false;
+  let dragOffsetX    = 0;
+  let dragOffsetY    = 0;
+
+  const quoteOverlay = document.getElementById('quoteOverlay');
+  const quoteText    = document.getElementById('quoteText');
+  const bgOverlay    = document.getElementById('bgOverlay');
+
+  // ---- TOOL PANEL TOGGLE ----
+  function togglePanel(name) {
+    const panel    = document.getElementById('subPanel');
+    const panelEl  = document.getElementById('panel' + name);
+    const btn      = document.getElementById('btn' + name);
+
+    if (currentPanel === name) {
+      // Close
+      panel.classList.remove('open');
+      btn.classList.remove('active');
+      currentPanel = null;
+      return;
+    }
+
+    // Close previous
+    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#subPanel > div').forEach(p => p.classList.add('hidden'));
+
+    // Open new
+    panelEl.classList.remove('hidden');
+    panel.classList.add('open');
+    btn.classList.add('active');
+    currentPanel = name;
+  }
+
+  // ---- FONT ----
+  const fontClasses = ['font-jakarta','font-playfair','font-oswald','font-lora','font-bebas','font-merri'];
+
+  function setFont(fontClass, btn) {
+    fontClasses.forEach(f => quoteText.classList.remove(f));
+    quoteText.classList.add(fontClass);
+    currentFont = fontClass;
+
+    document.querySelectorAll('.font-opt').forEach(b => {
+      b.classList.remove('selected', 'bg-primary', 'text-white');
+      b.classList.add('bg-surface', 'text-text-dark');
+    });
+    btn.classList.add('selected', 'bg-primary', 'text-white');
+    btn.classList.remove('bg-surface', 'text-text-dark');
+  }
+
+  // ---- SIZE ----
+  function setSize(val) {
+    quoteText.style.fontSize = val + 'px';
+    document.getElementById('sizeLabel').textContent = val + 'px';
+  }
+
+  // ---- COLOR ----
+  function setColor(hex, swatch) {
+    quoteText.style.color = hex;
+    document.getElementById('quoteRef').style.color = hex;
+    currentColor = hex;
+
+    document.querySelectorAll('.color-swatch').forEach(s => {
+      s.classList.remove('selected');
+      s.style.borderColor = 'transparent';
+    });
+    swatch.classList.add('selected');
+    swatch.style.borderColor = hex === '#000000' ? '#666' : 'white';
+  }
+
+  // ---- BLUR ----
+  function setBlur(val) {
+    const numVal = parseInt(val);
+    document.getElementById('bgCanvas').style.filter = `blur(${numVal}px)`;
+    const labels = ['None', 'Low', 'Medium', 'High', 'Heavy'];
+    const idx = Math.floor(numVal / 5);
+    document.getElementById('blurLabel').textContent = labels[Math.min(idx, 4)] || 'Heavy';
+  }
+
+  // ---- DARKNESS ----
+  function setDarkness(val) {
+    bgOverlay.style.background = `rgba(0,0,0,${val/100})`;
+    document.getElementById('darkLabel').textContent = val + '%';
+  }
+
+  // ---- ALIGN ----
+  const alignCycle = ['center', 'left', 'right'];
+  const alignIcons = { center: 'format_align_center', left: 'format_align_left', right: 'format_align_right' };
+  let alignIdx = 0;
+
+  function cycleAlign() {
+    alignIdx = (alignIdx + 1) % alignCycle.length;
+    currentAlign = alignCycle[alignIdx];
+    quoteText.style.textAlign = currentAlign;
+    document.getElementById('quoteRef').style.textAlign = currentAlign;
+    document.getElementById('alignIcon').textContent = alignIcons[currentAlign];
+  }
+
+  // ---- DRAG TO MOVE OVERLAY ----
+  let startX, startY, startLeft, startTop;
+
+  quoteOverlay.addEventListener('mousedown', startDrag);
+  quoteOverlay.addEventListener('touchstart', startDrag, { passive: true });
+
+  function startDrag(e) {
+    isDragging = true;
+    quoteOverlay.classList.add('dragging');
+
+    const rect = quoteOverlay.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    startX    = clientX;
+    startY    = clientY;
+    startLeft = quoteOverlay.offsetLeft;
+    startTop  = quoteOverlay.offsetTop;
+
+    // Switch from transform to absolute positioning
+    quoteOverlay.style.transform = 'none';
+    quoteOverlay.style.left = startLeft + 'px';
+    quoteOverlay.style.top  = startTop + 'px';
+  }
+
+  document.addEventListener('mousemove', onDrag);
+  document.addEventListener('touchmove', onDrag, { passive: true });
+
+  function onDrag(e) {
+    if (!isDragging) return;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    const dx = clientX - startX;
+    const dy = clientY - startY;
+
+    const newLeft = startLeft + dx;
+    const newTop  = startTop  + dy;
+
+    // Constrain within screen
+    const maxLeft = window.innerWidth  - quoteOverlay.offsetWidth;
+    const maxTop  = window.innerHeight - quoteOverlay.offsetHeight;
+
+    quoteOverlay.style.left = Math.max(0, Math.min(newLeft, maxLeft)) + 'px';
+    quoteOverlay.style.top  = Math.max(60, Math.min(newTop, maxTop - 160)) + 'px';
+  }
+
+  document.addEventListener('mouseup',   endDrag);
+  document.addEventListener('touchend',  endDrag);
+
+  function endDrag() {
+    isDragging = false;
+    quoteOverlay.classList.remove('dragging');
+  }
+
+  // ---- CHANGE PHOTO ----
+  function changePhoto() {
+    // TODO: Connect to file picker / camera
+    const photos = [
+      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
+      'https://images.unsplash.com/photo-1477346611705-65d1883cee1e?w=800&q=80',
+      'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&q=80',
+      'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800&q=80',
+    ];
+    const current = document.getElementById('bgCanvas').style.backgroundImage;
+    const next = photos[Math.floor(Math.random() * photos.length)];
+    document.getElementById('bgCanvas').style.backgroundImage = `url('${next}')`;
+  }
+
+  // ---- NEXT ----
+  function goNext() {
+    // TODO: Navigate to hashtag/share screen
+    // window.location.href = 'share.html';
+    console.log('Proceeding to share screen...');
+    showToast('Looking good, soldier! Adding hashtags next...');
+  }
+
+  // ---- TOAST ----
+  function showToast(msg) {
+    const toast = document.createElement('div');
+    toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[100] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap';
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2500);
+  }
+
+  // ---- CLOSE PANEL ON OUTSIDE TAP ----
+  document.addEventListener('click', (e) => {
+    const toolbar = document.querySelector('footer');
+    if (!toolbar.contains(e.target) && currentPanel) {
+      document.getElementById('subPanel').classList.remove('open');
+      document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+      currentPanel = null;
+    }
+  });
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Library — Go Spread The Word</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'primary':       '#1E4060',
+            'primary-dim':   '#152E45',
+            'primary-light': '#2B5780',
+            'action':        '#E25B4D',
+            'action-dim':    '#C84A3E',
+            'gold':          '#D4A24C',
+            'gold-dim':      '#B88A3D',
+            'cream':         '#F7F4ED',
+            'dark':          '#16202A',
+            'text-dark':     '#1A1A1A',
+            'text-muted':    '#5C6B7A',
+            'text-light':    '#8E9AA8',
+            'border-soft':   'rgba(92, 107, 122, 0.15)',
+            'card-bg':       '#FFFFFF',
+            'surface':       '#F0EDE6',
+          },
+          fontFamily: {
+            'headline': ['Plus Jakarta Sans', 'sans-serif'],
+            'body':     ['Manrope', 'sans-serif'],
+          },
+          boxShadow: {
+            'natural':  '0 4px 16px rgba(26, 32, 42, 0.06)',
+            'lifted':   '0 8px 32px rgba(26, 32, 42, 0.10)',
+            'tactical': '0 4px 20px rgba(30, 64, 96, 0.25)',
+            'card':     '0 2px 12px rgba(30, 64, 96, 0.06)',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Manrope', sans-serif;
+      background-color: #F0EDE6;
+      -webkit-tap-highlight-color: transparent;
+      min-height: 100dvh;
+    }
+    .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block; line-height: 1;
+    }
+    .filled { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .tactical-gradient { background: linear-gradient(145deg, #152E45, #1E4060); }
+    .action-gradient   { background: linear-gradient(145deg, #E25B4D, #C84A3E); }
+
+    /* Gold reflection plate */
+    .reflection-plate { border-left: 4px solid #D4A24C; }
+
+    /* Scrollbar hidden */
+    ::-webkit-scrollbar { display: none; }
+    body { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Card press */
+    .quote-card {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .quote-card:active { transform: scale(0.98); }
+
+    /* Bottom nav active */
+    .nav-item { transition: all 0.2s ease; }
+    .nav-item.active .nav-icon { color: #1E4060; }
+    .nav-item.active .nav-label { color: #1E4060; font-weight: 700; }
+
+    /* Search bar focus */
+    .search-wrap { transition: transform 0.2s ease; }
+    .search-wrap:focus-within { transform: scale(1.01); }
+
+    /* Filter tab active */
+    .filter-tab { transition: all 0.15s ease; }
+    .filter-tab.active {
+      background: #1E4060;
+      color: white;
+    }
+
+    /* Safe area */
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); }
+  </style>
+</head>
+
+<body class="text-text-dark pb-28">
+
+<!-- ============================================================
+     STICKY HEADER
+============================================================ -->
+<header class="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl border-b border-border-soft">
+  <div class="flex items-center justify-between px-5 pt-12 pb-4">
+
+    <!-- Title -->
+    <div>
+      <h1 class="font-headline font-extrabold text-xl text-primary">The Library</h1>
+      <p class="text-[11px] text-text-light font-body uppercase tracking-widest">All the Words</p>
+    </div>
+
+    <!-- Right: Search + Avatar -->
+    <div class="flex items-center gap-3">
+      <button onclick="toggleSearch()" class="w-10 h-10 rounded-full bg-cream border border-border-soft flex items-center justify-center text-text-muted hover:text-primary transition-colors active:scale-90">
+        <span class="material-symbols-outlined text-[20px]">search</span>
+      </button>
+      <div class="w-10 h-10 rounded-full overflow-hidden bg-primary border-2 border-primary/20 flex items-center justify-center">
+        <span class="font-headline font-bold text-white text-sm">SK</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Search Bar (collapsible) -->
+  <div id="searchBar" class="hidden px-5 pb-3">
+    <div class="search-wrap relative">
+      <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-text-light text-[18px]">search</span>
+      <input
+        id="searchInput"
+        type="text"
+        oninput="searchQuotes(this.value)"
+        placeholder="Search your collection..."
+        class="w-full bg-card-bg border border-border-soft rounded-2xl py-3 pl-10 pr-4 text-sm font-body text-text-dark focus:outline-none focus:ring-2 focus:ring-primary transition-all placeholder:text-text-light">
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     MAIN CONTENT
+============================================================ -->
+<main class="pt-28 px-5 space-y-4">
+
+  <!-- Page Title -->
+  <div class="pt-2 pb-1">
+    <h2 class="font-headline font-extrabold text-2xl text-text-dark">Quote Library</h2>
+    <p class="text-[12px] text-text-light font-body mt-0.5">Your daily briefings — ready to deploy again</p>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+    <button onclick="filterByCategory('all', this)" class="filter-tab active flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border border-border-soft bg-primary text-white transition-all">
+      All
+    </button>
+    <button onclick="filterByCategory('faith', this)" class="filter-tab flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border border-border-soft text-text-muted hover:text-primary transition-all">
+      Faith
+    </button>
+    <button onclick="filterByCategory('courage', this)" class="filter-tab flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border border-border-soft text-text-muted hover:text-primary transition-all">
+      Courage
+    </button>
+    <button onclick="filterByCategory('love', this)" class="filter-tab flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border border-border-soft text-text-muted hover:text-primary transition-all">
+      Love
+    </button>
+    <button onclick="filterByCategory('strength', this)" class="filter-tab flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border border-border-soft text-text-muted hover:text-primary transition-all">
+      Strength
+    </button>
+    <button onclick="filterByCategory('peace', this)" class="filter-tab flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border border-border-soft text-text-muted hover:text-primary transition-all">
+      Peace
+    </button>
+  </div>
+
+  <!-- ======================================
+       QUOTE CARDS
+  ====================================== -->
+  <div id="quoteList" class="space-y-4">
+
+    <!-- Card 1 — Today (Featured) -->
+    <article class="quote-card bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft" data-category="courage" onclick="openQuote(this)">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-primary animate-pulse flex-shrink-0"></span>
+          <span class="text-[10px] font-bold text-primary uppercase tracking-widest">Today · Dec 15</span>
+        </div>
+        <span class="text-[10px] font-bold text-gold-dim bg-gold/10 px-2.5 py-1 rounded-full uppercase tracking-wider">Today's Word</span>
+      </div>
+      <blockquote class="font-headline font-bold text-[17px] text-text-dark leading-relaxed mb-2">
+        "Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go."
+      </blockquote>
+      <cite class="block not-italic font-body font-bold text-sm text-primary mb-4 tracking-wider">— JOSHUA 1:9</cite>
+      <div class="flex items-center justify-between">
+        <div class="flex gap-1.5 flex-wrap">
+          <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#SpreadTheWord</span>
+          <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#Courage</span>
+        </div>
+        <button onclick="event.stopPropagation(); quickShare(this)" class="tactical-gradient text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-tactical active:scale-95 transition-transform flex-shrink-0">
+          <span class="material-symbols-outlined text-[15px]">share</span>
+          Share
+        </button>
+      </div>
+    </article>
+
+    <!-- Card 2 -->
+    <article class="quote-card bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft" data-category="love" onclick="openQuote(this)">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold text-text-light uppercase tracking-widest">Dec 14</span>
+        <span class="text-[10px] text-text-light font-body">247 shares</span>
+      </div>
+      <blockquote class="font-headline font-bold text-[16px] text-text-dark leading-relaxed mb-2">
+        "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life."
+      </blockquote>
+      <cite class="block not-italic font-body font-bold text-sm text-primary mb-4 tracking-wider">— JOHN 3:16</cite>
+      <div class="flex items-center justify-between">
+        <div class="flex gap-1.5 flex-wrap">
+          <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#SpreadTheWord</span>
+          <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#Love</span>
+        </div>
+        <button onclick="event.stopPropagation(); quickShare(this)" class="tactical-gradient text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-tactical active:scale-95 transition-transform flex-shrink-0">
+          <span class="material-symbols-outlined text-[15px]">share</span>
+          Share
+        </button>
+      </div>
+    </article>
+
+    <!-- Card 3 — Gold reflection plate -->
+    <article class="quote-card reflection-plate bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft" data-category="love" onclick="openQuote(this)">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold text-text-light uppercase tracking-widest">Dec 13</span>
+        <span class="text-[10px] text-gold-dim font-bold bg-gold/10 px-2 py-0.5 rounded-full">Inspiration</span>
+      </div>
+      <blockquote class="font-headline font-bold text-[16px] text-text-dark leading-relaxed mb-2">
+        "Darkness cannot drive out darkness; only light can do that. Hate cannot drive out hate; only love can do that."
+      </blockquote>
+      <cite class="block not-italic font-body font-bold text-sm text-gold-dim mb-4 tracking-wider">— DR. MARTIN LUTHER KING JR.</cite>
+      <div class="flex items-center justify-between">
+        <div class="flex gap-1.5 flex-wrap">
+          <span class="bg-gold/10 text-gold-dim px-2.5 py-1 rounded-full text-[10px] font-bold">#SpreadTheWord</span>
+          <span class="bg-gold/10 text-gold-dim px-2.5 py-1 rounded-full text-[10px] font-bold">#Light</span>
+        </div>
+        <button onclick="event.stopPropagation(); quickShare(this)" class="bg-gold text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-transform flex-shrink-0">
+          <span class="material-symbols-outlined text-[15px]">share</span>
+          Share
+        </button>
+      </div>
+    </article>
+
+    <!-- Card 4 -->
+    <article class="quote-card bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft" data-category="strength" onclick="openQuote(this)">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold text-text-light uppercase tracking-widest">Dec 12</span>
+        <span class="text-[10px] text-text-light font-body">189 shares</span>
+      </div>
+      <blockquote class="font-headline font-bold text-[16px] text-text-dark leading-relaxed mb-2">
+        "I can do all things through Christ who strengthens me."
+      </blockquote>
+      <cite class="block not-italic font-body font-bold text-sm text-primary mb-4 tracking-wider">— PHILIPPIANS 4:13</cite>
+      <div class="flex items-center justify-between">
+        <div class="flex gap-1.5 flex-wrap">
+          <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#SpreadTheWord</span>
+          <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#Strength</span>
+        </div>
+        <button onclick="event.stopPropagation(); quickShare(this)" class="tactical-gradient text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-tactical active:scale-95 transition-transform flex-shrink-0">
+          <span class="material-symbols-outlined text-[15px]">share</span>
+          Share
+        </button>
+      </div>
+    </article>
+
+    <!-- Card 5 -->
+    <article class="quote-card bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft" data-category="peace" onclick="openQuote(this)">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold text-text-light uppercase tracking-widest">Dec 11</span>
+        <span class="text-[10px] text-text-light font-body">312 shares</span>
+      </div>
+      <blockquote class="font-headline font-bold text-[16px] text-text-dark leading-relaxed mb-2">
+        "The Lord is my shepherd; I shall not want. He makes me to lie down in green pastures; He leads me beside the still waters."
+      </blockquote>
+      <cite class="block not-italic font-body font-bold text-sm text-primary mb-4 tracking-wider">— PSALM 23:1</cite>
+      <div class="flex items-center justify-between">
+        <div class="flex gap-1.5 flex-wrap">
+          <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#SpreadTheWord</span>
+          <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#Peace</span>
+        </div>
+        <button onclick="event.stopPropagation(); quickShare(this)" class="tactical-gradient text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-tactical active:scale-95 transition-transform flex-shrink-0">
+          <span class="material-symbols-outlined text-[15px]">share</span>
+          Share
+        </button>
+      </div>
+    </article>
+
+    <!-- Card 6 -->
+    <article class="quote-card bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft" data-category="faith" onclick="openQuote(this)">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold text-text-light uppercase tracking-widest">Dec 10</span>
+        <span class="text-[10px] text-text-light font-body">98 shares</span>
+      </div>
+      <blockquote class="font-headline font-bold text-[16px] text-text-dark leading-relaxed mb-2">
+        "Now faith is the substance of things hoped for, the evidence of things not seen."
+      </blockquote>
+      <cite class="block not-italic font-body font-bold text-sm text-primary mb-4 tracking-wider">— HEBREWS 11:1</cite>
+      <div class="flex items-center justify-between">
+        <div class="flex gap-1.5 flex-wrap">
+          <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#SpreadTheWord</span>
+          <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#Faith</span>
+        </div>
+        <button onclick="event.stopPropagation(); quickShare(this)" class="tactical-gradient text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-tactical active:scale-95 transition-transform flex-shrink-0">
+          <span class="material-symbols-outlined text-[15px]">share</span>
+          Share
+        </button>
+      </div>
+    </article>
+
+  </div>
+
+  <!-- Empty State (hidden) -->
+  <div id="emptyState" class="hidden text-center py-16">
+    <div class="w-16 h-16 rounded-2xl bg-cream flex items-center justify-center mx-auto mb-4">
+      <span class="material-symbols-outlined text-text-light text-[32px]">search_off</span>
+    </div>
+    <h3 class="font-headline font-bold text-lg text-text-dark mb-1">No quotes found</h3>
+    <p class="text-sm text-text-muted font-body">Try a different search or filter</p>
+  </div>
+
+  <!-- Load More -->
+  <div class="pt-4 pb-6 flex justify-center">
+    <button onclick="loadMore()" class="border-2 border-primary/30 text-primary px-10 py-3 rounded-full font-bold text-sm hover:bg-primary hover:text-white transition-all active:scale-95">
+      Load More
+    </button>
+  </div>
+
+</main>
+
+<!-- ============================================================
+     BOTTOM NAVIGATION
+============================================================ -->
+<nav class="fixed bottom-0 left-0 w-full bg-card-bg/90 backdrop-blur-xl border-t border-border-soft z-50 pb-safe" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
+  <div class="flex justify-around items-center px-2 pt-2 pb-1">
+
+    <!-- Home -->
+    <a href="index.html" class="nav-item flex flex-col items-center gap-0.5 px-4 py-1.5">
+      <span class="nav-icon material-symbols-outlined text-text-light text-[22px]">home</span>
+      <span class="nav-label text-[10px] font-medium text-text-light">Home</span>
+    </a>
+
+    <!-- Library (Active) -->
+    <a href="library.html" class="nav-item active flex flex-col items-center gap-0.5 px-4 py-1.5">
+      <span class="nav-icon material-symbols-outlined text-primary text-[22px] filled">auto_stories</span>
+      <span class="nav-label text-[10px] font-bold text-primary">Library</span>
+    </a>
+
+    <!-- Create (Center) -->
+    <a href="index.html" class="flex flex-col items-center gap-0.5 px-2 py-1 -mt-4">
+      <div class="w-14 h-14 rounded-2xl action-gradient flex items-center justify-center shadow-action-glow">
+        <span class="material-symbols-outlined text-white text-[26px]">add</span>
+      </div>
+    </a>
+
+    <!-- Impact -->
+    <a href="impact.html" class="nav-item flex flex-col items-center gap-0.5 px-4 py-1.5">
+      <span class="nav-icon material-symbols-outlined text-text-light text-[22px]">bar_chart</span>
+      <span class="nav-label text-[10px] font-medium text-text-light">Impact</span>
+    </a>
+
+    <!-- Profile -->
+    <a href="profile.html" class="nav-item flex flex-col items-center gap-0.5 px-4 py-1.5">
+      <span class="nav-icon material-symbols-outlined text-text-light text-[22px]">person</span>
+      <span class="nav-label text-[10px] font-medium text-text-light">Profile</span>
+    </a>
+
+  </div>
+</nav>
+
+<!-- ============================================================
+     QUOTE DETAIL MODAL
+============================================================ -->
+<div id="quoteModal" class="hidden fixed inset-0 bg-dark/60 backdrop-blur-sm z-[100] flex items-end justify-center">
+  <div class="w-full max-w-[430px] bg-card-bg rounded-t-3xl p-6 pb-10">
+    <div class="w-10 h-1 bg-text-light/30 rounded-full mx-auto mb-5"></div>
+    <blockquote id="modalQuote" class="font-headline font-bold text-lg text-text-dark leading-relaxed mb-3 text-center">
+    </blockquote>
+    <cite id="modalRef" class="block text-center not-italic font-bold text-sm text-primary tracking-wider mb-6"></cite>
+    <div class="flex gap-3">
+      <button onclick="closeModal(); window.location.href='index.html'" class="flex-1 py-3.5 tactical-gradient text-white font-headline font-bold rounded-2xl text-sm flex items-center justify-center gap-2 shadow-tactical">
+        <span class="material-symbols-outlined text-[18px]">share</span>
+        Use This Word
+      </button>
+      <button onclick="closeModal()" class="w-14 h-12 bg-surface border border-border-soft rounded-2xl flex items-center justify-center text-text-muted hover:text-primary transition-colors">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT
+============================================================ -->
+<script>
+
+  // ---- SEARCH TOGGLE ----
+  function toggleSearch() {
+    const bar = document.getElementById('searchBar');
+    bar.classList.toggle('hidden');
+    if (!bar.classList.contains('hidden')) {
+      document.getElementById('searchInput').focus();
+    }
+  }
+
+  // ---- SEARCH ----
+  function searchQuotes(query) {
+    const q = query.toLowerCase();
+    const cards = document.querySelectorAll('.quote-card');
+    let visible = 0;
+
+    cards.forEach(card => {
+      const text = card.textContent.toLowerCase();
+      const show = text.includes(q);
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    document.getElementById('emptyState').classList.toggle('hidden', visible > 0);
+  }
+
+  // ---- FILTER BY CATEGORY ----
+  function filterByCategory(cat, btn) {
+    document.querySelectorAll('.filter-tab').forEach(t => {
+      t.classList.remove('active', 'bg-primary', 'text-white');
+      t.classList.add('text-text-muted');
+    });
+    btn.classList.add('active', 'bg-primary', 'text-white');
+    btn.classList.remove('text-text-muted');
+
+    const cards = document.querySelectorAll('.quote-card');
+    let visible = 0;
+
+    cards.forEach(card => {
+      const cardCat = card.dataset.category;
+      const show = cat === 'all' || cardCat === cat;
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    document.getElementById('emptyState').classList.toggle('hidden', visible > 0);
+  }
+
+  // ---- OPEN QUOTE DETAIL ----
+  function openQuote(card) {
+    const quote = card.querySelector('blockquote').textContent.trim();
+    const ref   = card.querySelector('cite').textContent.trim();
+
+    document.getElementById('modalQuote').textContent = quote;
+    document.getElementById('modalRef').textContent   = ref;
+    document.getElementById('quoteModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    document.getElementById('quoteModal').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  document.getElementById('quoteModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  // ---- QUICK SHARE ----
+  function quickShare(btn) {
+    const card  = btn.closest('article');
+    const quote = card.querySelector('blockquote').textContent.trim();
+    const ref   = card.querySelector('cite').textContent.trim();
+
+    if (navigator.share) {
+      navigator.share({
+        title: 'Go Spread The Word',
+        text: `${quote} ${ref} #SpreadTheWord`,
+      }).catch(console.error);
+    } else {
+      showToast('Opening share options...');
+      setTimeout(() => {
+        window.location.href = 'sharesheet.html';
+      }, 500);
+    }
+  }
+
+  // ---- LOAD MORE ----
+  function loadMore() {
+    showToast('Loading more quotes...');
+    // TODO: Fetch from Supabase
+  }
+
+  // ---- CARD PRESS ANIMATION ----
+  document.querySelectorAll('.quote-card').forEach(card => {
+    card.addEventListener('touchstart', () => {
+      card.style.transform = 'scale(0.98)';
+      card.style.transition = 'transform 0.15s ease';
+    }, { passive: true });
+    card.addEventListener('touchend', () => {
+      card.style.transform = 'scale(1)';
+    }, { passive: true });
+  });
+
+  // ---- TOAST ----
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2';
+    t.innerHTML = `<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24">check_circle</span> ${msg}`;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2200);
+  }
+
+</script>
+
+</body>
+</html>
