@@ -10,7 +10,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
 
   <script>
@@ -28,7 +28,6 @@
             'cream':         '#F7F4ED',
             'cream-warm':    '#FBF8F2',
             'dark':          '#16202A',
-            'dark-soft':     '#1F2A35',
             'text-dark':     '#1A1A1A',
             'text-muted':    '#5C6B7A',
             'text-light':    '#8E9AA8',
@@ -45,7 +44,7 @@
             'lifted':      '0 8px 32px rgba(26, 32, 42, 0.10)',
             'tactical':    '0 4px 20px rgba(30, 64, 96, 0.25)',
             'action-glow': '0 4px 20px rgba(226, 91, 77, 0.35)',
-            'card':        '0 16px 32px -8px rgba(30, 64, 96, 0.08)',
+            'card':        '0 4px 32px rgba(30, 64, 96, 0.08)',
           },
         },
       },
@@ -57,6 +56,7 @@
       font-family: 'Manrope', sans-serif;
       background-color: #F0EDE6;
       -webkit-tap-highlight-color: transparent;
+      -webkit-font-smoothing: antialiased;
       min-height: 100dvh;
     }
     .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -66,304 +66,382 @@
     .action-gradient   { background: linear-gradient(145deg, #E25B4D, #C84A3E); }
     .scripture-mark    { font-family: Georgia, 'Times New Roman', serif; }
 
-    /* Card selection */
-    .share-card {
-      transition: all 0.2s ease;
-      border-left: 4px solid transparent;
-    }
-    .share-card:active {
-      transform: scale(0.97);
-    }
-    .share-card.selected {
-      background-color: rgba(30, 64, 96, 0.04) !important;
-      border-left-color: #1E4060 !important;
-      transform: scale(0.98);
-    }
-
-    /* Bottom nav */
-    .nav-tab { transition: all 0.2s ease; }
-    .nav-tab.active .nav-icon { color: #1E4060; }
-    .nav-tab.active .nav-label { color: #1E4060; font-weight: 700; }
-    .nav-tab.active .nav-dot { opacity: 1; }
-
-    /* Safe area for notch phones */
-    .safe-top { padding-top: env(safe-area-inset-top, 0px); }
-    .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
-
-    /* Smooth scroll */
-    html { scroll-behavior: smooth; }
-
     /* No scrollbar */
     ::-webkit-scrollbar { display: none; }
     body { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Reflection plate */
+    .reflection-plate {
+      background: white;
+      box-shadow: 0 4px 32px rgba(30, 64, 96, 0.08);
+      border-left: 4px solid #D4A24C;
+    }
+
+    /* Shield glow animation */
+    @keyframes breathe {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50%      { opacity: 0.6; transform: scale(1.1); }
+    }
+    .shield-glow { animation: breathe 3s ease-in-out infinite; }
+
+    /* CTA pulse */
+    @keyframes subtle-pulse {
+      0%, 100% { box-shadow: 0 4px 20px rgba(30, 64, 96, 0.25); }
+      50%      { box-shadow: 0 4px 32px rgba(30, 64, 96, 0.4); }
+    }
+    .cta-pulse { animation: subtle-pulse 3s ease-in-out infinite; }
+
+    /* Dot indicators */
+    .dot-indicator { transition: all 0.3s ease; }
+
+    /* Top bar hide on scroll */
+    #topBar { transition: transform 0.3s ease; }
+
+    /* Safe area */
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); }
+    .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+
+    /* App container */
+    .app-container {
+      max-width: 430px;
+      margin: 0 auto;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
   </style>
 </head>
 
-<body class="text-text-dark overflow-x-hidden">
+<body class="text-text-dark">
 
-<!-- ============================================================
-     TOP APP BAR
-============================================================ -->
-<nav class="fixed top-0 left-0 w-full h-14 bg-surface/90 backdrop-blur-xl flex items-center justify-between px-4 z-50 border-b border-border-soft safe-top">
-  <!-- Left: Date/Greeting -->
-  <div>
-    <p id="greeting" class="font-headline font-bold text-sm text-primary">Today's Briefing</p>
-    <p id="dateLabel" class="text-[10px] text-text-light font-body uppercase tracking-widest"></p>
-  </div>
+<div class="app-container">
 
-  <!-- Center: Logo -->
-  <div class="absolute left-1/2 -translate-x-1/2">
-    <span class="font-headline font-extrabold text-xs text-gold tracking-[0.15em]">GSTW</span>
-  </div>
+  <!-- ============================================================
+       TOP APP BAR
+  ============================================================ -->
+  <header id="topBar" class="fixed top-0 left-0 right-0 z-50 bg-surface/85 backdrop-blur-xl border-b border-border-soft pt-safe">
+    <div class="flex justify-between items-center px-6 py-3 max-w-[430px] mx-auto">
 
-  <!-- Right: Notification -->
-  <button class="w-10 h-10 flex items-center justify-center text-text-muted relative">
-    <span class="material-symbols-outlined text-[22px]">notifications</span>
-    <span class="absolute top-2 right-2 w-2 h-2 bg-action rounded-full"></span>
-  </button>
-</nav>
-
-<!-- ============================================================
-     MAIN CONTENT
-============================================================ -->
-<main class="pt-14 pb-24 flex flex-col min-h-[100dvh] max-w-[430px] mx-auto">
-
-  <!-- ========================================
-       DAILY QUOTE SECTION
-  ======================================== -->
-  <section class="px-6 pt-8 flex flex-col items-center">
-
-    <!-- Label -->
-    <div class="flex items-center gap-2 mb-6">
-      <div class="w-1.5 h-1.5 bg-gold rounded-full"></div>
-      <span class="font-body text-[11px] text-text-light tracking-widest uppercase font-bold">Your Word for Today</span>
-      <div class="w-1.5 h-1.5 bg-gold rounded-full"></div>
-    </div>
-
-    <!-- Quote Card -->
-    <div class="relative w-full max-w-[320px] text-center px-2">
-
-      <!-- Decorative Quote Mark -->
-      <div class="scripture-mark absolute -top-8 -left-1 text-[72px] text-gold/40 leading-none select-none pointer-events-none">
-        "
+      <!-- Left: Logo -->
+      <div class="flex items-center gap-2">
+        <span class="font-headline font-extrabold text-primary text-lg tracking-tight">GSTW</span>
       </div>
 
-      <!-- Quote Text -->
-      <h1 id="quoteText" class="font-headline font-bold text-[20px] leading-[1.6] text-text-dark relative z-10">
-        Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go.
-      </h1>
-
-      <!-- Reference -->
-      <p id="quoteRef" class="font-body font-bold text-sm text-primary mt-4 tracking-wider">
-        — JOSHUA 1:9
-      </p>
+      <!-- Right: Notification + Avatar -->
+      <div class="flex items-center gap-3">
+        <button class="w-10 h-10 flex items-center justify-center text-text-muted relative active:scale-90 transition-transform">
+          <span class="material-symbols-outlined text-[22px]">notifications</span>
+          <span class="absolute top-2 right-2 w-2 h-2 bg-action rounded-full"></span>
+        </button>
+        <div class="w-10 h-10 rounded-full bg-primary border-2 border-gold/40 flex items-center justify-center overflow-hidden active:scale-95 transition-transform cursor-pointer" onclick="window.location.href='profile.html'">
+          <span class="font-headline font-bold text-white text-sm">JS</span>
+        </div>
+      </div>
 
     </div>
-  </section>
+  </header>
 
-  <!-- Divider -->
-  <div class="flex items-center justify-center gap-2 my-8 px-12">
-    <div class="flex-1 h-px bg-border-soft"></div>
-    <div class="w-2 h-2 rounded-full bg-gold/50"></div>
-    <div class="flex-1 h-px bg-border-soft"></div>
-  </div>
+  <!-- ============================================================
+       MAIN CONTENT
+  ============================================================ -->
+  <main class="flex-1 px-6 pt-20 pb-28 flex flex-col items-center">
 
-  <!-- ========================================
-       ACTION CARDS
-  ======================================== -->
-  <section class="flex-grow px-5 pb-6">
+    <!-- ========================================
+         TOP: GREETING
+    ======================================== -->
+    <section class="w-full mt-4 mb-8">
 
-    <h2 class="font-headline font-bold text-base text-text-dark text-center mb-5">
+      <h2 id="greetingName" class="font-headline font-extrabold text-2xl text-text-dark leading-tight">
+        Hi John Smith
+      </h2>
+
+      <div class="flex items-center gap-2 mt-1.5">
+        <span id="greetingTime" class="font-body font-semibold text-sm text-primary"></span>
+        <div class="relative flex items-center justify-center">
+          <span class="material-symbols-outlined text-gold text-[18px] filled relative z-10">military_tech</span>
+          <div class="absolute inset-0 bg-gold/30 blur-md rounded-full shield-glow"></div>
+        </div>
+        <span class="font-body font-bold text-xs text-gold-dim bg-gold/10 px-2.5 py-1 rounded-full">Level 4 Warrior</span>
+      </div>
+
+      <!-- Streak indicator -->
+      <div class="flex items-center gap-2 mt-3">
+        <div class="flex items-center gap-1 bg-cream rounded-full px-3 py-1.5 border border-border-soft">
+          <span class="text-sm">🔥</span>
+          <span class="font-body font-bold text-xs text-text-dark">12 day streak</span>
+        </div>
+        <div class="flex items-center gap-1 bg-cream rounded-full px-3 py-1.5 border border-border-soft">
+          <span class="material-symbols-outlined text-primary text-[14px] filled">share</span>
+          <span class="font-body font-bold text-xs text-text-dark">47 shared</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================
+         CENTER: DAILY QUOTE
+    ======================================== -->
+    <section class="flex-1 flex flex-col items-center justify-center w-full py-4">
+
+      <!-- Label -->
+      <div class="flex items-center gap-2 mb-5">
+        <div class="w-1.5 h-1.5 bg-gold rounded-full"></div>
+        <span class="font-body text-[10px] text-text-light tracking-widest uppercase font-bold">Today's Word</span>
+        <div class="w-1.5 h-1.5 bg-gold rounded-full"></div>
+      </div>
+
+      <!-- Decorative Quote Mark -->
+      <span class="scripture-mark text-[72px] text-gold/40 leading-none mb-3 select-none pointer-events-none">"</span>
+
+      <!-- Reflection Plate Quote Card -->
+      <div class="reflection-plate rounded-2xl p-7 w-full relative overflow-hidden">
+
+        <p id="quoteText" class="font-headline font-bold text-xl leading-relaxed text-text-dark tracking-tight">
+          Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go.
+        </p>
+
+        <p id="quoteRef" class="mt-5 font-body font-bold text-sm text-primary tracking-wider">
+          — JOSHUA 1:9
+        </p>
+
+      </div>
+
+      <!-- Dot Indicators (for swipe hint) -->
+      <div class="mt-6 flex justify-center gap-1.5">
+        <div class="dot-indicator w-2 h-2 rounded-full bg-primary"></div>
+        <div class="dot-indicator w-1.5 h-1.5 rounded-full bg-text-light/30"></div>
+        <div class="dot-indicator w-1.5 h-1.5 rounded-full bg-text-light/30"></div>
+      </div>
+
+    </section>
+
+    <!-- ========================================
+         BOTTOM: CTA
+    ======================================== -->
+    <section class="w-full mt-8 mb-4 flex flex-col items-center gap-5">
+
+      <!-- Main CTA -->
+      <button onclick="spreadTheWord()" class="cta-pulse tactical-gradient w-full h-14 rounded-2xl text-white font-headline font-bold text-base shadow-tactical active:scale-[0.97] transition-transform flex items-center justify-center gap-3">
+        <span class="material-symbols-outlined text-gold text-[22px] filled">send</span>
+        Spread The Word
+      </button>
+
+      <!-- Not Today -->
+      <div class="text-center">
+        <button onclick="notToday()" class="text-text-muted font-body font-semibold text-sm hover:text-primary transition-colors active:scale-95">
+          Not Today
+        </button>
+        <p class="text-text-light font-body text-[11px] mt-1 tracking-wide">
+          Just reflecting on the Word
+        </p>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ============================================================
+       BOTTOM NAVIGATION
+  ============================================================ -->
+  <nav class="fixed bottom-0 left-0 w-full bg-card-bg/90 backdrop-blur-xl border-t border-border-soft z-50" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
+    <div class="flex justify-around items-center px-2 pt-2 pb-1 max-w-[430px] mx-auto">
+
+      <!-- Home (Active) -->
+      <a href="index.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
+        <span class="material-symbols-outlined text-primary text-[22px] filled">home</span>
+        <span class="text-[10px] font-bold text-primary">Home</span>
+      </a>
+
+      <!-- Library -->
+      <a href="library.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
+        <span class="material-symbols-outlined text-text-light text-[22px]">auto_stories</span>
+        <span class="text-[10px] font-medium text-text-light">Library</span>
+      </a>
+
+      <!-- Cause -->
+      <a href="cause.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
+        <span class="material-symbols-outlined text-text-light text-[22px]">volunteer_activism</span>
+        <span class="text-[10px] font-medium text-text-light">Cause</span>
+      </a>
+
+      <!-- Impact -->
+      <a href="impact.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
+        <span class="material-symbols-outlined text-text-light text-[22px]">bar_chart</span>
+        <span class="text-[10px] font-medium text-text-light">Impact</span>
+      </a>
+
+      <!-- Profile -->
+      <a href="profile.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
+        <span class="material-symbols-outlined text-text-light text-[22px]">person</span>
+        <span class="text-[10px] font-medium text-text-light">Profile</span>
+      </a>
+
+    </div>
+  </nav>
+
+</div>
+
+<!-- ============================================================
+     SHARE METHOD SHEET (Slides up when CTA pressed)
+============================================================ -->
+<div id="shareMethodSheet" class="hidden fixed inset-0 bg-dark/50 backdrop-blur-sm z-[100] flex items-end justify-center" onclick="closeShareMethod()">
+  <div id="shareMethodPanel" class="w-full max-w-[430px] bg-card-bg rounded-t-3xl p-6 pb-10 transform translate-y-full transition-transform duration-400" onclick="event.stopPropagation()" style="transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);">
+
+    <!-- Handle -->
+    <div class="w-10 h-1 bg-text-light/30 rounded-full mx-auto mb-5"></div>
+
+    <h3 class="font-headline font-bold text-lg text-text-dark text-center mb-2">
       How do you want to carry the Word?
-    </h2>
+    </h3>
+    <p class="font-body text-xs text-text-light text-center mb-6">
+      Choose your background for today's scripture
+    </p>
 
     <div class="space-y-3">
 
-      <!-- Card 1: Selfie -->
-      <div class="share-card bg-card-bg rounded-2xl px-4 py-4 flex items-center gap-4 shadow-card cursor-pointer"
-           onclick="selectCard(this, 'selfie')">
+      <!-- Selfie -->
+      <button onclick="goToEditor('selfie')" class="w-full bg-surface rounded-2xl px-4 py-4 flex items-center gap-4 border border-border-soft hover:border-primary/30 transition-all active:scale-[0.98]">
         <div class="w-12 h-12 rounded-2xl tactical-gradient flex items-center justify-center text-white flex-shrink-0 shadow-tactical">
           <span class="material-symbols-outlined text-[22px] filled">face</span>
         </div>
-        <div class="flex-grow min-w-0">
-          <span class="font-headline font-bold text-[15px] text-text-dark block">Take a Selfie</span>
-          <span class="font-body text-[12px] text-text-muted">Show your face with the Word</span>
+        <div class="flex-grow text-left">
+          <span class="font-headline font-bold text-sm text-text-dark block">Take a Selfie</span>
+          <span class="font-body text-[11px] text-text-muted">Show your face with the Word</span>
         </div>
-        <span class="material-symbols-outlined text-text-light text-[20px] flex-shrink-0">chevron_right</span>
-      </div>
+        <span class="material-symbols-outlined text-text-light text-[20px]">chevron_right</span>
+      </button>
 
-      <!-- Card 2: Photo -->
-      <div class="share-card bg-card-bg rounded-2xl px-4 py-4 flex items-center gap-4 shadow-card cursor-pointer"
-           onclick="selectCard(this, 'photo')">
+      <!-- Photo -->
+      <button onclick="goToEditor('photo')" class="w-full bg-surface rounded-2xl px-4 py-4 flex items-center gap-4 border border-border-soft hover:border-primary/30 transition-all active:scale-[0.98]">
         <div class="w-12 h-12 rounded-2xl bg-gold flex items-center justify-center text-white flex-shrink-0 shadow-natural">
           <span class="material-symbols-outlined text-[22px] filled">photo_camera</span>
         </div>
-        <div class="flex-grow min-w-0">
-          <span class="font-headline font-bold text-[15px] text-text-dark block">Take a Photo</span>
-          <span class="font-body text-[12px] text-text-muted">Capture where you are right now</span>
+        <div class="flex-grow text-left">
+          <span class="font-headline font-bold text-sm text-text-dark block">Take a Photo</span>
+          <span class="font-body text-[11px] text-text-muted">Capture where you are right now</span>
         </div>
-        <span class="material-symbols-outlined text-text-light text-[20px] flex-shrink-0">chevron_right</span>
-      </div>
+        <span class="material-symbols-outlined text-text-light text-[20px]">chevron_right</span>
+      </button>
 
-      <!-- Card 3: Gallery -->
-      <div class="share-card bg-card-bg rounded-2xl px-4 py-4 flex items-center gap-4 shadow-card cursor-pointer"
-           onclick="selectCard(this, 'gallery')">
+      <!-- Gallery -->
+      <button onclick="goToEditor('gallery')" class="w-full bg-surface rounded-2xl px-4 py-4 flex items-center gap-4 border border-border-soft hover:border-primary/30 transition-all active:scale-[0.98]">
         <div class="w-12 h-12 rounded-2xl bg-text-muted flex items-center justify-center text-white flex-shrink-0 shadow-natural">
           <span class="material-symbols-outlined text-[22px] filled">image</span>
         </div>
-        <div class="flex-grow min-w-0">
-          <span class="font-headline font-bold text-[15px] text-text-dark block">Choose from Gallery</span>
-          <span class="font-body text-[12px] text-text-muted">Pick a photo from your device</span>
+        <div class="flex-grow text-left">
+          <span class="font-headline font-bold text-sm text-text-dark block">Choose from Gallery</span>
+          <span class="font-body text-[11px] text-text-muted">Pick a photo from your device</span>
         </div>
-        <span class="material-symbols-outlined text-text-light text-[20px] flex-shrink-0">chevron_right</span>
-      </div>
+        <span class="material-symbols-outlined text-text-light text-[20px]">chevron_right</span>
+      </button>
 
-      <!-- Card 4: Text Only (Bonus) -->
-      <div class="share-card bg-card-bg rounded-2xl px-4 py-4 flex items-center gap-4 shadow-natural border border-border-soft cursor-pointer"
-           onclick="selectCard(this, 'text')">
+      <!-- Text Only -->
+      <button onclick="goToEditor('text')" class="w-full bg-surface rounded-2xl px-4 py-4 flex items-center gap-4 border border-dashed border-border-soft hover:border-primary/30 transition-all active:scale-[0.98]">
         <div class="w-12 h-12 rounded-2xl bg-cream border-2 border-border-soft flex items-center justify-center text-text-muted flex-shrink-0">
           <span class="material-symbols-outlined text-[22px]">text_fields</span>
         </div>
-        <div class="flex-grow min-w-0">
-          <span class="font-headline font-bold text-[15px] text-text-dark block">Text Only</span>
-          <span class="font-body text-[12px] text-text-muted">Share the Word without an image</span>
+        <div class="flex-grow text-left">
+          <span class="font-headline font-bold text-sm text-text-dark block">Text Only</span>
+          <span class="font-body text-[11px] text-text-muted">Share the Word without an image</span>
         </div>
-        <span class="material-symbols-outlined text-text-light text-[20px] flex-shrink-0">chevron_right</span>
-      </div>
+        <span class="material-symbols-outlined text-text-light text-[20px]">chevron_right</span>
+      </button>
 
     </div>
-  </section>
 
-  <!-- ========================================
-       ENCOURAGEMENT FOOTER
-  ======================================== -->
-  <footer class="mt-auto px-8 pb-2 text-center">
-    <p class="font-body italic text-[12px] text-text-light max-w-[260px] mx-auto leading-relaxed">
+    <!-- Encouragement -->
+    <p class="font-body italic text-[11px] text-text-light text-center mt-5">
       Your face stops the scroll. His Word changes hearts.
     </p>
-  </footer>
-
-</main>
-
-<!-- ============================================================
-     BOTTOM NAVIGATION BAR
-============================================================ -->
-<nav class="fixed bottom-0 left-0 w-full bg-card-bg/95 backdrop-blur-xl border-t border-border-soft z-50 safe-bottom">
-  <div class="max-w-[430px] mx-auto flex justify-around items-center h-16 px-2">
-
-    <!-- Home (Active) -->
-    <button onclick="setTab('home')" class="nav-tab active flex flex-col items-center gap-0.5 px-3 py-1.5 relative">
-      <span class="nav-icon material-symbols-outlined text-primary text-[22px] filled">home</span>
-      <span class="nav-label text-[10px] font-bold text-primary">Home</span>
-      <span class="nav-dot absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full opacity-1"></span>
-    </button>
-
-    <!-- Explore -->
-    <button onclick="setTab('explore')" class="nav-tab flex flex-col items-center gap-0.5 px-3 py-1.5 relative">
-      <span class="nav-icon material-symbols-outlined text-text-light text-[22px]">explore</span>
-      <span class="nav-label text-[10px] font-medium text-text-light">Explore</span>
-      <span class="nav-dot absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full opacity-0"></span>
-    </button>
-
-    <!-- Create (Center Action) -->
-    <button onclick="setTab('create')" class="nav-tab flex flex-col items-center gap-0.5 px-3 py-1.5 relative -mt-4">
-      <div class="w-14 h-14 rounded-2xl action-gradient flex items-center justify-center shadow-action-glow">
-        <span class="material-symbols-outlined text-white text-[26px]">add</span>
-      </div>
-    </button>
-
-    <!-- Impact -->
-    <button onclick="setTab('impact')" class="nav-tab flex flex-col items-center gap-0.5 px-3 py-1.5 relative">
-      <span class="nav-icon material-symbols-outlined text-text-light text-[22px]">bar_chart</span>
-      <span class="nav-label text-[10px] font-medium text-text-light">Impact</span>
-      <span class="nav-dot absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full opacity-0"></span>
-    </button>
-
-    <!-- Profile -->
-    <button onclick="setTab('profile')" class="nav-tab flex flex-col items-center gap-0.5 px-3 py-1.5 relative">
-      <span class="nav-icon material-symbols-outlined text-text-light text-[22px]">person</span>
-      <span class="nav-label text-[10px] font-medium text-text-light">Profile</span>
-      <span class="nav-dot absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full opacity-0"></span>
-    </button>
 
   </div>
-</nav>
+</div>
 
 <!-- ============================================================
      JAVASCRIPT
 ============================================================ -->
 <script>
 
-  // ---- DATE LABEL ----
-  function setDateLabel() {
-    const now = new Date();
-    const options = { weekday: 'long', month: 'short', day: 'numeric' };
-    document.getElementById('dateLabel').textContent = now.toLocaleDateString('en-US', options).toUpperCase();
+  // ---- SET GREETING ----
+  function setGreeting() {
+    const hour = new Date().getHours();
+    let greeting;
+    if (hour < 12) greeting = 'Good Morning';
+    else if (hour < 17) greeting = 'Good Afternoon';
+    else greeting = 'Good Evening';
 
-    const hour = now.getHours();
-    const greeting = hour < 12 ? 'Good Morning, Soldier' : hour < 17 ? 'Good Afternoon, Soldier' : 'Good Evening, Soldier';
-    document.getElementById('greeting').textContent = greeting;
+    document.getElementById('greetingTime').textContent = greeting;
   }
-  setDateLabel();
+  setGreeting();
 
-  // ---- CARD SELECTION ----
-  function selectCard(element, type) {
-    // Remove selected from all
-    document.querySelectorAll('.share-card').forEach(card => {
-      card.classList.remove('selected');
+  // ---- TOP BAR SCROLL BEHAVIOR ----
+  let lastScroll = 0;
+  const topBar = document.getElementById('topBar');
+
+  window.addEventListener('scroll', () => {
+    const currentScroll = window.pageYOffset;
+    if (currentScroll > lastScroll && currentScroll > 60) {
+      topBar.style.transform = 'translateY(-100%)';
+    } else {
+      topBar.style.transform = 'translateY(0)';
+    }
+    lastScroll = currentScroll;
+  }, { passive: true });
+
+  // ---- SPREAD THE WORD CTA ----
+  function spreadTheWord() {
+    const sheet = document.getElementById('shareMethodSheet');
+    const panel = document.getElementById('shareMethodPanel');
+
+    sheet.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    // Slide up
+    requestAnimationFrame(() => {
+      panel.style.transform = 'translateY(0)';
     });
-    // Add selected to clicked
-    element.classList.add('selected');
+  }
 
-    // Navigate after brief delay (simulates haptic feedback)
+  function closeShareMethod() {
+    const sheet = document.getElementById('shareMethodSheet');
+    const panel = document.getElementById('shareMethodPanel');
+
+    panel.style.transform = 'translateY(100%)';
+
     setTimeout(() => {
-      if (type === 'selfie') {
-        // Will navigate to camera/editor page
-        console.log('Opening selfie camera...');
-        // window.location.href = 'editor.html?mode=selfie';
-      } else if (type === 'photo') {
-        console.log('Opening rear camera...');
-        // window.location.href = 'editor.html?mode=photo';
-      } else if (type === 'gallery') {
-        console.log('Opening gallery picker...');
-        // window.location.href = 'editor.html?mode=gallery';
-      } else if (type === 'text') {
-        console.log('Opening text-only share...');
-        // window.location.href = 'editor.html?mode=text';
-      }
+      sheet.classList.add('hidden');
+      document.body.style.overflow = '';
+    }, 400);
+  }
+
+  function goToEditor(mode) {
+    closeShareMethod();
+    setTimeout(() => {
+      window.location.href = `editor.html?mode=${mode}`;
     }, 300);
   }
 
-  // ---- BOTTOM NAV ----
-  function setTab(tab) {
-    // Reset all tabs
-    document.querySelectorAll('.nav-tab').forEach(t => {
-      t.classList.remove('active');
-      const icon = t.querySelector('.nav-icon');
-      const label = t.querySelector('.nav-label');
-      const dot = t.querySelector('.nav-dot');
-      if (icon) {
-        icon.classList.remove('text-primary', 'filled');
-        icon.classList.add('text-text-light');
-      }
-      if (label) {
-        label.classList.remove('text-primary', 'font-bold');
-        label.classList.add('text-text-light', 'font-medium');
-      }
-      if (dot) dot.style.opacity = '0';
-    });
-
-    // Activate selected tab
-    // In a full app each tab would navigate to a different page
-    // For now we just highlight
-
-    console.log('Navigate to:', tab);
-
-    // TODO: Connect to actual pages
-    // if (tab === 'explore') window.location.href = 'explore.html';
-    // if (tab === 'impact')  window.location.href = 'impact.html';
-    // if (tab === 'profile') window.location.href = 'profile.html';
+  // ---- NOT TODAY ----
+  function notToday() {
+    showToast('Take your time, soldier. The Word is with you.');
   }
+
+  // ---- TOAST ----
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2 max-w-[90%]';
+    t.innerHTML = `<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:'FILL' 1">check_circle</span> ${msg}`;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+
+  // ---- HAPTIC FEEDBACK ----
+  document.querySelectorAll('button, a').forEach(el => {
+    el.addEventListener('click', () => navigator.vibrate?.(8));
+  });
+
+  // ---- SWIPE HINT ON DOTS ----
+  // TODO: Add swipe gesture to cycle through past quotes
 
 </script>
 
