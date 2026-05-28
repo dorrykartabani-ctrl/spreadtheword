@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Generator — GSTW Admin</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'primary':       '#1E4060',
+            'primary-dim':   '#152E45',
+            'primary-light': '#2B5780',
+            'action':        '#E25B4D',
+            'action-dim':    '#C84A3E',
+            'gold':          '#D4A24C',
+            'gold-dim':      '#B88A3D',
+            'cream':         '#F7F4ED',
+            'cream-warm':    '#FBF8F2',
+            'dark':          '#16202A',
+            'dark-soft':     '#1F2A35',
+            'text-dark':     '#1A1A1A',
+            'text-muted':    '#5C6B7A',
+            'text-light':    '#8E9AA8',
+            'border-soft':   'rgba(92, 107, 122, 0.15)',
+            'sidebar-bg':    '#0F1E2E',
+            'sidebar-hover': '#1A2D40',
+            'card-bg':       '#FFFFFF',
+            'surface':       '#F0EDE6',
+          },
+          fontFamily: {
+            'headline': ['Plus Jakarta Sans', 'sans-serif'],
+            'body':     ['Manrope', 'sans-serif'],
+          },
+          boxShadow: {
+            'natural':     '0 4px 16px rgba(26, 32, 42, 0.06)',
+            'lifted':      '0 8px 32px rgba(26, 32, 42, 0.10)',
+            'tactical':    '0 4px 20px rgba(30, 64, 96, 0.25)',
+            'action-glow': '0 4px 20px rgba(226, 91, 77, 0.35)',
+            'card':        '0 32px 64px -15px rgba(30, 64, 96, 0.06)',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    body { font-family: 'Manrope', sans-serif; }
+    .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .filled { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .tactical-gradient { background: linear-gradient(145deg, #152E45, #1E4060); }
+    .action-gradient   { background: linear-gradient(145deg, #E25B4D, #C84A3E); }
+    .gold-gradient     { background: linear-gradient(145deg, #D4A24C, #B88A3D); }
+
+    /* Result card gold left border */
+    .result-card { border-left: 4px solid #D4A24C; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(30,64,96,0.15); border-radius: 3px; }
+
+    /* Spinning loader */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { animation: spin 1s linear infinite; }
+
+    /* Shimmer for loading state */
+    @keyframes shimmer {
+      0% { background-position: -400px 0; }
+      100% { background-position: 400px 0; }
+    }
+    .shimmer {
+      background: linear-gradient(90deg, #f0ede6 25%, #e8e4dc 50%, #f0ede6 75%);
+      background-size: 800px 100%;
+      animation: shimmer 1.5s infinite;
+    }
+
+    /* Theme pill active */
+    .theme-pill.active {
+      background: #1E4060;
+      color: white;
+    }
+
+    /* Source radio */
+    input[type="radio"].source-radio:checked + .source-card {
+      background: #1E4060;
+      color: white;
+      border-color: #1E4060;
+    }
+
+    /* Quantity btn active */
+    .qty-btn.active {
+      background: #1E4060;
+      color: white;
+    }
+
+    /* Card dismiss animation */
+    .card-dismiss {
+      transition: all 0.3s ease;
+      transform: translateX(0);
+      opacity: 1;
+    }
+    .card-dismiss.dismissed {
+      transform: translateX(40px);
+      opacity: 0;
+    }
+  </style>
+</head>
+
+<body class="bg-surface text-text-dark min-h-screen flex overflow-hidden">
+
+<!-- ============================================================
+     SIDEBAR
+============================================================ -->
+<aside id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-sidebar-bg flex flex-col p-4 gap-2 z-40 hidden md:flex shrink-0">
+
+  <!-- Logo -->
+  <div class="mb-8 px-4 pt-2">
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-lg border-2 border-primary-light flex items-center justify-center">
+        <span class="font-headline font-extrabold text-gold text-[10px]">GSTW</span>
+      </div>
+      <div>
+        <h1 class="text-base font-headline font-extrabold tracking-tight text-white">STW Admin</h1>
+        <p class="text-[9px] uppercase tracking-[0.2em] text-text-light font-bold">Command Center</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <nav class="flex flex-col gap-1 grow overflow-y-auto">
+    <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">dashboard</span>
+      <span class="font-body text-sm">Dashboard</span>
+    </a>
+    <a href="manage-quotes.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">format_quote</span>
+      <span class="font-body text-sm">Quotes</span>
+    </a>
+    <a href="schedule.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">calendar_today</span>
+      <span class="font-body text-sm">Schedule</span>
+    </a>
+    <!-- AI Generator ACTIVE -->
+    <a href="#" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-lg font-bold text-sm">
+      <span class="material-symbols-outlined text-[20px] filled">auto_awesome</span>
+      <span class="font-body text-sm">AI Generator</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">tag</span>
+      <span class="font-body text-sm">Hashtags</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">folder_shared</span>
+      <span class="font-body text-sm">Projects</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">analytics</span>
+      <span class="font-body text-sm">Analytics</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">group</span>
+      <span class="font-body text-sm">Users</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">settings</span>
+      <span class="font-body text-sm">Settings</span>
+    </a>
+  </nav>
+
+  <!-- Bottom -->
+  <div class="mt-auto pt-4 flex flex-col gap-4">
+    <a href="quotes.html" class="action-gradient text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 shadow-action-glow hover:scale-[1.02] transition-transform">
+      <span class="material-symbols-outlined text-sm">add_circle</span>
+      <span class="text-xs uppercase tracking-widest">Create New Quote</span>
+    </a>
+    <div class="flex items-center gap-3 px-2 py-3 border-t border-white/10">
+      <div class="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center text-white font-headline font-bold text-sm">DA</div>
+      <div>
+        <p class="text-sm font-bold text-white leading-none">David Hearth</p>
+        <p class="text-[10px] text-text-light">Super Admin</p>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Mobile Overlay -->
+<div id="sidebarOverlay" class="fixed inset-0 bg-dark/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<!-- ============================================================
+     MAIN
+============================================================ -->
+<div class="flex-1 md:ml-64 flex flex-col h-screen overflow-hidden">
+
+  <!-- TOP HEADER -->
+  <header class="flex justify-between items-center w-full px-6 lg:px-8 py-4 sticky top-0 z-20 bg-surface/80 backdrop-blur-xl border-b border-border-soft shrink-0">
+    <div class="flex items-center gap-4">
+      <button onclick="toggleSidebar()" class="md:hidden text-text-dark">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+      <nav class="flex items-center gap-2 text-sm font-body">
+        <a href="index.html" class="text-text-muted hover:text-primary transition-colors">Dashboard</a>
+        <span class="material-symbols-outlined text-text-light text-sm">chevron_right</span>
+        <span class="text-primary font-bold border-b-2 border-primary pb-0.5">AI Generator</span>
+      </nav>
+    </div>
+
+    <div class="flex items-center gap-4 lg:gap-6">
+      <!-- Search -->
+      <div class="hidden lg:flex items-center bg-cream px-4 py-2 rounded-full border border-border-soft gap-2">
+        <span class="material-symbols-outlined text-text-light text-[18px]">search</span>
+        <input type="text" placeholder="Search prompts..." class="bg-transparent border-none focus:outline-none text-sm font-body w-44 placeholder:text-text-light">
+      </div>
+      <div class="flex items-center gap-3">
+        <button class="relative text-text-muted hover:text-primary transition-colors">
+          <span class="material-symbols-outlined">notifications</span>
+          <span class="absolute -top-1 -right-1 w-2 h-2 bg-action rounded-full"></span>
+        </button>
+        <button class="text-text-muted hover:text-primary transition-colors hidden sm:block">
+          <span class="material-symbols-outlined">help</span>
+        </button>
+      </div>
+      <div class="h-8 w-px bg-border-soft hidden sm:block"></div>
+      <div class="flex items-center gap-3">
+        <div class="text-right hidden sm:block">
+          <p class="text-sm font-bold text-text-dark">Super Admin</p>
+          <button class="text-[10px] font-bold text-action uppercase tracking-widest flex items-center gap-1 hover:opacity-80 ml-auto">
+            Logout <span class="material-symbols-outlined text-[12px]">logout</span>
+          </button>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white font-headline font-bold text-sm">DA</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================
+       SCROLLABLE CONTENT AREA
+  ======================================== -->
+  <div class="flex-1 overflow-y-auto pb-28">
+    <div class="p-6 lg:p-8">
+      <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- ============================
+             LEFT: CONTROLS
+        ============================ -->
+        <div class="lg:col-span-5 flex flex-col gap-7">
+
+          <!-- Title -->
+          <div>
+            <div class="relative inline-block">
+              <h2 class="text-3xl lg:text-4xl font-headline font-extrabold text-text-dark tracking-tight">
+                Generate the Word
+              </h2>
+              <div class="absolute -bottom-1.5 left-0 w-16 h-1 bg-gold rounded-full"></div>
+            </div>
+            <p class="text-text-muted font-body text-sm mt-4 leading-relaxed">
+              Speak your intent and let the Spirit guide the creation of inspirational messages for your soldiers.
+            </p>
+          </div>
+
+          <!-- Control Panel -->
+          <div class="bg-card-bg rounded-2xl p-6 flex flex-col gap-6 shadow-card border border-border-soft">
+
+            <!-- Theme Input -->
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-bold text-text-muted uppercase tracking-widest">Theme or Topic</label>
+              <input
+                id="themeInput"
+                type="text"
+                class="w-full bg-surface border-b-2 border-border-soft focus:border-primary py-3 px-1 font-body text-sm text-text-dark placeholder:text-text-light focus:outline-none transition-all"
+                placeholder="e.g. Strength in difficult seasons...">
+              <span class="text-[10px] text-text-light font-medium">Be specific for better theological alignment.</span>
+            </div>
+
+            <!-- Quick Theme Pills -->
+            <div class="flex flex-col gap-3">
+              <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest">Quick Themes</span>
+              <div class="flex flex-wrap gap-2">
+                <button onclick="selectTheme(this, 'Hope')" class="theme-pill px-3 py-1.5 rounded-full bg-cream text-text-muted text-xs font-bold hover:bg-primary hover:text-white transition-all border border-border-soft">Hope</button>
+                <button onclick="selectTheme(this, 'Courage')" class="theme-pill px-3 py-1.5 rounded-full bg-cream text-text-muted text-xs font-bold hover:bg-primary hover:text-white transition-all border border-border-soft">Courage</button>
+                <button onclick="selectTheme(this, 'Love')" class="theme-pill px-3 py-1.5 rounded-full bg-cream text-text-muted text-xs font-bold hover:bg-primary hover:text-white transition-all border border-border-soft">Love</button>
+                <button onclick="selectTheme(this, 'Grace')" class="theme-pill px-3 py-1.5 rounded-full bg-cream text-text-muted text-xs font-bold hover:bg-primary hover:text-white transition-all border border-border-soft">Grace</button>
+                <button onclick="selectTheme(this, 'Healing')" class="theme-pill px-3 py-1.5 rounded-full bg-cream text-text-muted text-xs font-bold hover:bg-primary hover:text-white transition-all border border-border-soft">Healing</button>
+                <button onclick="selectTheme(this, 'Patience')" class="theme-pill px-3 py-1.5 rounded-full bg-cream text-text-muted text-xs font-bold hover:bg-primary hover:text-white transition-all border border-border-soft">Patience</button>
+                <button onclick="selectTheme(this, 'Faith')" class="theme-pill px-3 py-1.5 rounded-full bg-cream text-text-muted text-xs font-bold hover:bg-primary hover:text-white transition-all border border-border-soft">Faith</button>
+                <button onclick="selectTheme(this, 'Mission')" class="theme-pill px-3 py-1.5 rounded-full bg-cream text-text-muted text-xs font-bold hover:bg-primary hover:text-white transition-all border border-border-soft">Mission</button>
+              </div>
+            </div>
+
+            <!-- Source Type -->
+            <div class="flex flex-col gap-3">
+              <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest">Source Type</span>
+              <div class="grid grid-cols-3 gap-2">
+                <label class="cursor-pointer">
+                  <input type="radio" name="source" value="scripture" checked class="hidden source-radio">
+                  <div class="source-card p-3 bg-primary text-white border-2 border-primary rounded-xl text-center transition-all">
+                    <span class="text-xs font-bold">Scripture</span>
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="source" value="inspiration" class="hidden source-radio">
+                  <div class="source-card p-3 bg-card-bg text-text-muted border-2 border-border-soft rounded-xl text-center hover:border-primary hover:text-primary transition-all">
+                    <span class="text-xs font-bold">Inspiration</span>
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="source" value="balanced" class="hidden source-radio">
+                  <div class="source-card p-3 bg-card-bg text-text-muted border-2 border-border-soft rounded-xl text-center hover:border-primary hover:text-primary transition-all">
+                    <span class="text-xs font-bold">Balanced</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Tone + Quantity -->
+            <div class="grid grid-cols-2 gap-4">
+
+              <!-- Tone -->
+              <div class="flex flex-col gap-2">
+                <label class="text-xs font-bold text-text-muted uppercase tracking-widest">Tone</label>
+                <div class="relative">
+                  <select class="w-full bg-surface border border-border-soft rounded-xl py-2.5 px-3 font-body text-sm text-text-dark focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer transition-all">
+                    <option>Comforting</option>
+                    <option>Urgent</option>
+                    <option>Celebratory</option>
+                    <option>Reflective</option>
+                    <option>Challenging</option>
+                  </select>
+                  <span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-text-light text-[16px] pointer-events-none">expand_more</span>
+                </div>
+              </div>
+
+              <!-- Quantity -->
+              <div class="flex flex-col gap-2">
+                <label class="text-xs font-bold text-text-muted uppercase tracking-widest">Quantity</label>
+                <div class="flex bg-surface rounded-xl p-1 border border-border-soft gap-1">
+                  <button onclick="setQty(this, 3)" class="qty-btn active flex-1 py-2 text-xs font-bold rounded-lg transition-all">3</button>
+                  <button onclick="setQty(this, 5)" class="qty-btn flex-1 py-2 text-xs font-bold rounded-lg text-text-muted hover:text-text-dark transition-all">5</button>
+                  <button onclick="setQty(this, 10)" class="qty-btn flex-1 py-2 text-xs font-bold rounded-lg text-text-muted hover:text-text-dark transition-all">10</button>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Generate Button -->
+            <button
+              id="generateBtn"
+              onclick="generateQuotes()"
+              class="w-full py-4 tactical-gradient text-white font-headline font-bold text-base rounded-xl shadow-tactical hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3">
+              <span id="generateIcon" class="material-symbols-outlined filled text-[20px]">auto_awesome</span>
+              <span id="generateLabel">Generate Quotes</span>
+            </button>
+
+          </div>
+
+          <!-- Recent Generations -->
+          <div class="flex flex-col gap-4">
+            <h3 class="text-[10px] font-bold text-text-muted uppercase tracking-widest">Recent Generations</h3>
+            <div class="space-y-2">
+
+              <div class="flex items-center justify-between p-3.5 bg-card-bg rounded-xl border border-border-soft group hover:shadow-natural transition-all cursor-pointer">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-gold/15 flex items-center justify-center flex-shrink-0">
+                    <span class="material-symbols-outlined text-gold-dim text-[18px]">history</span>
+                  </div>
+                  <div>
+                    <p class="text-sm font-bold text-text-dark leading-none">Season of Waiting</p>
+                    <p class="text-[10px] text-text-light mt-1">3 quotes · 12 min ago</p>
+                  </div>
+                </div>
+                <span class="material-symbols-outlined text-text-light text-[18px] opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+              </div>
+
+              <div class="flex items-center justify-between p-3.5 bg-card-bg rounded-xl border border-border-soft group hover:shadow-natural transition-all cursor-pointer">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-gold/15 flex items-center justify-center flex-shrink-0">
+                    <span class="material-symbols-outlined text-gold-dim text-[18px]">history</span>
+                  </div>
+                  <div>
+                    <p class="text-sm font-bold text-text-dark leading-none">Strength in Community</p>
+                    <p class="text-[10px] text-text-light mt-1">5 quotes · 2 hours ago</p>
+                  </div>
+                </div>
+                <span class="material-symbols-outlined text-text-light text-[18px] opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+              </div>
+
+              <div class="flex items-center justify-between p-3.5 bg-card-bg rounded-xl border border-border-soft group hover:shadow-natural transition-all cursor-pointer">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-gold/15 flex items-center justify-center flex-shrink-0">
+                    <span class="material-symbols-outlined text-gold-dim text-[18px]">history</span>
+                  </div>
+                  <div>
+                    <p class="text-sm font-bold text-text-dark leading-none">Walking in Purpose</p>
+                    <p class="text-[10px] text-text-light mt-1">5 quotes · Yesterday</p>
+                  </div>
+                </div>
+                <span class="material-symbols-outlined text-text-light text-[18px] opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ============================
+             RIGHT: RESULTS
+        ============================ -->
+        <div class="lg:col-span-7 flex flex-col gap-5">
+
+          <!-- Results Header -->
+          <div class="flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <h2 class="text-xl lg:text-2xl font-headline font-bold text-text-dark">Suggestions</h2>
+              <span id="resultCount" class="px-2.5 py-1 rounded-lg bg-cream text-text-muted text-[10px] font-bold border border-border-soft">3 RESULTS</span>
+            </div>
+            <button onclick="rerollAll()" class="text-xs font-bold text-primary flex items-center gap-1.5 hover:underline underline-offset-2 transition-all">
+              <span class="material-symbols-outlined text-[16px]">refresh</span>
+              Reroll All
+            </button>
+          </div>
+
+          <!-- Guardrails Banner -->
+          <div class="bg-primary/6 rounded-xl border border-primary/15 px-4 py-3 flex items-center gap-3">
+            <span class="material-symbols-outlined text-primary text-[20px] filled flex-shrink-0">verified_user</span>
+            <p class="text-xs font-medium text-primary leading-relaxed">
+              <span class="font-bold">AI Guardrails Active</span> — Content is filtered for faith-appropriate language and theological accuracy before you see it.
+            </p>
+          </div>
+
+          <!-- Loading State (hidden by default) -->
+          <div id="loadingState" class="hidden space-y-4">
+            <div class="result-card bg-card-bg rounded-2xl p-6 border border-border-soft">
+              <div class="shimmer h-4 w-24 rounded-lg mb-4"></div>
+              <div class="shimmer h-5 w-full rounded-lg mb-2"></div>
+              <div class="shimmer h-5 w-4/5 rounded-lg mb-2"></div>
+              <div class="shimmer h-5 w-3/5 rounded-lg mb-4"></div>
+              <div class="shimmer h-4 w-32 rounded-lg"></div>
+            </div>
+            <div class="result-card bg-card-bg rounded-2xl p-6 border border-border-soft">
+              <div class="shimmer h-4 w-24 rounded-lg mb-4"></div>
+              <div class="shimmer h-5 w-full rounded-lg mb-2"></div>
+              <div class="shimmer h-5 w-3/4 rounded-lg mb-4"></div>
+              <div class="shimmer h-4 w-32 rounded-lg"></div>
+            </div>
+          </div>
+
+          <!-- Results List -->
+          <div id="resultsList" class="space-y-4">
+
+            <!-- Result Card 1 -->
+            <div class="result-card card-dismiss bg-card-bg rounded-2xl p-6 shadow-natural border border-border-soft hover:shadow-lifted transition-all group">
+              <div class="flex justify-between items-start mb-4">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-[10px] font-bold">
+                  <span class="material-symbols-outlined text-[13px] filled">check_circle</span>
+                  SCRIPTURE VERIFIED
+                </span>
+                <button class="text-text-light hover:text-text-muted transition-colors">
+                  <span class="material-symbols-outlined text-[20px]">more_vert</span>
+                </button>
+              </div>
+              <blockquote class="font-headline font-bold text-base lg:text-lg text-text-dark leading-relaxed mb-4">
+                "Even when the road ahead seems clouded in mist, trust that the Light of the World has already carved the path for your feet to follow."
+              </blockquote>
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-border-soft">
+                <cite class="text-sm font-medium text-text-muted not-italic italic">— Adapted from Isaiah 42:16</cite>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <button title="Save to Drafts" class="p-2 rounded-xl hover:bg-cream text-text-light hover:text-gold-dim transition-all">
+                    <span class="material-symbols-outlined text-[18px]">bookmark</span>
+                  </button>
+                  <button title="Reject" onclick="dismissCard(this)" class="p-2 rounded-xl hover:bg-action/10 text-text-light hover:text-action transition-all">
+                    <span class="material-symbols-outlined text-[18px]">close</span>
+                  </button>
+                  <button onclick="editQuote(this)" class="px-4 py-2 bg-cream text-text-dark text-xs font-bold rounded-xl hover:bg-surface border border-border-soft transition-all">
+                    Edit & Use
+                  </button>
+                  <button onclick="useQuote(this)" class="px-4 py-2 tactical-gradient text-white text-xs font-bold rounded-xl hover:scale-[1.02] transition-all shadow-tactical">
+                    Use This
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Result Card 2 -->
+            <div class="result-card card-dismiss bg-card-bg rounded-2xl p-6 shadow-natural border border-border-soft hover:shadow-lifted transition-all group">
+              <div class="flex justify-between items-start mb-4">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-[10px] font-bold">
+                  <span class="material-symbols-outlined text-[13px] filled">check_circle</span>
+                  SCRIPTURE VERIFIED
+                </span>
+                <button class="text-text-light hover:text-text-muted transition-colors">
+                  <span class="material-symbols-outlined text-[20px]">more_vert</span>
+                </button>
+              </div>
+              <blockquote class="font-headline font-bold text-base lg:text-lg text-text-dark leading-relaxed mb-4">
+                "True courage is not the absence of trembling, but the presence of prayer in the midst of the storm."
+              </blockquote>
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-border-soft">
+                <cite class="text-sm font-medium text-text-muted not-italic italic">— Modern Reflection</cite>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <button title="Save to Drafts" class="p-2 rounded-xl hover:bg-cream text-text-light hover:text-gold-dim transition-all">
+                    <span class="material-symbols-outlined text-[18px]">bookmark</span>
+                  </button>
+                  <button title="Reject" onclick="dismissCard(this)" class="p-2 rounded-xl hover:bg-action/10 text-text-light hover:text-action transition-all">
+                    <span class="material-symbols-outlined text-[18px]">close</span>
+                  </button>
+                  <button onclick="editQuote(this)" class="px-4 py-2 bg-cream text-text-dark text-xs font-bold rounded-xl hover:bg-surface border border-border-soft transition-all">
+                    Edit & Use
+                  </button>
+                  <button onclick="useQuote(this)" class="px-4 py-2 tactical-gradient text-white text-xs font-bold rounded-xl hover:scale-[1.02] transition-all shadow-tactical">
+                    Use This
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Result Card 3 -->
+            <div class="result-card card-dismiss bg-card-bg rounded-2xl p-6 shadow-natural border border-border-soft hover:shadow-lifted transition-all group">
+              <div class="flex justify-between items-start mb-4">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gold/15 text-gold-dim text-[10px] font-bold">
+                  <span class="material-symbols-outlined text-[13px]">info</span>
+                  FAITH COMMENTARY
+                </span>
+                <button class="text-text-light hover:text-text-muted transition-colors">
+                  <span class="material-symbols-outlined text-[20px]">more_vert</span>
+                </button>
+              </div>
+              <blockquote class="font-headline font-bold text-base lg:text-lg text-text-dark leading-relaxed mb-4">
+                "The strength you seek is often found in the surrender you avoid."
+              </blockquote>
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-border-soft">
+                <cite class="text-sm font-medium text-text-muted not-italic italic">— Faith Commentary</cite>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <button title="Save to Drafts" class="p-2 rounded-xl hover:bg-cream text-text-light hover:text-gold-dim transition-all">
+                    <span class="material-symbols-outlined text-[18px]">bookmark</span>
+                  </button>
+                  <button title="Reject" onclick="dismissCard(this)" class="p-2 rounded-xl hover:bg-action/10 text-text-light hover:text-action transition-all">
+                    <span class="material-symbols-outlined text-[18px]">close</span>
+                  </button>
+                  <button onclick="editQuote(this)" class="px-4 py-2 bg-cream text-text-dark text-xs font-bold rounded-xl hover:bg-surface border border-border-soft transition-all">
+                    Edit & Use
+                  </button>
+                  <button onclick="useQuote(this)" class="px-4 py-2 tactical-gradient text-white text-xs font-bold rounded-xl hover:scale-[1.02] transition-all shadow-tactical">
+                    Use This
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- More placeholder -->
+            <div class="p-10 border-2 border-dashed border-border-soft rounded-2xl flex flex-col items-center justify-center opacity-50 hover:opacity-70 transition-opacity cursor-pointer" onclick="generateQuotes()">
+              <span class="material-symbols-outlined text-[36px] text-text-light mb-2">auto_awesome</span>
+              <p class="text-sm font-medium text-text-muted">Generate more suggestions...</p>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================
+       FIXED BATCH ACTIONS BAR
+  ======================================== -->
+  <div id="batchBar" class="absolute bottom-0 left-0 right-0 p-4 z-30 md:left-0">
+    <div class="max-w-3xl mx-auto bg-card-bg/90 backdrop-blur-xl rounded-2xl shadow-lifted border border-border-soft p-3 flex items-center justify-between gap-4">
+
+      <div class="flex items-center gap-3 px-2">
+        <div class="flex -space-x-2">
+          <div class="w-7 h-7 rounded-full tactical-gradient flex items-center justify-center text-[10px] text-white font-bold ring-2 ring-card-bg">3</div>
+          <div class="w-7 h-7 rounded-full bg-gold flex items-center justify-center text-[10px] text-white font-bold ring-2 ring-card-bg">5</div>
+        </div>
+        <span class="text-xs font-bold text-text-dark">
+          <span id="batchCount">3</span> results ready
+        </span>
+      </div>
+
+      <div class="flex items-center gap-2 flex-wrap">
+        <button onclick="clearAll()" class="px-4 py-2 text-xs font-bold text-text-muted hover:text-action transition-colors">
+          Clear All
+        </button>
+        <button onclick="generateQuotes()" class="px-4 py-2 bg-cream text-text-dark text-xs font-bold rounded-xl border border-border-soft hover:bg-surface transition-all flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[16px]">autorenew</span>
+          Generate More
+        </button>
+        <button onclick="useAllAsDrafts()" class="px-5 py-2 tactical-gradient text-white text-xs font-bold rounded-xl hover:scale-[1.02] transition-transform shadow-tactical flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[16px]">inventory_2</span>
+          Use All as Drafts
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================
+     SUCCESS TOAST
+============================================================ -->
+<div id="toast" class="hidden fixed top-6 right-6 z-50 bg-primary text-white px-5 py-3.5 rounded-2xl shadow-lifted flex items-center gap-3 max-w-sm">
+  <span class="material-symbols-outlined text-gold text-[20px] filled">check_circle</span>
+  <p id="toastMsg" class="text-sm font-bold font-body"></p>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT
+============================================================ -->
+<script>
+
+  // ---- SIDEBAR ----
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('hidden');
+    sidebar.classList.toggle('flex');
+    overlay.classList.toggle('hidden');
+  }
+
+  // ---- THEME PILLS ----
+  function selectTheme(btn, theme) {
+    document.querySelectorAll('.theme-pill').forEach(p => {
+      p.classList.remove('active', 'bg-primary', 'text-white');
+      p.classList.add('bg-cream', 'text-text-muted');
+    });
+    btn.classList.add('active', 'bg-primary', 'text-white');
+    btn.classList.remove('bg-cream', 'text-text-muted');
+    document.getElementById('themeInput').value = theme;
+  }
+
+  // ---- SOURCE RADIO ----
+  document.querySelectorAll('.source-radio').forEach(radio => {
+    radio.addEventListener('change', function() {
+      document.querySelectorAll('.source-card').forEach(card => {
+        card.classList.remove('bg-primary', 'text-white', 'border-primary');
+        card.classList.add('bg-card-bg', 'text-text-muted', 'border-border-soft');
+      });
+      const card = this.nextElementSibling;
+      card.classList.add('bg-primary', 'text-white', 'border-primary');
+      card.classList.remove('bg-card-bg', 'text-text-muted', 'border-border-soft');
+    });
+  });
+
+  // ---- QUANTITY ----
+  let selectedQty = 3;
+  function setQty(btn, qty) {
+    selectedQty = qty;
+    document.querySelectorAll('.qty-btn').forEach(b => {
+      b.classList.remove('active', 'bg-primary', 'text-white');
+      b.classList.add('text-text-muted');
+    });
+    btn.classList.add('active', 'bg-primary', 'text-white');
+    btn.classList.remove('text-text-muted');
+  }
+
+  // ---- GENERATE ----
+  function generateQuotes() {
+    const btn   = document.getElementById('generateBtn');
+    const icon  = document.getElementById('generateIcon');
+    const label = document.getElementById('generateLabel');
+    const list  = document.getElementById('resultsList');
+    const loading = document.getElementById('loadingState');
+
+    // Show loading
+    list.classList.add('hidden');
+    loading.classList.remove('hidden');
+    btn.disabled = true;
+    icon.classList.add('spin');
+    label.textContent = 'Generating...';
+
+    // Simulate AI delay
+    setTimeout(() => {
+      loading.classList.add('hidden');
+      list.classList.remove('hidden');
+      btn.disabled = false;
+      icon.classList.remove('spin');
+      label.textContent = 'Generate Quotes';
+      showToast('✦ New quotes generated successfully');
+    }, 2200);
+  }
+
+  // ---- DISMISS CARD ----
+  function dismissCard(btn) {
+    const card = btn.closest('.card-dismiss');
+    card.classList.add('dismissed');
+    setTimeout(() => {
+      card.remove();
+      updateCount();
+    }, 300);
+  }
+
+  // ---- USE QUOTE ----
+  function useQuote(btn) {
+    showToast('Quote saved to drafts — ready to publish');
+    dismissCard(btn);
+  }
+
+  // ---- EDIT QUOTE ----
+  function editQuote(btn) {
+    window.location.href = 'quotes.html';
+  }
+
+  // ---- REROLL ALL ----
+  function rerollAll() {
+    generateQuotes();
+  }
+
+  // ---- CLEAR ALL ----
+  function clearAll() {
+    document.querySelectorAll('.card-dismiss').forEach(card => {
+      card.classList.add('dismissed');
+    });
+    setTimeout(() => {
+      document.querySelectorAll('.card-dismiss.dismissed').forEach(c => c.remove());
+      updateCount();
+    }, 300);
+  }
+
+  // ---- USE ALL AS DRAFTS ----
+  function useAllAsDrafts() {
+    const count = document.querySelectorAll('.card-dismiss').length;
+    showToast(`${count} quotes saved as drafts successfully`);
+    clearAll();
+  }
+
+  // ---- UPDATE COUNT ----
+  function updateCount() {
+    const count = document.querySelectorAll('.card-dismiss:not(.dismissed)').length;
+    document.getElementById('resultCount').textContent = `${count} RESULTS`;
+    document.getElementById('batchCount').textContent = count;
+  }
+
+  // ---- TOAST ----
+  let toastTimer;
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    toast.classList.remove('hidden');
+    toast.classList.add('flex');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.classList.add('hidden');
+      toast.classList.remove('flex');
+    }, 3000);
+  }
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schedule — GSTW Admin</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'primary':       '#1E4060',
+            'primary-dim':   '#152E45',
+            'primary-light': '#2B5780',
+            'action':        '#E25B4D',
+            'action-dim':    '#C84A3E',
+            'gold':          '#D4A24C',
+            'gold-dim':      '#B88A3D',
+            'cream':         '#F7F4ED',
+            'cream-warm':    '#FBF8F2',
+            'dark':          '#16202A',
+            'dark-soft':     '#1F2A35',
+            'text-dark':     '#1A1A1A',
+            'text-muted':    '#5C6B7A',
+            'text-light':    '#8E9AA8',
+            'border-soft':   'rgba(92, 107, 122, 0.15)',
+            'sidebar-bg':    '#0F1E2E',
+            'sidebar-hover': '#1A2D40',
+            'card-bg':       '#FFFFFF',
+            'surface':       '#F0EDE6',
+          },
+          fontFamily: {
+            'headline': ['Plus Jakarta Sans', 'sans-serif'],
+            'body':     ['Manrope', 'sans-serif'],
+          },
+          boxShadow: {
+            'natural':     '0 4px 16px rgba(26, 32, 42, 0.06)',
+            'lifted':      '0 8px 32px rgba(26, 32, 42, 0.10)',
+            'tactical':    '0 4px 20px rgba(30, 64, 96, 0.25)',
+            'action-glow': '0 4px 20px rgba(226, 91, 77, 0.35)',
+            'card':        '0 32px 64px -15px rgba(30, 64, 96, 0.06)',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    body { font-family: 'Manrope', sans-serif; }
+    .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .tactical-gradient { background: linear-gradient(145deg, #152E45, #1E4060); }
+    .action-gradient   { background: linear-gradient(145deg, #E25B4D, #C84A3E); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(30,64,96,0.15); border-radius: 3px; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Calendar day hover */
+    .cal-day { transition: background 0.15s ease; }
+    .cal-day:hover { background: rgba(30,64,96,0.04); }
+    .cal-day.selected { background: rgba(30,64,96,0.06); box-shadow: inset 0 0 0 1.5px rgba(30,64,96,0.2); }
+
+    /* Event pill hover */
+    .event-pill { transition: all 0.15s ease; cursor: pointer; }
+    .event-pill:hover { filter: brightness(0.96); transform: translateX(1px); }
+  </style>
+</head>
+
+<body class="bg-surface text-text-dark min-h-screen flex">
+
+<!-- ============================================================
+     SIDEBAR
+============================================================ -->
+<aside id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-sidebar-bg flex flex-col p-4 gap-2 z-40 hidden md:flex">
+
+  <!-- Logo -->
+  <div class="mb-8 px-4 pt-2">
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-lg border-2 border-primary-light flex items-center justify-center">
+        <span class="font-headline font-extrabold text-gold text-[10px]">GSTW</span>
+      </div>
+      <div>
+        <h1 class="text-base font-headline font-extrabold tracking-tight text-white">STW Admin</h1>
+        <p class="text-[9px] uppercase tracking-[0.2em] text-text-light font-bold">Command Center</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <nav class="flex flex-col gap-1 grow overflow-y-auto">
+    <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">dashboard</span>
+      <span class="font-body text-sm">Dashboard</span>
+    </a>
+    <a href="manage-quotes.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">format_quote</span>
+      <span class="font-body text-sm">Quotes</span>
+    </a>
+    <!-- Schedule ACTIVE -->
+    <a href="#" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-lg font-bold text-sm">
+      <span class="material-symbols-outlined text-[20px]" style="font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24;">calendar_month</span>
+      <span class="font-body text-sm">Schedule</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">auto_awesome</span>
+      <span class="font-body text-sm">AI Generator</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">tag</span>
+      <span class="font-body text-sm">Hashtags</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">folder_shared</span>
+      <span class="font-body text-sm">Projects</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">analytics</span>
+      <span class="font-body text-sm">Analytics</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">group</span>
+      <span class="font-body text-sm">Users</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">settings</span>
+      <span class="font-body text-sm">Settings</span>
+    </a>
+  </nav>
+
+  <!-- Bottom -->
+  <div class="mt-auto pt-4 flex flex-col gap-4">
+    <a href="quotes.html" class="action-gradient text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 shadow-action-glow hover:scale-[1.02] transition-transform">
+      <span class="material-symbols-outlined text-sm">add_circle</span>
+      <span class="text-xs uppercase tracking-widest">Create New Quote</span>
+    </a>
+    <div class="flex items-center gap-3 px-2 py-3 border-t border-white/10">
+      <div class="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center text-white font-headline font-bold text-sm">DA</div>
+      <div>
+        <p class="text-sm font-bold text-white leading-none">David Hearth</p>
+        <p class="text-[10px] text-text-light">Super Admin</p>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Mobile Overlay -->
+<div id="sidebarOverlay" class="fixed inset-0 bg-dark/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<!-- ============================================================
+     MAIN
+============================================================ -->
+<div class="flex-1 md:ml-64 flex flex-col min-h-screen">
+
+  <!-- TOP HEADER -->
+  <header class="flex justify-between items-center w-full px-6 lg:px-8 py-4 sticky top-0 z-20 bg-surface/80 backdrop-blur-xl border-b border-border-soft">
+    <div class="flex items-center gap-4">
+      <button onclick="toggleSidebar()" class="md:hidden text-text-dark">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+      <nav class="flex items-center gap-2 text-sm font-body">
+        <a href="index.html" class="text-text-muted hover:text-primary transition-colors">Dashboard</a>
+        <span class="material-symbols-outlined text-text-light text-sm">chevron_right</span>
+        <span class="text-primary font-bold border-b-2 border-primary pb-0.5">Schedule</span>
+      </nav>
+    </div>
+    <div class="flex items-center gap-4 lg:gap-6">
+      <div class="flex items-center gap-3">
+        <button class="relative text-text-muted hover:text-primary transition-colors">
+          <span class="material-symbols-outlined">notifications</span>
+          <span class="absolute -top-1 -right-1 w-2 h-2 bg-action rounded-full"></span>
+        </button>
+        <button class="text-text-muted hover:text-primary transition-colors hidden sm:block">
+          <span class="material-symbols-outlined">help</span>
+        </button>
+      </div>
+      <div class="h-8 w-px bg-border-soft hidden sm:block"></div>
+      <div class="flex items-center gap-3">
+        <div class="text-right hidden sm:block">
+          <p class="text-sm font-bold text-text-dark">Super Admin</p>
+          <button class="text-[10px] font-bold text-action uppercase tracking-widest flex items-center gap-1 hover:opacity-80 ml-auto">
+            Logout <span class="material-symbols-outlined text-[12px]">logout</span>
+          </button>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white font-headline font-bold text-sm">DA</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================
+       MAIN CANVAS
+  ======================================== -->
+  <main class="p-6 lg:p-8 flex-1 flex gap-6 xl:gap-8 items-start">
+
+    <!-- LEFT: Calendar Area -->
+    <div class="flex-1 min-w-0 space-y-6">
+
+      <!-- Page Header -->
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h2 class="font-headline font-extrabold text-3xl lg:text-4xl text-text-dark tracking-tight">Schedule</h2>
+          <p class="text-text-muted font-body mt-1">Plan and manage your daily briefings</p>
+        </div>
+        <a href="quotes.html" class="tactical-gradient text-white font-headline font-bold px-5 py-3 rounded-xl shadow-tactical hover:scale-[1.02] transition-transform flex items-center gap-2 self-start sm:self-auto">
+          <span class="material-symbols-outlined text-[18px]">add_circle</span>
+          Create New Quote
+        </a>
+      </div>
+
+      <!-- Stats Bar -->
+      <div class="bg-card-bg rounded-2xl px-6 py-4 flex flex-wrap items-center gap-6 shadow-natural border border-border-soft">
+        <div class="flex items-center gap-2.5">
+          <div class="w-3 h-3 rounded-full bg-primary"></div>
+          <p class="text-sm font-body font-semibold text-text-dark">
+            <span class="font-bold text-primary">8</span> published this month
+          </p>
+        </div>
+        <div class="w-px h-4 bg-border-soft hidden sm:block"></div>
+        <div class="flex items-center gap-2.5">
+          <div class="w-3 h-3 rounded-full bg-gold"></div>
+          <p class="text-sm font-body font-semibold text-text-dark">
+            <span class="font-bold text-gold-dim">12</span> scheduled
+          </p>
+        </div>
+        <div class="w-px h-4 bg-border-soft hidden sm:block"></div>
+        <div class="flex items-center gap-2.5">
+          <div class="w-3 h-3 rounded-full bg-text-light"></div>
+          <p class="text-sm font-body font-semibold text-text-dark">
+            <span class="font-bold text-text-muted">4</span> drafts waiting
+          </p>
+        </div>
+      </div>
+
+      <!-- Calendar Toolbar -->
+      <div class="bg-card-bg rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-natural border border-border-soft">
+
+        <!-- View Toggle -->
+        <div class="flex bg-surface p-1 rounded-xl gap-1">
+          <button id="monthBtn" onclick="setView('month', this)" class="px-4 py-2 rounded-lg bg-card-bg text-primary font-bold shadow-natural text-sm transition-all">
+            Month
+          </button>
+          <button id="weekBtn" onclick="setView('week', this)" class="px-4 py-2 rounded-lg text-text-muted font-medium text-sm hover:text-primary transition-all">
+            Week
+          </button>
+        </div>
+
+        <!-- Month Navigation -->
+        <div class="flex items-center gap-4">
+          <button onclick="changeMonth(-1)" class="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-cream text-text-muted hover:text-primary transition-all">
+            <span class="material-symbols-outlined text-[20px]">chevron_left</span>
+          </button>
+          <h3 id="calMonthLabel" class="font-headline font-bold text-base lg:text-lg text-text-dark min-w-[160px] text-center">
+            December 2024
+          </h3>
+          <button onclick="changeMonth(1)" class="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-cream text-text-muted hover:text-primary transition-all">
+            <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+          </button>
+        </div>
+
+        <!-- Legend -->
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-text-light">
+            <span class="w-2 h-2 rounded-full bg-primary inline-block"></span> Published
+          </div>
+          <div class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-text-light">
+            <span class="w-2 h-2 rounded-full bg-gold inline-block"></span> Scheduled
+          </div>
+          <div class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-text-light">
+            <span class="w-2 h-2 rounded-full bg-text-light inline-block"></span> Draft
+          </div>
+        </div>
+
+      </div>
+
+      <!-- CALENDAR GRID -->
+      <div class="bg-card-bg rounded-2xl overflow-hidden shadow-natural border border-border-soft">
+
+        <!-- Day Headers -->
+        <div class="grid grid-cols-7 text-center py-3 border-b border-border-soft bg-surface/60">
+          <div class="text-[10px] font-bold text-text-muted tracking-widest uppercase">Sun</div>
+          <div class="text-[10px] font-bold text-text-muted tracking-widest uppercase">Mon</div>
+          <div class="text-[10px] font-bold text-text-muted tracking-widest uppercase">Tue</div>
+          <div class="text-[10px] font-bold text-text-muted tracking-widest uppercase">Wed</div>
+          <div class="text-[10px] font-bold text-text-muted tracking-widest uppercase">Thu</div>
+          <div class="text-[10px] font-bold text-text-muted tracking-widest uppercase">Fri</div>
+          <div class="text-[10px] font-bold text-text-muted tracking-widest uppercase">Sat</div>
+        </div>
+
+        <!-- Calendar Rows -->
+        <div id="calGrid" class="grid grid-cols-7 grid-rows-5" style="min-height: 580px;">
+
+          <!-- Row 1: Nov overflow -->
+          <div class="cal-day border-r border-b border-border-soft p-2 bg-surface/40">
+            <span class="text-[10px] font-bold text-text-light">24</span>
+          </div>
+          <div class="cal-day border-r border-b border-border-soft p-2 bg-surface/40">
+            <span class="text-[10px] font-bold text-text-light">25</span>
+          </div>
+          <div class="cal-day border-r border-b border-border-soft p-2 bg-surface/40">
+            <span class="text-[10px] font-bold text-text-light">26</span>
+          </div>
+          <div class="cal-day border-r border-b border-border-soft p-2 bg-surface/40">
+            <span class="text-[10px] font-bold text-text-light">27</span>
+          </div>
+          <div class="cal-day border-r border-b border-border-soft p-2 bg-surface/40">
+            <span class="text-[10px] font-bold text-text-light">28</span>
+          </div>
+          <div class="cal-day border-r border-b border-border-soft p-2 bg-surface/40">
+            <span class="text-[10px] font-bold text-text-light">29</span>
+          </div>
+          <div class="cal-day border-b border-border-soft p-2 bg-surface/40">
+            <span class="text-[10px] font-bold text-text-light">30</span>
+          </div>
+
+          <!-- Row 2: Dec 1-7 -->
+          <div class="cal-day border-r border-b border-border-soft p-2 cursor-pointer" onclick="selectDay(1)">
+            <span class="text-[11px] font-bold text-text-muted">1</span>
+          </div>
+          <div class="cal-day border-r border-b border-border-soft p-2 cursor-pointer" onclick="selectDay(2)">
+            <span class="text-[11px] font-bold text-text-muted">2</span>
+          </div>
+          <div class="cal-day border-r border-b border-border-soft p-2 cursor-pointer" onclick="selectDay(3)">
+            <span class="text-[11px] font-bold text-text-muted">3</span>
+          </div>
+          <div class="cal-day border-r border-b border-border-soft p-2 cursor-pointer" onclick="selectDay(4)">
+            <span class="text-[11px] font-bold text-text-muted">4</span>
+          </div>
+          <div class="cal-day border-r border-b border-border-soft p-2 cursor-pointer" onclick="selectDay(5)">
+            <span class="text-[11px] font-bold text-text-muted">5</span>
+          </div>
+          <div class="cal-day border-r border-b border-border-soft p-2 cursor-pointer" onclick="selectDay(6)">
+            <span class="text-[11px] font-bold text-text-muted">6</span>
+          </div>
+          <div class="cal-day border-b border-border-soft p-2 cursor-pointer" onclick="selectDay(7)">
+            <span class="text-[11px] font-bold text-text-muted">7</span>
+          </div>
+
+          <!-- Row 3: Dec 8-14 -->
+          <!-- Dec 8: Published event -->
+          <div class="cal-day border-r border-b border-border-soft p-2 cursor-pointer" onclick="selectDay(8)">
+            <span class="text-[11px] font-bold text-text-muted">8</span>
+            <div class="mt-1.5">
+              <div class="event-pill border-l-[3px] border-primary bg-primary/10 px-1.5 py-1 rounded-r-md">
+                <p class="text-[9px] font-bold text-primary leading-none">09:00</p>
+                <p class="text-[9px] text-text-dark truncate mt-0.5">For I know the plans...</p>
+              </div>
+            </div>
+          </div>
+          <div class="cal-day border-r border-b border-border-soft p-2 cursor-pointer" onclick="selectDay(9)">
+            <span class="text-[11px] font-bold text-text-muted">9</span>
+          </div>
+          <div class="cal-day border-r border-b border-border-soft p-2 cursor-pointer" onclick="selectDay(10)">
+            <span class="text-[11px] font-bold text-text-muted">10</span>
+          </div>
+          <!-- Dec 11: Scheduled event -->
+          <div class="cal-day border-r border-b border-border-soft p-2 cursor-pointer" onclick="selectDay(11)">
+            <span class="text-[11px] font-bold text-text-muted">11</span>
+            <div class="mt-1.5">
+              <div class="event-pill border-l-[3px] border-gold bg-gold/10 px-1.5 py-1 rounded-r-md">
+                <p class="text-[9px] font-bold text-gold-dim leading-none">10:30</p>
+                <p class="text-[9px] text-text-dark truncate mt-0.5">Be strong and courageous...</p>
+              </div>
+            </div>
+          </div>
+          <div class="cal-day border-r border-b border-border-soft p-2 cursor-pointer" onclick="selectDay(12)">
+            <span class="text-[11px] font-bold text-text-muted">12</span>
+          </div>
+          <div class="cal-day border-r border-b border-border-soft p-2 cursor-pointer" onclick="selectDay(13)">
+            <span class="text-[11px] font-bold text-text-muted">13</span>
+          </div>
+          <div class="cal-day border-b border-border-soft p-2 cursor-pointer" onclick="selectDay(14)">
+            <span class="text-[11px] font-bold text-text-muted">14</span>
+          </div>
+
+          <!-- Row 4: Dec 15-21 -->
+          <div class="cal-day border-r border-b border-border-soft p-2 cursor-pointer" onclick="selectDay(15)">
+            <span class="text-[11px] font-bold text-text-muted">15</span>
+          </div>
+          <div class="cal-day border-r border-b border-border-soft p-2 cursor-pointer" onclick="selectDay(16)">
+            <span class="text-[11px] font-bold text-text-muted">16</span>
+          </div>
+
+          <!-- TODAY: Dec 17 -->
+          <div id="day-17" class="cal-day border-r border-b border-border-soft p-2 bg-primary/5 ring-1 ring-inset ring-primary/20 cursor-pointer selected" onclick="selectDay(17)">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="w-6 h-6 flex items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold flex-shrink-0">17</span>
+              <span class="text-[9px] font-bold text-primary uppercase tracking-tight">Today</span>
+            </div>
+            <div class="space-y-1">
+              <div class="event-pill border-l-[3px] border-gold bg-gold/10 px-1.5 py-1 rounded-r-md">
+                <p class="text-[9px] font-bold text-gold-dim leading-none">09:00</p>
+                <p class="text-[9px] text-text-dark truncate mt-0.5">Faith is the substance...</p>
+              </div>
+              <div class="event-pill border-l-[3px] border-text-light bg-surface px-1.5 py-1 rounded-r-md">
+                <p class="text-[9px] font-bold text-text-light leading-none">16:00</p>
+                <p class="text-[9px] text-text-dark truncate mt-0.5">Deep calls to deep...</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="cal-day border-r border-b border-border-soft p-2 cursor-pointer" onclick="selectDay(18)">
+            <span class="text-[11px] font-bold text-text-muted">18</span>
+          </div>
+          <div class="cal-day border-r border-b border-border-soft p-2 cursor-pointer" onclick="selectDay(19)">
+            <span class="text-[11px] font-bold text-text-muted">19</span>
+          </div>
+          <div class="cal-day border-r border-b border-border-soft p-2 cursor-pointer" onclick="selectDay(20)">
+            <span class="text-[11px] font-bold text-text-muted">20</span>
+          </div>
+          <div class="cal-day border-b border-border-soft p-2 cursor-pointer" onclick="selectDay(21)">
+            <span class="text-[11px] font-bold text-text-muted">21</span>
+          </div>
+
+          <!-- Row 5: Dec 22-28 -->
+          <div class="cal-day border-r border-border-soft p-2 cursor-pointer" onclick="selectDay(22)">
+            <span class="text-[11px] font-bold text-text-muted">22</span>
+          </div>
+          <div class="cal-day border-r border-border-soft p-2 cursor-pointer" onclick="selectDay(23)">
+            <span class="text-[11px] font-bold text-text-muted">23</span>
+          </div>
+          <!-- Dec 24: Scheduled -->
+          <div class="cal-day border-r border-border-soft p-2 cursor-pointer" onclick="selectDay(24)">
+            <span class="text-[11px] font-bold text-text-muted">24</span>
+            <div class="mt-1.5">
+              <div class="event-pill border-l-[3px] border-gold bg-gold/10 px-1.5 py-1 rounded-r-md">
+                <p class="text-[9px] font-bold text-gold-dim leading-none">08:00</p>
+                <p class="text-[9px] text-text-dark truncate mt-0.5">Now faith is the substance...</p>
+              </div>
+            </div>
+          </div>
+          <div class="cal-day border-r border-border-soft p-2 cursor-pointer" onclick="selectDay(25)">
+            <span class="text-[11px] font-bold text-text-muted">25</span>
+          </div>
+          <div class="cal-day border-r border-border-soft p-2 cursor-pointer" onclick="selectDay(26)">
+            <span class="text-[11px] font-bold text-text-muted">26</span>
+          </div>
+          <div class="cal-day border-r border-border-soft p-2 cursor-pointer" onclick="selectDay(27)">
+            <span class="text-[11px] font-bold text-text-muted">27</span>
+          </div>
+          <div class="cal-day border-border-soft p-2 cursor-pointer" onclick="selectDay(28)">
+            <span class="text-[11px] font-bold text-text-muted">28</span>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================================
+         RIGHT: DAY DETAIL PANEL
+    ============================================================ -->
+    <aside id="dayPanel" class="hidden xl:flex w-80 bg-card-bg rounded-2xl flex-col border border-border-soft shadow-lifted self-start sticky top-24 overflow-hidden" style="max-height: calc(100vh - 7rem);">
+
+      <!-- Panel Header -->
+      <div class="p-5 border-b border-border-soft">
+        <div class="flex items-center justify-between mb-2">
+          <span class="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest">Selected Date</span>
+          <button onclick="closePanel()" class="text-text-light hover:text-text-muted transition-colors">
+            <span class="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+        <h3 id="panelTitle" class="font-headline font-extrabold text-lg text-text-dark">Tuesday, Dec 17</h3>
+        <p id="panelSubtitle" class="text-sm text-text-muted mt-0.5">2 activities planned</p>
+      </div>
+
+      <!-- Timeline -->
+      <div class="flex-1 overflow-y-auto no-scrollbar p-5 space-y-5">
+
+        <!-- Event 1: Scheduled -->
+        <div class="relative pl-6 before:absolute before:left-[3px] before:top-3 before:bottom-0 before:w-px before:bg-border-soft">
+          <div class="absolute left-0 top-2.5 w-2 h-2 rounded-full bg-gold border-2 border-card-bg ring-1 ring-gold"></div>
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-bold text-gold-dim">09:00 AM</span>
+            <span class="text-[10px] font-bold text-text-light uppercase tracking-wider">Scheduled</span>
+          </div>
+          <div class="bg-cream rounded-xl p-4 border border-border-soft group hover:shadow-natural transition-all">
+            <p class="text-sm font-body font-medium italic text-text-dark leading-relaxed">
+              "Faith is the substance of things hoped for, the evidence of things not seen."
+            </p>
+            <p class="text-xs font-bold text-primary mt-3">— Hebrews 11:1</p>
+            <div class="mt-3 pt-3 border-t border-border-soft flex gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button class="text-[10px] font-bold text-primary flex items-center gap-1 hover:opacity-80">
+                <span class="material-symbols-outlined text-[14px]">edit</span> Edit
+              </button>
+              <button class="text-[10px] font-bold text-action flex items-center gap-1 hover:opacity-80">
+                <span class="material-symbols-outlined text-[14px]">delete</span> Delete
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Event 2: Draft -->
+        <div class="relative pl-6 before:absolute before:left-[3px] before:top-3 before:bottom-0 before:w-px before:bg-border-soft">
+          <div class="absolute left-0 top-2.5 w-2 h-2 rounded-full bg-text-light border-2 border-card-bg ring-1 ring-text-light"></div>
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-bold text-text-muted">04:00 PM</span>
+            <span class="text-[10px] font-bold text-text-light uppercase tracking-wider">Draft</span>
+          </div>
+          <div class="bg-cream rounded-xl p-4 border border-dashed border-border-soft group hover:shadow-natural transition-all">
+            <p class="text-sm font-body font-medium italic text-text-dark leading-relaxed opacity-80">
+              "Deep calls to deep in the roar of your waterfalls; all your waves and breakers have swept over me."
+            </p>
+            <p class="text-xs font-bold text-primary mt-3">— Psalm 42:7</p>
+            <div class="mt-3 pt-3 border-t border-border-soft flex gap-4">
+              <button class="text-[10px] font-bold text-primary flex items-center gap-1 hover:opacity-80">
+                <span class="material-symbols-outlined text-[14px]">publish</span> Finalize
+              </button>
+              <button class="text-[10px] font-bold text-text-muted flex items-center gap-1 hover:opacity-80">
+                <span class="material-symbols-outlined text-[14px]">edit</span> Edit
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Insight Card -->
+        <div class="bg-primary/5 rounded-xl p-4 border-l-4 border-primary/30">
+          <p class="text-[10px] font-bold text-primary uppercase tracking-widest mb-2 flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[14px]">lightbulb</span>
+            Command Insight
+          </p>
+          <p class="text-xs text-text-muted leading-relaxed font-body italic">
+            Tuesdays typically see higher engagement on devotional quotes. Consider moving the Psalm 42 draft to a 7:00 PM slot for maximum reach.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Panel Footer -->
+      <div class="p-4 border-t border-border-soft">
+        <button class="w-full py-3 bg-cream hover:bg-surface text-primary font-bold rounded-xl border border-primary/20 hover:border-primary transition-all flex items-center justify-center gap-2 text-sm">
+          <span class="material-symbols-outlined text-[18px]">add</span>
+          Schedule Another
+        </button>
+      </div>
+
+    </aside>
+
+  </main>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT
+============================================================ -->
+<script>
+
+  // ---- SIDEBAR ----
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('hidden');
+    sidebar.classList.toggle('flex');
+    overlay.classList.toggle('hidden');
+  }
+
+  // ---- VIEW TOGGLE ----
+  function setView(view, btn) {
+    document.querySelectorAll('#monthBtn, #weekBtn').forEach(b => {
+      b.classList.remove('bg-card-bg', 'text-primary', 'font-bold', 'shadow-natural');
+      b.classList.add('text-text-muted', 'font-medium');
+    });
+    btn.classList.add('bg-card-bg', 'text-primary', 'font-bold', 'shadow-natural');
+    btn.classList.remove('text-text-muted', 'font-medium');
+    // TODO: Switch calendar to week view
+    console.log('View:', view);
+  }
+
+  // ---- MONTH NAV ----
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  let currentMonth = 11; // December
+  let currentYear  = 2024;
+
+  function changeMonth(dir) {
+    currentMonth += dir;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    if (currentMonth < 0)  { currentMonth = 11; currentYear--; }
+    document.getElementById('calMonthLabel').textContent = `${months[currentMonth]} ${currentYear}`;
+    // TODO: Re-render calendar grid from Supabase data
+  }
+
+  // ---- DAY SELECTION ----
+  const dayData = {
+    17: {
+      title: 'Tuesday, Dec 17',
+      subtitle: '2 activities planned',
+      isToday: true
+    },
+    8: {
+      title: 'Sunday, Dec 8',
+      subtitle: '1 activity planned',
+      isToday: false
+    },
+    11: {
+      title: 'Wednesday, Dec 11',
+      subtitle: '1 activity planned',
+      isToday: false
+    },
+    24: {
+      title: 'Tuesday, Dec 24',
+      subtitle: '1 activity planned',
+      isToday: false
+    }
+  };
+
+  function selectDay(day) {
+    // Remove selected from all days
+    document.querySelectorAll('.cal-day').forEach(d => d.classList.remove('selected'));
+
+    // Mark selected
+    const cell = document.getElementById(`day-${day}`);
+    if (cell) cell.classList.add('selected');
+
+    // Open panel
+    const panel = document.getElementById('dayPanel');
+    panel.classList.remove('hidden');
+    panel.classList.add('flex');
+
+    // Update panel content
+    const data = dayData[day];
+    if (data) {
+      document.getElementById('panelTitle').textContent = data.title;
+      document.getElementById('panelSubtitle').textContent = data.subtitle;
+    } else {
+      document.getElementById('panelTitle').textContent = `December ${day}, 2024`;
+      document.getElementById('panelSubtitle').textContent = 'No activities scheduled';
+    }
+  }
+
+  function closePanel() {
+    const panel = document.getElementById('dayPanel');
+    panel.classList.add('hidden');
+    panel.classList.remove('flex');
+    document.querySelectorAll('.cal-day').forEach(d => d.classList.remove('selected'));
+  }
+
+  // Open panel on load for today
+  window.addEventListener('load', () => {
+    selectDay(17);
+  });
+
+</script>
+
+</body>
+</html>

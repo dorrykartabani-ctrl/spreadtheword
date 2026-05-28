@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Warriors — GSTW Admin</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'primary':'#1E4060','primary-dim':'#152E45','primary-light':'#2B5780',
+            'action':'#E25B4D','action-dim':'#C84A3E',
+            'gold':'#D4A24C','gold-dim':'#B88A3D',
+            'cream':'#F7F4ED','cream-warm':'#FBF8F2',
+            'dark':'#16202A','dark-soft':'#1F2A35',
+            'text-dark':'#1A1A1A','text-muted':'#5C6B7A','text-light':'#8E9AA8',
+            'border-soft':'rgba(92,107,122,0.15)',
+            'sidebar-bg':'#0F1E2E','sidebar-hover':'#1A2D40',
+            'card-bg':'#FFFFFF','surface':'#F0EDE6',
+          },
+          fontFamily: {
+            'headline':['Plus Jakarta Sans','sans-serif'],
+            'body':['Manrope','sans-serif'],
+          },
+          boxShadow: {
+            'natural':'0 4px 16px rgba(26,32,42,0.06)',
+            'lifted':'0 8px 32px rgba(26,32,42,0.10)',
+            'tactical':'0 4px 20px rgba(30,64,96,0.25)',
+            'action-glow':'0 4px 20px rgba(226,91,77,0.35)',
+            'card':'0 32px 64px -15px rgba(30,64,96,0.06)',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    body{font-family:'Manrope',sans-serif}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle}
+    .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+    .tactical-gradient{background:linear-gradient(145deg,#152E45,#1E4060)}
+    .action-gradient{background:linear-gradient(145deg,#E25B4D,#C84A3E)}
+    ::-webkit-scrollbar{width:5px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:rgba(30,64,96,0.15);border-radius:3px}
+    .no-scrollbar::-webkit-scrollbar{display:none}
+    .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+
+    .filter-tab.active{background:white;color:#1E4060;font-weight:700;box-shadow:0 2px 8px rgba(30,64,96,0.1)}
+
+    /* Detail panel slide */
+    #detailPanel{transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);transform:translateX(100%)}
+    #detailPanel.open{transform:translateX(0)}
+
+    /* Row hover */
+    .warrior-row{transition:all 0.15s}
+    .warrior-row:hover{background:rgba(30,64,96,0.03)}
+    .warrior-row.suspended{border-left:4px solid #E25B4D}
+    .warrior-row.expired{background:rgba(240,237,230,0.5)}
+  </style>
+</head>
+
+<body class="bg-surface text-text-dark min-h-screen flex">
+
+<!-- SIDEBAR -->
+<aside id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-sidebar-bg flex flex-col p-4 gap-2 z-40 hidden md:flex">
+  <div class="mb-8 px-4 pt-2">
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-lg border-2 border-primary-light flex items-center justify-center">
+        <span class="font-headline font-extrabold text-gold text-[10px]">GSTW</span>
+      </div>
+      <div>
+        <h1 class="text-base font-headline font-extrabold tracking-tight text-white">STW Admin</h1>
+        <p class="text-[9px] uppercase tracking-[0.2em] text-text-light font-bold">Command Center</p>
+      </div>
+    </div>
+  </div>
+  <nav class="flex flex-col gap-1 grow overflow-y-auto">
+    <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">dashboard</span><span class="font-body text-sm">Dashboard</span>
+    </a>
+    <a href="manage-quotes.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">format_quote</span><span class="font-body text-sm">Quotes</span>
+    </a>
+    <a href="schedule.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">calendar_today</span><span class="font-body text-sm">Schedule</span>
+    </a>
+    <a href="ai-generator.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">auto_awesome</span><span class="font-body text-sm">AI Generator</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">tag</span><span class="font-body text-sm">Hashtags</span>
+    </a>
+    <a href="projects.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">folder_shared</span><span class="font-body text-sm">Projects</span>
+    </a>
+    <a href="analytics.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">analytics</span><span class="font-body text-sm">Analytics</span>
+    </a>
+    <!-- Warriors ACTIVE -->
+    <a href="#" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-lg font-bold text-sm">
+      <span class="material-symbols-outlined text-[20px] filled">group</span><span class="font-body text-sm">Warriors</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">settings</span><span class="font-body text-sm">Settings</span>
+    </a>
+  </nav>
+  <div class="mt-auto pt-4 flex flex-col gap-4">
+    <a href="quotes.html" class="action-gradient text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 shadow-action-glow hover:scale-[1.02] transition-transform">
+      <span class="material-symbols-outlined text-sm">add_circle</span>
+      <span class="text-xs uppercase tracking-widest">Create New Quote</span>
+    </a>
+    <div class="flex items-center gap-3 px-2 py-3 border-t border-white/10">
+      <div class="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center text-white font-headline font-bold text-sm">DA</div>
+      <div>
+        <p class="text-sm font-bold text-white leading-none">David Hearth</p>
+        <p class="text-[10px] text-text-light">Super Admin</p>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<div id="sidebarOverlay" class="fixed inset-0 bg-dark/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<!-- Panel Overlay -->
+<div id="panelOverlay" class="hidden fixed inset-0 bg-dark/40 z-40" onclick="closeDetail()"></div>
+
+<!-- MAIN -->
+<div class="flex-1 md:ml-64 flex flex-col min-h-screen">
+
+  <!-- HEADER -->
+  <header class="flex justify-between items-center w-full px-6 lg:px-8 py-4 sticky top-0 z-20 bg-surface/80 backdrop-blur-xl border-b border-border-soft">
+    <div class="flex items-center gap-4">
+      <button onclick="toggleSidebar()" class="md:hidden text-text-dark"><span class="material-symbols-outlined">menu</span></button>
+      <nav class="flex items-center gap-2 text-sm font-body">
+        <a href="index.html" class="text-text-muted hover:text-primary transition-colors">Dashboard</a>
+        <span class="material-symbols-outlined text-text-light text-sm">chevron_right</span>
+        <span class="text-primary font-bold border-b-2 border-primary pb-0.5">Warrior Management</span>
+      </nav>
+    </div>
+    <div class="flex items-center gap-4 lg:gap-6">
+      <div class="flex items-center gap-3">
+        <button class="relative text-text-muted hover:text-primary transition-colors">
+          <span class="material-symbols-outlined">notifications</span>
+          <span class="absolute -top-1 -right-1 w-2 h-2 bg-action rounded-full"></span>
+        </button>
+      </div>
+      <div class="h-8 w-px bg-border-soft hidden sm:block"></div>
+      <div class="flex items-center gap-3">
+        <div class="text-right hidden sm:block">
+          <p class="text-sm font-bold text-text-dark">Super Admin</p>
+          <button class="text-[10px] font-bold text-action uppercase tracking-widest flex items-center gap-1 hover:opacity-80 ml-auto">Logout <span class="material-symbols-outlined text-[12px]">logout</span></button>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white font-headline font-bold text-sm">DA</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <main class="p-6 lg:p-8 flex-1">
+    <div class="max-w-7xl mx-auto space-y-6">
+
+      <!-- PAGE HEADER -->
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h2 class="font-headline font-extrabold text-3xl lg:text-4xl text-text-dark tracking-tight">Warrior Management</h2>
+          <p class="text-text-muted font-body mt-1">Manage and support your soldiers across the globe</p>
+        </div>
+        <div class="flex gap-3 flex-wrap">
+          <button class="px-5 py-2.5 border-2 border-border-soft text-text-muted font-bold text-sm rounded-xl hover:border-primary hover:text-primary transition-all flex items-center gap-2">
+            <span class="material-symbols-outlined text-[16px]">download</span> Export List
+          </button>
+          <button class="px-5 py-2.5 bg-cream text-text-light font-bold text-sm rounded-xl flex items-center gap-2 cursor-not-allowed border border-border-soft">
+            <span class="material-symbols-outlined text-[16px]">lock</span> Ministry Accounts
+          </button>
+        </div>
+      </div>
+
+      <!-- STAT CARDS -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <div class="bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft hover:shadow-lifted hover:border-primary/20 transition-all">
+          <p class="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2">Total Warriors</p>
+          <h3 class="text-3xl font-headline font-extrabold text-primary">1,248</h3>
+          <p class="text-xs text-green-600 font-bold mt-1.5 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">trending_up</span> +12% this month
+          </p>
+        </div>
+
+        <div class="bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft hover:shadow-lifted hover:border-primary/20 transition-all">
+          <p class="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2">Active Subs</p>
+          <h3 class="text-3xl font-headline font-extrabold text-primary-light">1,192</h3>
+          <p class="text-xs text-primary font-bold mt-1.5 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px] filled">verified</span> 95% Retention
+          </p>
+        </div>
+
+        <div class="bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft hover:shadow-lifted hover:border-action/20 transition-all">
+          <p class="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2">Suspended</p>
+          <h3 class="text-3xl font-headline font-extrabold text-action">8</h3>
+          <p class="text-xs text-text-muted mt-1.5">Flagged for review</p>
+        </div>
+
+        <div class="bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft hover:shadow-lifted hover:border-gold/20 transition-all">
+          <p class="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2">New Warriors</p>
+          <h3 class="text-3xl font-headline font-extrabold text-gold-dim">48</h3>
+          <p class="text-xs text-gold-dim font-bold mt-1.5 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">new_releases</span> Joined this week
+          </p>
+        </div>
+
+      </div>
+
+      <!-- TOOLBAR -->
+      <div class="bg-card-bg rounded-2xl p-4 shadow-natural border border-border-soft space-y-3">
+        <div class="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3">
+
+          <!-- Filter Tabs -->
+          <div class="flex items-center gap-1 bg-cream p-1.5 rounded-xl">
+            <button onclick="filterWarriors('all',this)" class="filter-tab active px-4 py-2 rounded-lg text-sm transition-all">All Warriors <span class="ml-1 text-text-light font-normal text-xs">1,248</span></button>
+            <button onclick="filterWarriors('active',this)" class="filter-tab px-4 py-2 rounded-lg text-sm text-text-muted transition-all">Active</button>
+            <button onclick="filterWarriors('expired',this)" class="filter-tab px-4 py-2 rounded-lg text-sm text-text-muted transition-all">Expired</button>
+            <button onclick="filterWarriors('suspended',this)" class="filter-tab px-4 py-2 rounded-lg text-sm text-text-muted transition-all">Suspended</button>
+          </div>
+
+          <!-- Search + Actions -->
+          <div class="flex items-center gap-2 w-full xl:w-auto">
+            <div class="relative flex-1 xl:w-64">
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-light text-[18px]">search</span>
+              <input id="searchInput" type="text" oninput="searchWarriors(this.value)"
+                class="w-full pl-10 pr-4 py-2.5 bg-surface border border-border-soft rounded-xl text-sm font-body placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                placeholder="Search by name, email...">
+            </div>
+            <button class="flex items-center gap-1.5 px-4 py-2.5 bg-surface border border-border-soft rounded-xl text-sm font-bold text-text-muted hover:text-primary hover:border-primary transition-all">
+              <span class="material-symbols-outlined text-[18px]">swap_vert</span> Sort
+            </button>
+            <button class="flex items-center gap-1.5 px-4 py-2.5 bg-surface border border-border-soft rounded-xl text-sm font-bold text-text-muted hover:text-primary hover:border-primary transition-all">
+              <span class="material-symbols-outlined text-[18px]">filter_list</span> Filter
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- WARRIOR TABLE -->
+      <div class="bg-card-bg rounded-2xl shadow-card border border-border-soft overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse min-w-[900px]">
+            <thead class="bg-cream text-text-muted uppercase text-[10px] tracking-widest font-bold">
+              <tr>
+                <th class="px-5 py-4 w-12"><input type="checkbox" class="rounded border-border-soft text-primary focus:ring-primary w-4 h-4"></th>
+                <th class="px-5 py-4">Warrior</th>
+                <th class="px-5 py-4">Status</th>
+                <th class="px-5 py-4">Joined</th>
+                <th class="px-5 py-4">Subscription</th>
+                <th class="px-5 py-4 text-center">Shares</th>
+                <th class="px-5 py-4">Last Active</th>
+                <th class="px-5 py-4 w-12"></th>
+              </tr>
+            </thead>
+            <tbody id="warriorTable" class="divide-y divide-border-soft">
+
+              <!-- Sarah Kim — Active -->
+              <tr class="warrior-row cursor-pointer" data-status="active" onclick="openDetail('sarah')">
+                <td class="px-5 py-4" onclick="event.stopPropagation()"><input type="checkbox" class="rounded border-border-soft text-primary focus:ring-primary w-4 h-4"></td>
+                <td class="px-5 py-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-headline font-bold text-sm flex-shrink-0">SK</div>
+                    <div class="min-w-0">
+                      <p class="font-bold text-text-dark truncate">Sarah Kim</p>
+                      <p class="text-xs text-text-light truncate">skim@faithmail.org</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-5 py-4">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-primary/10 text-primary">
+                    <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span> Active
+                  </span>
+                </td>
+                <td class="px-5 py-4 text-sm text-text-muted">Oct 12, 2023</td>
+                <td class="px-5 py-4">
+                  <p class="text-sm font-bold text-text-dark">Annual Plan</p>
+                  <p class="text-[10px] text-text-light uppercase">Expires Sep 2024</p>
+                </td>
+                <td class="px-5 py-4 text-center">
+                  <span class="text-sm font-bold text-text-dark">428</span>
+                  <div class="w-16 h-1.5 bg-surface rounded-full overflow-hidden mt-1 mx-auto">
+                    <div class="h-full tactical-gradient rounded-full" style="width:75%"></div>
+                  </div>
+                </td>
+                <td class="px-5 py-4">
+                  <div class="flex items-center gap-2 text-sm text-text-muted">
+                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> Now
+                  </div>
+                </td>
+                <td class="px-5 py-4">
+                  <button onclick="event.stopPropagation(); openDetail('sarah')" class="text-text-light hover:text-text-muted transition-colors">
+                    <span class="material-symbols-outlined text-[20px]">more_vert</span>
+                  </button>
+                </td>
+              </tr>
+
+              <!-- David Martinez — Active -->
+              <tr class="warrior-row cursor-pointer" data-status="active" onclick="openDetail('david')">
+                <td class="px-5 py-4" onclick="event.stopPropagation()"><input type="checkbox" class="rounded border-border-soft text-primary focus:ring-primary w-4 h-4"></td>
+                <td class="px-5 py-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gold flex items-center justify-center text-white font-headline font-bold text-sm flex-shrink-0">DM</div>
+                    <div class="min-w-0">
+                      <p class="font-bold text-text-dark truncate">David Martinez</p>
+                      <p class="text-xs text-text-light truncate">david.m@globalministry.com</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-5 py-4">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-primary/10 text-primary">
+                    <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span> Active
+                  </span>
+                </td>
+                <td class="px-5 py-4 text-sm text-text-muted">Jan 05, 2024</td>
+                <td class="px-5 py-4">
+                  <p class="text-sm font-bold text-text-dark">Monthly Basic</p>
+                  <p class="text-[10px] text-text-light uppercase">Renews Jun 05</p>
+                </td>
+                <td class="px-5 py-4 text-center">
+                  <span class="text-sm font-bold text-text-dark">112</span>
+                  <div class="w-16 h-1.5 bg-surface rounded-full overflow-hidden mt-1 mx-auto">
+                    <div class="h-full tactical-gradient rounded-full" style="width:33%"></div>
+                  </div>
+                </td>
+                <td class="px-5 py-4">
+                  <div class="flex items-center gap-2 text-sm text-text-muted">
+                    <div class="w-2 h-2 rounded-full bg-primary"></div> 2h ago
+                  </div>
+                </td>
+                <td class="px-5 py-4">
+                  <button onclick="event.stopPropagation()" class="text-text-light hover:text-text-muted transition-colors">
+                    <span class="material-symbols-outlined text-[20px]">more_vert</span>
+                  </button>
+                </td>
+              </tr>
+
+              <!-- James Thompson — Expired -->
+              <tr class="warrior-row expired cursor-pointer" data-status="expired" onclick="openDetail('james')">
+                <td class="px-5 py-4" onclick="event.stopPropagation()"><input type="checkbox" class="rounded border-border-soft text-primary focus:ring-primary w-4 h-4"></td>
+                <td class="px-5 py-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-text-light flex items-center justify-center text-white font-headline font-bold text-sm flex-shrink-0 opacity-60">JT</div>
+                    <div class="min-w-0">
+                      <p class="font-bold text-text-muted truncate">James Thompson</p>
+                      <p class="text-xs text-text-light truncate">james@thompson.me</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-5 py-4">
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-surface text-text-muted">Expired</span>
+                </td>
+                <td class="px-5 py-4 text-sm text-text-light">Aug 20, 2022</td>
+                <td class="px-5 py-4">
+                  <p class="text-sm font-bold text-text-muted">Annual Legacy</p>
+                  <p class="text-[10px] text-action font-bold">Ended May 2024</p>
+                </td>
+                <td class="px-5 py-4 text-center opacity-50">
+                  <span class="text-sm font-bold text-text-muted">2,140</span>
+                  <div class="w-16 h-1.5 bg-surface rounded-full overflow-hidden mt-1 mx-auto">
+                    <div class="h-full bg-text-light rounded-full" style="width:100%"></div>
+                  </div>
+                </td>
+                <td class="px-5 py-4">
+                  <div class="flex items-center gap-2 text-sm text-text-light">
+                    <div class="w-2 h-2 rounded-full bg-text-light/50"></div> 12d ago
+                  </div>
+                </td>
+                <td class="px-5 py-4">
+                  <button onclick="event.stopPropagation()" class="text-text-light hover:text-text-muted transition-colors">
+                    <span class="material-symbols-outlined text-[20px]">more_vert</span>
+                  </button>
+                </td>
+              </tr>
+
+              <!-- Rachel Nguyen — Suspended -->
+              <tr class="warrior-row suspended cursor-pointer" data-status="suspended" onclick="openDetail('rachel')">
+                <td class="px-5 py-4" onclick="event.stopPropagation()"><input type="checkbox" class="rounded border-border-soft text-primary focus:ring-primary w-4 h-4"></td>
+                <td class="px-5 py-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-action/20 flex items-center justify-center text-action font-headline font-bold text-sm flex-shrink-0">RN</div>
+                    <div class="min-w-0">
+                      <p class="font-bold text-action truncate">Rachel Nguyen</p>
+                      <p class="text-xs text-action/60 truncate">rnguyen@proton.me</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-5 py-4">
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-action/10 text-action">Suspended</span>
+                </td>
+                <td class="px-5 py-4 text-sm text-text-muted">Mar 15, 2024</td>
+                <td class="px-5 py-4">
+                  <p class="text-sm font-bold text-text-muted">Free Trial</p>
+                  <p class="text-[10px] text-action font-bold">Suspended by Admin</p>
+                </td>
+                <td class="px-5 py-4 text-center">
+                  <span class="text-sm font-bold text-action">12</span>
+                  <div class="w-16 h-1.5 bg-surface rounded-full overflow-hidden mt-1 mx-auto">
+                    <div class="h-full bg-action rounded-full" style="width:8%"></div>
+                  </div>
+                </td>
+                <td class="px-5 py-4">
+                  <div class="flex items-center gap-2 text-sm text-text-muted">
+                    <div class="w-2 h-2 rounded-full bg-action"></div> 24d ago
+                  </div>
+                </td>
+                <td class="px-5 py-4">
+                  <button onclick="event.stopPropagation()" class="text-text-light hover:text-text-muted transition-colors">
+                    <span class="material-symbols-outlined text-[20px]">more_vert</span>
+                  </button>
+                </td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="p-5 border-t border-border-soft flex flex-col sm:flex-row justify-between items-center gap-3 bg-cream/50">
+          <p class="text-sm text-text-muted font-body">
+            Showing <span class="font-bold text-text-dark">1–4</span> of <span class="font-bold text-text-dark">1,248</span> warriors
+          </p>
+          <div class="flex gap-1">
+            <button class="px-3 py-1.5 bg-surface border border-border-soft text-text-muted rounded-lg text-sm font-bold">Previous</button>
+            <button class="px-3 py-1.5 tactical-gradient text-white rounded-lg text-sm font-bold">1</button>
+            <button class="px-3 py-1.5 bg-surface border border-border-soft text-text-muted rounded-lg text-sm font-medium hover:bg-cream transition-colors">2</button>
+            <button class="px-3 py-1.5 bg-surface border border-border-soft text-text-muted rounded-lg text-sm font-medium hover:bg-cream transition-colors">3</button>
+            <button class="px-3 py-1.5 bg-surface border border-border-soft text-text-muted rounded-lg text-sm font-bold">Next</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PHASE 2 PLACEHOLDER -->
+      <div class="relative opacity-50 mt-4">
+        <div class="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+          <div class="bg-card-bg px-6 py-3 rounded-full shadow-lifted border border-border-soft flex items-center gap-3">
+            <span class="material-symbols-outlined text-gold-dim">lock</span>
+            <span class="font-headline font-bold text-gold-dim">Ministry Accounts — Phase 2</span>
+          </div>
+        </div>
+        <div class="border-2 border-dashed border-border-soft p-8 rounded-2xl bg-cream/40">
+          <h3 class="font-headline text-xl font-bold text-text-light mb-4">Ministry Enterprise Management</h3>
+          <div class="space-y-3">
+            <div class="h-4 bg-surface rounded-lg w-3/4"></div>
+            <div class="h-4 bg-surface rounded-lg w-1/2"></div>
+            <div class="h-4 bg-surface rounded-lg w-2/3"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- DETAIL PANEL -->
+<div id="detailPanel" class="fixed top-0 right-0 w-full sm:w-[440px] h-screen bg-card-bg shadow-lifted z-50 border-l border-border-soft overflow-y-auto no-scrollbar">
+  <div class="p-7 space-y-6">
+
+    <!-- Close -->
+    <div class="flex justify-between items-center">
+      <button onclick="closeDetail()" class="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-cream text-text-muted hover:text-text-dark transition-all">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- Profile -->
+    <div class="tactical-gradient rounded-2xl p-6 text-white relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+      <div class="flex items-center gap-4 relative">
+        <div id="detailAvatar" class="w-16 h-16 rounded-2xl bg-primary-light flex items-center justify-center text-white font-headline font-bold text-xl flex-shrink-0">SK</div>
+        <div>
+          <h3 id="detailName" class="font-headline font-extrabold text-xl text-white">Sarah Kim</h3>
+          <p id="detailEmail" class="text-white/70 text-sm mt-0.5">skim@faithmail.org</p>
+          <span id="detailBadge" class="inline-flex items-center gap-1 mt-2 px-2.5 py-1 bg-white/15 text-white text-[10px] font-bold rounded-full">
+            <span class="w-1.5 h-1.5 bg-green-400 rounded-full"></span> Active Warrior
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info Grid -->
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <p class="text-[10px] uppercase font-bold text-text-light tracking-widest mb-1">Location</p>
+        <p id="detailLocation" class="text-sm font-bold text-text-dark">Seattle, WA</p>
+      </div>
+      <div>
+        <p class="text-[10px] uppercase font-bold text-text-light tracking-widest mb-1">Joined</p>
+        <p id="detailJoined" class="text-sm font-bold text-text-dark">Oct 12, 2023</p>
+      </div>
+      <div>
+        <p class="text-[10px] uppercase font-bold text-text-light tracking-widest mb-1">Warrior ID</p>
+        <p id="detailId" class="text-sm font-bold text-text-dark">#W-482910</p>
+      </div>
+      <div>
+        <p class="text-[10px] uppercase font-bold text-text-light tracking-widest mb-1">Total Shares</p>
+        <p id="detailShares" class="text-sm font-bold text-primary">428</p>
+      </div>
+    </div>
+
+    <!-- Sharing Impact -->
+    <div>
+      <h4 class="font-headline font-bold text-sm text-text-dark mb-4 flex items-center gap-2">
+        <span class="material-symbols-outlined text-gold text-[18px]">auto_awesome</span> Sharing Platforms
+      </h4>
+      <div class="space-y-3">
+        <div>
+          <div class="flex justify-between text-xs font-bold text-text-dark mb-1"><span>Instagram</span><span class="text-primary">64%</span></div>
+          <div class="h-2 bg-surface rounded-full overflow-hidden"><div class="h-full tactical-gradient rounded-full" style="width:64%"></div></div>
+        </div>
+        <div>
+          <div class="flex justify-between text-xs font-bold text-text-dark mb-1"><span>WhatsApp</span><span class="text-primary">28%</span></div>
+          <div class="h-2 bg-surface rounded-full overflow-hidden"><div class="h-full bg-gold rounded-full" style="width:28%"></div></div>
+        </div>
+        <div>
+          <div class="flex justify-between text-xs font-bold text-text-dark mb-1"><span>TikTok</span><span class="text-primary">8%</span></div>
+          <div class="h-2 bg-surface rounded-full overflow-hidden"><div class="h-full bg-text-light rounded-full" style="width:8%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subscription -->
+    <div class="bg-cream rounded-2xl p-5 border-l-4 border-gold">
+      <h4 class="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-3">Subscription Details</h4>
+      <div class="space-y-2.5">
+        <div class="flex justify-between text-sm"><span class="text-text-muted">Plan</span><span id="detailPlan" class="font-bold text-primary">Annual Pro</span></div>
+        <div class="flex justify-between text-sm"><span class="text-text-muted">Monthly Rate</span><span class="font-bold text-text-dark">$3.99</span></div>
+        <div class="flex justify-between text-sm pt-2.5 border-t border-border-soft"><span class="text-text-muted">Next Billing</span><span id="detailBilling" class="font-bold text-text-dark">Sep 12, 2024</span></div>
+      </div>
+      <button class="w-full mt-4 py-2.5 border-2 border-border-soft text-text-muted font-bold text-xs rounded-xl uppercase tracking-widest hover:border-primary hover:text-primary transition-all">
+        View Billing History
+      </button>
+    </div>
+
+    <!-- Admin Actions -->
+    <div class="bg-surface rounded-2xl p-5 border border-border-soft">
+      <h4 class="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-4">Admin Actions</h4>
+      <div class="space-y-2.5">
+        <button class="w-full flex items-center justify-center gap-2 py-3 action-gradient text-white rounded-xl font-bold text-sm shadow-action-glow hover:scale-[1.02] transition-transform">
+          <span class="material-symbols-outlined text-[18px]">block</span> Suspend Warrior
+        </button>
+        <button class="w-full flex items-center justify-center gap-2 py-3 border-2 border-border-soft text-text-muted rounded-xl font-bold text-sm hover:border-primary hover:text-primary transition-all">
+          <span class="material-symbols-outlined text-[18px]">download</span> Export Data
+        </button>
+        <button class="w-full py-2 text-text-light font-bold text-xs uppercase hover:text-text-muted transition-colors">
+          Reset Password
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- JAVASCRIPT -->
+<script>
+
+  function toggleSidebar(){
+    const s=document.getElementById('sidebar'),o=document.getElementById('sidebarOverlay');
+    s.classList.toggle('hidden');s.classList.toggle('flex');o.classList.toggle('hidden');
+  }
+
+  // Filter
+  function filterWarriors(status,btn){
+    document.querySelectorAll('.filter-tab').forEach(t=>{t.classList.remove('active')});
+    btn.classList.add('active');
+    document.querySelectorAll('.warrior-row').forEach(row=>{
+      const s=row.dataset.status;
+      row.style.display=(status==='all'||s===status)?'':'none';
+    });
+  }
+
+  // Search
+  function searchWarriors(q){
+    const query=q.toLowerCase();
+    document.querySelectorAll('.warrior-row').forEach(row=>{
+      row.style.display=row.textContent.toLowerCase().includes(query)?'':'none';
+    });
+  }
+
+  // Detail Panel
+  const warriors={
+    sarah:{name:'Sarah Kim',email:'skim@faithmail.org',initials:'SK',color:'bg-primary',badge:'Active Warrior',badgeColor:'bg-green-400',location:'Seattle, WA',joined:'Oct 12, 2023',id:'#W-482910',shares:'428',plan:'Annual Pro',billing:'Sep 12, 2024'},
+    david:{name:'David Martinez',email:'david.m@globalministry.com',initials:'DM',color:'bg-gold',badge:'Active Warrior',badgeColor:'bg-green-400',location:'Miami, FL',joined:'Jan 05, 2024',id:'#W-501247',shares:'112',plan:'Monthly Basic',billing:'Jun 05, 2024'},
+    james:{name:'James Thompson',email:'james@thompson.me',initials:'JT',color:'bg-text-light',badge:'Expired',badgeColor:'bg-text-light',location:'London, UK',joined:'Aug 20, 2022',id:'#W-228734',shares:'2,140',plan:'Annual Legacy',billing:'Ended May 2024'},
+    rachel:{name:'Rachel Nguyen',email:'rnguyen@proton.me',initials:'RN',color:'bg-action',badge:'Suspended',badgeColor:'bg-action',location:'Toronto, CA',joined:'Mar 15, 2024',id:'#W-549812',shares:'12',plan:'Free Trial',billing:'Suspended'},
+  };
+
+  function openDetail(key){
+    const d=warriors[key]; if(!d) return;
+    document.getElementById('detailName').textContent=d.name;
+    document.getElementById('detailEmail').textContent=d.email;
+    document.getElementById('detailAvatar').textContent=d.initials;
+    document.getElementById('detailAvatar').className=`w-16 h-16 rounded-2xl ${d.color} flex items-center justify-center text-white font-headline font-bold text-xl flex-shrink-0`;
+    document.getElementById('detailBadge').innerHTML=`<span class="w-1.5 h-1.5 ${d.badgeColor} rounded-full"></span> ${d.badge}`;
+    document.getElementById('detailLocation').textContent=d.location;
+    document.getElementById('detailJoined').textContent=d.joined;
+    document.getElementById('detailId').textContent=d.id;
+    document.getElementById('detailShares').textContent=d.shares;
+    document.getElementById('detailPlan').textContent=d.plan;
+    document.getElementById('detailBilling').textContent=d.billing;
+    document.getElementById('detailPanel').classList.add('open');
+    document.getElementById('panelOverlay').classList.remove('hidden');
+    document.body.style.overflow='hidden';
+  }
+
+  function closeDetail(){
+    document.getElementById('detailPanel').classList.remove('open');
+    document.getElementById('panelOverlay').classList.add('hidden');
+    document.body.style.overflow='';
+  }
+
+</script>
+
+</body>
+</html>

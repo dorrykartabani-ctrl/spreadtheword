@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projects & Causes — GSTW Admin</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'primary':       '#1E4060',
+            'primary-dim':   '#152E45',
+            'primary-light': '#2B5780',
+            'action':        '#E25B4D',
+            'action-dim':    '#C84A3E',
+            'gold':          '#D4A24C',
+            'gold-dim':      '#B88A3D',
+            'cream':         '#F7F4ED',
+            'cream-warm':    '#FBF8F2',
+            'dark':          '#16202A',
+            'dark-soft':     '#1F2A35',
+            'text-dark':     '#1A1A1A',
+            'text-muted':    '#5C6B7A',
+            'text-light':    '#8E9AA8',
+            'border-soft':   'rgba(92, 107, 122, 0.15)',
+            'sidebar-bg':    '#0F1E2E',
+            'sidebar-hover': '#1A2D40',
+            'card-bg':       '#FFFFFF',
+            'surface':       '#F0EDE6',
+          },
+          fontFamily: {
+            'headline': ['Plus Jakarta Sans', 'sans-serif'],
+            'body':     ['Manrope', 'sans-serif'],
+          },
+          boxShadow: {
+            'natural':     '0 4px 16px rgba(26, 32, 42, 0.06)',
+            'lifted':      '0 8px 32px rgba(26, 32, 42, 0.10)',
+            'tactical':    '0 4px 20px rgba(30, 64, 96, 0.25)',
+            'action-glow': '0 4px 20px rgba(226, 91, 77, 0.35)',
+            'card':        '0 32px 64px -15px rgba(30, 64, 96, 0.06)',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    body { font-family: 'Manrope', sans-serif; }
+    .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .filled { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .tactical-gradient { background: linear-gradient(145deg, #152E45, #1E4060); }
+    .action-gradient   { background: linear-gradient(145deg, #E25B4D, #C84A3E); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(30,64,96,0.15); border-radius: 3px; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Update note gold border */
+    .update-note {
+      background: #fff;
+      border-left: 4px solid #D4A24C;
+    }
+
+    /* Slide-over panel */
+    #detailPanel {
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: translateX(100%);
+    }
+    #detailPanel.open {
+      transform: translateX(0);
+    }
+
+    /* Filter tab active */
+    .filter-tab.active {
+      color: #1E4060;
+      font-weight: 700;
+      border-bottom-color: #1E4060;
+    }
+
+    /* Card image zoom */
+    .project-card img { transition: transform 0.7s ease; }
+    .project-card:hover img { transform: scale(1.05); }
+  </style>
+</head>
+
+<body class="bg-surface text-text-dark min-h-screen flex">
+
+<!-- ============================================================
+     SIDEBAR
+============================================================ -->
+<aside id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-sidebar-bg flex flex-col p-4 gap-2 z-40 hidden md:flex">
+
+  <!-- Logo -->
+  <div class="mb-8 px-4 pt-2">
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-lg border-2 border-primary-light flex items-center justify-center">
+        <span class="font-headline font-extrabold text-gold text-[10px]">GSTW</span>
+      </div>
+      <div>
+        <h1 class="text-base font-headline font-extrabold tracking-tight text-white">STW Admin</h1>
+        <p class="text-[9px] uppercase tracking-[0.2em] text-text-light font-bold">Command Center</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <nav class="flex flex-col gap-1 grow overflow-y-auto">
+    <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">dashboard</span>
+      <span class="font-body text-sm">Dashboard</span>
+    </a>
+    <a href="manage-quotes.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">format_quote</span>
+      <span class="font-body text-sm">Quotes</span>
+    </a>
+    <a href="schedule.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">calendar_today</span>
+      <span class="font-body text-sm">Schedule</span>
+    </a>
+    <a href="ai-generator.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">auto_awesome</span>
+      <span class="font-body text-sm">AI Generator</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">tag</span>
+      <span class="font-body text-sm">Hashtags</span>
+    </a>
+    <!-- Projects ACTIVE -->
+    <a href="#" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-lg font-bold text-sm">
+      <span class="material-symbols-outlined text-[20px]">folder_shared</span>
+      <span class="font-body text-sm">Projects</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">analytics</span>
+      <span class="font-body text-sm">Analytics</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">group</span>
+      <span class="font-body text-sm">Users</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">settings</span>
+      <span class="font-body text-sm">Settings</span>
+    </a>
+  </nav>
+
+  <!-- Bottom -->
+  <div class="mt-auto pt-4 flex flex-col gap-4">
+    <a href="quotes.html" class="action-gradient text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 shadow-action-glow hover:scale-[1.02] transition-transform">
+      <span class="material-symbols-outlined text-sm">add_circle</span>
+      <span class="text-xs uppercase tracking-widest">Create New Quote</span>
+    </a>
+    <div class="flex items-center gap-3 px-2 py-3 border-t border-white/10">
+      <div class="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center text-white font-headline font-bold text-sm">DA</div>
+      <div>
+        <p class="text-sm font-bold text-white leading-none">David Hearth</p>
+        <p class="text-[10px] text-text-light">Super Admin</p>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Mobile Overlay -->
+<div id="sidebarOverlay" class="fixed inset-0 bg-dark/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<!-- Detail Panel Overlay -->
+<div id="panelOverlay" class="hidden fixed inset-0 bg-dark/40 z-40" onclick="closePanel()"></div>
+
+<!-- ============================================================
+     MAIN
+============================================================ -->
+<div class="flex-1 md:ml-64 flex flex-col min-h-screen">
+
+  <!-- TOP HEADER -->
+  <header class="flex justify-between items-center w-full px-6 lg:px-8 py-4 sticky top-0 z-20 bg-surface/80 backdrop-blur-xl border-b border-border-soft">
+    <div class="flex items-center gap-4">
+      <button onclick="toggleSidebar()" class="md:hidden text-text-dark">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+      <nav class="flex items-center gap-2 text-sm font-body">
+        <a href="index.html" class="text-text-muted hover:text-primary transition-colors">Dashboard</a>
+        <span class="material-symbols-outlined text-text-light text-sm">chevron_right</span>
+        <span class="text-primary font-bold border-b-2 border-primary pb-0.5">Projects & Causes</span>
+      </nav>
+    </div>
+    <div class="flex items-center gap-4 lg:gap-6">
+      <div class="flex items-center gap-3">
+        <button class="relative text-text-muted hover:text-primary transition-colors">
+          <span class="material-symbols-outlined">notifications</span>
+          <span class="absolute -top-1 -right-1 w-2 h-2 bg-action rounded-full"></span>
+        </button>
+        <button class="text-text-muted hover:text-primary transition-colors hidden sm:block">
+          <span class="material-symbols-outlined">help</span>
+        </button>
+      </div>
+      <div class="h-8 w-px bg-border-soft hidden sm:block"></div>
+      <div class="flex items-center gap-3">
+        <div class="text-right hidden sm:block">
+          <p class="text-sm font-bold text-text-dark">Super Admin</p>
+          <button class="text-[10px] font-bold text-action uppercase tracking-widest flex items-center gap-1 hover:opacity-80 ml-auto">
+            Logout <span class="material-symbols-outlined text-[12px]">logout</span>
+          </button>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white font-headline font-bold text-sm">DA</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================
+       MAIN CONTENT
+  ======================================== -->
+  <main class="p-6 lg:p-8 flex-1">
+    <div class="max-w-7xl mx-auto space-y-8">
+
+      <!-- PAGE HEADER -->
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h2 class="font-headline font-extrabold text-3xl lg:text-4xl text-text-dark tracking-tight">Projects & Causes</h2>
+          <p class="text-text-muted font-body mt-1">Track where the mission's resources are deployed</p>
+        </div>
+        <div class="flex gap-3 flex-wrap">
+          <button class="px-5 py-3 border-2 border-border-soft text-text-muted font-bold text-sm rounded-xl hover:border-primary hover:text-primary transition-all">
+            View on User App
+          </button>
+          <button onclick="openCreateModal()" class="tactical-gradient text-white font-bold text-sm px-5 py-3 rounded-xl shadow-tactical hover:scale-[1.02] transition-transform flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            Create Project
+          </button>
+        </div>
+      </div>
+
+      <!-- STAT CARDS -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
+
+        <div class="bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft hover:shadow-lifted transition-all">
+          <div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+            <span class="material-symbols-outlined text-primary text-[18px]">savings</span>
+          </div>
+          <p class="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1">Raised This Year</p>
+          <h3 class="font-headline font-extrabold text-2xl text-text-dark">$12,480</h3>
+        </div>
+
+        <div class="bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft hover:shadow-lifted transition-all">
+          <div class="w-9 h-9 rounded-xl bg-gold/15 flex items-center justify-center mb-3">
+            <span class="material-symbols-outlined text-gold-dim text-[18px]">folder_shared</span>
+          </div>
+          <p class="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1">Active Projects</p>
+          <h3 class="font-headline font-extrabold text-2xl text-text-dark">3</h3>
+        </div>
+
+        <div class="bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft hover:shadow-lifted transition-all">
+          <div class="w-9 h-9 rounded-xl bg-green-500/10 flex items-center justify-center mb-3">
+            <span class="material-symbols-outlined text-green-600 text-[18px]">check_circle</span>
+          </div>
+          <p class="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1">Completed</p>
+          <h3 class="font-headline font-extrabold text-2xl text-text-dark">7</h3>
+        </div>
+
+        <div class="bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft hover:shadow-lifted transition-all">
+          <div class="w-9 h-9 rounded-xl bg-action/10 flex items-center justify-center mb-3">
+            <span class="material-symbols-outlined text-action text-[18px]">percent</span>
+          </div>
+          <p class="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1">Avg. Goal Progress</p>
+          <h3 class="font-headline font-extrabold text-2xl text-text-dark">82%</h3>
+        </div>
+
+      </div>
+
+      <!-- FILTER TABS -->
+      <div class="flex gap-6 border-b border-border-soft overflow-x-auto no-scrollbar">
+        <button onclick="filterProjects('all', this)" class="filter-tab active pb-3 text-sm border-b-2 border-primary text-primary font-bold whitespace-nowrap transition-all">
+          All <span class="text-text-light font-normal">(10)</span>
+        </button>
+        <button onclick="filterProjects('active', this)" class="filter-tab pb-3 text-sm border-b-2 border-transparent text-text-muted hover:text-text-dark font-medium whitespace-nowrap transition-all">
+          Active <span class="text-text-light font-normal">(3)</span>
+        </button>
+        <button onclick="filterProjects('completed', this)" class="filter-tab pb-3 text-sm border-b-2 border-transparent text-text-muted hover:text-text-dark font-medium whitespace-nowrap transition-all">
+          Completed <span class="text-text-light font-normal">(7)</span>
+        </button>
+        <button onclick="filterProjects('paused', this)" class="filter-tab pb-3 text-sm border-b-2 border-transparent text-text-muted hover:text-text-dark font-medium whitespace-nowrap transition-all">
+          Paused <span class="text-text-light font-normal">(0)</span>
+        </button>
+      </div>
+
+      <!-- PROJECT GRID -->
+      <div id="projectGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+
+        <!-- Card 1: Bibles for Ghana (Active) -->
+        <article class="project-card bg-card-bg rounded-2xl overflow-hidden shadow-card border border-border-soft hover:shadow-lifted transition-all" data-status="active">
+          <div class="h-48 relative overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=800&q=80"
+                 alt="Bibles for Ghana"
+                 class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-dark/30 to-transparent"></div>
+            <span class="absolute top-3 left-3 bg-primary text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Bible Distribution</span>
+            <span class="absolute top-3 right-3 bg-green-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block"></span> Active
+            </span>
+          </div>
+          <div class="p-5">
+            <h4 class="font-headline font-bold text-lg text-text-dark mb-3">1000 Bibles for Ghana</h4>
+
+            <div class="mb-3">
+              <div class="flex justify-between text-xs font-body text-text-muted mb-1.5">
+                <span>$3,200 raised of $5,000</span>
+                <span class="font-bold text-primary">64%</span>
+              </div>
+              <div class="h-2 bg-surface rounded-full overflow-hidden">
+                <div class="h-full tactical-gradient rounded-full transition-all" style="width: 64%"></div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 text-xs text-text-muted mb-4">
+              <span class="material-symbols-outlined text-[14px]">schedule</span>
+              <span>12 days remaining</span>
+            </div>
+
+            <div class="update-note p-3 rounded-xl mb-4 text-xs italic text-text-muted">
+              📦 500 Bibles shipped to Accra port — on schedule
+            </div>
+
+            <div class="flex justify-between items-center pt-4 border-t border-border-soft">
+              <button onclick="openPanel('ghana')" class="text-primary font-bold text-xs hover:underline underline-offset-2">
+                View Details
+              </button>
+              <div class="flex gap-3">
+                <button class="text-text-muted font-bold text-xs hover:text-primary transition-colors">Add Update</button>
+                <button class="text-text-muted font-bold text-xs hover:text-primary transition-colors">Edit</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 2: Clean Water Kenya (Active) -->
+        <article class="project-card bg-card-bg rounded-2xl overflow-hidden shadow-card border border-border-soft hover:shadow-lifted transition-all" data-status="active">
+          <div class="h-48 relative overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1594398901394-4e34939a02eb?w=800&q=80"
+                 alt="Clean Water Kenya"
+                 class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-dark/30 to-transparent"></div>
+            <span class="absolute top-3 left-3 bg-primary text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Clean Water</span>
+            <span class="absolute top-3 right-3 bg-green-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block"></span> Active
+            </span>
+          </div>
+          <div class="p-5">
+            <h4 class="font-headline font-bold text-lg text-text-dark mb-3">Clean Water: Rural Kenya</h4>
+
+            <div class="mb-3">
+              <div class="flex justify-between text-xs font-body text-text-muted mb-1.5">
+                <span>$1,845 raised of $4,500</span>
+                <span class="font-bold text-primary">41%</span>
+              </div>
+              <div class="h-2 bg-surface rounded-full overflow-hidden">
+                <div class="h-full tactical-gradient rounded-full" style="width: 41%"></div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 text-xs text-text-muted mb-4">
+              <span class="material-symbols-outlined text-[14px]">schedule</span>
+              <span>28 days remaining</span>
+            </div>
+
+            <div class="update-note p-3 rounded-xl mb-4 text-xs italic text-text-muted">
+              🔧 Well drilling equipment arriving next week
+            </div>
+
+            <div class="flex justify-between items-center pt-4 border-t border-border-soft">
+              <button onclick="openPanel('kenya')" class="text-primary font-bold text-xs hover:underline underline-offset-2">
+                View Details
+              </button>
+              <div class="flex gap-3">
+                <button class="text-text-muted font-bold text-xs hover:text-primary transition-colors">Add Update</button>
+                <button class="text-text-muted font-bold text-xs hover:text-primary transition-colors">Edit</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 3: Digital Gospel SE Asia (Active - Closing) -->
+        <article class="project-card bg-card-bg rounded-2xl overflow-hidden shadow-card border border-border-soft hover:shadow-lifted transition-all" data-status="active">
+          <div class="h-48 relative overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80"
+                 alt="Digital Gospel SE Asia"
+                 class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-dark/30 to-transparent"></div>
+            <span class="absolute top-3 left-3 bg-primary text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Digital Outreach</span>
+            <span class="absolute top-3 right-3 bg-action text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Closing Soon</span>
+          </div>
+          <div class="p-5">
+            <h4 class="font-headline font-bold text-lg text-text-dark mb-3">Digital Gospel: SE Asia</h4>
+
+            <div class="mb-3">
+              <div class="flex justify-between text-xs font-body text-text-muted mb-1.5">
+                <span>$3,560 raised of $4,000</span>
+                <span class="font-bold text-action">89%</span>
+              </div>
+              <div class="h-2 bg-surface rounded-full overflow-hidden">
+                <div class="h-full bg-action rounded-full" style="width: 89%"></div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 text-xs text-action font-bold mb-4">
+              <span class="material-symbols-outlined text-[14px]">schedule</span>
+              <span>Only 3 days remaining!</span>
+            </div>
+
+            <div class="update-note p-3 rounded-xl mb-4 text-xs italic text-text-muted">
+              📱 3 mobile hubs now activated in Manila
+            </div>
+
+            <div class="flex justify-between items-center pt-4 border-t border-border-soft">
+              <button onclick="openPanel('asia')" class="text-primary font-bold text-xs hover:underline underline-offset-2">
+                View Details
+              </button>
+              <div class="flex gap-3">
+                <button class="text-text-muted font-bold text-xs hover:text-primary transition-colors">Add Update</button>
+                <button class="text-text-muted font-bold text-xs hover:text-primary transition-colors">Edit</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 4: Street Training Lagos (Completed) -->
+        <article class="project-card bg-card-bg rounded-2xl overflow-hidden shadow-card border border-border-soft hover:shadow-natural transition-all opacity-80 hover:opacity-100" data-status="completed">
+          <div class="h-48 relative overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800&q=80"
+                 alt="Street Training Lagos"
+                 class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700">
+            <div class="absolute inset-0 bg-gradient-to-t from-dark/30 to-transparent"></div>
+            <span class="absolute top-3 left-3 bg-text-muted text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Street Evangelism</span>
+            <span class="absolute top-3 right-3 bg-card-bg text-green-600 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 border border-green-200">
+              <span class="material-symbols-outlined text-[12px] filled">check_circle</span> Complete
+            </span>
+          </div>
+          <div class="p-5">
+            <h4 class="font-headline font-bold text-lg text-text-dark mb-3">Street Training: Lagos</h4>
+
+            <div class="mb-3">
+              <div class="flex justify-between text-xs font-body text-text-muted mb-1.5">
+                <span>$2,100 raised of $2,100</span>
+                <span class="font-bold text-green-600">100%</span>
+              </div>
+              <div class="h-2 bg-surface rounded-full overflow-hidden">
+                <div class="h-full bg-green-500 rounded-full" style="width: 100%"></div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 text-xs text-green-600 font-bold mb-4">
+              <span class="material-symbols-outlined text-[14px] filled">check_circle</span>
+              <span class="uppercase tracking-wider">Mission Complete</span>
+            </div>
+
+            <div class="update-note p-3 rounded-xl mb-4 text-xs italic text-text-muted">
+              ✅ 120 warriors trained and deployed to the field!
+            </div>
+
+            <div class="flex justify-between items-center pt-4 border-t border-border-soft">
+              <button onclick="openPanel('lagos')" class="text-primary font-bold text-xs hover:underline underline-offset-2">
+                View History
+              </button>
+              <div class="flex gap-3">
+                <button class="text-text-muted font-bold text-xs hover:text-primary transition-colors">Archive</button>
+                <button class="text-text-muted font-bold text-xs hover:text-primary transition-colors">Reports</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Create New Project Placeholder -->
+        <article class="bg-card-bg rounded-2xl border-2 border-dashed border-border-soft hover:border-primary/30 transition-all cursor-pointer flex flex-col items-center justify-center p-10 min-h-[300px] group" onclick="openCreateModal()">
+          <div class="w-14 h-14 rounded-2xl bg-cream group-hover:bg-primary/10 flex items-center justify-center mb-4 transition-all">
+            <span class="material-symbols-outlined text-text-light group-hover:text-primary text-[28px] transition-all">add</span>
+          </div>
+          <p class="font-headline font-bold text-text-muted group-hover:text-primary text-sm transition-all">Create New Project</p>
+          <p class="text-xs text-text-light mt-1 text-center">Add a new mission to fund</p>
+        </article>
+
+      </div>
+
+      <!-- Empty State (hidden) -->
+      <div id="emptyState" class="hidden text-center py-20">
+        <div class="w-16 h-16 rounded-2xl bg-cream flex items-center justify-center mx-auto mb-4">
+          <span class="material-symbols-outlined text-text-light text-[32px]">folder_shared</span>
+        </div>
+        <h3 class="font-headline font-bold text-xl text-text-dark mb-2">No projects found</h3>
+        <p class="font-body text-text-muted text-sm">Try a different filter or create a new project.</p>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ============================================================
+     DETAIL SLIDE-OVER PANEL
+============================================================ -->
+<div id="detailPanel" class="fixed top-0 right-0 w-full sm:w-[420px] h-screen bg-card-bg shadow-lifted z-50 border-l border-border-soft overflow-y-auto no-scrollbar">
+  <div class="p-7">
+
+    <!-- Panel Header -->
+    <div class="flex justify-between items-center mb-6">
+      <button onclick="closePanel()" class="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-cream transition-all text-text-muted hover:text-text-dark">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      <!-- Visibility Toggle -->
+      <div class="flex items-center gap-3">
+        <span class="text-xs font-bold text-text-muted">Visible to users</span>
+        <div id="visibilityToggle" onclick="toggleVisibility()" class="w-11 h-6 bg-primary rounded-full relative cursor-pointer transition-colors">
+          <div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Project Identity -->
+    <div id="panelContent">
+
+      <p id="panelCategory" class="text-[10px] font-bold text-action uppercase tracking-widest mb-2">Current Highlight</p>
+      <h3 id="panelTitle" class="font-headline font-extrabold text-2xl text-text-dark leading-tight mb-5">
+        1000 Bibles for Ghana
+      </h3>
+
+      <!-- Story -->
+      <div class="mb-6">
+        <h4 class="text-xs font-bold text-text-muted uppercase tracking-widest mb-3">The Project Story</h4>
+        <p id="panelStory" class="text-sm text-text-muted leading-relaxed mb-4 font-body">
+          Our mission is to equip the rising generation of believers in Accra and surrounding rural districts with the living Word. These Bibles are translated into local dialects to ensure deep understanding and spiritual rooting.
+        </p>
+
+        <!-- Funding Summary -->
+        <div class="bg-cream rounded-2xl p-4 space-y-2 border border-border-soft">
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-text-muted font-body">Total Needed</span>
+            <span id="panelGoal" class="text-sm font-bold text-text-dark">$5,000.00</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-text-muted font-body">Raised So Far</span>
+            <span id="panelRaised" class="text-sm font-bold text-primary">$3,200.00</span>
+          </div>
+          <div class="h-px bg-border-soft my-1"></div>
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-text-muted font-body">Still Needed</span>
+            <span id="panelRemaining" class="text-sm font-bold text-action">$1,800.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="mb-6">
+        <h4 class="text-xs font-bold text-text-muted uppercase tracking-widest mb-5">Project Timeline</h4>
+        <div class="space-y-6 relative before:absolute before:left-[10px] before:top-3 before:bottom-3 before:w-px before:bg-border-soft">
+
+          <!-- Event 1 -->
+          <div class="relative pl-8">
+            <div class="absolute left-0 top-1 w-5 h-5 rounded-full tactical-gradient flex items-center justify-center border-2 border-card-bg">
+              <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
+            </div>
+            <p class="text-[10px] text-text-light mb-0.5">2 days ago</p>
+            <p class="text-sm font-bold text-text-dark mb-1">500 Bibles Shipped</p>
+            <p class="text-xs text-text-muted font-body leading-relaxed">First batch dispatched via maritime logistics from Lagos port.</p>
+          </div>
+
+          <!-- Event 2 -->
+          <div class="relative pl-8">
+            <div class="absolute left-0 top-1 w-5 h-5 rounded-full bg-gold flex items-center justify-center border-2 border-card-bg">
+              <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
+            </div>
+            <p class="text-[10px] text-text-light mb-0.5">1 week ago</p>
+            <p class="text-sm font-bold text-text-dark mb-1">Campaign Reaches 60%</p>
+            <p class="text-xs text-text-muted font-body leading-relaxed">Surpassed halfway mark thanks to Sunday morning offering.</p>
+          </div>
+
+          <!-- Event 3 -->
+          <div class="relative pl-8">
+            <div class="absolute left-0 top-1 w-5 h-5 rounded-full bg-surface flex items-center justify-center border-2 border-card-bg ring-1 ring-border-soft">
+              <div class="w-1.5 h-1.5 bg-text-light rounded-full"></div>
+            </div>
+            <p class="text-[10px] text-text-light mb-0.5">Oct 12, 2024</p>
+            <p class="text-sm font-bold text-text-dark mb-1">Project Initiated</p>
+            <p class="text-xs text-text-muted font-body leading-relaxed">Needs assessment completed for Accra's education district.</p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Panel Actions -->
+      <div class="flex gap-3 mt-8">
+        <button class="flex-1 py-3.5 tactical-gradient text-white font-bold text-sm rounded-xl shadow-tactical hover:scale-[1.02] transition-transform">
+          Post New Update
+        </button>
+        <button class="w-12 h-12 bg-cream rounded-xl flex items-center justify-center text-text-muted hover:bg-surface border border-border-soft transition-all">
+          <span class="material-symbols-outlined">more_horiz</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     CREATE PROJECT MODAL
+============================================================ -->
+<div id="createModal" class="hidden fixed inset-0 bg-dark/60 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+  <div class="bg-card-bg rounded-2xl p-8 max-w-md w-full shadow-lifted">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="font-headline font-bold text-xl text-text-dark">Create New Project</h3>
+      <button onclick="closeCreateModal()" class="text-text-light hover:text-text-muted transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="space-y-4">
+      <div>
+        <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-1.5">Project Name</label>
+        <input type="text" placeholder="e.g. 500 Bibles for Nigeria" class="w-full bg-surface border border-border-soft rounded-xl px-4 py-3 font-body text-sm text-text-dark focus:outline-none focus:ring-2 focus:ring-primary transition-all">
+      </div>
+      <div>
+        <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-1.5">Category</label>
+        <select class="w-full bg-surface border border-border-soft rounded-xl px-4 py-3 font-body text-sm text-text-dark focus:outline-none focus:ring-2 focus:ring-primary appearance-none transition-all">
+          <option>Bible Distribution</option>
+          <option>Clean Water</option>
+          <option>Digital Outreach</option>
+          <option>Street Evangelism</option>
+          <option>Medical Mission</option>
+        </select>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-1.5">Goal Amount</label>
+          <input type="number" placeholder="$5,000" class="w-full bg-surface border border-border-soft rounded-xl px-4 py-3 font-body text-sm text-text-dark focus:outline-none focus:ring-2 focus:ring-primary transition-all">
+        </div>
+        <div>
+          <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-1.5">Duration (days)</label>
+          <input type="number" placeholder="30" class="w-full bg-surface border border-border-soft rounded-xl px-4 py-3 font-body text-sm text-text-dark focus:outline-none focus:ring-2 focus:ring-primary transition-all">
+        </div>
+      </div>
+      <div>
+        <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-1.5">Project Story</label>
+        <textarea rows="3" placeholder="Describe the mission and its impact..." class="w-full bg-surface border border-border-soft rounded-xl px-4 py-3 font-body text-sm text-text-dark focus:outline-none focus:ring-2 focus:ring-primary transition-all resize-none"></textarea>
+      </div>
+    </div>
+
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeCreateModal()" class="flex-1 py-3 border-2 border-border-soft text-text-muted font-bold rounded-xl hover:bg-cream transition-all">
+        Cancel
+      </button>
+      <button onclick="closeCreateModal()" class="flex-1 py-3 tactical-gradient text-white font-bold rounded-xl hover:scale-[1.02] transition-transform shadow-tactical">
+        Create Project
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT
+============================================================ -->
+<script>
+
+  // ---- SIDEBAR ----
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('hidden');
+    sidebar.classList.toggle('flex');
+    overlay.classList.toggle('hidden');
+  }
+
+  // ---- FILTER TABS ----
+  function filterProjects(status, btn) {
+    document.querySelectorAll('.filter-tab').forEach(t => {
+      t.classList.remove('active', 'text-primary', 'font-bold', 'border-primary');
+      t.classList.add('text-text-muted', 'font-medium', 'border-transparent');
+    });
+    btn.classList.add('active', 'text-primary', 'font-bold', 'border-primary');
+    btn.classList.remove('text-text-muted', 'font-medium', 'border-transparent');
+
+    const cards = document.querySelectorAll('.project-card');
+    let visible = 0;
+    cards.forEach(card => {
+      const show = status === 'all' || card.dataset.status === status;
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    document.getElementById('emptyState').classList.toggle('hidden', visible > 0);
+  }
+
+  // ---- DETAIL PANEL ----
+  const projectData = {
+    ghana: {
+      category: 'Bible Distribution',
+      title: '1000 Bibles for Ghana',
+      story: 'Our mission is to equip the rising generation of believers in Accra and surrounding rural districts with the living Word. These Bibles are translated into local dialects to ensure deep understanding and spiritual rooting.',
+      goal: '$5,000.00',
+      raised: '$3,200.00',
+      remaining: '$1,800.00',
+    },
+    kenya: {
+      category: 'Clean Water Mission',
+      title: 'Clean Water: Rural Kenya',
+      story: 'Installing clean water wells in 3 rural Kenyan villages where access to clean water is critically limited. Clean water opens doors for the Gospel — meeting physical needs creates opportunities to share the living water.',
+      goal: '$4,500.00',
+      raised: '$1,845.00',
+      remaining: '$2,655.00',
+    },
+    asia: {
+      category: 'Digital Outreach',
+      title: 'Digital Gospel: SE Asia',
+      story: 'Activating mobile digital outreach hubs in Southeast Asia to spread the Gospel through social media. Technology deployed as a weapon for the Kingdom — reaching millions who would never enter a church building.',
+      goal: '$4,000.00',
+      raised: '$3,560.00',
+      remaining: '$440.00',
+    },
+    lagos: {
+      category: 'Street Evangelism',
+      title: 'Street Training: Lagos',
+      story: 'Training and equipping 120 warriors in Lagos, Nigeria with the tools and boldness to share the Gospel face-to-face in markets, schools and public squares. Every trained warrior becomes a multiplier.',
+      goal: '$2,100.00',
+      raised: '$2,100.00',
+      remaining: '$0.00',
+    }
+  };
+
+  function openPanel(projectKey) {
+    const data = projectData[projectKey];
+    if (!data) return;
+
+    document.getElementById('panelCategory').textContent  = data.category;
+    document.getElementById('panelTitle').textContent     = data.title;
+    document.getElementById('panelStory').textContent     = data.story;
+    document.getElementById('panelGoal').textContent      = data.goal;
+    document.getElementById('panelRaised').textContent    = data.raised;
+    document.getElementById('panelRemaining').textContent = data.remaining;
+
+    document.getElementById('detailPanel').classList.add('open');
+    document.getElementById('panelOverlay').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closePanel() {
+    document.getElementById('detailPanel').classList.remove('open');
+    document.getElementById('panelOverlay').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  // ---- VISIBILITY TOGGLE ----
+  let isVisible = true;
+  function toggleVisibility() {
+    isVisible = !isVisible;
+    const toggle = document.getElementById('visibilityToggle');
+    const dot = toggle.querySelector('div');
+    if (isVisible) {
+      toggle.classList.add('bg-primary');
+      toggle.classList.remove('bg-text-light');
+      dot.classList.add('right-1');
+      dot.classList.remove('left-1');
+    } else {
+      toggle.classList.remove('bg-primary');
+      toggle.classList.add('bg-text-light');
+      dot.classList.remove('right-1');
+      dot.classList.add('left-1');
+    }
+  }
+
+  // ---- CREATE MODAL ----
+  function openCreateModal() {
+    document.getElementById('createModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeCreateModal() {
+    document.getElementById('createModal').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('createModal').addEventListener('click', function(e) {
+    if (e.target === this) closeCreateModal();
+  });
+
+</script>
+
+</body>
+</html>
