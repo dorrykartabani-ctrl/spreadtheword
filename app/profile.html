@@ -429,7 +429,7 @@
     <p id="modalMsg" class="text-sm text-text-muted font-body mb-6">You can always log back in to continue your mission.</p>
     <div class="flex gap-3">
       <button onclick="closeModal()" class="flex-1 py-3 border-2 border-border-soft text-text-muted font-bold rounded-xl hover:bg-cream transition-all">Cancel</button>
-      <button id="modalConfirm" onclick="closeModal()" class="flex-1 py-3 action-gradient text-white font-bold rounded-xl shadow-action-glow hover:scale-[1.02] transition-transform">Confirm</button>
+      <button id="modalConfirm" onclick="executeConfirm()" class="flex-1 py-3 action-gradient text-white font-bold rounded-xl shadow-action-glow hover:scale-[1.02] transition-transform">Confirm</button>
     </div>
   </div>
 </div>
@@ -444,11 +444,9 @@
      JAVASCRIPT
 ============================================================ -->
 <script>
-
   // ---- TOGGLE SWITCH ----
   function toggleSwitch(el) {
     el.classList.toggle('on');
-    const label = el.closest('.settings-row').querySelector('.text-\\[11px\\]');
     showToast(el.classList.contains('on') ? 'Notifications enabled' : 'Notifications disabled');
   }
 
@@ -466,18 +464,19 @@
   }
 
   function setDefaultPlatform(name) {
-    // Reset all checks
     document.querySelectorAll('[id^="check-"]').forEach(el => el.classList.add('hidden'));
     document.getElementById('check-' + name).classList.remove('hidden');
     document.getElementById('defaultPlatform').textContent = name;
     currentPlatform = name;
     closePlatformPicker();
-    showToast(`Default platform set to ${name}`);
-    // TODO: Save to Supabase
+    showToast('Default platform set to ' + name);
   }
 
   // ---- CONFIRM MODALS ----
+  let pendingAction = null;
+
   function confirmLogout() {
+    pendingAction = 'logout';
     document.getElementById('modalTitle').textContent = 'Log Out?';
     document.getElementById('modalMsg').textContent = 'You can always log back in to continue your mission.';
     document.getElementById('modalIcon').innerHTML = '<span class="material-symbols-outlined text-action text-[28px]">logout</span>';
@@ -486,6 +485,7 @@
   }
 
   function confirmDelete() {
+    pendingAction = 'delete';
     document.getElementById('modalTitle').textContent = 'Delete Account?';
     document.getElementById('modalMsg').textContent = 'This is permanent. All your data, streak and impact history will be lost forever.';
     document.getElementById('modalIcon').innerHTML = '<span class="material-symbols-outlined text-action text-[28px]">delete_forever</span>';
@@ -498,38 +498,56 @@
     document.body.style.overflow = '';
   }
 
-  // Close modal on backdrop
+  function executeConfirm() {
+    closeModal();
+
+    if (pendingAction === 'logout') {
+      // TODO: Add supabase.auth.signOut() here later
+      window.location.href = 'login.html';
+    }
+
+    if (pendingAction === 'delete') {
+      // TODO: Add supabase account deletion here later
+      window.location.href = 'login.html';
+    }
+
+    pendingAction = null;
+  }
+
+  // Close modal on backdrop click
   document.getElementById('confirmModal').addEventListener('click', function(e) {
     if (e.target === this) closeModal();
   });
 
-  // ---- TOAST ----
-  let toastTimer;
-  function showToast(msg) {
-    const toast = document.getElementById('toast');
-    document.getElementById('toastMsg').textContent = msg;
-    toast.classList.remove('hidden');
-    toast.classList.add('flex');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => {
-      toast.classList.add('hidden');
-      toast.classList.remove('flex');
-    }, 2200);
-  }
-
   // ---- PARALLAX ----
-  window.addEventListener('scroll', () => {
-    const hero = document.getElementById('heroCard');
+  window.addEventListener('scroll', function() {
+    var hero = document.getElementById('heroCard');
     if (hero) {
-      hero.style.transform = `translateY(${window.scrollY * 0.04}px)`;
+      hero.style.transform = 'translateY(' + (window.scrollY * 0.04) + 'px)';
     }
   }, { passive: true });
 
-  // ---- HAPTICS ----
-  document.querySelectorAll('button, a').forEach(el => {
-    el.addEventListener('click', () => navigator.vibrate?.(8));
-  });
+  // ---- TOAST ----
+  let toastTimer;
+  function showToast(msg) {
+    var existing = document.getElementById('profileToast');
+    if (existing) existing.remove();
 
+    var t = document.createElement('div');
+    t.id = 'profileToast';
+    t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2';
+    t.innerHTML = '<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:\'FILL\' 1">check_circle</span> ' + msg;
+    document.body.appendChild(t);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() { if (t.parentNode) t.remove(); }, 2200);
+  }
+
+  // ---- HAPTICS ----
+  document.querySelectorAll('button, a').forEach(function(el) {
+    el.addEventListener('click', function() {
+      if (navigator.vibrate) navigator.vibrate(8);
+    });
+  });
 </script>
 
 </body>
