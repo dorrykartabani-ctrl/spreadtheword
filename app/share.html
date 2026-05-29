@@ -8,6 +8,7 @@
   <title>Prepare to Share — GSTW</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -395,6 +396,86 @@
      JAVASCRIPT
 ============================================================ -->
 <script>
+<script>
+  // ---- SUPABASE ----
+  const { createClient } = supabase
+  const db = createClient(
+    'https://nhymadutuhpjgkiurify.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+  )
+
+  let currentUser = null
+  let currentQuoteId = null
+
+  // ---- AUTH ----
+  async function checkAuth() {
+    const { data: { session } } = await db.auth.getSession()
+    if (!session) { window.location.href = 'login.html'; return null }
+    currentUser = session.user
+    return session.user
+  }
+
+  // ---- LOG SHARE TO DATABASE ----
+  async function logShareToDatabase(platforms) {
+    if (!currentUser) return
+
+    // Get today's quote ID
+    if (!currentQuoteId) {
+      const { data } = await db
+        .from('quotes')
+        .select('id')
+        .eq('status', 'live')
+        .order('published_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (data) currentQuoteId = data.id
+    }
+
+    // Log a share for each platform
+    const sharePromises = platforms.map(platform =>
+      db.from('shares').insert({
+        user_id:  currentUser.id,
+        quote_id: currentQuoteId,
+        platform: platform,
+      })
+    )
+
+    await Promise.all(sharePromises)
+
+    // Update hashtag usage counts
+    const { data: coreHashtags } = await db
+      .from('hashtags')
+      .select('id, tag, usage_count')
+      .eq('is_core', true)
+
+    if (coreHashtags) {
+      const updatePromises = coreHashtags.map(ht =>
+        db.from('hashtags').update({ usage_count: ht.usage_count + 1 }).eq('id', ht.id)
+      )
+      await Promise.all(updatePromises)
+    }
+  }
+
+  // ---- OVERRIDE DEPLOY FUNCTION ----
+  const originalDeploy = typeof deploy === 'function' ? deploy : null
+
+  async function deploy() {
+    if (selectedPlatforms.length === 0) {
+      showToast('Select at least one platform to deploy')
+      return
+    }
+
+    // Log to database
+    await logShareToDatabase(selectedPlatforms)
+
+    // Show success
+    document.getElementById('successPlatforms').textContent = selectedPlatforms.length
+    document.getElementById('successModal').classList.remove('hidden')
+  }
+
+  // Init auth
+  checkAuth()
 
   // ---- HASHTAG MANAGEMENT ----
   let hashtags = ['#SpreadTheWord', '#GreatCommission'];
@@ -515,13 +596,6 @@
     document.getElementById('summaryPlatforms').innerHTML =
       `<span class="font-bold text-text-dark">Platforms:</span> ${selectedPlatforms.join(', ') || 'None selected'}`;
   }
-
-  // ---- DEPLOY ----
-  function deploy() {
-    if (selectedPlatforms.length === 0) {
-      showToast('Select at least one platform to deploy');
-      return;
-    }
 
     // TODO: Connect to Supabase to log share + trigger native share sheet
     document.getElementById('successPlatforms').textContent = selectedPlatforms.length;

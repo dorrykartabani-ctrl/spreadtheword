@@ -8,6 +8,7 @@
   <title>Library — Go Spread The Word</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -397,119 +398,181 @@
      JAVASCRIPT
 ============================================================ -->
 <script>
+  // ---- SUPABASE ----
+  const { createClient } = supabase
+  const db = createClient(
+    'https://nhymadutuhpjgkiurify.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+  )
 
-  // ---- SEARCH TOGGLE ----
-  function toggleSearch() {
-    const bar = document.getElementById('searchBar');
-    bar.classList.toggle('hidden');
-    if (!bar.classList.contains('hidden')) {
-      document.getElementById('searchInput').focus();
-    }
+  // ---- AUTH GUARD ----
+  async function checkAuth() {
+    const { data: { session } } = await db.auth.getSession()
+    if (!session) { window.location.href = 'login.html'; return null }
+    return session.user
+  }
+
+  // ---- LOAD QUOTES FROM DATABASE ----
+  async function loadQuotes() {
+    const { data, error } = await db
+      .from('quotes')
+      .select('*')
+      .eq('status', 'live')
+      .order('published_at', { ascending: false })
+
+    if (error) { console.error('Load quotes error:', error); return }
+    if (!data || data.length === 0) return
+
+    renderQuotes(data)
+  }
+
+  function renderQuotes(quotes) {
+    const container = document.getElementById('quoteList')
+    container.innerHTML = ''
+
+    quotes.forEach((quote, index) => {
+      const isToday = index === 0
+      const isInspiration = !quote.source.includes(':')
+      const dateStr = quote.published_at
+        ? new Date(quote.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        : 'Draft'
+
+      const card = document.createElement('article')
+      card.className = `quote-card bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft ${isInspiration ? 'reflection-plate' : ''}`
+      card.dataset.category = quote.category.toLowerCase()
+      card.onclick = function() { openQuote(this) }
+
+      card.innerHTML = `
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            ${isToday ? '<span class="w-2 h-2 rounded-full bg-primary animate-pulse flex-shrink-0"></span>' : ''}
+            <span class="text-[10px] font-bold ${isToday ? 'text-primary' : 'text-text-light'} uppercase tracking-widest">${isToday ? 'Today · ' : ''}${dateStr}</span>
+          </div>
+          ${isToday
+            ? '<span class="text-[10px] font-bold text-gold-dim bg-gold/10 px-2.5 py-1 rounded-full uppercase tracking-wider">Today\'s Word</span>'
+            : `<span class="text-[10px] text-text-light font-body">${quote.share_count} shares</span>`
+          }
+        </div>
+        <blockquote class="font-headline font-bold text-[${isToday ? '17' : '16'}px] text-text-dark leading-relaxed mb-2">
+          "${quote.text}"
+        </blockquote>
+        <cite class="block not-italic font-body font-bold text-sm ${isInspiration ? 'text-gold-dim' : 'text-primary'} mb-4 tracking-wider">— ${quote.source.toUpperCase()}</cite>
+        <div class="flex items-center justify-between">
+          <div class="flex gap-1.5 flex-wrap">
+            <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#SpreadTheWord</span>
+            <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#${quote.category}</span>
+          </div>
+          <button onclick="event.stopPropagation(); quickShare('${quote.id}', this)" class="${isInspiration ? 'bg-gold' : 'tactical-gradient'} text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-tactical active:scale-95 transition-transform flex-shrink-0">
+            <span class="material-symbols-outlined text-[15px]">share</span>
+            Share
+          </button>
+        </div>
+      `
+
+      container.appendChild(card)
+    })
   }
 
   // ---- SEARCH ----
-  function searchQuotes(query) {
-    const q = query.toLowerCase();
-    const cards = document.querySelectorAll('.quote-card');
-    let visible = 0;
-
-    cards.forEach(card => {
-      const text = card.textContent.toLowerCase();
-      const show = text.includes(q);
-      card.style.display = show ? '' : 'none';
-      if (show) visible++;
-    });
-
-    document.getElementById('emptyState').classList.toggle('hidden', visible > 0);
+  function toggleSearch() {
+    const bar = document.getElementById('searchBar')
+    bar.classList.toggle('hidden')
+    if (!bar.classList.contains('hidden')) {
+      document.getElementById('searchInput').focus()
+    }
   }
 
-  // ---- FILTER BY CATEGORY ----
+  function searchQuotes(query) {
+    const q = query.toLowerCase()
+    const cards = document.querySelectorAll('.quote-card')
+    let visible = 0
+    cards.forEach(card => {
+      const show = card.textContent.toLowerCase().includes(q)
+      card.style.display = show ? '' : 'none'
+      if (show) visible++
+    })
+    document.getElementById('emptyState').classList.toggle('hidden', visible > 0)
+  }
+
+  // ---- FILTER ----
   function filterByCategory(cat, btn) {
     document.querySelectorAll('.filter-tab').forEach(t => {
-      t.classList.remove('active', 'bg-primary', 'text-white');
-      t.classList.add('text-text-muted');
-    });
-    btn.classList.add('active', 'bg-primary', 'text-white');
-    btn.classList.remove('text-text-muted');
+      t.classList.remove('active', 'bg-primary', 'text-white')
+      t.classList.add('text-text-muted')
+    })
+    btn.classList.add('active', 'bg-primary', 'text-white')
+    btn.classList.remove('text-text-muted')
 
-    const cards = document.querySelectorAll('.quote-card');
-    let visible = 0;
-
+    const cards = document.querySelectorAll('.quote-card')
+    let visible = 0
     cards.forEach(card => {
-      const cardCat = card.dataset.category;
-      const show = cat === 'all' || cardCat === cat;
-      card.style.display = show ? '' : 'none';
-      if (show) visible++;
-    });
-
-    document.getElementById('emptyState').classList.toggle('hidden', visible > 0);
+      const show = cat === 'all' || card.dataset.category === cat
+      card.style.display = show ? '' : 'none'
+      if (show) visible++
+    })
+    document.getElementById('emptyState').classList.toggle('hidden', visible > 0)
   }
 
   // ---- OPEN QUOTE DETAIL ----
   function openQuote(card) {
-    const quote = card.querySelector('blockquote').textContent.trim();
-    const ref   = card.querySelector('cite').textContent.trim();
-
-    document.getElementById('modalQuote').textContent = quote;
-    document.getElementById('modalRef').textContent   = ref;
-    document.getElementById('quoteModal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
+    const quote = card.querySelector('blockquote').textContent.trim()
+    const ref   = card.querySelector('cite').textContent.trim()
+    document.getElementById('modalQuote').textContent = quote
+    document.getElementById('modalRef').textContent   = ref
+    document.getElementById('quoteModal').classList.remove('hidden')
+    document.body.style.overflow = 'hidden'
   }
 
   function closeModal() {
-    document.getElementById('quoteModal').classList.add('hidden');
-    document.body.style.overflow = '';
+    document.getElementById('quoteModal').classList.add('hidden')
+    document.body.style.overflow = ''
   }
 
   document.getElementById('quoteModal').addEventListener('click', function(e) {
-    if (e.target === this) closeModal();
-  });
+    if (e.target === this) closeModal()
+  })
 
   // ---- QUICK SHARE ----
-  function quickShare(btn) {
-    const card  = btn.closest('article');
-    const quote = card.querySelector('blockquote').textContent.trim();
-    const ref   = card.querySelector('cite').textContent.trim();
-
+  function quickShare(quoteId, btn) {
     if (navigator.share) {
+      const card  = btn.closest('article')
+      const quote = card.querySelector('blockquote').textContent.trim()
+      const ref   = card.querySelector('cite').textContent.trim()
       navigator.share({
         title: 'Go Spread The Word',
-        text: `${quote} ${ref} #SpreadTheWord`,
-      }).catch(console.error);
+        text: quote + ' ' + ref + ' #SpreadTheWord',
+      }).catch(console.error)
     } else {
-      showToast('Opening share options...');
-      setTimeout(() => {
-        window.location.href = 'sharesheet.html';
-      }, 500);
+      window.location.href = 'sharesheet.html'
     }
   }
 
   // ---- LOAD MORE ----
-  function loadMore() {
-    showToast('Loading more quotes...');
-    // TODO: Fetch from Supabase
-  }
+  function loadMore() { showToast('All quotes loaded') }
 
-  // ---- CARD PRESS ANIMATION ----
-  document.querySelectorAll('.quote-card').forEach(card => {
-    card.addEventListener('touchstart', () => {
-      card.style.transform = 'scale(0.98)';
-      card.style.transition = 'transform 0.15s ease';
-    }, { passive: true });
-    card.addEventListener('touchend', () => {
-      card.style.transform = 'scale(1)';
-    }, { passive: true });
-  });
+  // ---- CARD PRESS ----
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.quote-card').forEach(card => {
+      card.addEventListener('touchstart', () => { card.style.transform = 'scale(0.98)' }, { passive: true })
+      card.addEventListener('touchend', () => { card.style.transform = 'scale(1)' }, { passive: true })
+    })
+  })
 
   // ---- TOAST ----
   function showToast(msg) {
-    const t = document.createElement('div');
-    t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2';
-    t.innerHTML = `<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24">check_circle</span> ${msg}`;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2200);
+    const t = document.createElement('div')
+    t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2'
+    t.innerHTML = '<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:\'FILL\' 1">check_circle</span> ' + msg
+    document.body.appendChild(t)
+    setTimeout(() => t.remove(), 2200)
   }
 
+  // ---- INIT ----
+  async function init() {
+    await checkAuth()
+    await loadQuotes()
+  }
+  init()
 </script>
 
 </body>
