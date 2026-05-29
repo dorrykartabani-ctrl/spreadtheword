@@ -7,6 +7,7 @@
   <title>Profile — Go Spread The Word</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -444,6 +445,40 @@
      JAVASCRIPT
 ============================================================ -->
 <script>
+ // ---- SUPABASE SETUP ----
+const { createClient } = supabase
+const db = createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+)
+
+ // ---- LOAD REAL PROFILE DATA ----
+async function loadProfile() {
+  const { data: { session } } = await db.auth.getSession()
+  if (!session) { window.location.href = 'login.html'; return }
+
+  const { data, error } = await db
+    .from('profiles')
+    .select('*')
+    .eq('id', session.user.id)
+    .single()
+
+  if (error || !data) return
+
+  // Update UI with real data
+  const nameEl   = document.querySelector('#heroCard h2')
+  const emailEl  = document.querySelector('#heroCard p')
+  const sharesEl = document.querySelector('.shares-stat')
+  const streakEl = document.querySelector('.streak-stat')
+
+  if (nameEl)   nameEl.textContent   = data.full_name || 'Soldier'
+  if (emailEl)  emailEl.textContent  = data.email     || ''
+  if (sharesEl) sharesEl.textContent = data.total_shares    || 0
+  if (streakEl) streakEl.textContent = data.current_streak  || 0
+}
+
+loadProfile()
+
   // ---- TOGGLE SWITCH ----
   function toggleSwitch(el) {
     el.classList.toggle('on');
@@ -498,21 +533,23 @@
     document.body.style.overflow = '';
   }
 
-  function executeConfirm() {
-    closeModal();
+ async function executeConfirm() {
+  closeModal()
 
-    if (pendingAction === 'logout') {
-      // TODO: Add supabase.auth.signOut() here later
-      window.location.href = 'login.html';
-    }
-
-    if (pendingAction === 'delete') {
-      // TODO: Add supabase account deletion here later
-      window.location.href = 'login.html';
-    }
-
-    pendingAction = null;
+  if (pendingAction === 'logout') {
+    await db.auth.signOut()
+    window.location.href = 'login.html'
   }
+
+  if (pendingAction === 'delete') {
+    // TODO: Supabase account deletion requires service role
+    // For now sign out and redirect
+    await db.auth.signOut()
+    window.location.href = 'login.html'
+  }
+
+  pendingAction = null
+}
 
   // Close modal on backdrop click
   document.getElementById('confirmModal').addEventListener('click', function(e) {

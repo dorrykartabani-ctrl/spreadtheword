@@ -7,6 +7,7 @@
   <title>Enlist — Go Spread The Word</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -270,136 +271,153 @@
      JAVASCRIPT
 ============================================================ -->
 <script>
+  // ---- SUPABASE SETUP ----
+  const { createClient } = supabase
+  const db = createClient(
+    'https://nhymadutuhpjgkiurify.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+  )
+
+  // ---- CHECK IF ALREADY LOGGED IN ----
+  async function checkSession() {
+    const { data: { session } } = await db.auth.getSession()
+    if (session) window.location.href = 'index.html'
+  }
+  checkSession()
 
   // ---- SIGNUP ----
-  function handleSignup(e) {
-    e.preventDefault();
+  async function handleSignup(e) {
+    e.preventDefault()
 
-    const name    = document.getElementById('signupName').value.trim();
-    const email   = document.getElementById('signupEmail').value.trim();
-    const pass    = document.getElementById('signupPassword').value;
-    const confirm = document.getElementById('signupConfirm').value;
-    const terms   = document.getElementById('termsCheck').checked;
-    const btn     = document.getElementById('signupBtn');
-    const icon    = document.getElementById('signupBtnIcon');
-    const label   = document.getElementById('signupBtnLabel');
-    const error   = document.getElementById('signupError');
+    const name    = document.getElementById('signupName').value.trim()
+    const email   = document.getElementById('signupEmail').value.trim()
+    const pass    = document.getElementById('signupPassword').value
+    const confirm = document.getElementById('signupConfirm').value
+    const terms   = document.getElementById('termsCheck').checked
+    const btn     = document.getElementById('signupBtn')
+    const icon    = document.getElementById('signupBtnIcon')
+    const label   = document.getElementById('signupBtnLabel')
 
-    error.classList.add('hidden');
-    document.getElementById('matchMsg').classList.add('hidden');
+    document.getElementById('signupError').classList.add('hidden')
+    document.getElementById('matchMsg').classList.add('hidden')
 
     // Validate
     if (!name || !email || !pass || !confirm) {
-      showError('Please fill in all fields');
-      return;
+      showError('Please fill in all fields'); return
     }
     if (pass.length < 8) {
-      showError('Password must be at least 8 characters');
-      return;
+      showError('Password must be at least 8 characters'); return
     }
     if (pass !== confirm) {
-      document.getElementById('matchMsg').classList.remove('hidden');
-      showError('Passwords do not match');
-      return;
+      document.getElementById('matchMsg').classList.remove('hidden')
+      showError('Passwords do not match'); return
     }
     if (!terms) {
-      showError('Please agree to the Terms of Service');
-      return;
+      showError('Please agree to the Terms of Service'); return
     }
 
     // Loading state
-    icon.textContent = 'progress_activity';
-    icon.classList.add('animate-spin');
-    label.textContent = 'Creating your account...';
-    btn.disabled = true;
+    icon.textContent = 'progress_activity'
+    icon.style.animation = 'spin 1s linear infinite'
+    label.textContent = 'Creating your account...'
+    btn.disabled = true
 
-    // TODO: Replace with Supabase auth
-    // const { data, error } = await supabase.auth.signUp({
-    //   email, password: pass,
-    //   options: { data: { full_name: name } }
-    // });
+    // Create account
+    const { data, error } = await db.auth.signUp({
+      email,
+      password: pass,
+      options: {
+        data: { full_name: name }
+      }
+    })
+
+    if (error) {
+      icon.textContent = 'military_tech'
+      icon.style.animation = ''
+      label.textContent = 'Enlist — $3.99/month'
+      btn.disabled = false
+      showError(error.message || 'Sign up failed — please try again')
+      return
+    }
+
+    // Success
+    icon.textContent = 'check_circle'
+    icon.style.animation = ''
+    label.textContent = 'Welcome to the Mission!'
 
     setTimeout(() => {
-      icon.classList.remove('animate-spin');
-      icon.textContent = 'check_circle';
-      label.textContent = 'Welcome to the Mission!';
-
-      setTimeout(() => {
-        window.location.href = 'index.html';
-      }, 800);
-
-    }, 2000);
-  }
-
-  function showError(msg) {
-    const error = document.getElementById('signupError');
-    document.getElementById('signupErrorMsg').textContent = msg;
-    error.classList.remove('hidden');
-    error.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      window.location.href = 'index.html'
+    }, 800)
   }
 
   // ---- PASSWORD STRENGTH ----
   function checkPasswordStrength(pass) {
-    const bars  = [document.getElementById('str1'), document.getElementById('str2'), document.getElementById('str3'), document.getElementById('str4')];
-    const label = document.getElementById('strengthLabel');
-
-    let strength = 0;
-    if (pass.length >= 8) strength++;
-    if (/[A-Z]/.test(pass)) strength++;
-    if (/[0-9]/.test(pass)) strength++;
-    if (/[^A-Za-z0-9]/.test(pass)) strength++;
-
-    const colors  = ['', 'strength-weak', 'strength-fair', 'strength-good', 'strength-strong'];
-    const labels  = ['', 'Weak', 'Fair', 'Good', 'Strong'];
-    const textCol = ['', 'text-action', 'text-gold-dim', 'text-primary-light', 'text-green-600'];
-
+    const bars  = ['str1','str2','str3','str4'].map(id => document.getElementById(id))
+    const label = document.getElementById('strengthLabel')
+    let strength = 0
+    if (pass.length >= 8) strength++
+    if (/[A-Z]/.test(pass)) strength++
+    if (/[0-9]/.test(pass)) strength++
+    if (/[^A-Za-z0-9]/.test(pass)) strength++
+    const colors   = ['','#E25B4D','#D4A24C','#2B5780','#22C55E']
+    const labels   = ['','Weak','Fair','Good','Strong']
+    const txtCols  = ['','text-action','text-gold-dim','text-primary-light','text-green-600']
     bars.forEach((bar, i) => {
-      bar.className = 'flex-1 h-1.5 rounded-full transition-all duration-300 ' + (i < strength ? colors[strength] : 'bg-surface');
-    });
-
-    label.textContent = labels[strength] || '';
-    label.className   = 'text-[10px] font-bold mt-0.5 ' + (textCol[strength] || 'text-text-light');
+      bar.style.background = i < strength ? colors[strength] : '#F0EDE6'
+    })
+    label.textContent = labels[strength] || ''
+    label.className = 'text-[10px] font-bold mt-0.5 ' + (txtCols[strength] || 'text-text-light')
   }
 
   // ---- TOGGLE PASSWORD ----
   function togglePassword(inputId, btn) {
-    const input = document.getElementById(inputId);
-    const icon  = btn.querySelector('.material-symbols-outlined');
+    const input = document.getElementById(inputId)
+    const icon  = btn.querySelector('.material-symbols-outlined')
     if (input.type === 'password') {
-      input.type = 'text';
-      icon.textContent = 'visibility';
+      input.type = 'text'
+      icon.textContent = 'visibility'
     } else {
-      input.type = 'password';
-      icon.textContent = 'visibility_off';
+      input.type = 'password'
+      icon.textContent = 'visibility_off'
     }
   }
 
-  // ---- SOCIAL LOGIN ----
-  function signInWithGoogle() {
-    console.log('Google sign-up');
-    showToast('Connecting to Google...');
+  // ---- SOCIAL ----
+  async function signInWithGoogle() {
+    await db.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/app/index.html' }
+    })
   }
 
-  function signInWithApple() {
-    console.log('Apple sign-up');
-    showToast('Connecting to Apple...');
+  async function signInWithApple() {
+    await db.auth.signInWithOAuth({
+      provider: 'apple',
+      options: { redirectTo: window.location.origin + '/app/index.html' }
+    })
+  }
+
+  // ---- ERROR ----
+  function showError(msg) {
+    const el = document.getElementById('signupError')
+    document.getElementById('signupErrorMsg').textContent = msg
+    el.classList.remove('hidden')
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
 
   // ---- TOAST ----
   function showToast(msg) {
-    const t = document.createElement('div');
-    t.className = 'fixed top-6 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2';
-    t.innerHTML = '<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:\'FILL\' 1">info</span> ' + msg;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2500);
+    const t = document.createElement('div')
+    t.className = 'fixed top-6 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2'
+    t.style.transform = 'translateX(-50%)'
+    t.innerHTML = '<span style="font-variation-settings:\'FILL\' 1;font-family:\'Material Symbols Outlined\'">info</span> ' + msg
+    document.body.appendChild(t)
+    setTimeout(() => t.remove(), 2500)
   }
 
-  // ---- ANIMATE SPIN ----
-  const style = document.createElement('style');
-  style.textContent = '@keyframes spin{to{transform:rotate(360deg)}}.animate-spin{animation:spin 1s linear infinite}';
-  document.head.appendChild(style);
-
+  const style = document.createElement('style')
+  style.textContent = '@keyframes spin{to{transform:rotate(360deg)}}'
+  document.head.appendChild(style)
 </script>
-
 </body>
 </html>

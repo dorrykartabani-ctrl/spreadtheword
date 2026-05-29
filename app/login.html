@@ -7,6 +7,7 @@
   <title>Login — Go Spread The Word</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -267,128 +268,159 @@
      JAVASCRIPT
 ============================================================ -->
 <script>
+  // ---- SUPABASE SETUP ----
+  const { createClient } = supabase
+  const db = createClient(
+    'https://nhymadutuhpjgkiurify.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+  )
+
+  // ---- CHECK IF ALREADY LOGGED IN ----
+  async function checkSession() {
+    const { data: { session } } = await db.auth.getSession()
+    if (session) {
+      window.location.href = 'index.html'
+    }
+  }
+  checkSession()
 
   // ---- LOGIN ----
-  function handleLogin(e) {
-    e.preventDefault();
+  async function handleLogin(e) {
+    e.preventDefault()
 
-    const email = document.getElementById('loginEmail').value.trim();
-    const pass  = document.getElementById('loginPassword').value;
-    const btn   = document.getElementById('loginBtn');
-    const icon  = document.getElementById('loginBtnIcon');
-    const label = document.getElementById('loginBtnLabel');
-    const error = document.getElementById('loginError');
+    const email = document.getElementById('loginEmail').value.trim()
+    const pass  = document.getElementById('loginPassword').value
+    const btn   = document.getElementById('loginBtn')
+    const icon  = document.getElementById('loginBtnIcon')
+    const label = document.getElementById('loginBtnLabel')
+    const error = document.getElementById('loginError')
 
-    // Hide previous error
-    error.classList.add('hidden');
+    error.classList.add('hidden')
 
-    // Validate
     if (!email || !pass) {
-      showError('Please fill in all fields');
-      return;
+      showError('Please fill in all fields')
+      return
     }
 
     // Loading state
-    icon.textContent = 'progress_activity';
-    icon.classList.add('animate-spin');
-    label.textContent = 'Logging in...';
-    btn.disabled = true;
+    icon.textContent = 'progress_activity'
+    icon.style.animation = 'spin 1s linear infinite'
+    label.textContent = 'Logging in...'
+    btn.disabled = true
 
-    // TODO: Replace with Supabase auth
-    // const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+    const { data, error: authError } = await db.auth.signInWithPassword({
+      email,
+      password: pass
+    })
+
+    if (authError) {
+      icon.textContent = 'login'
+      icon.style.animation = ''
+      label.textContent = 'Log In'
+      btn.disabled = false
+      showError(authError.message || 'Invalid email or password')
+      return
+    }
+
+    // Success
+    icon.textContent = 'check_circle'
+    icon.style.animation = ''
+    label.textContent = 'Welcome back!'
 
     setTimeout(() => {
-      // Simulate success — replace with real auth
-      icon.classList.remove('animate-spin');
-      icon.textContent = 'check_circle';
-      label.textContent = 'Success!';
-
-      setTimeout(() => {
-        window.location.href = 'index.html';
-      }, 500);
-
-    }, 1500);
-  }
-
-  function showError(msg) {
-    const error = document.getElementById('loginError');
-    document.getElementById('loginErrorMsg').textContent = msg;
-    error.classList.remove('hidden');
+      window.location.href = 'index.html'
+    }, 500)
   }
 
   // ---- TOGGLE PASSWORD ----
   function togglePassword(inputId, btn) {
-    const input = document.getElementById(inputId);
-    const icon  = btn.querySelector('.material-symbols-outlined');
+    const input = document.getElementById(inputId)
+    const icon  = btn.querySelector('.material-symbols-outlined')
     if (input.type === 'password') {
-      input.type = 'text';
-      icon.textContent = 'visibility';
+      input.type = 'text'
+      icon.textContent = 'visibility'
     } else {
-      input.type = 'password';
-      icon.textContent = 'visibility_off';
+      input.type = 'password'
+      icon.textContent = 'visibility_off'
     }
   }
 
   // ---- FORGOT PASSWORD ----
   function forgotPassword() {
-    document.getElementById('forgotModal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
+    document.getElementById('forgotModal').classList.remove('hidden')
+    document.body.style.overflow = 'hidden'
   }
 
   function closeForgotModal() {
-    document.getElementById('forgotModal').classList.add('hidden');
-    document.body.style.overflow = '';
+    document.getElementById('forgotModal').classList.add('hidden')
+    document.body.style.overflow = ''
+    document.getElementById('forgotSuccess').classList.add('hidden')
+    document.querySelector('#forgotModal form').classList.remove('hidden')
   }
 
-  function handleForgotPassword(e) {
-    e.preventDefault();
-    const email = document.getElementById('forgotEmail').value;
+  async function handleForgotPassword(e) {
+    e.preventDefault()
+    const email = document.getElementById('forgotEmail').value.trim()
 
-    // TODO: Connect to Supabase password reset
-    // await supabase.auth.resetPasswordForEmail(email);
+    if (!email) return
 
-    // Show success
-    e.target.classList.add('hidden');
-    document.getElementById('forgotSuccess').classList.remove('hidden');
+    const { error } = await db.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/app/login.html'
+    })
 
-    setTimeout(() => closeForgotModal(), 3000);
+    if (error) {
+      showToast('Error sending reset email — try again')
+      return
+    }
+
+    e.target.classList.add('hidden')
+    document.getElementById('forgotSuccess').classList.remove('hidden')
+    setTimeout(() => closeForgotModal(), 3000)
   }
 
-  // Close modal on backdrop
   document.getElementById('forgotModal').addEventListener('click', function(e) {
-    if (e.target === this) closeForgotModal();
-  });
+    if (e.target === this) closeForgotModal()
+  })
 
-  // ---- SOCIAL LOGIN ----
-  function signInWithGoogle() {
-    // TODO: Supabase Google OAuth
-    // await supabase.auth.signInWithOAuth({ provider: 'google' });
-    console.log('Google sign-in');
-    showToast('Connecting to Google...');
+  // ---- GOOGLE LOGIN ----
+  async function signInWithGoogle() {
+    const { error } = await db.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/app/index.html' }
+    })
+    if (error) showToast('Google sign-in failed')
   }
 
-  function signInWithApple() {
-    // TODO: Supabase Apple OAuth
-    // await supabase.auth.signInWithOAuth({ provider: 'apple' });
-    console.log('Apple sign-in');
-    showToast('Connecting to Apple...');
+  // ---- APPLE LOGIN ----
+  async function signInWithApple() {
+    const { error } = await db.auth.signInWithOAuth({
+      provider: 'apple',
+      options: { redirectTo: window.location.origin + '/app/index.html' }
+    })
+    if (error) showToast('Apple sign-in failed')
+  }
+
+  // ---- SHOW ERROR ----
+  function showError(msg) {
+    const error = document.getElementById('loginError')
+    document.getElementById('loginErrorMsg').textContent = msg
+    error.classList.remove('hidden')
   }
 
   // ---- TOAST ----
   function showToast(msg) {
-    const t = document.createElement('div');
-    t.className = 'fixed top-6 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2';
-    t.innerHTML = '<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:\'FILL\' 1">info</span> ' + msg;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2500);
+    const t = document.createElement('div')
+    t.className = 'fixed top-6 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2'
+    t.style.transform = 'translateX(-50%)'
+    t.innerHTML = '<span style="font-variation-settings:\'FILL\' 1;font-family:\'Material Symbols Outlined\'">info</span> ' + msg
+    document.body.appendChild(t)
+    setTimeout(() => t.remove(), 2500)
   }
 
-  // ---- ANIMATE SPIN ----
-  const style = document.createElement('style');
-  style.textContent = '@keyframes spin{to{transform:rotate(360deg)}}.animate-spin{animation:spin 1s linear infinite}';
-  document.head.appendChild(style);
-
+  // Spin animation
+  const style = document.createElement('style')
+  style.textContent = '@keyframes spin{to{transform:rotate(360deg)}}'
+  document.head.appendChild(style)
 </script>
-
 </body>
 </html>

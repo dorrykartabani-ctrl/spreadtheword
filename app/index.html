@@ -8,6 +8,7 @@
   <title>Go Spread The Word</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -361,7 +362,76 @@
      JAVASCRIPT
 ============================================================ -->
 <script>
+// ---- SUPABASE SETUP ----
+const { createClient } = supabase
+const db = createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+)
 
+// ---- AUTH GUARD ----
+async function checkAuth() {
+  const { data: { session } } = await db.auth.getSession()
+  if (!session) {
+    window.location.href = 'login.html'
+    return null
+  }
+  return session.user
+}
+
+// ---- LOAD TODAY'S QUOTE ----
+async function loadTodaysQuote() {
+  const { data, error } = await db
+    .from('quotes')
+    .select('*')
+    .eq('status', 'live')
+    .order('published_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (error || !data) {
+    console.error('Quote load error:', error)
+    return
+  }
+
+  document.getElementById('quoteText').textContent = data.text
+  document.getElementById('quoteRef').textContent  = '— ' + data.source.toUpperCase()
+
+  // Store quote id for sharing later
+  window.currentQuoteId = data.id
+}
+
+// ---- LOAD USER PROFILE ----
+async function loadUserProfile(userId) {
+  const { data, error } = await db
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single()
+
+  if (error || !data) return
+
+  // Update greeting with real name
+  const firstName = data.full_name.split(' ')[0] || 'Soldier'
+  document.getElementById('greetingName').textContent = 'Hi ' + firstName
+
+  // Update stats if elements exist
+  const streakEl = document.querySelector('.streak-count')
+  const sharesEl = document.querySelector('.shares-count')
+  if (streakEl) streakEl.textContent = data.current_streak
+  if (sharesEl) sharesEl.textContent = data.total_shares
+}
+
+// ---- INIT ON LOAD ----
+window.addEventListener('DOMContentLoaded', async () => {
+  const user = await checkAuth()
+  if (!user) return
+
+  await Promise.all([
+    loadTodaysQuote(),
+    loadUserProfile(user.id)
+  ])
+})
   // ---- SET GREETING ----
   function setGreeting() {
     const hour = new Date().getHours();
