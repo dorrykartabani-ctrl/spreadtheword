@@ -291,40 +291,34 @@
   const fontClasses = Object.keys(fontMap)
 
    // ---- AUTH + LOAD QUOTE ----
-  async function init() {
+    async function init() {
     const { data: { session } } = await db.auth.getSession()
     if (!session) { window.location.href = 'login.html'; return }
 
+    // Load quote
     const { data } = await db.from('quotes').select('*').eq('status', 'live').order('published_at', { ascending: false }).limit(1).single()
+
+    const qt = document.getElementById('quoteText')
+    const qr = document.getElementById('quoteRef')
+
     if (data) {
-      quoteText.textContent = data.text
-      quoteRef.textContent = '— ' + data.source.toUpperCase()
+      qt.textContent = data.text
+      qr.textContent = '— ' + data.source.toUpperCase()
       window.currentQuoteId = data.id
+    } else {
+      qt.textContent = 'The Word is with you today.'
+      qr.textContent = '— GSTW'
     }
 
-    // Load background from backgrounds.html selection
+    // Load background from backgrounds.html
     loadBackgroundChoice()
 
-    autoDetectMode()
+    // Make quote overlay draggable (reset position)
+    quoteOverlay.style.position = 'absolute'
+    quoteOverlay.style.top = '50%'
+    quoteOverlay.style.left = '50%'
+    quoteOverlay.style.transform = 'translate(-50%, -50%)'
   }
-
-  function loadBackgroundChoice() {
-    const bgType = sessionStorage.getItem('gstw_bg_type')
-    const bgValue = sessionStorage.getItem('gstw_bg_value')
-    if (!bgType || !bgValue) return
-
-    const bg = document.getElementById('bgCanvas')
-    if (bgType === 'image') {
-      bg.style.backgroundImage = "url('" + bgValue + "')"
-      bg.style.backgroundSize = 'cover'
-      bg.style.backgroundPosition = 'center'
-    } else if (bgType === 'color') {
-      bg.style.backgroundImage = 'none'
-      bg.style.background = bgValue
-    } else if (bgType === 'gradient') {
-      bg.style.backgroundImage = 'none'
-      bg.style.background = bgValue
-    }
   }
 
   init()
@@ -403,36 +397,70 @@
   }
 
   // ---- DRAG ----
-  quoteOverlay.addEventListener('mousedown', dragStart)
-  quoteOverlay.addEventListener('touchstart', dragStart, { passive: true })
-  document.addEventListener('mousemove', dragMove)
-  document.addEventListener('touchmove', dragMove, { passive: true })
-  document.addEventListener('mouseup', dragEnd)
-  document.addEventListener('touchend', dragEnd)
+  let dragActive = false
+  let dragStartX, dragStartY, overlayStartX, overlayStartY
 
-  function dragStart(e) {
-    isDragging = true; quoteOverlay.classList.add('dragging')
+  quoteOverlay.addEventListener('mousedown', onDragStart)
+  quoteOverlay.addEventListener('touchstart', onDragStart, { passive: false })
+  document.addEventListener('mousemove', onDragMove)
+  document.addEventListener('touchmove', onDragMove, { passive: false })
+  document.addEventListener('mouseup', onDragEnd)
+  document.addEventListener('touchend', onDragEnd)
+
+  function onDragStart(e) {
+    // Don't drag if clicking a tool panel
+    if (e.target.closest('.tool-btn') || e.target.closest('#subPanel')) return
+
+    dragActive = true
+    quoteOverlay.classList.add('dragging')
+
+    const cx = e.touches ? e.touches[0].clientX : e.clientX
+    const cy = e.touches ? e.touches[0].clientY : e.clientY
+
+    // Get current position
     const rect = quoteOverlay.getBoundingClientRect()
-    const cx = e.touches ? e.touches[0].clientX : e.clientX
-    const cy = e.touches ? e.touches[0].clientY : e.clientY
-    startX = cx; startY = cy; startLeft = rect.left; startTop = rect.top
-    quoteOverlay.style.position = 'fixed'
-    quoteOverlay.style.left = startLeft + 'px'; quoteOverlay.style.top = startTop + 'px'
+    const parentRect = quoteOverlay.parentElement.getBoundingClientRect()
+
+    // Switch to pixel positioning
     quoteOverlay.style.transform = 'none'
+    quoteOverlay.style.position = 'absolute'
+    quoteOverlay.style.left = (rect.left - parentRect.left) + 'px'
+    quoteOverlay.style.top = (rect.top - parentRect.top) + 'px'
+
+    dragStartX = cx
+    dragStartY = cy
+    overlayStartX = rect.left - parentRect.left
+    overlayStartY = rect.top - parentRect.top
+
+    if (e.cancelable) e.preventDefault()
   }
 
-  function dragMove(e) {
-    if (!isDragging) return
+  function onDragMove(e) {
+    if (!dragActive) return
+
     const cx = e.touches ? e.touches[0].clientX : e.clientX
     const cy = e.touches ? e.touches[0].clientY : e.clientY
-    const wrapper = document.querySelector('.max-w-\\[430px\\]')
-    const wrapperRect = wrapper ? wrapper.getBoundingClientRect() : { left: 0, width: window.innerWidth }
-    const newLeft = Math.max(wrapperRect.left, Math.min(startLeft + cx - startX, wrapperRect.left + wrapperRect.width - quoteOverlay.offsetWidth))
-    const newTop = Math.max(56, Math.min(startTop + cy - startY, window.innerHeight - quoteOverlay.offsetHeight - 160))
-    quoteOverlay.style.left = newLeft + 'px'; quoteOverlay.style.top = newTop + 'px'
+
+    const dx = cx - dragStartX
+    const dy = cy - dragStartY
+
+    const parentRect = quoteOverlay.parentElement.getBoundingClientRect()
+    const maxX = parentRect.width - quoteOverlay.offsetWidth
+    const maxY = parentRect.height - quoteOverlay.offsetHeight
+
+    const newX = Math.max(0, Math.min(overlayStartX + dx, maxX))
+    const newY = Math.max(0, Math.min(overlayStartY + dy, maxY))
+
+    quoteOverlay.style.left = newX + 'px'
+    quoteOverlay.style.top = newY + 'px'
+
+    if (e.cancelable) e.preventDefault()
   }
 
-  function dragEnd() { isDragging = false; quoteOverlay.classList.remove('dragging') }
+  function onDragEnd() {
+    dragActive = false
+    quoteOverlay.classList.remove('dragging')
+  }
 
   // ---- PHOTO PICKER ----
   function openPhotoPicker() {
