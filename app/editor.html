@@ -266,16 +266,10 @@
   const { createClient } = supabase
   const db = createClient('https://nhymadutuhpjgkiurify.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM')
 
-  // ---- STATE ----
+  // ---- ELEMENTS (set after DOM ready) ----
+  let quoteText, quoteRef, quoteOverlay, bgCanvas, bgOverlay, subPanel
   let currentPanel = null
   let currentBtn = null
-
-  const quoteText = document.getElementById('quoteText')
-  const quoteRef = document.getElementById('quoteRef')
-  const quoteOverlay = document.getElementById('quoteOverlay')
-  const bgCanvas = document.getElementById('bgCanvas')
-  const bgOverlay = document.getElementById('bgOverlay')
-  const subPanel = document.getElementById('subPanel')
 
   const fontMap = {
     'font-jakarta': "'Plus Jakarta Sans', sans-serif",
@@ -287,17 +281,66 @@
   }
   const fontClasses = Object.keys(fontMap)
 
+  // ---- WAIT FOR DOM THEN INIT ----
+  window.addEventListener('DOMContentLoaded', function() {
+    quoteText = document.getElementById('quoteText')
+    quoteRef = document.getElementById('quoteRef')
+    quoteOverlay = document.getElementById('quoteOverlay')
+    bgCanvas = document.getElementById('bgCanvas')
+    bgOverlay = document.getElementById('bgOverlay')
+    subPanel = document.getElementById('subPanel')
+
+    // Verify elements exist
+    console.log('Elements found:', {
+      quoteText: !!quoteText,
+      quoteRef: !!quoteRef,
+      quoteOverlay: !!quoteOverlay,
+      bgCanvas: !!bgCanvas,
+      bgOverlay: !!bgOverlay,
+      subPanel: !!subPanel
+    })
+
+    // Setup drag
+    if (quoteOverlay) {
+      quoteOverlay.addEventListener('mousedown', onDragStart)
+      quoteOverlay.addEventListener('touchstart', onDragStart, { passive: false })
+    }
+    document.addEventListener('mousemove', onDragMove)
+    document.addEventListener('touchmove', onDragMove, { passive: false })
+    document.addEventListener('mouseup', onDragEnd)
+    document.addEventListener('touchend', onDragEnd)
+
+    // Close panels on background click
+    document.addEventListener('click', function(e) {
+      if (!currentPanel) return
+      if (e.target.closest('.tool-btn') || e.target.closest('#subPanel') || e.target.closest('#quoteOverlay') || e.target.closest('#photoPickerSheet')) return
+      subPanel.classList.remove('open')
+      if (currentBtn) currentBtn.classList.remove('active')
+      currentPanel = null
+      currentBtn = null
+    })
+
+    // Desktop warning
+    if (isDesktop()) {
+      var w = document.getElementById('desktopWarning')
+      if (w) w.classList.remove('hidden')
+    }
+
+    // Start
+    init()
+  })
+
   // ---- AUTH + LOAD QUOTE ----
   async function init() {
-    const { data: { session } } = await db.auth.getSession()
-    if (!session) { window.location.href = 'login.html'; return }
+    var session = await db.auth.getSession()
+    if (!session.data.session) { window.location.href = 'login.html'; return }
 
-    const { data } = await db.from('quotes').select('*').eq('status', 'live').order('published_at', { ascending: false }).limit(1).single()
+    var result = await db.from('quotes').select('*').eq('status', 'live').order('published_at', { ascending: false }).limit(1).single()
 
-    if (data) {
-      quoteText.textContent = data.text
-      quoteRef.textContent = '— ' + data.source.toUpperCase()
-      window.currentQuoteId = data.id
+    if (result.data) {
+      quoteText.textContent = result.data.text
+      quoteRef.textContent = '— ' + result.data.source.toUpperCase()
+      window.currentQuoteId = result.data.id
     } else {
       quoteText.textContent = 'The Word is with you today.'
       quoteRef.textContent = '— GSTW'
@@ -306,10 +349,10 @@
     loadBackgroundChoice()
   }
 
-  // ---- LOAD BACKGROUND FROM BACKGROUNDS PAGE ----
+  // ---- LOAD BACKGROUND ----
   function loadBackgroundChoice() {
-    const bgType = sessionStorage.getItem('gstw_bg_type')
-    const bgValue = sessionStorage.getItem('gstw_bg_value')
+    var bgType = sessionStorage.getItem('gstw_bg_type')
+    var bgValue = sessionStorage.getItem('gstw_bg_value')
     if (!bgType || !bgValue) return
 
     if (bgType === 'image') {
@@ -325,11 +368,9 @@
     }
   }
 
-  init()
-
   // ---- PANEL TOGGLE ----
   function togglePanel(name, btn) {
-    const panelEl = document.getElementById('panel' + name)
+    var panelEl = document.getElementById('panel' + name)
     if (!panelEl) return
     if (currentPanel === name) {
       subPanel.classList.remove('open')
@@ -339,7 +380,7 @@
       return
     }
     if (currentBtn) currentBtn.classList.remove('active')
-    document.querySelectorAll('#subPanel > div').forEach(p => p.classList.add('hidden'))
+    document.querySelectorAll('#subPanel > div').forEach(function(p) { p.classList.add('hidden') })
     panelEl.classList.remove('hidden')
     subPanel.classList.add('open')
     btn.classList.add('active')
@@ -347,28 +388,16 @@
     currentBtn = btn
   }
 
-  document.addEventListener('click', function(e) {
-    if (!currentPanel) return
-    const toolbar = document.querySelector('.bg-card-bg.z-50')
-    if (toolbar && toolbar.contains(e.target)) return
-    if (e.target.closest('#quoteOverlay')) return
-    if (e.target.closest('#photoPickerSheet')) return
-    subPanel.classList.remove('open')
-    if (currentBtn) currentBtn.classList.remove('active')
-    currentPanel = null
-    currentBtn = null
-  })
-
   // ---- FONT ----
   function setFont(fontClass, btn) {
-    fontClasses.forEach(f => { quoteText.classList.remove(f); quoteRef.classList.remove(f) })
+    fontClasses.forEach(function(f) { quoteText.classList.remove(f); quoteRef.classList.remove(f) })
     quoteText.classList.add(fontClass)
     quoteRef.classList.add(fontClass)
     quoteText.style.fontFamily = fontMap[fontClass]
     quoteRef.style.fontFamily = fontMap[fontClass]
     quoteText.style.fontStyle = fontClass === 'font-lora' ? 'italic' : 'normal'
     quoteText.style.textTransform = fontClass === 'font-oswald' ? 'uppercase' : 'none'
-    document.querySelectorAll('.font-opt').forEach(b => b.classList.remove('selected'))
+    document.querySelectorAll('.font-opt').forEach(function(b) { b.classList.remove('selected') })
     btn.classList.add('selected')
     showToast('Font: ' + btn.textContent.trim())
   }
@@ -384,7 +413,7 @@
     quoteText.style.color = hex
     quoteRef.style.color = hex
     document.getElementById('colorPreview').style.background = hex
-    document.querySelectorAll('.color-swatch').forEach(s => {
+    document.querySelectorAll('.color-swatch').forEach(function(s) {
       s.classList.remove('selected')
       s.style.borderColor = 'transparent'
     })
@@ -395,7 +424,7 @@
   // ---- BLUR ----
   function setBlur(val) {
     bgCanvas.style.filter = 'blur(' + parseInt(val) + 'px)'
-    const labels = ['None','Low','Medium','High','Heavy']
+    var labels = ['None','Low','Medium','High','Heavy']
     document.getElementById('blurLabel').textContent = labels[Math.min(Math.floor(parseInt(val) / 5), 4)]
   }
 
@@ -406,13 +435,13 @@
   }
 
   // ---- ALIGN ----
-  const alignCycle = ['center','left','right']
-  const alignIcons = { center:'format_align_center', left:'format_align_left', right:'format_align_right' }
-  let alignIdx = 0
+  var alignCycle = ['center','left','right']
+  var alignIcons = { center:'format_align_center', left:'format_align_left', right:'format_align_right' }
+  var alignIdx = 0
 
   function cycleAlign() {
     alignIdx = (alignIdx + 1) % alignCycle.length
-    const a = alignCycle[alignIdx]
+    var a = alignCycle[alignIdx]
     quoteText.style.textAlign = a
     quoteRef.style.textAlign = a
     quoteOverlay.style.textAlign = a
@@ -420,85 +449,61 @@
     showToast('Align: ' + a)
   }
 
-  // ---- DRAG TO MOVE QUOTE ----
-  let dragActive = false
-  let dragStartX = 0
-  let dragStartY = 0
-  let overlayStartX = 0
-  let overlayStartY = 0
-
-  quoteOverlay.addEventListener('mousedown', onDragStart)
-  quoteOverlay.addEventListener('touchstart', onDragStart, { passive: false })
-  document.addEventListener('mousemove', onDragMove)
-  document.addEventListener('touchmove', onDragMove, { passive: false })
-  document.addEventListener('mouseup', onDragEnd)
-  document.addEventListener('touchend', onDragEnd)
+  // ---- DRAG ----
+  var dragActive = false
+  var dragStartX = 0, dragStartY = 0, overlayStartX = 0, overlayStartY = 0
 
   function onDragStart(e) {
     if (e.target.closest('.tool-btn') || e.target.closest('#subPanel')) return
-
     dragActive = true
     quoteOverlay.classList.add('dragging')
-
-    const cx = e.touches ? e.touches[0].clientX : e.clientX
-    const cy = e.touches ? e.touches[0].clientY : e.clientY
-
-    const rect = quoteOverlay.getBoundingClientRect()
-    const parentRect = quoteOverlay.parentElement.getBoundingClientRect()
-
+    var cx = e.touches ? e.touches[0].clientX : e.clientX
+    var cy = e.touches ? e.touches[0].clientY : e.clientY
+    var rect = quoteOverlay.getBoundingClientRect()
+    var parentRect = quoteOverlay.parentElement.getBoundingClientRect()
     quoteOverlay.style.transform = 'none'
     quoteOverlay.style.position = 'absolute'
     quoteOverlay.style.left = (rect.left - parentRect.left) + 'px'
     quoteOverlay.style.top = (rect.top - parentRect.top) + 'px'
-
     dragStartX = cx
     dragStartY = cy
     overlayStartX = rect.left - parentRect.left
     overlayStartY = rect.top - parentRect.top
-
     if (e.cancelable) e.preventDefault()
   }
 
   function onDragMove(e) {
     if (!dragActive) return
-
-    const cx = e.touches ? e.touches[0].clientX : e.clientX
-    const cy = e.touches ? e.touches[0].clientY : e.clientY
-
-    const dx = cx - dragStartX
-    const dy = cy - dragStartY
-
-    const parentRect = quoteOverlay.parentElement.getBoundingClientRect()
-    const maxX = parentRect.width - quoteOverlay.offsetWidth
-    const maxY = parentRect.height - quoteOverlay.offsetHeight
-
-    const newX = Math.max(0, Math.min(overlayStartX + dx, maxX))
-    const newY = Math.max(0, Math.min(overlayStartY + dy, maxY))
-
+    var cx = e.touches ? e.touches[0].clientX : e.clientX
+    var cy = e.touches ? e.touches[0].clientY : e.clientY
+    var parentRect = quoteOverlay.parentElement.getBoundingClientRect()
+    var maxX = parentRect.width - quoteOverlay.offsetWidth
+    var maxY = parentRect.height - quoteOverlay.offsetHeight
+    var newX = Math.max(0, Math.min(overlayStartX + (cx - dragStartX), maxX))
+    var newY = Math.max(0, Math.min(overlayStartY + (cy - dragStartY), maxY))
     quoteOverlay.style.left = newX + 'px'
     quoteOverlay.style.top = newY + 'px'
-
     if (e.cancelable) e.preventDefault()
   }
 
   function onDragEnd() {
     dragActive = false
-    quoteOverlay.classList.remove('dragging')
+    if (quoteOverlay) quoteOverlay.classList.remove('dragging')
   }
 
   // ---- PHOTO PICKER ----
   function openPhotoPicker() {
-    const sheet = document.getElementById('photoPickerSheet')
-    const panel = sheet.querySelector('.sheet-panel')
+    var sheet = document.getElementById('photoPickerSheet')
+    var panel = sheet.querySelector('.sheet-panel')
     sheet.classList.remove('hidden')
-    requestAnimationFrame(() => panel.classList.add('open'))
+    requestAnimationFrame(function() { panel.classList.add('open') })
   }
 
   function closePhotoPicker() {
-    const sheet = document.getElementById('photoPickerSheet')
-    const panel = sheet.querySelector('.sheet-panel')
+    var sheet = document.getElementById('photoPickerSheet')
+    var panel = sheet.querySelector('.sheet-panel')
     panel.classList.remove('open')
-    setTimeout(() => sheet.classList.add('hidden'), 400)
+    setTimeout(function() { sheet.classList.add('hidden') }, 400)
   }
 
   function isDesktop() { return !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) }
@@ -506,24 +511,24 @@
   function openCamera() {
     closePhotoPicker()
     if (isDesktop()) { showToast('⚠️ Camera not available — use gallery'); return }
-    setTimeout(() => document.getElementById('cameraInput').click(), 300)
+    setTimeout(function() { document.getElementById('cameraInput').click() }, 300)
   }
 
   function openSelfie() {
     closePhotoPicker()
     if (isDesktop()) { showToast('⚠️ Camera not available — use gallery'); return }
-    setTimeout(() => document.getElementById('selfieInput').click(), 300)
+    setTimeout(function() { document.getElementById('selfieInput').click() }, 300)
   }
 
   function openGallery() {
     closePhotoPicker()
-    setTimeout(() => document.getElementById('galleryInput').click(), 300)
+    setTimeout(function() { document.getElementById('galleryInput').click() }, 300)
   }
 
   function handleImageSelect(input) {
-    const file = input.files[0]
+    var file = input.files[0]
     if (!file) return
-    const reader = new FileReader()
+    var reader = new FileReader()
     reader.onload = function(e) {
       bgCanvas.style.backgroundImage = "url('" + e.target.result + "')"
       bgCanvas.style.backgroundSize = 'cover'
@@ -534,37 +539,23 @@
     input.value = ''
   }
 
-  if (isDesktop()) {
-    const w = document.getElementById('desktopWarning')
-    if (w) w.classList.remove('hidden')
-  }
-
   // ---- NAVIGATION ----
-  function goBack() {
-    if (window.history.length > 1) window.history.back()
-    else window.location.href = 'backgrounds.html'
-  }
-
-  function goHome() {
-    if (confirm('Leave editor? Changes will be lost.')) window.location.href = 'index.html'
-  }
-
-  function goNext() {
-    window.location.href = 'share.html'
-  }
+  function goBack() { window.location.href = 'backgrounds.html' }
+  function goHome() { if (confirm('Leave editor? Changes will be lost.')) window.location.href = 'index.html' }
+  function goNext() { window.location.href = 'share.html' }
 
   // ---- TOAST ----
-  let toastTimer
+  var toastTimer
   function showToast(msg) {
-    const existing = document.getElementById('editorToast')
+    var existing = document.getElementById('editorToast')
     if (existing) existing.remove()
-    const t = document.createElement('div')
+    var t = document.createElement('div')
     t.id = 'editorToast'
     t.className = 'fixed top-20 left-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lg whitespace-nowrap flex items-center gap-2'
     t.style.transform = 'translateX(-50%)'
     t.innerHTML = '<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:\'FILL\' 1">check_circle</span> ' + msg
     document.body.appendChild(t)
     clearTimeout(toastTimer)
-    toastTimer = setTimeout(() => { if (t.parentNode) t.remove() }, 2200)
+    toastTimer = setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
   }
 </script>
