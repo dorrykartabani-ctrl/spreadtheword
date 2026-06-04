@@ -8,6 +8,7 @@
   <title>Edit — Go Spread The Word</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -145,8 +146,9 @@
     .sheet-panel.open { transform: translateY(0); }
   </style>
 </head>
-
+</div>
 <body>
+<div class="max-w-[430px] mx-auto relative" style="height:100dvh">
 
 <!-- Hidden file inputs for camera/gallery -->
 <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelect(this)">
@@ -164,10 +166,15 @@
 <!-- ============================================================
      TOP BAR
 ============================================================ -->
-<header class="fixed top-0 left-0 right-0 h-14 z-50 flex items-center justify-between px-4 pt-safe">
-  <button onclick="goBack()" class="w-10 h-10 flex items-center justify-center bg-black/30 backdrop-blur-md rounded-full active:scale-90 transition-transform">
-    <span class="material-symbols-outlined text-white text-[22px]">arrow_back</span>
-  </button>
+<header class="fixed top-0 left-0 right-0 h-14 z-50 flex items-center justify-between px-4 pt-safe max-w-[430px] mx-auto">
+  <div class="flex items-center gap-2">
+    <button onclick="goBack()" class="w-10 h-10 flex items-center justify-center bg-black/30 backdrop-blur-md rounded-full active:scale-90 transition-transform">
+      <span class="material-symbols-outlined text-white text-[22px]">arrow_back</span>
+    </button>
+    <button onclick="goHome()" class="w-10 h-10 flex items-center justify-center bg-black/30 backdrop-blur-md rounded-full active:scale-90 transition-transform" title="Back to Home">
+      <span class="material-symbols-outlined text-white text-[22px]">home</span>
+    </button>
+  </div>
   <div class="bg-black/30 backdrop-blur-md px-4 py-1.5 rounded-full">
     <span class="text-white text-xs font-body font-bold uppercase tracking-wider">Edit Your Word</span>
   </div>
@@ -297,9 +304,9 @@
       <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
     </button>
   </div>
-
 </footer>
-
+<footer class="fixed bottom-0 left-0 right-0 bg-card-bg z-50 shadow-[0_-8px_32px_rgba(0,0,0,0.15)]">
+  <div class="max-w-[430px] mx-auto">
 <!-- ============================================================
      PHOTO PICKER SHEET
 ============================================================ -->
@@ -354,6 +361,42 @@
      JAVASCRIPT
 ============================================================ -->
 <script>
+  // ---- SUPABASE ----
+  const { createClient } = supabase
+  const db = createClient(
+    'https://nhymadutuhpjgkiurify.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+  )
+
+  // ---- AUTH GUARD ----
+  async function checkAuth() {
+    const { data: { session } } = await db.auth.getSession()
+    if (!session) { window.location.href = 'login.html'; return null }
+    return session.user
+  }
+
+  // ---- LOAD TODAY'S QUOTE INTO EDITOR ----
+  async function loadQuoteIntoEditor() {
+    const { data, error } = await db
+      .from('quotes')
+      .select('*')
+      .eq('status', 'live')
+      .order('published_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (error || !data) return
+
+    document.getElementById('quoteText').textContent = data.text
+    document.getElementById('quoteRef').textContent  = '— ' + data.source.toUpperCase()
+
+    // Store for share logging later
+    window.currentQuoteId = data.id
+  }
+
+  // Init
+  checkAuth()
+  loadQuoteIntoEditor()
 
   // ============================================
   // STATE
@@ -693,7 +736,11 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { if (t.parentNode) t.remove(); }, 2200);
   }
-
+function goHome() {
+  if (confirm('Leave editor? Your changes will be lost.')) {
+    window.location.href = 'index.html'
+  }
+}
 </script>
 
 </body>

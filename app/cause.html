@@ -7,6 +7,7 @@
   <title>The Cause — Go Spread The Word</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -169,6 +170,12 @@
   <section class="space-y-4">
 
     <p class="text-[10px] font-bold tracking-widest text-text-light uppercase px-1">Active Projects</p>
+ <section class="space-y-4" id="activeProjectsSection">
+  <p class="text-[10px] font-bold tracking-widest text-text-light uppercase px-1">Active Projects</p>
+  <div id="activeProjects" class="space-y-4">
+    <!-- Cards will be rendered here by JS -->
+  </div>
+</section>
 
     <!-- Project 1: Bibles for Ghana -->
     <div class="fade-up project-card bg-card-bg rounded-2xl overflow-hidden shadow-card border border-border-soft">
@@ -202,7 +209,7 @@
         <!-- Priority selector -->
         <div class="flex items-center justify-between pt-1">
           <span class="text-[10px] text-text-light font-bold uppercase tracking-widest">Your priority rank</span>
-          <div class="flex gap-1">
+          <div class="flex gap-1"data-project="${project.id}">
             <button onclick="setPriority(this, 1)" class="priority-btn w-7 h-7 rounded-lg bg-primary text-white text-[11px] font-bold flex items-center justify-center">1</button>
             <button onclick="setPriority(this, 2)" class="priority-btn w-7 h-7 rounded-lg bg-surface text-text-muted text-[11px] font-bold flex items-center justify-center border border-border-soft">2</button>
             <button onclick="setPriority(this, 3)" class="priority-btn w-7 h-7 rounded-lg bg-surface text-text-muted text-[11px] font-bold flex items-center justify-center border border-border-soft">3</button>
@@ -242,7 +249,7 @@
         </div>
         <div class="flex items-center justify-between pt-1">
           <span class="text-[10px] text-text-light font-bold uppercase tracking-widest">Your priority rank</span>
-          <div class="flex gap-1">
+          <div class="flex gap-1"data-project="${project.id}">
             <button onclick="setPriority(this, 1)" class="priority-btn w-7 h-7 rounded-lg bg-surface text-text-muted text-[11px] font-bold flex items-center justify-center border border-border-soft">1</button>
             <button onclick="setPriority(this, 2)" class="priority-btn w-7 h-7 rounded-lg bg-primary text-white text-[11px] font-bold flex items-center justify-center">2</button>
             <button onclick="setPriority(this, 3)" class="priority-btn w-7 h-7 rounded-lg bg-surface text-text-muted text-[11px] font-bold flex items-center justify-center border border-border-soft">3</button>
@@ -282,7 +289,7 @@
         </div>
         <div class="flex items-center justify-between pt-1">
           <span class="text-[10px] text-text-light font-bold uppercase tracking-widest">Your priority rank</span>
-          <div class="flex gap-1">
+          <div class="flex gap-1"data-project="${project.id}">
             <button onclick="setPriority(this, 1)" class="priority-btn w-7 h-7 rounded-lg bg-surface text-text-muted text-[11px] font-bold flex items-center justify-center border border-border-soft">1</button>
             <button onclick="setPriority(this, 2)" class="priority-btn w-7 h-7 rounded-lg bg-surface text-text-muted text-[11px] font-bold flex items-center justify-center border border-border-soft">2</button>
             <button onclick="setPriority(this, 3)" class="priority-btn w-7 h-7 rounded-lg bg-primary text-white text-[11px] font-bold flex items-center justify-center">3</button>
@@ -307,6 +314,12 @@
   <section class="space-y-4">
 
     <p class="text-[10px] font-bold tracking-widest text-text-light uppercase px-1">Completed Missions</p>
+ <section class="space-y-4" id="completedSection">
+  <p class="text-[10px] font-bold tracking-widest text-text-light uppercase px-1">Completed Missions</p>
+  <div id="completedProjects" class="space-y-4">
+    <!-- Rendered by JS -->
+  </div>
+</section>
 
     <div class="fade-up bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft space-y-4">
       <div class="flex justify-between items-start">
@@ -397,54 +410,205 @@
      JAVASCRIPT
 ============================================================ -->
 <script>
+  // ---- SUPABASE ----
+  const { createClient } = supabase
+  const db = createClient(
+    'https://nhymadutuhpjgkiurify.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+  )
+
+  let currentUser = null
+
+  // ---- AUTH GUARD ----
+  async function checkAuth() {
+    const { data: { session } } = await db.auth.getSession()
+    if (!session) { window.location.href = 'login.html'; return null }
+    currentUser = session.user
+    return session.user
+  }
+
+  // ---- LOAD PROJECTS ----
+  async function loadProjects() {
+    const { data, error } = await db
+      .from('projects')
+      .select('*')
+      .eq('is_visible', true)
+      .order('created_at', { ascending: false })
+
+    if (error) { console.error('Projects error:', error); return }
+    if (!data || data.length === 0) return
+
+    renderProjects(data)
+  }
+
+  function renderProjects(projects) {
+    const activeContainer = document.getElementById('activeProjects')
+    const completedContainer = document.getElementById('completedProjects')
+
+    if (!activeContainer) return
+
+    const activeProjects = projects.filter(p => p.status === 'active')
+    const completedProjects = projects.filter(p => p.status === 'completed')
+
+    // Render active projects
+    activeContainer.innerHTML = ''
+    activeProjects.forEach((project, index) => {
+      const percent = Math.round((project.raised_amount / project.goal_amount) * 100)
+      const isClosing = project.days_remaining && project.days_remaining <= 5
+      const images = [
+        'https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=800&q=80',
+        'https://images.unsplash.com/photo-1594398901394-4e34939a02eb?w=800&q=80',
+        'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80',
+      ]
+
+      const card = document.createElement('div')
+      card.className = 'fade-up project-card bg-card-bg rounded-2xl overflow-hidden shadow-card border border-border-soft'
+
+      card.innerHTML = `
+        <div class="relative h-44 overflow-hidden">
+          <img src="${images[index % images.length]}" alt="${project.title}" class="w-full h-full object-cover">
+          <div class="absolute inset-0 bg-gradient-to-t from-dark/40 to-transparent"></div>
+          <span class="absolute top-3 left-3 ${isClosing ? 'bg-action' : 'bg-primary'} text-white text-[9px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">${isClosing ? 'Closing Soon' : project.category}</span>
+        </div>
+        <div class="p-5 space-y-3">
+          <h3 class="font-headline font-bold text-lg text-text-dark">${project.title}</h3>
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-[11px] font-bold">
+              <span class="${isClosing ? 'text-action' : 'text-text-muted'}">${percent}% funded</span>
+              <span class="text-primary">$${Number(project.raised_amount).toLocaleString()} / $${Number(project.goal_amount).toLocaleString()}</span>
+            </div>
+            <div class="h-2 w-full bg-surface rounded-full overflow-hidden">
+              <div class="h-full ${isClosing ? 'bg-action' : 'tactical-gradient'} rounded-full transition-all duration-1000" style="width:0%" data-w="${percent}%"></div>
+            </div>
+            <div class="flex justify-between text-[10px] ${isClosing ? 'text-action font-bold' : 'text-text-light'}">
+              <span>${isClosing ? '⚡ Only ' : ''}${project.days_remaining || '—'} days remaining${isClosing ? '!' : ''}</span>
+              <span>${project.warrior_count || 248} warriors</span>
+            </div>
+          </div>
+          <div class="bg-cream rounded-xl p-3 border-l-4 ${isClosing ? 'border-action' : 'border-gold'}">
+            <p class="text-[11px] text-text-muted leading-relaxed">
+              <span class="font-bold text-text-dark">Latest:</span> "${project.latest_update || 'Update coming soon.'}"
+            </p>
+          </div>
+          <div class="flex items-center justify-between pt-1">
+            <span class="text-[10px] text-text-light font-bold uppercase tracking-widest">Your priority rank</span>
+            <div class="flex gap-1" data-project="${project.id}">
+              <button onclick="setPriority(this, '${project.id}', 1)" class="priority-btn w-7 h-7 rounded-lg ${index === 0 ? 'bg-primary text-white' : 'bg-surface text-text-muted border border-border-soft'} text-[11px] font-bold flex items-center justify-center">1</button>
+              <button onclick="setPriority(this, '${project.id}', 2)" class="priority-btn w-7 h-7 rounded-lg ${index === 1 ? 'bg-primary text-white' : 'bg-surface text-text-muted border border-border-soft'} text-[11px] font-bold flex items-center justify-center">2</button>
+              <button onclick="setPriority(this, '${project.id}', 3)" class="priority-btn w-7 h-7 rounded-lg ${index === 2 ? 'bg-primary text-white' : 'bg-surface text-text-muted border border-border-soft'} text-[11px] font-bold flex items-center justify-center">3</button>
+            </div>
+          </div>
+        </div>
+      `
+
+      activeContainer.appendChild(card)
+    })
+
+    // Render completed projects
+    if (completedContainer && completedProjects.length > 0) {
+      completedContainer.innerHTML = ''
+      completedProjects.forEach(project => {
+        completedContainer.innerHTML += `
+          <div class="fade-up bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft space-y-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="inline-block px-2.5 py-1 rounded-full bg-green-500/10 text-green-600 text-[9px] font-bold tracking-wider mb-2">✓ COMPLETED</span>
+                <h3 class="font-headline font-bold text-base text-text-dark">${project.title}</h3>
+              </div>
+              <span class="font-headline font-bold text-sm text-primary">$${Number(project.raised_amount).toLocaleString()}</span>
+            </div>
+            <div class="h-2 w-full bg-surface rounded-full overflow-hidden">
+              <div class="h-full bg-green-500 rounded-full" style="width:100%"></div>
+            </div>
+            <div class="reflection-plate bg-cream p-4 rounded-r-xl">
+              <p class="text-[12px] text-text-muted leading-relaxed font-body italic">
+                <span class="font-bold text-text-dark not-italic">Impact:</span> "${project.latest_update || 'Mission accomplished.'}"
+              </p>
+            </div>
+          </div>
+        `
+      })
+    }
+
+    // Observe for scroll reveal
+    setTimeout(() => {
+      document.querySelectorAll('.fade-up').forEach(el => observer.observe(el))
+    }, 100)
+  }
 
   // ---- SCROLL REVEAL ----
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-        // Animate progress bars when card becomes visible
+        entry.target.classList.add('visible')
         entry.target.querySelectorAll('[data-w]').forEach(bar => {
-          setTimeout(() => {
-            bar.style.width = bar.dataset.w;
-          }, 200);
-        });
+          setTimeout(() => { bar.style.width = bar.dataset.w }, 200)
+        })
       }
-    });
-  }, { threshold: 0.1 });
+    })
+  }, { threshold: 0.1 })
 
-  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+  // ---- PRIORITY ----
+async function setPriority(btn, projectId, rank) {
+  // Check if this rank is already used by another project
+  const allPriorityBtns = document.querySelectorAll('.priority-btn.bg-primary')
+  const existingWithRank = []
 
-  // ---- PRIORITY BUTTONS ----
-  function setPriority(btn, rank) {
-    const group = btn.closest('.flex.gap-1');
-    group.querySelectorAll('.priority-btn').forEach(b => {
-      b.classList.remove('bg-primary', 'text-white');
-      b.classList.add('bg-surface', 'text-text-muted', 'border', 'border-border-soft');
-    });
-    btn.classList.add('bg-primary', 'text-white');
-    btn.classList.remove('bg-surface', 'text-text-muted', 'border', 'border-border-soft');
+  allPriorityBtns.forEach(b => {
+    const parentProject = b.closest('[data-project]')
+    if (parentProject && parentProject.dataset.project !== projectId) {
+      if (b.textContent.trim() === String(rank)) {
+        existingWithRank.push(b)
+      }
+    }
+  })
 
-    showToast(`Priority set to #${rank}`);
+  // Remove rank from other project if duplicate
+  existingWithRank.forEach(b => {
+    b.classList.remove('bg-primary', 'text-white')
+    b.classList.add('bg-surface', 'text-text-muted', 'border', 'border-border-soft')
+  })
 
-    // TODO: Save to Supabase user preferences
+  // Set this button active
+  const group = btn.closest('.flex.gap-1')
+  group.querySelectorAll('.priority-btn').forEach(b => {
+    b.classList.remove('bg-primary', 'text-white')
+    b.classList.add('bg-surface', 'text-text-muted', 'border', 'border-border-soft')
+  })
+  btn.classList.add('bg-primary', 'text-white')
+  btn.classList.remove('bg-surface', 'text-text-muted', 'border', 'border-border-soft')
+
+  showToast('Priority #' + rank + ' assigned')
+
+  if (currentUser) {
+    await db.from('project_priorities').upsert({
+      user_id: currentUser.id,
+      project_id: projectId,
+      priority: rank
+    })
   }
+}
 
   // ---- TOAST ----
   function showToast(msg) {
-    const t = document.createElement('div');
-    t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2';
-    t.innerHTML = `<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24">check_circle</span> ${msg}`;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2000);
+    const t = document.createElement('div')
+    t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2'
+    t.innerHTML = '<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:\'FILL\' 1">check_circle</span> ' + msg
+    document.body.appendChild(t)
+    setTimeout(() => t.remove(), 2000)
   }
 
   // ---- HAPTICS ----
   document.querySelectorAll('button, a').forEach(el => {
-    el.addEventListener('click', () => navigator.vibrate?.(8));
-  });
+    el.addEventListener('click', () => { if (navigator.vibrate) navigator.vibrate(8) })
+  })
 
+  // ---- INIT ----
+  async function init() {
+    await checkAuth()
+    await loadProjects()
+  }
+  init()
 </script>
-
 </body>
 </html>
