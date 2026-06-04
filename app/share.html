@@ -85,14 +85,15 @@
 
     <!-- IMAGE PREVIEW -->
     <section class="flex flex-col items-center">
-      <div class="relative w-[200px] h-[280px] rounded-2xl overflow-hidden shadow-card bg-surface group">
-        <img id="previewImage" src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80" alt="Your photo" class="w-full h-full object-cover brightness-75">
-        <div class="absolute inset-0 flex flex-col justify-center items-center px-4 text-center">
-          <span class="text-gold/80 text-3xl leading-none mb-1" style="font-family:Georgia,serif">"</span>
-          <p id="previewQuote" class="text-white font-headline font-bold text-[13px] leading-snug drop-shadow-lg">Loading quote...</p>
-          <p id="previewRef" class="mt-2 text-white/90 font-body font-bold text-[10px] drop-shadow-md tracking-wider">— Loading</p>
-        </div>
-      </div>
+     <div class="relative w-[200px] h-[280px] rounded-2xl overflow-hidden shadow-card bg-dark group" id="previewCard">
+  <img id="previewImage" src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80" alt="Your photo" class="w-full h-full object-cover brightness-75">
+  <div class="absolute inset-0 bg-black/20"></div>
+  <div class="absolute inset-0 flex flex-col justify-center items-center px-4 text-center">
+    <span class="text-gold/80 text-3xl leading-none mb-1" style="font-family:Georgia,serif">"</span>
+    <p id="previewQuote" class="text-white font-headline font-bold text-[13px] leading-snug drop-shadow-lg">Loading...</p>
+    <p id="previewRef" class="mt-2 text-white/90 font-body font-bold text-[10px] drop-shadow-md tracking-wider">— ...</p>
+  </div>
+</div>
       <button onclick="goBack()" class="mt-3 text-primary font-bold text-sm flex items-center gap-1.5 hover:opacity-70 transition-opacity active:scale-95">
         <span class="material-symbols-outlined text-[16px]">edit</span> Edit Image
       </button>
@@ -136,22 +137,22 @@
       </div>
     </section>
 
-    <!-- PERSONAL MESSAGE -->
-    <section class="bg-card-bg rounded-2xl p-5 space-y-4 shadow-natural border border-border-soft">
-      <h2 class="font-headline font-bold text-[15px] text-text-dark">Personal Message <span class="font-body font-normal text-[11px] text-text-light ml-1">(optional)</span></h2>
-      <div class="relative">
-        <textarea id="personalMsg" maxlength="150" oninput="updateCharCount()" placeholder="Add your own words to the post..."
-          class="w-full h-24 bg-surface border border-border-soft rounded-xl p-3.5 text-text-dark placeholder:text-text-light text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary resize-none"></textarea>
-        <span id="charCount" class="absolute bottom-2.5 right-3 text-[10px] text-text-light font-bold">0 / 150</span>
-      </div>
-      <div>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-text-light mb-2">Place message</p>
-        <div class="flex bg-surface rounded-xl p-1 border border-border-soft gap-1">
-          <button onclick="setPlacement('image',this)" id="placeImage" class="flex-1 py-2 rounded-lg text-[12px] font-bold text-text-muted transition-all">On Image</button>
-          <button onclick="setPlacement('caption',this)" id="placeCaption" class="flex-1 py-2 rounded-lg text-[12px] font-bold bg-card-bg text-primary shadow-natural ring-1 ring-black/5 transition-all">In Caption</button>
-        </div>
-      </div>
-    </section>
+   <!-- PERSONAL MESSAGE -->
+<section class="bg-card-bg rounded-2xl p-5 space-y-4 shadow-natural border border-border-soft">
+  <h2 class="font-headline font-bold text-[15px] text-text-dark">Personal Message <span class="font-body font-normal text-[11px] text-text-light ml-1">(optional)</span></h2>
+  <div class="relative">
+    <textarea id="personalMsg" maxlength="150" oninput="updateCharCount()" placeholder="Add your own words to the post..."
+      class="w-full h-24 bg-surface border border-border-soft rounded-xl p-3.5 text-text-dark placeholder:text-text-light text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary resize-none"></textarea>
+    <span id="charCount" class="absolute bottom-2.5 right-3 text-[10px] text-text-light font-bold">0 / 150</span>
+  </div>
+  <div>
+    <p class="text-[10px] font-bold uppercase tracking-widest text-text-light mb-2">Place message</p>
+    <div class="flex bg-surface rounded-xl p-1 border border-border-soft gap-1">
+      <button onclick="setPlacement('image')" id="placeImage" class="flex-1 py-2 rounded-lg text-[12px] font-bold text-text-muted transition-all">On Image</button>
+      <button onclick="setPlacement('caption')" id="placeCaption" class="flex-1 py-2 rounded-lg text-[12px] font-bold bg-card-bg text-primary shadow-natural ring-1 ring-black/5 transition-all">In Caption</button>
+    </div>
+  </div>
+</section>
 
     <!-- PLATFORM SELECTION -->
     <section class="bg-card-bg rounded-2xl p-5 space-y-4 shadow-natural border border-border-soft">
@@ -273,28 +274,49 @@
   const MAX_TAGS = 5
 
   // ---- AUTH ----
-  async function checkAuth() {
-    const { data: { session } } = await db.auth.getSession()
-    if (!session) { window.location.href = 'login.html'; return }
-    currentUser = session.user
-  }
+   async function init() {
+    await checkAuth()
 
-  // ---- LOAD TODAY'S QUOTE ----
-  async function loadQuote() {
-    const { data } = await db
+    var quoteEl = document.getElementById('previewQuote')
+    var refEl = document.getElementById('previewRef')
+    var imgEl = document.getElementById('previewImage')
+    var previewCard = document.getElementById('previewCard')
+
+    // Load quote
+    var result = await db
       .from('quotes')
       .select('*')
       .eq('status', 'live')
       .order('published_at', { ascending: false })
       .limit(1)
 
-      if (data && data.length > 0) {
-      currentQuoteId = data[0].id
-      currentQuote = data[0]
-      document.getElementById('previewQuote').textContent = '"' + data[0].text.substring(0, 60) + '..."'
-      document.getElementById('previewRef').textContent = '— ' + data[0].source.toUpperCase()
-      updateSummary()
+    if (result.data && result.data.length > 0) {
+      currentQuoteId = result.data[0].id
+      currentQuote = result.data[0]
+      quoteEl.textContent = '"' + result.data[0].text.substring(0, 60) + '..."'
+      refEl.textContent = '— ' + result.data[0].source.toUpperCase()
     }
+
+    // Load background from editor choice
+    var bgType = sessionStorage.getItem('gstw_bg_type')
+    var bgValue = sessionStorage.getItem('gstw_bg_value')
+
+    if (previewCard && bgType && bgValue) {
+      if (bgType === 'image') {
+        imgEl.src = bgValue
+        imgEl.style.display = 'block'
+      } else if (bgType === 'color' || bgType === 'gradient') {
+        imgEl.style.display = 'none'
+        previewCard.style.background = bgValue
+        // Adjust text color for light backgrounds
+        var isLight = bgValue === '#F7F4ED' || bgValue === '#FFFFFF'
+        quoteEl.style.color = isLight ? '#1A1A1A' : 'white'
+        refEl.style.color = isLight ? '#1E4060' : 'rgba(255,255,255,0.9)'
+      }
+    }
+
+    updateSummary()
+  }
   }
 
   // ---- NAVIGATION ----
@@ -380,20 +402,24 @@
     if (e.key === 'Enter') { e.preventDefault(); addHashtagFromInput() }
   }
 
-  // ---- CHAR COUNT ----
+   // ---- CHAR COUNT ----
   function updateCharCount() {
-    const len = document.getElementById('personalMsg').value.length
-    const el = document.getElementById('charCount')
-    el.textContent = len + ' / 150'
-    el.className = 'absolute bottom-2.5 right-3 text-[10px] font-bold ' + (len > 130 ? 'text-action' : 'text-text-light')
+    var msg = document.getElementById('personalMsg')
+    var counter = document.getElementById('charCount')
+    if (!msg || !counter) return
+    var len = msg.value.length
+    counter.textContent = len + ' / 150'
+    counter.className = 'absolute bottom-2.5 right-3 text-[10px] font-bold ' + (len > 130 ? 'text-action' : 'text-text-light')
   }
 
   // ---- PLACEMENT TOGGLE ----
-  function setPlacement(mode, btn) {
-    const imgBtn = document.getElementById('placeImage')
-    const capBtn = document.getElementById('placeCaption')
-    const active = 'bg-card-bg text-primary shadow-natural ring-1 ring-black/5'
-    const inactive = 'text-text-muted'
+  function setPlacement(mode) {
+    var imgBtn = document.getElementById('placeImage')
+    var capBtn = document.getElementById('placeCaption')
+    if (!imgBtn || !capBtn) return
+
+    var active = 'bg-card-bg text-primary shadow-natural ring-1 ring-black/5'
+    var inactive = 'text-text-muted'
 
     if (mode === 'image') {
       imgBtn.className = 'flex-1 py-2 rounded-lg text-[12px] font-bold ' + active + ' transition-all'
