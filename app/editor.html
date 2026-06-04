@@ -131,10 +131,8 @@
   <div class="absolute inset-0 z-10 flex items-center justify-center px-6">
     <div id="quoteOverlay" class="w-full max-w-sm border-2 border-dashed border-white/40 rounded-2xl p-6 flex flex-col items-center text-center">
       <span id="quoteMark" class="text-[48px] leading-none text-gold/70 mb-1 drop-shadow-lg" style="font-family:Georgia,serif">"</span>
-      <p id="quoteText" class="font-jakarta font-bold text-[20px] text-white leading-relaxed quote-shadow" style="opacity:0;transition:opacity 0.3s">
-</p>
-<p id="quoteRef" class="mt-4 font-body font-bold text-sm text-white/90 quote-shadow tracking-wider" style="opacity:0;transition:opacity 0.3s">
-</p>
+      <p id="quoteText" class="font-jakarta font-bold text-[20px] text-white leading-relaxed quote-shadow" style="opacity:0;transition:opacity 0.3s"></p>
+<p id="quoteRef" class="mt-4 font-body font-bold text-sm text-white/90 quote-shadow tracking-wider" style="opacity:0;transition:opacity 0.3s"></p>
     </div>
   </div>
 
@@ -260,16 +258,17 @@
 </div>
 
 <script>
-  // ---- SUPABASE ----
-  const { createClient } = supabase
-  const db = createClient('https://nhymadutuhpjgkiurify.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM')
+ <script>
+  // ---- SUPABASE (global) ----
+  var { createClient } = supabase
+  var db = createClient('https://nhymadutuhpjgkiurify.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM')
 
-  // ---- ELEMENTS (set after DOM ready) ----
-  let quoteText, quoteRef, quoteOverlay, bgCanvas, bgOverlay, subPanel
-  let currentPanel = null
-  let currentBtn = null
+  // ---- ELEMENTS (global, set when DOM ready) ----
+  var quoteText, quoteRef, quoteOverlay, bgCanvas, bgOverlay, subPanel
+  var currentPanel = null
+  var currentBtn = null
 
-  const fontMap = {
+  var fontMap = {
     'font-jakarta': "'Plus Jakarta Sans', sans-serif",
     'font-playfair': "'Playfair Display', serif",
     'font-oswald': "'Oswald', sans-serif",
@@ -277,9 +276,9 @@
     'font-bebas': "'Bebas Neue', sans-serif",
     'font-merri': "'Merriweather', serif"
   }
-  const fontClasses = Object.keys(fontMap)
+  var fontClasses = Object.keys(fontMap)
 
-  // ---- WAIT FOR DOM THEN INIT ----
+  // ---- WAIT FOR DOM ----
   window.addEventListener('DOMContentLoaded', function() {
     quoteText = document.getElementById('quoteText')
     quoteRef = document.getElementById('quoteRef')
@@ -288,17 +287,7 @@
     bgOverlay = document.getElementById('bgOverlay')
     subPanel = document.getElementById('subPanel')
 
-    // Verify elements exist
-    console.log('Elements found:', {
-      quoteText: !!quoteText,
-      quoteRef: !!quoteRef,
-      quoteOverlay: !!quoteOverlay,
-      bgCanvas: !!bgCanvas,
-      bgOverlay: !!bgOverlay,
-      subPanel: !!subPanel
-    })
-
-    // Setup drag
+    // Setup drag listeners
     if (quoteOverlay) {
       quoteOverlay.addEventListener('mousedown', onDragStart)
       quoteOverlay.addEventListener('touchstart', onDragStart, { passive: false })
@@ -308,7 +297,7 @@
     document.addEventListener('mouseup', onDragEnd)
     document.addEventListener('touchend', onDragEnd)
 
-    // Close panels on background click
+    // Close panel on background click
     document.addEventListener('click', function(e) {
       if (!currentPanel) return
       if (e.target.closest('.tool-btn') || e.target.closest('#subPanel') || e.target.closest('#quoteOverlay') || e.target.closest('#photoPickerSheet')) return
@@ -324,28 +313,37 @@
       if (w) w.classList.remove('hidden')
     }
 
-    // Start
+    // Start loading
     init()
   })
 
-  // ---- AUTH + LOAD QUOTE ----
+  // ---- INIT ----
   async function init() {
-    var session = await db.auth.getSession()
-    if (!session.data.session) { window.location.href = 'login.html'; return }
+    var sessionResult = await db.auth.getSession()
+    if (!sessionResult.data.session) { window.location.href = 'login.html'; return }
 
-    var result = await db.from('quotes').select('*').eq('status', 'live').order('published_at', { ascending: false }).limit(1)
+    // Load quote — NO .single()
+    var result = await db
+      .from('quotes')
+      .select('*')
+      .eq('status', 'live')
+      .order('published_at', { ascending: false })
+      .limit(1)
 
-    if (data && data.length > 0) {
-  quoteEl.textContent = data[0].text
-  refEl.textContent = '— ' + data[0].source.toUpperCase()
-  window.currentQuoteId = data[0].id
+    if (result.data && result.data.length > 0) {
+      quoteText.textContent = result.data[0].text
+      quoteRef.textContent = '— ' + result.data[0].source.toUpperCase()
+      window.currentQuoteId = result.data[0].id
     } else {
       quoteText.textContent = 'The Word is with you today.'
       quoteRef.textContent = '— GSTW'
     }
-   // Fade in the quote
+
+    // Show quote (fade in)
     quoteText.style.opacity = '1'
     quoteRef.style.opacity = '1'
+
+    // Load background from backgrounds page
     loadBackgroundChoice()
   }
 
@@ -353,7 +351,7 @@
   function loadBackgroundChoice() {
     var bgType = sessionStorage.getItem('gstw_bg_type')
     var bgValue = sessionStorage.getItem('gstw_bg_value')
-    if (!bgType || !bgValue) return
+    if (!bgType || !bgValue || !bgCanvas) return
 
     if (bgType === 'image') {
       bgCanvas.style.backgroundImage = "url('" + bgValue + "')"
@@ -371,7 +369,7 @@
   // ---- PANEL TOGGLE ----
   function togglePanel(name, btn) {
     var panelEl = document.getElementById('panel' + name)
-    if (!panelEl) return
+    if (!panelEl || !subPanel) return
     if (currentPanel === name) {
       subPanel.classList.remove('open')
       if (currentBtn) currentBtn.classList.remove('active')
@@ -390,6 +388,7 @@
 
   // ---- FONT ----
   function setFont(fontClass, btn) {
+    if (!quoteText || !quoteRef) return
     fontClasses.forEach(function(f) { quoteText.classList.remove(f); quoteRef.classList.remove(f) })
     quoteText.classList.add(fontClass)
     quoteRef.classList.add(fontClass)
@@ -404,15 +403,18 @@
 
   // ---- SIZE ----
   function setSize(val) {
+    if (!quoteText) return
     quoteText.style.fontSize = val + 'px'
     document.getElementById('sizeLabel').textContent = val + 'px'
   }
 
   // ---- COLOR ----
   function setColor(hex, swatch) {
+    if (!quoteText || !quoteRef) return
     quoteText.style.color = hex
     quoteRef.style.color = hex
-    document.getElementById('colorPreview').style.background = hex
+    var preview = document.getElementById('colorPreview')
+    if (preview) preview.style.background = hex
     document.querySelectorAll('.color-swatch').forEach(function(s) {
       s.classList.remove('selected')
       s.style.borderColor = 'transparent'
@@ -423,6 +425,7 @@
 
   // ---- BLUR ----
   function setBlur(val) {
+    if (!bgCanvas) return
     bgCanvas.style.filter = 'blur(' + parseInt(val) + 'px)'
     var labels = ['None','Low','Medium','High','Heavy']
     document.getElementById('blurLabel').textContent = labels[Math.min(Math.floor(parseInt(val) / 5), 4)]
@@ -430,6 +433,7 @@
 
   // ---- DARKNESS ----
   function setDarkness(val) {
+    if (!bgOverlay) return
     bgOverlay.style.background = 'rgba(0,0,0,' + (val / 100) + ')'
     document.getElementById('darkLabel').textContent = val + '%'
   }
@@ -440,6 +444,7 @@
   var alignIdx = 0
 
   function cycleAlign() {
+    if (!quoteText || !quoteRef || !quoteOverlay) return
     alignIdx = (alignIdx + 1) % alignCycle.length
     var a = alignCycle[alignIdx]
     quoteText.style.textAlign = a
@@ -454,6 +459,7 @@
   var dragStartX = 0, dragStartY = 0, overlayStartX = 0, overlayStartY = 0
 
   function onDragStart(e) {
+    if (!quoteOverlay) return
     if (e.target.closest('.tool-btn') || e.target.closest('#subPanel')) return
     dragActive = true
     quoteOverlay.classList.add('dragging')
@@ -473,7 +479,7 @@
   }
 
   function onDragMove(e) {
-    if (!dragActive) return
+    if (!dragActive || !quoteOverlay) return
     var cx = e.touches ? e.touches[0].clientX : e.clientX
     var cy = e.touches ? e.touches[0].clientY : e.clientY
     var parentRect = quoteOverlay.parentElement.getBoundingClientRect()
@@ -494,15 +500,17 @@
   // ---- PHOTO PICKER ----
   function openPhotoPicker() {
     var sheet = document.getElementById('photoPickerSheet')
+    if (!sheet) return
     var panel = sheet.querySelector('.sheet-panel')
     sheet.classList.remove('hidden')
-    requestAnimationFrame(function() { panel.classList.add('open') })
+    if (panel) requestAnimationFrame(function() { panel.classList.add('open') })
   }
 
   function closePhotoPicker() {
     var sheet = document.getElementById('photoPickerSheet')
+    if (!sheet) return
     var panel = sheet.querySelector('.sheet-panel')
-    panel.classList.remove('open')
+    if (panel) panel.classList.remove('open')
     setTimeout(function() { sheet.classList.add('hidden') }, 400)
   }
 
@@ -510,13 +518,13 @@
 
   function openCamera() {
     closePhotoPicker()
-    if (isDesktop()) { showToast('⚠️ Camera not available — use gallery'); return }
+    if (isDesktop()) { showToast('Camera not available on desktop'); return }
     setTimeout(function() { document.getElementById('cameraInput').click() }, 300)
   }
 
   function openSelfie() {
     closePhotoPicker()
-    if (isDesktop()) { showToast('⚠️ Camera not available — use gallery'); return }
+    if (isDesktop()) { showToast('Camera not available on desktop'); return }
     setTimeout(function() { document.getElementById('selfieInput').click() }, 300)
   }
 
@@ -527,7 +535,7 @@
 
   function handleImageSelect(input) {
     var file = input.files[0]
-    if (!file) return
+    if (!file || !bgCanvas) return
     var reader = new FileReader()
     reader.onload = function(e) {
       bgCanvas.style.backgroundImage = "url('" + e.target.result + "')"
@@ -540,9 +548,17 @@
   }
 
   // ---- NAVIGATION ----
-  function goBack() { window.location.href = 'backgrounds.html' }
-  function goHome() { if (confirm('Leave editor? Changes will be lost.')) window.location.href = 'index.html' }
-  function goNext() { window.location.href = 'share.html' }
+  function goBack() {
+    window.location.href = 'backgrounds.html'
+  }
+
+  function goHome() {
+    window.location.href = 'index.html'
+  }
+
+  function goNext() {
+    window.location.href = 'share.html'
+  }
 
   // ---- TOAST ----
   var toastTimer
