@@ -92,9 +92,6 @@
     }
     .cta-pulse { animation: subtle-pulse 3s ease-in-out infinite; }
 
-    /* Dot indicators */
-    .dot-indicator { transition: all 0.3s ease; }
-
     /* Top bar hide on scroll */
     #topBar { transition: transform 0.3s ease; }
 
@@ -110,7 +107,7 @@
       display: flex;
       flex-direction: column;
     }
-  </style>
+  </style> #quoteText, #quoteRef { transition: opacity 0.3s ease; }
 </head>
 
 <body class="text-text-dark">
@@ -197,8 +194,8 @@
       <!-- Reflection Plate Quote Card -->
       <div class="reflection-plate rounded-2xl p-7 w-full relative overflow-hidden">
 
-        <h1 id="quoteText" class="font-headline font-bold text-xl leading-relaxed text-text-dark tracking-tight">
-  Loading today's Word...
+        <h1 id="quoteText" class="font-headline font-bold text-xl leading-relaxed text-text-dark tracking-tight opacity-0">
+  —
 </h1>
 
 <p id="quoteRef" class="mt-5 font-body font-bold text-sm text-primary tracking-wider">
@@ -389,19 +386,29 @@ async function loadTodaysQuote() {
     .limit(1)
     .single()
 
+  const quoteEl = document.getElementById('quoteText')
+  const refEl   = document.getElementById('quoteRef')
+
   if (error || !data) {
-    console.error('Quote load error:', error)
+    quoteEl.textContent = 'Be strong and courageous.'
+    quoteEl.style.opacity = '1'
+    refEl.textContent = '— Joshua 1:9'
     return
   }
 
-  document.getElementById('quoteText').textContent = data.text
-  document.getElementById('quoteRef').textContent  = '— ' + data.source.toUpperCase()
+  quoteEl.textContent = data.text
+  refEl.textContent   = '— ' + data.source.toUpperCase()
+  
+  // Reveal with a tiny fade
+  quoteEl.style.opacity = '1'
+  refEl.style.opacity   = '1'
+}
 
   // Store quote id for sharing later
   window.currentQuoteId = data.id
 }
 
-// ---- LOAD USER PROFILE ----
+ // ---- LOAD USER PROFILE ----
 async function loadUserProfile(userId) {
   const { data, error } = await db
     .from('profiles')
