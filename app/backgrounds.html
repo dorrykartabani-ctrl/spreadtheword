@@ -270,50 +270,36 @@
 
   // ---- AUTH + LOAD QUOTE ----
  async function init() {
-  // Wait for auth to be ready
   const { data: { session } } = await db.auth.getSession()
-  
-  if (!session) { 
-    window.location.href = 'login.html'
-    return 
-  }
-
-  console.log('Auth OK, loading quote...')
+  if (!session) { window.location.href = 'login.html'; return }
 
   const quoteEl = document.getElementById('previewQuote')
   const refEl = document.getElementById('previewRef')
 
-  // Try loading quote
+  // Load latest live quote — NO .single()
   const { data, error } = await db
     .from('quotes')
     .select('*')
     .eq('status', 'live')
     .order('published_at', { ascending: false })
     .limit(1)
-    .single()
 
-  console.log('Quote result:', data, 'Error:', error)
-
-  if (data && !error) {
-    quoteEl.textContent = data.text
-    refEl.textContent = '— ' + data.source.toUpperCase()
+  if (data && data.length > 0) {
+    quoteEl.textContent = data[0].text
+    refEl.textContent = '— ' + data[0].source.toUpperCase()
   } else {
-    // Fallback — try without .single() in case of multiple
-    const { data: allQuotes } = await db
-      .from('quotes')
-      .select('*')
-      .eq('status', 'live')
-      .order('published_at', { ascending: false })
-      .limit(1)
-
-    if (allQuotes && allQuotes.length > 0) {
-      quoteEl.textContent = allQuotes[0].text
-      refEl.textContent = '— ' + allQuotes[0].source.toUpperCase()
-    } else {
-      quoteEl.textContent = 'The Word is with you today.'
-      refEl.textContent = '— GSTW'
-    }
+    quoteEl.textContent = 'The Word is with you today.'
+    refEl.textContent = '— GSTW'
   }
+
+  quoteEl.style.opacity = '1'
+  refEl.style.opacity = '1'
+
+  if (isDesktop()) {
+    const w = document.getElementById('desktopWarning')
+    if (w) w.classList.remove('hidden')
+  }
+}
 
   // Fade in
   quoteEl.style.opacity = '1'
