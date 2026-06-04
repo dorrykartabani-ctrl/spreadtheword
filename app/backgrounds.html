@@ -102,9 +102,9 @@
         <!-- Quote overlay -->
         <div class="relative z-10 text-center">
           <span class="scripture-mark text-gold/60 text-5xl leading-none block mb-2">"</span>
-          <p id="previewQuote" class="font-headline font-bold text-xl text-white leading-relaxed drop-shadow-lg">Loading...</p>
-          <div class="w-10 h-px bg-gold/50 mx-auto my-3"></div>
-          <p id="previewRef" class="font-body font-bold text-xs text-white/90 uppercase tracking-widest drop-shadow-md">— ...</p>
+          <p id="previewQuote" class="font-headline font-bold text-xl text-white leading-relaxed drop-shadow-lg" style="opacity:0; transition:opacity 0.3s ease;"></p>
+<div class="w-10 h-px bg-gold/50 mx-auto my-3"></div>
+<p id="previewRef" class="font-body font-bold text-xs text-white/90 uppercase tracking-widest drop-shadow-md" style="opacity:0; transition:opacity 0.3s ease;"></p>
         </div>
       </section>
 
@@ -269,21 +269,37 @@
   let selectedBgValue = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80'
 
   // ---- AUTH + LOAD QUOTE ----
-  async function init() {
-    const { data: { session } } = await db.auth.getSession()
-    if (!session) { window.location.href = 'login.html'; return }
+ async function init() {
+  const { data: { session } } = await db.auth.getSession()
+  if (!session) { window.location.href = 'login.html'; return }
 
-    const { data } = await db.from('quotes').select('*').eq('status', 'live').order('published_at', { ascending: false }).limit(1).single()
-    if (data) {
-      document.getElementById('previewQuote').textContent = data.text
-      document.getElementById('previewRef').textContent = '— ' + data.source.toUpperCase()
-    }
+  const quoteEl = document.getElementById('previewQuote')
+  const refEl = document.getElementById('previewRef')
 
-    if (isDesktop()) {
-      const w = document.getElementById('desktopWarning')
-      if (w) w.classList.remove('hidden')
-    }
+  const { data } = await db
+    .from('quotes')
+    .select('*')
+    .eq('status', 'live')
+    .order('published_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (data) {
+    quoteEl.textContent = data.text
+    refEl.textContent = '— ' + data.source.toUpperCase()
+  } else {
+    quoteEl.textContent = 'The Word is with you today.'
+    refEl.textContent = '— GSTW'
   }
+
+  quoteEl.style.opacity = '1'
+  refEl.style.opacity = '1'
+
+  if (isDesktop()) {
+    const w = document.getElementById('desktopWarning')
+    if (w) w.classList.remove('hidden')
+  }
+}
   init()
 
   // ---- TABS ----
