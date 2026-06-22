@@ -1,5 +1,5 @@
 // Service Worker for Go Spread The Word PWA
-const CACHE_NAME = 'gstw-v1'
+const CACHE_NAME = 'gstw-v2'
 
 // Files to cache for offline use
 const CACHE_FILES = [
