@@ -8,6 +8,7 @@
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -43,49 +44,103 @@
   </script>
 
   <style>
-    body{font-family:'Manrope',sans-serif;background-color:#F0EDE6;-webkit-tap-highlight-color:transparent;min-height:100dvh}
+    body{
+      font-family:'Manrope',sans-serif;
+      background-color:#F0EDE6;
+      -webkit-tap-highlight-color:transparent;
+      min-height:100dvh;
+    }
     .font-headline{font-family:'Plus Jakarta Sans',sans-serif}
-    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle}
+    .material-symbols-outlined{
+      font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+      vertical-align:middle
+    }
     .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
     .tactical-gradient{background:linear-gradient(145deg,#152E45,#1E4060)}
     ::-webkit-scrollbar{display:none}
     body{-ms-overflow-style:none;scrollbar-width:none}
 
-    /* Platform button states */
-    .platform-btn{transition:all 0.2s ease;border:2px solid rgba(92,107,122,0.15)}
+    /* Platform buttons */
+    .platform-btn{
+      transition:all 0.2s ease;
+      border:2px solid rgba(92,107,122,0.15);
+      background:#F0EDE6;
+    }
     .platform-btn:active{transform:scale(0.95)}
-    .platform-btn.selected{border-color:#1E4060 !important;background:rgba(30,64,96,0.08) !important}
+    .platform-btn.selected{
+      border-color:#1E4060 !important;
+      background:rgba(30,64,96,0.08) !important;
+    }
     .platform-btn.selected .platform-check{opacity:1 !important}
 
     /* Hashtag tags */
     .hashtag-tag{transition:all 0.15s ease}
     .hashtag-tag:active{transform:scale(0.95)}
 
-    /* Preview wrapper aspect ratios */
-    .preview-wrap{transition:all 0.3s ease;position:relative;overflow:hidden;border-radius:16px;box-shadow:0 16px 40px -8px rgba(30,64,96,0.20)}
+    /* Preview card */
+    .preview-wrap{
+      transition:all 0.3s ease;
+      position:relative;
+      overflow:hidden;
+      border-radius:16px;
+      box-shadow:0 16px 40px -8px rgba(30,64,96,0.25);
+    }
 
     /* Caption preview */
-    .caption-preview{font-family:'Manrope',sans-serif;white-space:pre-wrap;word-break:break-word;line-height:1.6}
+    .caption-preview{
+      font-family:'Manrope',sans-serif;
+      white-space:pre-wrap;
+      word-break:break-word;
+      line-height:1.6;
+    }
 
-    @keyframes pulse-glow{0%,100%{box-shadow:0 4px 20px rgba(30,64,96,0.25)}50%{box-shadow:0 4px 32px rgba(30,64,96,0.45)}}
+    /* Platform preview tabs */
+    .platform-tab{
+      transition:all 0.2s ease;
+      cursor:pointer;
+      white-space:nowrap;
+      flex-shrink:0;
+    }
+    .platform-tab.active{
+      background:#1E4060;
+      color:white;
+    }
+    .platform-tab:not(.active){
+      color:#5C6B7A;
+      background:#F0EDE6;
+    }
+
+    /* Deploy button pulse */
+    @keyframes pulse-glow{
+      0%,100%{box-shadow:0 4px 20px rgba(30,64,96,0.25)}
+      50%{box-shadow:0 4px 32px rgba(30,64,96,0.45)}
+    }
     #deployBtn{animation:pulse-glow 2.5s ease-in-out infinite}
 
-    /* Platform selector tabs */
-    .platform-tab{transition:all 0.2s ease;cursor:pointer;white-space:nowrap}
-    .platform-tab.active{background:#1E4060;color:white}
-    .platform-tab:not(.active){color:#5C6B7A}
+    /* Success modal scroll */
+    .modal-inner{
+      max-height:90dvh;
+      overflow-y:auto;
+      -ms-overflow-style:none;
+      scrollbar-width:none;
+    }
+    .modal-inner::-webkit-scrollbar{display:none}
   </style>
 </head>
 
 <body class="text-text-dark flex flex-col items-center">
 
+<!-- ═══════════════════════════════════════════ -->
 <!-- TOP BAR -->
+<!-- ═══════════════════════════════════════════ -->
 <header class="w-full max-w-[430px] mx-auto h-14 bg-card-bg flex items-center justify-between px-4 sticky top-0 z-50 border-b border-border-soft shadow-natural">
   <div class="flex items-center gap-2">
-    <button onclick="goBack()" class="w-10 h-10 flex items-center justify-center text-text-muted active:scale-90 transition-all">
+    <button onclick="goBack()"
+      class="w-10 h-10 flex items-center justify-center text-text-muted active:scale-90 transition-all">
       <span class="material-symbols-outlined text-[22px]">arrow_back</span>
     </button>
-    <button onclick="goHome()" class="w-10 h-10 flex items-center justify-center text-text-muted active:scale-90 transition-all">
+    <button onclick="goHome()"
+      class="w-10 h-10 flex items-center justify-center text-text-muted active:scale-90 transition-all">
       <span class="material-symbols-outlined text-[22px]">home</span>
     </button>
   </div>
@@ -93,170 +148,256 @@
   <button onclick="goHome()" class="text-text-muted font-bold text-xs active:opacity-60">Cancel</button>
 </header>
 
-<!-- MAIN -->
+<!-- ═══════════════════════════════════════════ -->
+<!-- MAIN CONTENT -->
+<!-- ═══════════════════════════════════════════ -->
 <main class="w-full max-w-[430px] mx-auto flex-1 overflow-y-auto pb-36">
   <div class="px-5 py-6 space-y-5">
 
-    <!-- ═══════════════════════════════════════ -->
+    <!-- ─────────────────────────────────────── -->
     <!-- LIVE PREVIEW SECTION -->
-    <!-- ═══════════════════════════════════════ -->
+    <!-- ─────────────────────────────────────── -->
     <section class="bg-card-bg rounded-2xl p-5 shadow-natural border border-border-soft space-y-4">
 
-      <!-- Platform Preview Selector Tabs -->
+      <!-- Preview Mode Tabs -->
       <div>
         <p class="text-[10px] font-bold uppercase tracking-widest text-text-light mb-2">Preview As</p>
         <div class="flex gap-2 overflow-x-auto pb-1" style="-ms-overflow-style:none;scrollbar-width:none">
-          <button onclick="switchPreview('instagram-feed',this)" class="platform-tab active text-[11px] font-bold px-3 py-1.5 rounded-full bg-primary text-white flex-shrink-0">Instagram</button>
-          <button onclick="switchPreview('instagram-story',this)" class="platform-tab text-[11px] font-bold px-3 py-1.5 rounded-full bg-surface flex-shrink-0">Story / Reel</button>
-          <button onclick="switchPreview('whatsapp',this)" class="platform-tab text-[11px] font-bold px-3 py-1.5 rounded-full bg-surface flex-shrink-0">WhatsApp</button>
-          <button onclick="switchPreview('facebook',this)" class="platform-tab text-[11px] font-bold px-3 py-1.5 rounded-full bg-surface flex-shrink-0">Facebook</button>
-          <button onclick="switchPreview('tiktok',this)" class="platform-tab text-[11px] font-bold px-3 py-1.5 rounded-full bg-surface flex-shrink-0">TikTok</button>
-          <button onclick="switchPreview('twitter',this)" class="platform-tab text-[11px] font-bold px-3 py-1.5 rounded-full bg-surface flex-shrink-0">X / Twitter</button>
+          <button onclick="switchPreview('instagram-feed',this)"
+            class="platform-tab active text-[11px] font-bold px-3 py-1.5 rounded-full">
+            Instagram
+          </button>
+          <button onclick="switchPreview('instagram-story',this)"
+            class="platform-tab text-[11px] font-bold px-3 py-1.5 rounded-full">
+            Story / Reel
+          </button>
+          <button onclick="switchPreview('whatsapp',this)"
+            class="platform-tab text-[11px] font-bold px-3 py-1.5 rounded-full">
+            WhatsApp
+          </button>
+          <button onclick="switchPreview('facebook',this)"
+            class="platform-tab text-[11px] font-bold px-3 py-1.5 rounded-full">
+            Facebook
+          </button>
+          <button onclick="switchPreview('tiktok',this)"
+            class="platform-tab text-[11px] font-bold px-3 py-1.5 rounded-full">
+            TikTok
+          </button>
+          <button onclick="switchPreview('twitter',this)"
+            class="platform-tab text-[11px] font-bold px-3 py-1.5 rounded-full">
+            X / Twitter
+          </button>
         </div>
       </div>
 
       <!-- Preview Card -->
       <div class="flex flex-col items-center">
         <div id="previewWrap" class="preview-wrap bg-dark" style="width:240px;height:240px">
-          <!-- Background Image -->
+          <!-- Background -->
           <div id="previewBg" class="absolute inset-0 bg-cover bg-center"></div>
-          <!-- Blur overlay if blur was applied -->
-          <div id="previewBlurOverlay" class="absolute inset-0"></div>
+          <!-- Blur layer -->
+          <div id="previewBlurLayer" class="absolute inset-0"></div>
           <!-- Darkness overlay -->
-          <div id="previewDarkOverlay" class="absolute inset-0"></div>
+          <div id="previewDarkLayer" class="absolute inset-0"></div>
           <!-- Quote content -->
           <div id="previewContent" class="absolute inset-0 flex flex-col justify-center items-center px-4 text-center">
-            <span class="text-gold/80 leading-none mb-1 drop-shadow-lg" id="previewQuoteMark" style="font-family:Georgia,serif;font-size:32px">"</span>
-            <p id="previewQuote" class="text-white font-bold leading-snug drop-shadow-lg" style="font-size:12px"></p>
-            <p id="previewRef" class="text-white/90 font-bold drop-shadow-md tracking-wider" style="font-size:9px;margin-top:8px"></p>
+            <span id="previewQuoteMark"
+              class="text-gold/80 leading-none mb-1 drop-shadow-lg"
+              style="font-family:Georgia,serif;font-size:32px">"</span>
+            <p id="previewQuote"
+              class="text-white font-bold leading-snug drop-shadow-lg"
+              style="font-size:12px"></p>
+            <p id="previewRef"
+              class="text-white/90 font-bold drop-shadow-md tracking-wider"
+              style="font-size:9px;margin-top:8px"></p>
           </div>
         </div>
 
-        <!-- Aspect ratio label -->
-        <p id="previewLabel" class="mt-2 text-[10px] text-text-light font-bold tracking-wide">Square 1:1 — Feed</p>
+        <!-- Ratio label -->
+        <p id="previewLabel"
+          class="mt-2 text-[10px] text-text-light font-bold tracking-wide">
+          Square 1:1 — Feed
+        </p>
 
-        <button onclick="goBack()" class="mt-2 text-primary font-bold text-sm flex items-center gap-1.5 active:scale-95">
-          <span class="material-symbols-outlined text-[16px]">edit</span> Edit Image
+        <!-- Edit link -->
+        <button onclick="goBack()"
+          class="mt-2 text-primary font-bold text-sm flex items-center gap-1.5 active:scale-95">
+          <span class="material-symbols-outlined text-[16px]">edit</span>
+          Edit Image
         </button>
       </div>
 
       <!-- Caption Preview -->
       <div class="bg-surface rounded-xl p-4 border border-border-soft">
-        <p class="text-[10px] font-bold uppercase tracking-widest text-text-light mb-2">Caption Preview</p>
+        <p class="text-[10px] font-bold uppercase tracking-widest text-text-light mb-2">
+          Caption Preview
+        </p>
         <p id="captionPreview" class="caption-preview text-text-dark text-[12px]"></p>
         <div class="flex items-center justify-between mt-3">
           <p id="charLimitNote" class="text-[10px] text-text-light font-bold"></p>
-          <button onclick="copyCaption()" class="flex items-center gap-1 text-primary font-bold text-[11px] active:scale-95">
-            <span class="material-symbols-outlined text-[14px]">content_copy</span> Copy
+          <button onclick="copyCaption()"
+            class="flex items-center gap-1 text-primary font-bold text-[11px] active:scale-95">
+            <span class="material-symbols-outlined text-[14px]">content_copy</span>
+            Copy
           </button>
         </div>
       </div>
     </section>
 
-    <!-- ═══════════════════════════════════════ -->
+    <!-- ─────────────────────────────────────── -->
     <!-- HASHTAGS -->
-    <!-- ═══════════════════════════════════════ -->
+    <!-- ─────────────────────────────────────── -->
     <section class="bg-card-bg rounded-2xl p-5 space-y-4 shadow-natural border border-border-soft">
       <div class="flex justify-between items-center">
         <h2 class="font-headline font-bold text-[15px] text-text-dark">Hashtags</h2>
-        <span id="hashtagCounter" class="text-text-light text-[11px] font-bold bg-surface px-2.5 py-1 rounded-full border border-border-soft">2 / 5</span>
+        <span id="hashtagCounter"
+          class="text-text-light text-[11px] font-bold bg-surface px-2.5 py-1 rounded-full border border-border-soft">
+          2 / 5
+        </span>
       </div>
+
+      <!-- Tags display -->
       <div id="hashtagsContainer" class="flex flex-wrap gap-2"></div>
+
+      <!-- Add hashtag input -->
       <div id="hashtagInput" class="hidden space-y-2">
         <div class="flex gap-2">
-          <input id="hashtagField" type="text" placeholder="#YourHashtag"
+          <input id="hashtagField"
+            type="text"
+            placeholder="#YourHashtag"
             onkeydown="if(event.key==='Enter'){event.preventDefault();addHashtagFromInput()}"
             class="flex-1 bg-surface border border-border-soft rounded-xl px-3 py-2.5 text-sm font-body text-text-dark focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-text-light">
-          <button onclick="addHashtagFromInput()" class="tactical-gradient text-white font-bold text-xs px-4 py-2.5 rounded-xl">Add</button>
+          <button onclick="addHashtagFromInput()"
+            class="tactical-gradient text-white font-bold text-xs px-4 py-2.5 rounded-xl active:scale-95">
+            Add
+          </button>
         </div>
+        <!-- Suggested hashtags -->
         <div class="flex flex-wrap gap-1.5">
-          <span class="text-[10px] font-bold text-text-light uppercase tracking-widest self-center mr-1">Suggested:</span>
-          <button onclick="addHashtag('#Faith')" class="text-[11px] font-bold text-text-muted border border-border-soft px-2.5 py-1 rounded-full active:scale-95">#Faith</button>
-          <button onclick="addHashtag('#BibleVerse')" class="text-[11px] font-bold text-text-muted border border-border-soft px-2.5 py-1 rounded-full active:scale-95">#BibleVerse</button>
-          <button onclick="addHashtag('#Courage')" class="text-[11px] font-bold text-text-muted border border-border-soft px-2.5 py-1 rounded-full active:scale-95">#Courage</button>
-          <button onclick="addHashtag('#DailyWord')" class="text-[11px] font-bold text-text-muted border border-border-soft px-2.5 py-1 rounded-full active:scale-95">#DailyWord</button>
-          <button onclick="addHashtag('#GoSpreadTheWord')" class="text-[11px] font-bold text-text-muted border border-border-soft px-2.5 py-1 rounded-full active:scale-95">#GoSpreadTheWord</button>
-          <button onclick="addHashtag('#Scripture')" class="text-[11px] font-bold text-text-muted border border-border-soft px-2.5 py-1 rounded-full active:scale-95">#Scripture</button>
-          <button onclick="addHashtag('#DailyInspiration')" class="text-[11px] font-bold text-text-muted border border-border-soft px-2.5 py-1 rounded-full active:scale-95">#DailyInspiration</button>
+          <span class="text-[10px] font-bold text-text-light uppercase tracking-widest self-center mr-1">
+            Suggested:
+          </span>
+          <button onclick="addHashtag('#Faith')"
+            class="text-[11px] font-bold text-text-muted border border-border-soft px-2.5 py-1 rounded-full active:scale-95">
+            #Faith
+          </button>
+          <button onclick="addHashtag('#BibleVerse')"
+            class="text-[11px] font-bold text-text-muted border border-border-soft px-2.5 py-1 rounded-full active:scale-95">
+            #BibleVerse
+          </button>
+          <button onclick="addHashtag('#Courage')"
+            class="text-[11px] font-bold text-text-muted border border-border-soft px-2.5 py-1 rounded-full active:scale-95">
+            #Courage
+          </button>
+          <button onclick="addHashtag('#DailyWord')"
+            class="text-[11px] font-bold text-text-muted border border-border-soft px-2.5 py-1 rounded-full active:scale-95">
+            #DailyWord
+          </button>
+          <button onclick="addHashtag('#GoSpreadTheWord')"
+            class="text-[11px] font-bold text-text-muted border border-border-soft px-2.5 py-1 rounded-full active:scale-95">
+            #GoSpreadTheWord
+          </button>
+          <button onclick="addHashtag('#Scripture')"
+            class="text-[11px] font-bold text-text-muted border border-border-soft px-2.5 py-1 rounded-full active:scale-95">
+            #Scripture
+          </button>
+          <button onclick="addHashtag('#DailyInspiration')"
+            class="text-[11px] font-bold text-text-muted border border-border-soft px-2.5 py-1 rounded-full active:scale-95">
+            #DailyInspiration
+          </button>
         </div>
       </div>
     </section>
 
-    <!-- ═══════════════════════════════════════ -->
-    <!-- PLATFORMS — DEPLOY TO -->
-    <!-- ═══════════════════════════════════════ -->
+    <!-- ─────────────────────────────────────── -->
+    <!-- DEPLOY TO — PLATFORMS -->
+    <!-- ─────────────────────────────────────── -->
     <section class="bg-card-bg rounded-2xl p-5 space-y-4 shadow-natural border border-border-soft">
       <div class="flex justify-between items-center">
         <h2 class="font-headline font-bold text-[15px] text-text-dark">Deploy To</h2>
         <span class="text-[10px] text-text-light font-bold">Tap to select</span>
       </div>
+
       <div class="grid grid-cols-3 gap-2">
 
         <!-- Instagram -->
-        <button onclick="togglePlatform(this,'Instagram')" data-platform="Instagram"
-          class="platform-btn flex flex-col items-center gap-1.5 p-3 rounded-2xl relative bg-surface">
-          <div class="platform-check absolute top-1.5 right-1.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center opacity-0 transition-opacity">
-            <span class="material-symbols-outlined text-white text-[10px] filled">check</span>
+        <button onclick="togglePlatform(this,'Instagram')"
+          class="platform-btn flex flex-col items-center gap-1.5 p-3 rounded-2xl relative">
+          <div class="platform-check absolute top-1.5 right-1.5 w-4 h-4 bg-primary rounded-full
+            flex items-center justify-center opacity-0 transition-opacity">
+            <span class="material-symbols-outlined text-white filled" style="font-size:10px">check</span>
           </div>
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/132px-Instagram_logo_2016.svg.png" alt="Instagram" class="w-7 h-7 rounded-lg">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/132px-Instagram_logo_2016.svg.png"
+            alt="Instagram" class="w-7 h-7 rounded-lg">
           <span class="text-[10px] font-bold text-text-dark">Instagram</span>
         </button>
 
         <!-- WhatsApp -->
-        <button onclick="togglePlatform(this,'WhatsApp')" data-platform="WhatsApp"
-          class="platform-btn flex flex-col items-center gap-1.5 p-3 rounded-2xl relative bg-surface">
-          <div class="platform-check absolute top-1.5 right-1.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center opacity-0 transition-opacity">
-            <span class="material-symbols-outlined text-white text-[10px] filled">check</span>
+        <button onclick="togglePlatform(this,'WhatsApp')"
+          class="platform-btn flex flex-col items-center gap-1.5 p-3 rounded-2xl relative">
+          <div class="platform-check absolute top-1.5 right-1.5 w-4 h-4 bg-primary rounded-full
+            flex items-center justify-center opacity-0 transition-opacity">
+            <span class="material-symbols-outlined text-white filled" style="font-size:10px">check</span>
           </div>
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/120px-WhatsApp.svg.png" alt="WhatsApp" class="w-7 h-7 rounded-lg">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/120px-WhatsApp.svg.png"
+            alt="WhatsApp" class="w-7 h-7 rounded-lg">
           <span class="text-[10px] font-bold text-text-dark">WhatsApp</span>
         </button>
 
         <!-- Facebook -->
-        <button onclick="togglePlatform(this,'Facebook')" data-platform="Facebook"
-          class="platform-btn flex flex-col items-center gap-1.5 p-3 rounded-2xl relative bg-surface">
-          <div class="platform-check absolute top-1.5 right-1.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center opacity-0 transition-opacity">
-            <span class="material-symbols-outlined text-white text-[10px] filled">check</span>
+        <button onclick="togglePlatform(this,'Facebook')"
+          class="platform-btn flex flex-col items-center gap-1.5 p-3 rounded-2xl relative">
+          <div class="platform-check absolute top-1.5 right-1.5 w-4 h-4 bg-primary rounded-full
+            flex items-center justify-center opacity-0 transition-opacity">
+            <span class="material-symbols-outlined text-white filled" style="font-size:10px">check</span>
           </div>
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/2023_Facebook_icon.svg/120px-2023_Facebook_icon.svg.png" alt="Facebook" class="w-7 h-7 rounded-lg">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/2023_Facebook_icon.svg/120px-2023_Facebook_icon.svg.png"
+            alt="Facebook" class="w-7 h-7 rounded-lg">
           <span class="text-[10px] font-bold text-text-dark">Facebook</span>
         </button>
 
         <!-- TikTok -->
-        <button onclick="togglePlatform(this,'TikTok')" data-platform="TikTok"
-          class="platform-btn flex flex-col items-center gap-1.5 p-3 rounded-2xl relative bg-surface">
-          <div class="platform-check absolute top-1.5 right-1.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center opacity-0 transition-opacity">
-            <span class="material-symbols-outlined text-white text-[10px] filled">check</span>
+        <button onclick="togglePlatform(this,'TikTok')"
+          class="platform-btn flex flex-col items-center gap-1.5 p-3 rounded-2xl relative">
+          <div class="platform-check absolute top-1.5 right-1.5 w-4 h-4 bg-primary rounded-full
+            flex items-center justify-center opacity-0 transition-opacity">
+            <span class="material-symbols-outlined text-white filled" style="font-size:10px">check</span>
           </div>
-          <img src="https://upload.wikimedia.org/wikipedia/en/thumb/a/a9/TikTok_logo.svg/100px-TikTok_logo.svg.png" alt="TikTok" class="w-7 h-7 rounded-lg bg-white p-0.5">
+          <img src="https://upload.wikimedia.org/wikipedia/en/thumb/a/a9/TikTok_logo.svg/100px-TikTok_logo.svg.png"
+            alt="TikTok" class="w-7 h-7 rounded-lg bg-white p-0.5">
           <span class="text-[10px] font-bold text-text-dark">TikTok</span>
         </button>
 
         <!-- Telegram -->
-        <button onclick="togglePlatform(this,'Telegram')" data-platform="Telegram"
-          class="platform-btn flex flex-col items-center gap-1.5 p-3 rounded-2xl relative bg-surface">
-          <div class="platform-check absolute top-1.5 right-1.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center opacity-0 transition-opacity">
-            <span class="material-symbols-outlined text-white text-[10px] filled">check</span>
+        <button onclick="togglePlatform(this,'Telegram')"
+          class="platform-btn flex flex-col items-center gap-1.5 p-3 rounded-2xl relative">
+          <div class="platform-check absolute top-1.5 right-1.5 w-4 h-4 bg-primary rounded-full
+            flex items-center justify-center opacity-0 transition-opacity">
+            <span class="material-symbols-outlined text-white filled" style="font-size:10px">check</span>
           </div>
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Telegram_logo.svg/120px-Telegram_logo.svg.png" alt="Telegram" class="w-7 h-7 rounded-lg">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Telegram_logo.svg/120px-Telegram_logo.svg.png"
+            alt="Telegram" class="w-7 h-7 rounded-lg">
           <span class="text-[10px] font-bold text-text-dark">Telegram</span>
         </button>
 
         <!-- Snapchat -->
-        <button onclick="togglePlatform(this,'Snapchat')" data-platform="Snapchat"
-          class="platform-btn flex flex-col items-center gap-1.5 p-3 rounded-2xl relative bg-surface">
-          <div class="platform-check absolute top-1.5 right-1.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center opacity-0 transition-opacity">
-            <span class="material-symbols-outlined text-white text-[10px] filled">check</span>
+        <button onclick="togglePlatform(this,'Snapchat')"
+          class="platform-btn flex flex-col items-center gap-1.5 p-3 rounded-2xl relative">
+          <div class="platform-check absolute top-1.5 right-1.5 w-4 h-4 bg-primary rounded-full
+            flex items-center justify-center opacity-0 transition-opacity">
+            <span class="material-symbols-outlined text-white filled" style="font-size:10px">check</span>
           </div>
-          <img src="https://upload.wikimedia.org/wikipedia/en/thumb/c/c4/Snapchat_logo.svg/120px-Snapchat_logo.svg.png" alt="Snapchat" class="w-7 h-7 rounded-lg">
+          <img src="https://upload.wikimedia.org/wikipedia/en/thumb/c/c4/Snapchat_logo.svg/120px-Snapchat_logo.svg.png"
+            alt="Snapchat" class="w-7 h-7 rounded-lg">
           <span class="text-[10px] font-bold text-text-dark">Snapchat</span>
         </button>
 
         <!-- X / Twitter -->
-        <button onclick="togglePlatform(this,'X / Twitter')" data-platform="X / Twitter"
-          class="platform-btn flex flex-col items-center gap-1.5 p-3 rounded-2xl relative bg-surface">
-          <div class="platform-check absolute top-1.5 right-1.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center opacity-0 transition-opacity">
-            <span class="material-symbols-outlined text-white text-[10px] filled">check</span>
+        <button onclick="togglePlatform(this,'X / Twitter')"
+          class="platform-btn flex flex-col items-center gap-1.5 p-3 rounded-2xl relative">
+          <div class="platform-check absolute top-1.5 right-1.5 w-4 h-4 bg-primary rounded-full
+            flex items-center justify-center opacity-0 transition-opacity">
+            <span class="material-symbols-outlined text-white filled" style="font-size:10px">check</span>
           </div>
           <div class="w-7 h-7 rounded-lg bg-black flex items-center justify-center">
             <span class="text-white font-bold text-[14px]">𝕏</span>
@@ -265,40 +406,47 @@
         </button>
 
         <!-- LinkedIn -->
-        <button onclick="togglePlatform(this,'LinkedIn')" data-platform="LinkedIn"
-          class="platform-btn flex flex-col items-center gap-1.5 p-3 rounded-2xl relative bg-surface">
-          <div class="platform-check absolute top-1.5 right-1.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center opacity-0 transition-opacity">
-            <span class="material-symbols-outlined text-white text-[10px] filled">check</span>
+        <button onclick="togglePlatform(this,'LinkedIn')"
+          class="platform-btn flex flex-col items-center gap-1.5 p-3 rounded-2xl relative">
+          <div class="platform-check absolute top-1.5 right-1.5 w-4 h-4 bg-primary rounded-full
+            flex items-center justify-center opacity-0 transition-opacity">
+            <span class="material-symbols-outlined text-white filled" style="font-size:10px">check</span>
           </div>
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/LinkedIn_logo_initials.png/120px-LinkedIn_logo_initials.png" alt="LinkedIn" class="w-7 h-7 rounded-lg">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/LinkedIn_logo_initials.png/120px-LinkedIn_logo_initials.png"
+            alt="LinkedIn" class="w-7 h-7 rounded-lg">
           <span class="text-[10px] font-bold text-text-dark">LinkedIn</span>
         </button>
 
         <!-- Pinterest -->
-        <button onclick="togglePlatform(this,'Pinterest')" data-platform="Pinterest"
-          class="platform-btn flex flex-col items-center gap-1.5 p-3 rounded-2xl relative bg-surface">
-          <div class="platform-check absolute top-1.5 right-1.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center opacity-0 transition-opacity">
-            <span class="material-symbols-outlined text-white text-[10px] filled">check</span>
+        <button onclick="togglePlatform(this,'Pinterest')"
+          class="platform-btn flex flex-col items-center gap-1.5 p-3 rounded-2xl relative">
+          <div class="platform-check absolute top-1.5 right-1.5 w-4 h-4 bg-primary rounded-full
+            flex items-center justify-center opacity-0 transition-opacity">
+            <span class="material-symbols-outlined text-white filled" style="font-size:10px">check</span>
           </div>
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Pinterest-logo.png/120px-Pinterest-logo.png" alt="Pinterest" class="w-7 h-7 rounded-lg">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Pinterest-logo.png/120px-Pinterest-logo.png"
+            alt="Pinterest" class="w-7 h-7 rounded-lg">
           <span class="text-[10px] font-bold text-text-dark">Pinterest</span>
         </button>
 
       </div>
 
-      <!-- How Posting Works Note -->
+      <!-- How posting works info -->
       <div class="bg-gold/10 border border-gold/30 rounded-xl p-3 flex items-start gap-3">
         <span class="material-symbols-outlined text-gold-dim text-[18px] flex-shrink-0 mt-0.5 filled">info</span>
         <div>
           <p class="text-[11px] font-bold text-gold-dim mb-0.5">How does posting work?</p>
-          <p class="text-[11px] text-text-muted font-body leading-relaxed">We'll download your image and copy your caption. Then open the app so you can paste and post. No account connection needed.</p>
+          <p class="text-[11px] text-text-muted font-body leading-relaxed">
+            We'll download your image and copy your caption automatically.
+            Then open each platform so you can paste and post — no account connection needed.
+          </p>
         </div>
       </div>
     </section>
 
-    <!-- ═══════════════════════════════════════ -->
+    <!-- ─────────────────────────────────────── -->
     <!-- MISSION SUMMARY -->
-    <!-- ═══════════════════════════════════════ -->
+    <!-- ─────────────────────────────────────── -->
     <section class="bg-primary/6 rounded-2xl p-5 border border-primary/15 space-y-3">
       <div class="flex items-center gap-2">
         <span class="material-symbols-outlined text-primary text-[18px] filled">info</span>
@@ -307,15 +455,21 @@
       <div class="space-y-2">
         <div class="flex items-start gap-2">
           <div class="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0"></div>
-          <p id="summaryImage" class="text-[12px] text-text-muted"><span class="font-bold text-text-dark">Image:</span> Custom overlay</p>
+          <p id="summaryImage" class="text-[12px] text-text-muted">
+            <span class="font-bold text-text-dark">Image:</span> Custom overlay
+          </p>
         </div>
         <div class="flex items-start gap-2">
           <div class="w-1.5 h-1.5 rounded-full bg-gold flex-shrink-0 mt-1.5"></div>
-          <p id="summaryHashtags" class="text-[12px] text-text-muted"><span class="font-bold text-text-dark">Hashtags:</span> Loading...</p>
+          <p id="summaryHashtags" class="text-[12px] text-text-muted">
+            <span class="font-bold text-text-dark">Hashtags:</span> Loading...
+          </p>
         </div>
         <div class="flex items-start gap-2">
           <div class="w-1.5 h-1.5 rounded-full bg-action flex-shrink-0 mt-1.5"></div>
-          <p id="summaryPlatforms" class="text-[12px] text-text-muted"><span class="font-bold text-text-dark">Platforms:</span> None selected</p>
+          <p id="summaryPlatforms" class="text-[12px] text-text-muted">
+            <span class="font-bold text-text-dark">Platforms:</span> None selected
+          </p>
         </div>
       </div>
     </section>
@@ -323,165 +477,324 @@
   </div>
 </main>
 
-<!-- FOOTER -->
+<!-- ═══════════════════════════════════════════ -->
+<!-- FOOTER — DEPLOY BUTTON -->
+<!-- ═══════════════════════════════════════════ -->
 <footer class="w-full fixed bottom-0 z-50 bg-card-bg/90 backdrop-blur-xl border-t border-border-soft">
-  <div class="max-w-[430px] mx-auto px-5 pt-3" style="padding-bottom:max(20px,env(safe-area-inset-bottom))">
+  <div class="max-w-[430px] mx-auto px-5 pt-3"
+    style="padding-bottom:max(20px,env(safe-area-inset-bottom))">
     <button id="deployBtn" onclick="deploy()"
-      class="w-full py-4 tactical-gradient text-white font-headline font-bold text-base rounded-2xl flex items-center justify-center gap-3 active:scale-[0.98] transition-transform">
+      class="w-full py-4 tactical-gradient text-white font-headline font-bold text-base rounded-2xl
+      flex items-center justify-center gap-3 active:scale-[0.98] transition-transform">
       <span class="material-symbols-outlined text-gold text-[22px] filled">send</span>
       Spread The Word
     </button>
     <p class="text-center text-[10px] text-text-light mt-2 mb-1">
-      Deploying to <span id="platformCount" class="font-bold text-primary">0 platforms</span>
+      Deploying to
+      <span id="platformCount" class="font-bold text-primary">0 platforms</span>
     </p>
   </div>
 </footer>
 
+<!-- ═══════════════════════════════════════════ -->
 <!-- SUCCESS MODAL -->
-<div id="successModal" class="hidden fixed inset-0 bg-dark/70 backdrop-blur-sm z-[100] flex items-end justify-center">
-  <div class="w-full max-w-[430px] bg-card-bg rounded-t-3xl p-8 text-center">
-    <div class="w-20 h-20 tactical-gradient rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-tactical">
-      <span class="material-symbols-outlined text-gold text-[40px] filled">military_tech</span>
+<!-- ═══════════════════════════════════════════ -->
+<div id="successModal"
+  class="hidden fixed inset-0 bg-dark/70 backdrop-blur-sm z-[100] flex items-end justify-center">
+  <div class="w-full max-w-[430px] bg-card-bg rounded-t-3xl modal-inner">
+    <div class="p-6 text-center">
+
+      <!-- Handle bar -->
+      <div class="w-10 h-1 bg-text-light/30 rounded-full mx-auto mb-5"></div>
+
+      <!-- Icon -->
+      <div class="w-16 h-16 tactical-gradient rounded-2xl flex items-center justify-center
+        mx-auto mb-4 shadow-tactical">
+        <span class="material-symbols-outlined text-gold text-[32px] filled">military_tech</span>
+      </div>
+
+      <h2 class="font-headline font-extrabold text-xl text-text-dark mb-1">
+        Ready to Deploy!
+      </h2>
+      <p class="font-body text-text-muted text-sm leading-relaxed mb-5">
+        Your caption has been copied. Download your image then open each platform to post.
+      </p>
+
+      <!-- Caption copied confirmation -->
+      <div class="bg-gold/10 border border-gold/30 rounded-xl p-3
+        flex items-center gap-3 mb-5 text-left">
+        <span class="material-symbols-outlined text-gold-dim text-[20px] filled flex-shrink-0">
+          check_circle
+        </span>
+        <div>
+          <p class="text-[12px] font-bold text-gold-dim">Caption copied to clipboard</p>
+          <p class="text-[11px] text-text-muted">
+            Ready to paste when you open your platform
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 1: Download -->
+      <div class="mb-4 text-left">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-text-light mb-2">
+          Step 1 — Save Your Image
+        </p>
+        <button onclick="downloadImage()"
+          class="w-full py-3.5 bg-primary text-white font-headline font-bold text-sm rounded-2xl
+          flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-tactical">
+          <span class="material-symbols-outlined text-[20px] filled">download</span>
+          Download Image
+        </button>
+      </div>
+
+      <!-- Step 2: Open platforms -->
+      <div class="mb-5 text-left">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-text-light mb-2">
+          Step 2 — Open & Post
+        </p>
+        <div id="platformDeepLinks" class="space-y-2"></div>
+      </div>
+
+      <!-- Native share -->
+      <button onclick="nativeShare()"
+        class="w-full py-3 bg-surface border border-border-soft text-text-dark font-bold text-sm
+        rounded-2xl flex items-center justify-center gap-2 active:scale-[0.98] transition-transform mb-3">
+        <span class="material-symbols-outlined text-[18px]">ios_share</span>
+        Share via Device
+      </button>
+
+      <!-- Done -->
+      <button onclick="goHome()"
+        class="w-full py-3 text-text-muted font-bold text-sm active:scale-95">
+        Back to Base
+      </button>
+
     </div>
-    <h2 class="font-headline font-extrabold text-2xl text-text-dark mb-2">Mission Deployed!</h2>
-    <p class="font-body text-text-muted text-sm leading-relaxed mb-6">The Word is spreading. Every share is territory claimed for the Kingdom.</p>
-    <div class="flex justify-center gap-6 mb-7">
-      <div><p id="successPlatforms" class="font-headline font-extrabold text-2xl text-primary">0</p><p class="text-[10px] text-text-light uppercase tracking-widest font-bold">Platforms</p></div>
-      <div class="w-px bg-border-soft"></div>
-      <div><p class="font-headline font-extrabold text-2xl text-gold-dim">1</p><p class="text-[10px] text-text-light uppercase tracking-widest font-bold">Word</p></div>
-      <div class="w-px bg-border-soft"></div>
-      <div><p class="font-headline font-extrabold text-2xl text-action">∞</p><p class="text-[10px] text-text-light uppercase tracking-widest font-bold">Reach</p></div>
-    </div>
-    <button onclick="goHome()" class="w-full py-3.5 tactical-gradient text-white font-headline font-bold rounded-2xl mb-3">Back to Base</button>
-    <button onclick="closeModal()" class="w-full py-3 text-text-muted font-bold text-sm">Share Another</button>
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════ -->
+<!-- SCRIPT -->
+<!-- ═══════════════════════════════════════════ -->
 <script>
-  // ════════════════════════════════════════════════
+
+  // ════════════════════════════════════════════
   // SUPABASE
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
   var supabaseClient = supabase.createClient(
     'https://nhymadutuhpjgkiurify.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
   )
 
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
   // STATE
-  // ════════════════════════════════════════════════
-  var currentUser = null
-  var currentQuoteId = null
-  var hashtags = ['#SpreadTheWord', '#GreatCommission']
+  // ════════════════════════════════════════════
+  var currentUser     = null
+  var currentQuoteId  = null
+  var hashtags        = ['#SpreadTheWord', '#GreatCommission']
   var selectedPlatforms = []
-  var MAX_TAGS = 5
+  var MAX_TAGS        = 5
   var currentPreviewMode = 'instagram-feed'
 
-  // Editor state read from sessionStorage
+  // Editor state — read from sessionStorage
   var editorState = {
-    quoteText: '',
-    quoteRef: '',
-    fontSize: '20px',
-    textColor: '#FFFFFF',
-    textAlign: 'center',
-    fontFamily: "'Plus Jakarta Sans', sans-serif",
-    fontStyle: 'normal',
+    quoteText:     '',
+    quoteRef:      '',
+    fontSize:      '20px',
+    textColor:     '#FFFFFF',
+    textAlign:     'center',
+    fontFamily:    "'Plus Jakarta Sans', sans-serif",
+    fontStyle:     'normal',
     textTransform: 'none',
-    blur: '',
-    darkness: 'rgba(0,0,0,0.3)',
-    bgType: 'image',
-    bgValue: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
-    quoteId: ''
+    blur:          '',
+    darkness:      'rgba(0,0,0,0.3)',
+    bgType:        'image',
+    bgValue:       'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
+    quoteId:       '',
+    previewFontSize: '11px',
+    previewRefSize:  '8px'
   }
 
-  // Platform configs: aspect ratio dimensions for preview
+  // ════════════════════════════════════════════
+  // PLATFORM PREVIEW CONFIGS
+  // ════════════════════════════════════════════
   var platformConfigs = {
-    'instagram-feed':  { label: 'Square 1:1 — Feed',      w: 240, h: 240, charLimit: 2200, hashtagNote: 'Up to 30 hashtags' },
-    'instagram-story': { label: 'Vertical 9:16 — Story',   w: 150, h: 266, charLimit: 2200, hashtagNote: 'Up to 30 hashtags' },
-    'whatsapp':        { label: 'Square — WhatsApp Status', w: 240, h: 240, charLimit: 1024, hashtagNote: 'Hashtags optional' },
-    'facebook':        { label: 'Landscape 1.91:1 — Post',  w: 280, h: 147, charLimit: 63206, hashtagNote: 'Few hashtags recommended' },
-    'tiktok':          { label: 'Vertical 9:16 — TikTok',  w: 150, h: 266, charLimit: 2200, hashtagNote: 'Up to 30 hashtags' },
-    'twitter':         { label: 'Landscape 16:9 — X/Twitter', w: 280, h: 157, charLimit: 280, hashtagNote: '1–2 hashtags recommended' },
+    'instagram-feed':  {
+      label:'Square 1:1 — Feed',
+      w:240, h:240,
+      charLimit:2200,
+      hashtagNote:'Up to 30 hashtags'
+    },
+    'instagram-story': {
+      label:'Vertical 9:16 — Story / Reel',
+      w:152, h:270,
+      charLimit:2200,
+      hashtagNote:'Up to 30 hashtags'
+    },
+    'whatsapp': {
+      label:'Square — WhatsApp Status',
+      w:240, h:240,
+      charLimit:1024,
+      hashtagNote:'Hashtags optional'
+    },
+    'facebook': {
+      label:'Landscape 1.91:1 — Facebook Post',
+      w:280, h:147,
+      charLimit:63206,
+      hashtagNote:'Few hashtags recommended'
+    },
+    'tiktok': {
+      label:'Vertical 9:16 — TikTok',
+      w:152, h:270,
+      charLimit:2200,
+      hashtagNote:'Up to 30 hashtags'
+    },
+    'twitter': {
+      label:'Landscape 16:9 — X / Twitter',
+      w:280, h:158,
+      charLimit:280,
+      hashtagNote:'1–2 hashtags recommended'
+    }
   }
 
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
+  // PLATFORM DEEP LINKS
+  // ════════════════════════════════════════════
+  var platformLinks = {
+    'Instagram': {
+      deep:'instagram://',
+      web:'https://www.instagram.com',
+      icon:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/132px-Instagram_logo_2016.svg.png'
+    },
+    'WhatsApp': {
+      deep:'whatsapp://send',
+      web:'https://web.whatsapp.com',
+      icon:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/120px-WhatsApp.svg.png'
+    },
+    'Facebook': {
+      deep:'fb://',
+      web:'https://www.facebook.com',
+      icon:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/2023_Facebook_icon.svg/120px-2023_Facebook_icon.svg.png'
+    },
+    'TikTok': {
+      deep:'snssdk1233://',
+      web:'https://www.tiktok.com',
+      icon:'https://upload.wikimedia.org/wikipedia/en/thumb/a/a9/TikTok_logo.svg/100px-TikTok_logo.svg.png'
+    },
+    'Telegram': {
+      deep:'tg://',
+      web:'https://web.telegram.org',
+      icon:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Telegram_logo.svg/120px-Telegram_logo.svg.png'
+    },
+    'Snapchat': {
+      deep:'snapchat://',
+      web:'https://www.snapchat.com',
+      icon:'https://upload.wikimedia.org/wikipedia/en/thumb/c/c4/Snapchat_logo.svg/120px-Snapchat_logo.svg.png'
+    },
+    'X / Twitter': {
+      deep:'twitter://',
+      web:'https://x.com',
+      icon:null
+    },
+    'LinkedIn': {
+      deep:'linkedin://',
+      web:'https://www.linkedin.com',
+      icon:'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/LinkedIn_logo_initials.png/120px-LinkedIn_logo_initials.png'
+    },
+    'Pinterest': {
+      deep:'pinterest://',
+      web:'https://www.pinterest.com',
+      icon:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Pinterest-logo.png/120px-Pinterest-logo.png'
+    }
+  }
+
+  // ════════════════════════════════════════════
   // INIT
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
   async function initPage() {
+
     // Auth check
     var sessionResult = await supabaseClient.auth.getSession()
-    if (!sessionResult.data.session) { window.location.href = 'login.html'; return }
+    if (!sessionResult.data.session) {
+      window.location.href = 'login.html'
+      return
+    }
     currentUser = sessionResult.data.session.user
 
-    // Read editor state from sessionStorage
-    editorState.quoteText    = sessionStorage.getItem('gstw_quote_text') || 'The Word is with you today.'
-    editorState.quoteRef     = sessionStorage.getItem('gstw_quote_ref')  || '— GSTW'
-    editorState.fontSize     = sessionStorage.getItem('gstw_font_size')  || '20px'
-    editorState.textColor    = sessionStorage.getItem('gstw_text_color') || '#FFFFFF'
-    editorState.textAlign    = sessionStorage.getItem('gstw_text_align') || 'center'
-    editorState.fontFamily   = sessionStorage.getItem('gstw_font_family')|| "'Plus Jakarta Sans', sans-serif"
-    editorState.fontStyle    = sessionStorage.getItem('gstw_font_style') || 'normal'
-    editorState.textTransform= sessionStorage.getItem('gstw_text_transform') || 'none'
-    editorState.blur         = sessionStorage.getItem('gstw_blur')       || ''
-    editorState.darkness     = sessionStorage.getItem('gstw_darkness')   || 'rgba(0,0,0,0.3)'
-    editorState.bgType       = sessionStorage.getItem('gstw_bg_type')    || 'image'
-    editorState.bgValue      = sessionStorage.getItem('gstw_bg_value')   || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80'
-    editorState.quoteId      = sessionStorage.getItem('gstw_quote_id')   || ''
+    // Read all editor state from sessionStorage
+    editorState.quoteText     = sessionStorage.getItem('gstw_quote_text')     || 'The Word is with you today.'
+    editorState.quoteRef      = sessionStorage.getItem('gstw_quote_ref')      || '— GSTW'
+    editorState.fontSize      = sessionStorage.getItem('gstw_font_size')      || '20px'
+    editorState.textColor     = sessionStorage.getItem('gstw_text_color')     || '#FFFFFF'
+    editorState.textAlign     = sessionStorage.getItem('gstw_text_align')     || 'center'
+    editorState.fontFamily    = sessionStorage.getItem('gstw_font_family')    || "'Plus Jakarta Sans', sans-serif"
+    editorState.fontStyle     = sessionStorage.getItem('gstw_font_style')     || 'normal'
+    editorState.textTransform = sessionStorage.getItem('gstw_text_transform') || 'none'
+    editorState.blur          = sessionStorage.getItem('gstw_blur')           || ''
+    editorState.darkness      = sessionStorage.getItem('gstw_darkness')       || 'rgba(0,0,0,0.3)'
+    editorState.bgType        = sessionStorage.getItem('gstw_bg_type')        || 'image'
+    editorState.bgValue       = sessionStorage.getItem('gstw_bg_value')       || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80'
+    editorState.quoteId       = sessionStorage.getItem('gstw_quote_id')       || ''
     currentQuoteId = editorState.quoteId
 
-    // Scale down font size for small preview
-    // We'll scale proportionally — editor canvas ~430px wide, preview ~240px wide
-    var rawSize = parseInt(editorState.fontSize) || 20
-    editorState.previewFontSize = Math.round(rawSize * 0.55) + 'px'
-    editorState.previewRefSize  = Math.round((rawSize * 0.55) * 0.65) + 'px'
+    // Calculate initial scaled font sizes for default preview (240px wide)
+    recalcFontSizes(240)
 
-    // Apply preview
+    // Apply state to preview
     applyPreviewState()
 
     // Render hashtags and summary
     renderHashtags()
     updateSummary()
-
-    // Set initial preview mode
-    switchPreview('instagram-feed', document.querySelector('.platform-tab.active'))
   }
 
-  // ════════════════════════════════════════════════
-  // APPLY EDITOR STATE TO PREVIEW
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
+  // RECALCULATE FONT SIZES FOR PREVIEW DIMENSIONS
+  // ════════════════════════════════════════════
+  function recalcFontSizes(previewWidth) {
+    var rawSize = parseInt(editorState.fontSize) || 20
+    // Editor canvas is max 430px wide, scale proportionally
+    var scale = previewWidth / 430
+    editorState.previewFontSize = Math.max(8, Math.round(rawSize * scale)) + 'px'
+    editorState.previewRefSize  = Math.max(7, Math.round(rawSize * scale * 0.65)) + 'px'
+  }
+
+  // ════════════════════════════════════════════
+  // APPLY EDITOR STATE TO PREVIEW CARD
+  // ════════════════════════════════════════════
   function applyPreviewState() {
     var bg      = document.getElementById('previewBg')
-    var blur    = document.getElementById('previewBlurOverlay')
-    var dark    = document.getElementById('previewDarkOverlay')
+    var blurL   = document.getElementById('previewBlurLayer')
+    var darkL   = document.getElementById('previewDarkLayer')
     var quote   = document.getElementById('previewQuote')
     var ref     = document.getElementById('previewRef')
     var content = document.getElementById('previewContent')
-
     if (!bg || !quote || !ref) return
 
     // Background
     if (editorState.bgType === 'image') {
-      bg.style.backgroundImage = "url('" + editorState.bgValue + "')"
-      bg.style.backgroundSize = 'cover'
+      bg.style.backgroundImage    = "url('" + editorState.bgValue + "')"
+      bg.style.backgroundSize     = 'cover'
       bg.style.backgroundPosition = 'center'
-      bg.style.background = ''
+      bg.style.background         = ''
     } else {
       bg.style.backgroundImage = 'none'
-      bg.style.background = editorState.bgValue
+      bg.style.background      = editorState.bgValue
     }
 
-    // Blur
-    if (blur && editorState.blur) {
-      blur.style.backdropFilter = editorState.blur
-      blur.style.webkitBackdropFilter = editorState.blur
+    // Blur layer
+    if (blurL && editorState.blur) {
+      blurL.style.backdropFilter       = editorState.blur
+      blurL.style.webkitBackdropFilter = editorState.blur
     }
 
     // Darkness overlay
-    if (dark && editorState.darkness) {
-      dark.style.background = editorState.darkness
+    if (darkL && editorState.darkness) {
+      darkL.style.background = editorState.darkness
     }
 
-    // Quote text — apply font, size (scaled), color, align
-    quote.textContent = editorState.quoteText
+    // Quote text styling
+    quote.textContent         = editorState.quoteText
     quote.style.fontFamily    = editorState.fontFamily
     quote.style.fontSize      = editorState.previewFontSize
     quote.style.color         = editorState.textColor
@@ -489,8 +802,8 @@
     quote.style.fontStyle     = editorState.fontStyle
     quote.style.textTransform = editorState.textTransform
 
-    // Reference
-    ref.textContent = editorState.quoteRef
+    // Reference styling
+    ref.textContent         = editorState.quoteRef
     ref.style.fontFamily    = editorState.fontFamily
     ref.style.fontSize      = editorState.previewRefSize
     ref.style.color         = editorState.textColor
@@ -498,32 +811,35 @@
 
     // Content alignment
     if (content) {
-      content.style.alignItems =
-        editorState.textAlign === 'left'  ? 'flex-start' :
-        editorState.textAlign === 'right' ? 'flex-end'   : 'center'
+      if (editorState.textAlign === 'left') {
+        content.style.alignItems  = 'flex-start'
+        content.style.textAlign   = 'left'
+      } else if (editorState.textAlign === 'right') {
+        content.style.alignItems  = 'flex-end'
+        content.style.textAlign   = 'right'
+      } else {
+        content.style.alignItems  = 'center'
+        content.style.textAlign   = 'center'
+      }
     }
 
-    // Update caption preview too
+    // Update caption
     updateCaptionPreview()
   }
 
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
   // SWITCH PREVIEW PLATFORM
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
   function switchPreview(mode, tabBtn) {
     currentPreviewMode = mode
     var config = platformConfigs[mode]
     if (!config) return
 
-    // Update tab styles
+    // Update tab active state
     document.querySelectorAll('.platform-tab').forEach(function(t) {
-      t.classList.remove('active','bg-primary','text-white')
-      t.classList.add('bg-surface')
+      t.classList.remove('active')
     })
-    if (tabBtn) {
-      tabBtn.classList.add('active','bg-primary','text-white')
-      tabBtn.classList.remove('bg-surface')
-    }
+    if (tabBtn) tabBtn.classList.add('active')
 
     // Resize preview card
     var wrap = document.getElementById('previewWrap')
@@ -536,62 +852,65 @@
     var label = document.getElementById('previewLabel')
     if (label) label.textContent = config.label
 
-    // Scale quote mark
+    // Scale quote mark size
     var mark = document.getElementById('previewQuoteMark')
     if (mark) {
       mark.style.fontSize = config.h > config.w ? '40px' : '28px'
     }
 
-    // Rescale font size for new dimensions
-    var rawSize = parseInt(editorState.fontSize) || 20
-    var scaleFactor = config.w / 430
-    editorState.previewFontSize = Math.max(8, Math.round(rawSize * scaleFactor)) + 'px'
-    editorState.previewRefSize  = Math.max(7, Math.round(rawSize * scaleFactor * 0.65)) + 'px'
+    // Recalculate font sizes for new width
+    recalcFontSizes(config.w)
 
+    // Re-apply state
     applyPreviewState()
-    updateCaptionPreview()
   }
 
-  // ════════════════════════════════════════════════
-  // CAPTION PREVIEW — Shows how caption looks on platform
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
+  // CAPTION PREVIEW
+  // ════════════════════════════════════════════
   function updateCaptionPreview() {
-    var el = document.getElementById('captionPreview')
+    var el     = document.getElementById('captionPreview')
     var noteEl = document.getElementById('charLimitNote')
     var config = platformConfigs[currentPreviewMode]
     if (!el || !config) return
 
-    var hashtagStr = hashtags.join(' ')
+    var hashStr = hashtags.join(' ')
     var caption = ''
 
     if (currentPreviewMode === 'twitter') {
-      // Twitter: keep it tight
-      caption = editorState.quoteText + '\n\n' + editorState.quoteRef + '\n\n' + hashtags.slice(0, 2).join(' ')
-    } else if (currentPreviewMode === 'whatsapp') {
-      // WhatsApp: message style, no hashtag pressure
-      caption = editorState.quoteText + '\n\n' + editorState.quoteRef + '\n\n' + hashtagStr
+      // Twitter: very tight — max 2 hashtags
+      caption = editorState.quoteText
+        + '\n\n' + editorState.quoteRef
+        + '\n\n' + hashtags.slice(0, 2).join(' ')
     } else if (currentPreviewMode === 'facebook') {
-      caption = editorState.quoteText + '\n\n' + editorState.quoteRef + '\n\n' + hashtagStr
+      caption = editorState.quoteText
+        + '\n\n' + editorState.quoteRef
+        + '\n\n' + hashStr
+    } else if (currentPreviewMode === 'whatsapp') {
+      caption = editorState.quoteText
+        + '\n\n' + editorState.quoteRef
+        + '\n\n' + hashStr
     } else {
-      // Instagram, TikTok, Story
-      caption = editorState.quoteText + '\n\n' + editorState.quoteRef + '\n\n.\n.\n.\n' + hashtagStr
+      // Instagram, TikTok, Story — dot separator before hashtags
+      caption = editorState.quoteText
+        + '\n\n' + editorState.quoteRef
+        + '\n\n.\n.\n.\n' + hashStr
     }
 
     el.textContent = caption
 
-    // Character count note
-    var charCount = caption.length
-    var limit = config.charLimit
-    var over = charCount > limit
+    // Character limit note
+    var count = caption.length
+    var over  = count > config.charLimit
     if (noteEl) {
-      noteEl.textContent = charCount + ' / ' + limit + ' chars  •  ' + config.hashtagNote
-      noteEl.className = 'text-[10px] font-bold ' + (over ? 'text-action' : 'text-text-light')
+      noteEl.textContent = count + ' / ' + config.charLimit + ' chars  •  ' + config.hashtagNote
+      noteEl.className   = 'text-[10px] font-bold ' + (over ? 'text-action' : 'text-text-light')
     }
   }
 
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
   // COPY CAPTION
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
   function copyCaption() {
     var el = document.getElementById('captionPreview')
     if (!el) return
@@ -601,7 +920,6 @@
         showToast('Caption copied to clipboard')
       })
     } else {
-      // Fallback
       var ta = document.createElement('textarea')
       ta.value = text
       document.body.appendChild(ta)
@@ -612,18 +930,19 @@
     }
   }
 
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
   // HASHTAGS
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
   function renderHashtags() {
     var container = document.getElementById('hashtagsContainer')
     if (!container) return
 
     var html = ''
     hashtags.forEach(function(tag) {
+      var safeTag = tag.replace(/'/g, "\\'")
       html += '<span class="hashtag-tag inline-flex items-center bg-primary/10 text-primary px-3 py-1.5 rounded-full text-[12px] font-bold">'
       html += tag
-      html += ' <button onclick="removeHashtag(\'' + tag.replace(/'/g, "\\'") + '\')" class="ml-1.5 opacity-60 hover:opacity-100">'
+      html += ' <button onclick="removeHashtag(\'' + safeTag + '\')" class="ml-1.5 opacity-60 hover:opacity-100">'
       html += '<span class="material-symbols-outlined text-[13px]">close</span></button></span>'
     })
 
@@ -648,8 +967,10 @@
     if (!input) return
     input.classList.toggle('hidden')
     if (!input.classList.contains('hidden')) {
-      var field = document.getElementById('hashtagField')
-      if (field) setTimeout(function(){ field.focus() }, 50)
+      setTimeout(function() {
+        var field = document.getElementById('hashtagField')
+        if (field) field.focus()
+      }, 50)
     }
   }
 
@@ -665,7 +986,7 @@
 
   function addHashtag(tag) {
     if (hashtags.indexOf(tag) !== -1) { showToast('Already added'); return }
-    if (hashtags.length >= MAX_TAGS) { showToast('Maximum 5 hashtags'); return }
+    if (hashtags.length >= MAX_TAGS)  { showToast('Maximum 5 hashtags'); return }
     hashtags.push(tag)
     renderHashtags()
     showToast(tag + ' added')
@@ -676,46 +997,132 @@
     renderHashtags()
   }
 
-  // ════════════════════════════════════════════════
-  // PLATFORMS — FIXED TOGGLE
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
+  // PLATFORM TOGGLE — FIXED
+  // ════════════════════════════════════════════
   function togglePlatform(btn, name) {
     var isSelected = btn.classList.contains('selected')
-
     if (isSelected) {
-      // Deselect
       btn.classList.remove('selected')
       selectedPlatforms = selectedPlatforms.filter(function(p) { return p !== name })
     } else {
-      // Select
       btn.classList.add('selected')
       if (selectedPlatforms.indexOf(name) === -1) selectedPlatforms.push(name)
     }
-
     var countEl = document.getElementById('platformCount')
     if (countEl) {
-      countEl.textContent = selectedPlatforms.length + ' platform' + (selectedPlatforms.length !== 1 ? 's' : '')
+      countEl.textContent = selectedPlatforms.length +
+        ' platform' + (selectedPlatforms.length !== 1 ? 's' : '')
     }
-
     updateSummary()
   }
 
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
   // SUMMARY
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
   function updateSummary() {
     var sh = document.getElementById('summaryHashtags')
     var sp = document.getElementById('summaryPlatforms')
     var si = document.getElementById('summaryImage')
-
-    if (sh) sh.innerHTML = '<span class="font-bold text-text-dark">Hashtags:</span> ' + (hashtags.length ? hashtags.join(' ') : 'None added')
-    if (sp) sp.innerHTML = '<span class="font-bold text-text-dark">Platforms:</span> ' + (selectedPlatforms.length ? selectedPlatforms.join(', ') : 'None selected')
-    if (si) si.innerHTML = '<span class="font-bold text-text-dark">Image:</span> ' + (editorState.quoteRef || 'Scripture overlay')
+    if (sh) sh.innerHTML = '<span class="font-bold text-text-dark">Hashtags:</span> ' +
+      (hashtags.length ? hashtags.join(' ') : 'None added')
+    if (sp) sp.innerHTML = '<span class="font-bold text-text-dark">Platforms:</span> ' +
+      (selectedPlatforms.length ? selectedPlatforms.join(', ') : 'None selected')
+    if (si) si.innerHTML = '<span class="font-bold text-text-dark">Image:</span> ' +
+      (editorState.quoteRef || 'Scripture overlay')
   }
 
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
+  // RENDER DEEP LINK BUTTONS IN MODAL
+  // ════════════════════════════════════════════
+  function renderPlatformDeepLinks() {
+    var container = document.getElementById('platformDeepLinks')
+    if (!container) return
+
+    if (selectedPlatforms.length === 0) {
+      container.innerHTML = '<p class="text-[12px] text-text-muted text-center py-2">No platforms selected</p>'
+      return
+    }
+
+    var html = ''
+    selectedPlatforms.forEach(function(name) {
+      var config = platformLinks[name]
+      if (!config) return
+
+      var iconHtml = config.icon
+        ? '<img src="' + config.icon + '" class="w-6 h-6 rounded-md flex-shrink-0" alt="' + name + '">'
+        : '<div class="w-6 h-6 rounded-md bg-black flex items-center justify-center flex-shrink-0"><span class="text-white font-bold text-[12px]">𝕏</span></div>'
+
+      html += '<button onclick="openPlatform(\'' + name + '\')" '
+      html += 'class="w-full flex items-center gap-3 p-3 bg-surface border border-border-soft rounded-xl active:scale-[0.98] transition-transform">'
+      html += iconHtml
+      html += '<span class="font-bold text-sm text-text-dark flex-grow text-left">Open ' + name + '</span>'
+      html += '<span class="material-symbols-outlined text-text-light text-[18px]">open_in_new</span>'
+      html += '</button>'
+    })
+
+    container.innerHTML = html
+  }
+
+  // ════════════════════════════════════════════
+  // OPEN PLATFORM — deep link with web fallback
+  // ════════════════════════════════════════════
+  function openPlatform(name) {
+    var config = platformLinks[name]
+    if (!config) return
+    showToast('Opening ' + name + '...')
+    // Try deep link
+    window.location.href = config.deep
+    // Fallback to web after delay
+    setTimeout(function() {
+      window.open(config.web, '_blank')
+    }, 1500)
+  }
+
+  // ════════════════════════════════════════════
+  // DOWNLOAD IMAGE — html2canvas capture
+  // ════════════════════════════════════════════
+  function downloadImage() {
+    var wrap = document.getElementById('previewWrap')
+    if (!wrap) { showToast('Preview not ready'); return }
+    showToast('Preparing image...')
+    html2canvas(wrap, {
+      useCORS: true,
+      allowTaint: false,
+      scale: 3,
+      backgroundColor: null
+    }).then(function(canvas) {
+      var link = document.createElement('a')
+      link.download = 'GSTW-' + Date.now() + '.png'
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+      showToast('Image downloaded!')
+    }).catch(function(err) {
+      console.error(err)
+      showToast('Download failed — try a screenshot')
+    })
+  }
+
+  // ════════════════════════════════════════════
+  // NATIVE SHARE
+  // ════════════════════════════════════════════
+  function nativeShare() {
+    var captionEl = document.getElementById('captionPreview')
+    var text = captionEl ? captionEl.textContent : (editorState.quoteText + '\n\n' + editorState.quoteRef)
+    if (navigator.share) {
+      navigator.share({
+        title: 'Go Spread The Word',
+        text: text,
+        url: window.location.href
+      }).catch(function(err) { console.error(err) })
+    } else {
+      showToast('Use the platform buttons above')
+    }
+  }
+
+  // ════════════════════════════════════════════
   // DEPLOY
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
   async function deploy() {
     if (selectedPlatforms.length === 0) {
       showToast('Select at least one platform')
@@ -726,7 +1133,7 @@
     if (currentUser && currentQuoteId) {
       var promises = selectedPlatforms.map(function(platform) {
         return supabaseClient.from('shares').insert({
-          user_id: currentUser.id,
+          user_id:  currentUser.id,
           quote_id: currentQuoteId,
           platform: platform
         })
@@ -734,33 +1141,29 @@
       await Promise.all(promises)
     }
 
-    // Copy caption to clipboard automatically
+    // Auto copy caption
     var captionEl = document.getElementById('captionPreview')
     if (captionEl && navigator.clipboard) {
       navigator.clipboard.writeText(captionEl.textContent).catch(function(){})
     }
 
-    // Show success
-    var el = document.getElementById('successPlatforms')
-    if (el) el.textContent = selectedPlatforms.length
+    // Render deep link buttons
+    renderPlatformDeepLinks()
+
+    // Show modal
     var modal = document.getElementById('successModal')
     if (modal) modal.classList.remove('hidden')
   }
 
-  function closeModal() {
-    var modal = document.getElementById('successModal')
-    if (modal) modal.classList.add('hidden')
-  }
-
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
   // NAVIGATION
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
   function goBack() { window.location.href = 'editor.html' }
   function goHome() { window.location.href = 'index.html' }
 
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
   // TOAST
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
   function showToast(msg) {
     var existing = document.getElementById('shareToast')
     if (existing) existing.remove()
@@ -772,11 +1175,11 @@
     setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
   }
 
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
   // START
-  // ════════════════════════════════════════════════
+  // ════════════════════════════════════════════
   initPage()
-</script>
 
+</script>
 </body>
 </html>
