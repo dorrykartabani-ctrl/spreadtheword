@@ -9,7 +9,7 @@
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+ </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -549,13 +549,13 @@ function cycleAlign() {
   // ---- NAVIGATION ----
   function goBack() { window.location.href = 'backgrounds.html' }
   function goHome() { window.location.href = 'index.html' }
-async function goNext() {
+function goNext() {
   var qt      = document.getElementById('quoteText')
   var qr      = document.getElementById('quoteRef')
   var bg      = document.getElementById('bgCanvas')
   var overlay = document.getElementById('bgOverlay')
 
-  // Save all editor state
+  // Save all editor state to sessionStorage
   sessionStorage.setItem('gstw_quote_text',     qt      ? qt.textContent              : '')
   sessionStorage.setItem('gstw_quote_ref',      qr      ? qr.textContent              : '')
   sessionStorage.setItem('gstw_font_size',      qt      ? (qt.style.fontSize      || '20px')   : '20px')
@@ -573,128 +573,133 @@ async function goNext() {
     sessionStorage.setItem('gstw_bg_value', 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80')
   }
 
-  // Show generating state
+  // Update button to show loading
   var btn = document.querySelector('[onclick="goNext()"]')
   if (btn) {
-    btn.innerHTML = '<span class="material-symbols-outlined text-[20px] spin">progress_activity</span> Generating Image...'
+    btn.innerHTML = '<span class="material-symbols-outlined text-[20px] spin">progress_activity</span> Generating...'
     btn.style.pointerEvents = 'none'
   }
 
-  // Capture the full editor canvas as image
+  // Load html2canvas dynamically then generate image
+  var script = document.createElement('script')
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'
+
+  script.onload = function() {
+    generateImage(qt, qr, bg, overlay)
+  }
+
+  script.onerror = function() {
+    // html2canvas failed to load — skip image generation, still navigate
+    console.warn('html2canvas failed to load — skipping image generation')
+    sessionStorage.removeItem('gstw_final_image')
+    window.location.href = 'preview.html'
+  }
+
+  document.head.appendChild(script)
+}
+
+function generateImage(qt, qr, bg, overlay) {
   try {
-    var captureArea = document.querySelector('.max-w-\\[430px\\]')
-    if (!captureArea) captureArea = document.body
-
-    // We need to capture just the visual area (bg + overlay)
-    // Create a temporary container that matches what we want
+    // Create a 1080x1080 temporary render container
     var tempContainer = document.createElement('div')
-    tempContainer.style.position = 'fixed'
-    tempContainer.style.left = '-9999px'
-    tempContainer.style.top = '0'
-    tempContainer.style.width = '1080px'
-    tempContainer.style.height = '1080px'
-    tempContainer.style.overflow = 'hidden'
-    tempContainer.style.zIndex = '-1'
+    tempContainer.style.cssText = 'position:fixed;left:-9999px;top:0;width:1080px;height:1080px;overflow:hidden;z-index:-1'
 
-    // Clone background
+    // Background layer
     var bgClone = document.createElement('div')
-    bgClone.style.position = 'absolute'
-    bgClone.style.inset = '0'
-    bgClone.style.backgroundImage = bg ? bg.style.backgroundImage : ''
-    bgClone.style.backgroundSize = 'cover'
-    bgClone.style.backgroundPosition = 'center'
-    bgClone.style.filter = bg ? bg.style.filter : ''
-    if (!bg || !bg.style.backgroundImage || bg.style.backgroundImage === 'none') {
-      bgClone.style.background = sessionStorage.getItem('gstw_bg_value') || '#16202A'
+    bgClone.style.cssText = 'position:absolute;inset:0;background-size:cover;background-position:center'
+
+    var bgType  = sessionStorage.getItem('gstw_bg_type')
+    var bgValue = sessionStorage.getItem('gstw_bg_value')
+
+    if (bgType === 'image' && bgValue) {
+      bgClone.style.backgroundImage = "url('" + bgValue + "')"
+    } else if (bgValue) {
+      bgClone.style.background = bgValue
+    } else if (bg && bg.style.backgroundImage) {
+      bgClone.style.backgroundImage = bg.style.backgroundImage
+    } else {
+      bgClone.style.background = '#16202A'
     }
+
+    if (bg && bg.style.filter) {
+      bgClone.style.filter = bg.style.filter
+    }
+
     tempContainer.appendChild(bgClone)
 
-    // Clone darkness overlay
+    // Darkness overlay
     var darkClone = document.createElement('div')
-    darkClone.style.position = 'absolute'
-    darkClone.style.inset = '0'
-    darkClone.style.background = overlay ? overlay.style.background : 'rgba(0,0,0,0.3)'
+    darkClone.style.cssText = 'position:absolute;inset:0'
+    darkClone.style.background = overlay ? (overlay.style.background || 'rgba(0,0,0,0.3)') : 'rgba(0,0,0,0.3)'
     tempContainer.appendChild(darkClone)
 
-    // Clone quote content
-    var quoteClone = document.createElement('div')
-    quoteClone.style.position = 'absolute'
-    quoteClone.style.inset = '0'
-    quoteClone.style.display = 'flex'
-    quoteClone.style.flexDirection = 'column'
-    quoteClone.style.justifyContent = 'center'
-    quoteClone.style.alignItems = qt && qt.style.textAlign === 'left' ? 'flex-start' :
-                                  qt && qt.style.textAlign === 'right' ? 'flex-end' : 'center'
-    quoteClone.style.padding = '60px'
-    quoteClone.style.textAlign = qt ? (qt.style.textAlign || 'center') : 'center'
+    // Quote content container
+    var align = qt ? (qt.style.textAlign || 'center') : 'center'
+    var alignItems = align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center'
+
+    var quoteWrap = document.createElement('div')
+    quoteWrap.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:60px;text-align:' + align + ';align-items:' + alignItems
 
     // Quote mark
     var markEl = document.createElement('span')
     markEl.textContent = '\u201C'
-    markEl.style.fontFamily = 'Georgia, serif'
-    markEl.style.fontSize = '120px'
-    markEl.style.lineHeight = '1'
-    markEl.style.color = 'rgba(212, 162, 76, 0.7)'
-    markEl.style.marginBottom = '8px'
-    markEl.style.filter = 'drop-shadow(0 2px 12px rgba(0,0,0,0.4))'
-    quoteClone.appendChild(markEl)
+    markEl.style.cssText = 'font-family:Georgia,serif;font-size:120px;line-height:1;color:rgba(212,162,76,0.7);margin-bottom:8px;filter:drop-shadow(0 2px 12px rgba(0,0,0,0.4))'
+    quoteWrap.appendChild(markEl)
 
     // Quote text
+    var fontSize = parseInt(qt ? (qt.style.fontSize || '20') : '20')
+    var scaledSize = fontSize * 2.8
+
     var textEl = document.createElement('p')
     textEl.textContent = qt ? qt.textContent : ''
-    textEl.style.fontFamily = qt ? (qt.style.fontFamily || "'Plus Jakarta Sans', sans-serif") : "'Plus Jakarta Sans', sans-serif"
-    textEl.style.fontWeight = 'bold'
-    textEl.style.fontSize = (parseInt(qt ? qt.style.fontSize : '20') * 2.8) + 'px'
-    textEl.style.color = qt ? (qt.style.color || '#FFFFFF') : '#FFFFFF'
-    textEl.style.lineHeight = '1.4'
-    textEl.style.textShadow = '0 2px 12px rgba(0,0,0,0.6), 0 1px 3px rgba(0,0,0,0.4)'
-    textEl.style.fontStyle = qt ? (qt.style.fontStyle || 'normal') : 'normal'
+    textEl.style.cssText = 'font-weight:bold;line-height:1.4;text-shadow:0 2px 12px rgba(0,0,0,0.6),0 1px 3px rgba(0,0,0,0.4)'
+    textEl.style.fontFamily    = qt ? (qt.style.fontFamily || "'Plus Jakarta Sans',sans-serif") : "'Plus Jakarta Sans',sans-serif"
+    textEl.style.fontSize      = scaledSize + 'px'
+    textEl.style.color         = qt ? (qt.style.color || '#FFFFFF') : '#FFFFFF'
+    textEl.style.fontStyle     = qt ? (qt.style.fontStyle || 'normal') : 'normal'
     textEl.style.textTransform = qt ? (qt.style.textTransform || 'none') : 'none'
-    textEl.style.textAlign = qt ? (qt.style.textAlign || 'center') : 'center'
-    quoteClone.appendChild(textEl)
+    textEl.style.textAlign     = align
+    quoteWrap.appendChild(textEl)
 
     // Reference
     var refEl = document.createElement('p')
     refEl.textContent = qr ? qr.textContent : ''
-    refEl.style.fontFamily = qt ? (qt.style.fontFamily || "'Plus Jakarta Sans', sans-serif") : "'Plus Jakarta Sans', sans-serif"
-    refEl.style.fontWeight = 'bold'
-    refEl.style.fontSize = (parseInt(qt ? qt.style.fontSize : '20') * 1.6) + 'px'
-    refEl.style.color = qt ? (qt.style.color || '#FFFFFF') : '#FFFFFF'
-    refEl.style.opacity = '0.9'
-    refEl.style.marginTop = '24px'
-    refEl.style.textShadow = '0 2px 12px rgba(0,0,0,0.4)'
-    refEl.style.letterSpacing = '0.05em'
-    refEl.style.textAlign = qt ? (qt.style.textAlign || 'center') : 'center'
-    quoteClone.appendChild(refEl)
+    refEl.style.cssText = 'font-weight:bold;opacity:0.9;margin-top:24px;text-shadow:0 2px 12px rgba(0,0,0,0.4);letter-spacing:0.05em'
+    refEl.style.fontFamily = qt ? (qt.style.fontFamily || "'Plus Jakarta Sans',sans-serif") : "'Plus Jakarta Sans',sans-serif"
+    refEl.style.fontSize   = (fontSize * 1.6) + 'px'
+    refEl.style.color      = qt ? (qt.style.color || '#FFFFFF') : '#FFFFFF'
+    refEl.style.textAlign  = align
+    quoteWrap.appendChild(refEl)
 
-    tempContainer.appendChild(quoteClone)
+    tempContainer.appendChild(quoteWrap)
     document.body.appendChild(tempContainer)
 
-    var canvas = await html2canvas(tempContainer, {
+    // Capture with html2canvas
+    html2canvas(tempContainer, {
       useCORS: true,
       allowTaint: false,
       scale: 1,
       width: 1080,
       height: 1080,
       backgroundColor: '#16202A'
+    }).then(function(canvas) {
+      var dataUrl = canvas.toDataURL('image/png')
+      sessionStorage.setItem('gstw_final_image', dataUrl)
+      document.body.removeChild(tempContainer)
+      window.location.href = 'preview.html'
+    }).catch(function(err) {
+      console.error('Canvas capture failed:', err)
+      document.body.removeChild(tempContainer)
+      sessionStorage.removeItem('gstw_final_image')
+      window.location.href = 'preview.html'
     })
-
-    var dataUrl = canvas.toDataURL('image/png')
-    sessionStorage.setItem('gstw_final_image', dataUrl)
-
-    // Clean up
-    document.body.removeChild(tempContainer)
-
-    window.location.href = 'preview.html'
 
   } catch (err) {
     console.error('Image generation failed:', err)
-    // Fallback — navigate without pre-generated image
     sessionStorage.removeItem('gstw_final_image')
     window.location.href = 'preview.html'
   }
 }
-
   window.location.href = 'share.html'
 }
 
