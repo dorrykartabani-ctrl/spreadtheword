@@ -8,7 +8,8 @@
   <title>Edit — Go Spread The Word</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -219,7 +220,7 @@
     <!-- Next Button -->
     <div class="px-5 pb-5 pt-1" style="padding-bottom:max(20px,env(safe-area-inset-bottom))">
       <button onclick="goNext()" class="w-full py-3.5 tactical-gradient text-white font-headline font-bold text-base rounded-2xl flex items-center justify-center gap-2 shadow-tactical active:scale-[0.98] transition-transform">
-        Next — Add Hashtags
+       Next — Preview Your Post
         <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
       </button>
     </div>
@@ -548,29 +549,151 @@ function cycleAlign() {
   // ---- NAVIGATION ----
   function goBack() { window.location.href = 'backgrounds.html' }
   function goHome() { window.location.href = 'index.html' }
-  function goNext() {
+async function goNext() {
   var qt      = document.getElementById('quoteText')
   var qr      = document.getElementById('quoteRef')
   var bg      = document.getElementById('bgCanvas')
   var overlay = document.getElementById('bgOverlay')
 
-  sessionStorage.setItem('gstw_quote_text',     qt      ? qt.textContent          : '')
-  sessionStorage.setItem('gstw_quote_ref',      qr      ? qr.textContent          : '')
-  sessionStorage.setItem('gstw_font_size',      qt      ? (qt.style.fontSize      || '20px') : '20px')
+  // Save all editor state
+  sessionStorage.setItem('gstw_quote_text',     qt      ? qt.textContent              : '')
+  sessionStorage.setItem('gstw_quote_ref',      qr      ? qr.textContent              : '')
+  sessionStorage.setItem('gstw_font_size',      qt      ? (qt.style.fontSize      || '20px')   : '20px')
   sessionStorage.setItem('gstw_text_color',     qt      ? (qt.style.color         || '#FFFFFF') : '#FFFFFF')
-  sessionStorage.setItem('gstw_text_align',     qt      ? (qt.style.textAlign     || 'center') : 'center')
-  sessionStorage.setItem('gstw_font_family',    qt      ? (qt.style.fontFamily    || '') : '')
-  sessionStorage.setItem('gstw_font_style',     qt      ? (qt.style.fontStyle     || 'normal') : 'normal')
-  sessionStorage.setItem('gstw_text_transform', qt      ? (qt.style.textTransform || 'none') : 'none')
-  sessionStorage.setItem('gstw_blur',           bg      ? (bg.style.filter        || '') : '')
+  sessionStorage.setItem('gstw_text_align',     qt      ? (qt.style.textAlign     || 'center')  : 'center')
+  sessionStorage.setItem('gstw_font_family',    qt      ? (qt.style.fontFamily    || '')         : '')
+  sessionStorage.setItem('gstw_font_style',     qt      ? (qt.style.fontStyle     || 'normal')  : 'normal')
+  sessionStorage.setItem('gstw_text_transform', qt      ? (qt.style.textTransform || 'none')    : 'none')
+  sessionStorage.setItem('gstw_blur',           bg      ? (bg.style.filter        || '')         : '')
   sessionStorage.setItem('gstw_darkness',       overlay ? (overlay.style.background || 'rgba(0,0,0,0.3)') : 'rgba(0,0,0,0.3)')
   sessionStorage.setItem('gstw_quote_id',       window.currentQuoteId || '')
 
-  // Ensure bg_type and bg_value are set if not already
   if (!sessionStorage.getItem('gstw_bg_type')) {
     sessionStorage.setItem('gstw_bg_type', 'image')
     sessionStorage.setItem('gstw_bg_value', 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80')
   }
+
+  // Show generating state
+  var btn = document.querySelector('[onclick="goNext()"]')
+  if (btn) {
+    btn.innerHTML = '<span class="material-symbols-outlined text-[20px] spin">progress_activity</span> Generating Image...'
+    btn.style.pointerEvents = 'none'
+  }
+
+  // Capture the full editor canvas as image
+  try {
+    var captureArea = document.querySelector('.max-w-\\[430px\\]')
+    if (!captureArea) captureArea = document.body
+
+    // We need to capture just the visual area (bg + overlay)
+    // Create a temporary container that matches what we want
+    var tempContainer = document.createElement('div')
+    tempContainer.style.position = 'fixed'
+    tempContainer.style.left = '-9999px'
+    tempContainer.style.top = '0'
+    tempContainer.style.width = '1080px'
+    tempContainer.style.height = '1080px'
+    tempContainer.style.overflow = 'hidden'
+    tempContainer.style.zIndex = '-1'
+
+    // Clone background
+    var bgClone = document.createElement('div')
+    bgClone.style.position = 'absolute'
+    bgClone.style.inset = '0'
+    bgClone.style.backgroundImage = bg ? bg.style.backgroundImage : ''
+    bgClone.style.backgroundSize = 'cover'
+    bgClone.style.backgroundPosition = 'center'
+    bgClone.style.filter = bg ? bg.style.filter : ''
+    if (!bg || !bg.style.backgroundImage || bg.style.backgroundImage === 'none') {
+      bgClone.style.background = sessionStorage.getItem('gstw_bg_value') || '#16202A'
+    }
+    tempContainer.appendChild(bgClone)
+
+    // Clone darkness overlay
+    var darkClone = document.createElement('div')
+    darkClone.style.position = 'absolute'
+    darkClone.style.inset = '0'
+    darkClone.style.background = overlay ? overlay.style.background : 'rgba(0,0,0,0.3)'
+    tempContainer.appendChild(darkClone)
+
+    // Clone quote content
+    var quoteClone = document.createElement('div')
+    quoteClone.style.position = 'absolute'
+    quoteClone.style.inset = '0'
+    quoteClone.style.display = 'flex'
+    quoteClone.style.flexDirection = 'column'
+    quoteClone.style.justifyContent = 'center'
+    quoteClone.style.alignItems = qt && qt.style.textAlign === 'left' ? 'flex-start' :
+                                  qt && qt.style.textAlign === 'right' ? 'flex-end' : 'center'
+    quoteClone.style.padding = '60px'
+    quoteClone.style.textAlign = qt ? (qt.style.textAlign || 'center') : 'center'
+
+    // Quote mark
+    var markEl = document.createElement('span')
+    markEl.textContent = '\u201C'
+    markEl.style.fontFamily = 'Georgia, serif'
+    markEl.style.fontSize = '120px'
+    markEl.style.lineHeight = '1'
+    markEl.style.color = 'rgba(212, 162, 76, 0.7)'
+    markEl.style.marginBottom = '8px'
+    markEl.style.filter = 'drop-shadow(0 2px 12px rgba(0,0,0,0.4))'
+    quoteClone.appendChild(markEl)
+
+    // Quote text
+    var textEl = document.createElement('p')
+    textEl.textContent = qt ? qt.textContent : ''
+    textEl.style.fontFamily = qt ? (qt.style.fontFamily || "'Plus Jakarta Sans', sans-serif") : "'Plus Jakarta Sans', sans-serif"
+    textEl.style.fontWeight = 'bold'
+    textEl.style.fontSize = (parseInt(qt ? qt.style.fontSize : '20') * 2.8) + 'px'
+    textEl.style.color = qt ? (qt.style.color || '#FFFFFF') : '#FFFFFF'
+    textEl.style.lineHeight = '1.4'
+    textEl.style.textShadow = '0 2px 12px rgba(0,0,0,0.6), 0 1px 3px rgba(0,0,0,0.4)'
+    textEl.style.fontStyle = qt ? (qt.style.fontStyle || 'normal') : 'normal'
+    textEl.style.textTransform = qt ? (qt.style.textTransform || 'none') : 'none'
+    textEl.style.textAlign = qt ? (qt.style.textAlign || 'center') : 'center'
+    quoteClone.appendChild(textEl)
+
+    // Reference
+    var refEl = document.createElement('p')
+    refEl.textContent = qr ? qr.textContent : ''
+    refEl.style.fontFamily = qt ? (qt.style.fontFamily || "'Plus Jakarta Sans', sans-serif") : "'Plus Jakarta Sans', sans-serif"
+    refEl.style.fontWeight = 'bold'
+    refEl.style.fontSize = (parseInt(qt ? qt.style.fontSize : '20') * 1.6) + 'px'
+    refEl.style.color = qt ? (qt.style.color || '#FFFFFF') : '#FFFFFF'
+    refEl.style.opacity = '0.9'
+    refEl.style.marginTop = '24px'
+    refEl.style.textShadow = '0 2px 12px rgba(0,0,0,0.4)'
+    refEl.style.letterSpacing = '0.05em'
+    refEl.style.textAlign = qt ? (qt.style.textAlign || 'center') : 'center'
+    quoteClone.appendChild(refEl)
+
+    tempContainer.appendChild(quoteClone)
+    document.body.appendChild(tempContainer)
+
+    var canvas = await html2canvas(tempContainer, {
+      useCORS: true,
+      allowTaint: false,
+      scale: 1,
+      width: 1080,
+      height: 1080,
+      backgroundColor: '#16202A'
+    })
+
+    var dataUrl = canvas.toDataURL('image/png')
+    sessionStorage.setItem('gstw_final_image', dataUrl)
+
+    // Clean up
+    document.body.removeChild(tempContainer)
+
+    window.location.href = 'preview.html'
+
+  } catch (err) {
+    console.error('Image generation failed:', err)
+    // Fallback — navigate without pre-generated image
+    sessionStorage.removeItem('gstw_final_image')
+    window.location.href = 'preview.html'
+  }
+}
 
   window.location.href = 'share.html'
 }
