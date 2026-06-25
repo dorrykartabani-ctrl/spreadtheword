@@ -457,13 +457,17 @@
     var currentStreak = profile.current_streak || 0
 
     // ── 2. Load all user shares ──
-    var sharesResult = await supabaseClient
-      .from('shares')
-      .select('platform, shared_at, quote_id')
-      .eq('user_id', userId)
-      .order('shared_at', { ascending: false })
+var sharesResult = await supabaseClient
+  .from('shares')
+  .select('platform, shared_at, quote_id')
+  .eq('user_id', userId)
+  .order('shared_at', { ascending: false })
 
-    var shares = sharesResult.data || []
+var shares = sharesResult.data || []
+
+// Use actual share count instead of profile.total_shares
+// This ensures we always show the real number
+var actualTotalShares = shares.length
 
     // ── 3. Calculate this week's shares ──
     var now = new Date()
@@ -546,8 +550,8 @@
     })
 
     // ── RENDER EVERYTHING ──
-    renderHeroStats(totalShares, weekShares.length, currentStreak, uniquePlatforms)
-    renderLevelProgress(totalShares, level, nextLevel)
+    renderHeroStats(actualTotalShares, weekShares.length,   currentStreak, uniquePlatforms)
+    renderLevelProgress(actualTotalShares, level, nextLevel)
     renderPlatformBars(platformCounts, shares.length)
     renderMilestones(totalShares, currentStreak)
     renderWeekChart(dailyCounts, weekShares.length)
@@ -646,7 +650,7 @@
   // ════════════════════════════════════════════
   // RENDER: MILESTONES
   // ════════════════════════════════════════════
-  function renderMilestones(totalShares, currentStreak) {
+  function renderMilestones(actualtotalShares, currentStreak) {
     var container = document.getElementById('milestonesList')
     container.innerHTML = ''
 
@@ -787,7 +791,7 @@
   // ════════════════════════════════════════════
   // CHECK FOR NEW MILESTONES — celebration
   // ════════════════════════════════════════════
-  function checkNewMilestones(totalShares, currentStreak) {
+  function checkNewMilestones(actualtotalShares, currentStreak) {
     var celebrated = JSON.parse(localStorage.getItem('gstw_celebrated') || '[]')
 
     for (var i = 0; i < milestones.length; i++) {
