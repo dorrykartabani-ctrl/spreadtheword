@@ -448,15 +448,48 @@
   // LOAD USER PROFILE
   // ════════════════════════════════════════════
   async function loadUserProfile(userId) {
-    var result = await supabaseClient
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
+  var result = await supabaseClient
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single()
 
-    if (result.error || !result.data) return
+  if (result.error || !result.data) return
 
-    var profile = result.data
+  var profile = result.data
+
+  // ── CHECK IF STREAK SHOULD RESET ──
+  // If last share was more than 1 day ago, reset streak to 0
+  var lastShareResult = await supabaseClient
+    .from('shares')
+    .select('shared_at')
+    .eq('user_id', userId)
+    .order('shared_at', { ascending: false })
+    .limit(1)
+
+  if (lastShareResult.data && lastShareResult.data.length > 0) {
+    var lastShareDate = new Date(lastShareResult.data[0].shared_at)
+    var today = new Date()
+
+    // Get date-only comparison (ignore time)
+    var lastDay = new Date(lastShareDate.getFullYear(), lastShareDate.getMonth(), lastShareDate.getDate())
+    var todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    var diffDays = Math.floor((todayDay - lastDay) / (1000 * 60 * 60 * 24))
+
+    if (diffDays > 1 && profile.current_streak > 0) {
+      // Streak is broken — reset to 0
+      await supabaseClient.from('profiles').update({
+        current_streak: 0
+      }).eq('id', userId)
+      profile.current_streak = 0
+    }
+  } else if (profile.current_streak > 0) {
+    // No shares at all but streak > 0 — reset
+    await supabaseClient.from('profiles').update({
+      current_streak: 0
+    }).eq('id', userId)
+    profile.current_streak = 0
+  }
 
     // Name
     var firstName = profile.full_name
