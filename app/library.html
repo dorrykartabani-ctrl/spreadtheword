@@ -271,300 +271,346 @@
 <!-- SCRIPT -->
 <!-- ═══════════════════════════════════════════ -->
 <script>
+// ════════════════════════════════════════════
+// SUPABASE
+// ════════════════════════════════════════════
+var supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+)
 
-  // ════════════════════════════════════════════
-  // SUPABASE
-  // ════════════════════════════════════════════
-  var { createClient } = supabase
-  var db = createClient(
-    'https://nhymadutuhpjgkiurify.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
-  )
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+var currentUser = null
+var allQuotes = []
+var activeQuoteId = null
+var userSharedQuoteIds = []
 
-  // ════════════════════════════════════════════
-  // STATE
-  // ════════════════════════════════════════════
-  var currentUser   = null
-  var allQuotes     = []
-  var activeQuoteId = null  // tracks which quote modal is open
+// ════════════════════════════════════════════
+// AUTH + INIT
+// ════════════════════════════════════════════
+async function init() {
+  var sessionResult = await supabaseClient.auth.getSession()
+  if (!sessionResult.data.session) {
+    window.location.href = 'login.html'
+    return
+  }
+  currentUser = sessionResult.data.session.user
 
-  // ════════════════════════════════════════════
-  // AUTH + INIT
-  // ════════════════════════════════════════════
-  async function init() {
-    var sessionResult = await db.auth.getSession()
-    if (!sessionResult.data.session) {
-      window.location.href = 'login.html'
-      return
-    }
-    currentUser = sessionResult.data.session.user
-
-    // Set avatar initials
-    var email = currentUser.email || ''
-    var initials = email.substring(0, 2).toUpperCase()
-    var avatarEl = document.getElementById('avatarEl')
-    if (avatarEl) avatarEl.innerHTML = '<span class="font-headline font-bold text-white text-sm">' + initials + '</span>'
-
-    // Clear any previously selected quote from sessionStorage
-    // so home screen flow still works independently
-    sessionStorage.removeItem('gstw_selected_quote_id')
-    sessionStorage.removeItem('gstw_selected_quote_text')
-    sessionStorage.removeItem('gstw_selected_quote_source')
-    sessionStorage.removeItem('gstw_selected_quote_category')
-
-    await loadQuotes()
+  // Set avatar initials
+  var email = currentUser.email || ''
+  var initials = email.substring(0, 2).toUpperCase()
+  var avatarEl = document.getElementById('avatarEl')
+  if (avatarEl) {
+    avatarEl.innerHTML = '<span class="font-headline font-bold text-white text-sm">' + initials + '</span>'
   }
 
-  // ════════════════════════════════════════════
-  // LOAD QUOTES FROM SUPABASE
-  // ════════════════════════════════════════════
-  async function loadQuotes() {
-    var result = await db
-      .from('quotes')
-      .select('*')
-      .eq('status', 'live')
-      .order('published_at', { ascending: false })
+  // Try to get real name for initials
+  var profileResult = await supabaseClient
+    .from('profiles')
+    .select('full_name')
+    .eq('id', currentUser.id)
+    .single()
 
-    if (result.error) {
-      console.error('Load quotes error:', result.error)
-      showToast('Could not load quotes')
-      return
+  if (profileResult.data && profileResult.data.full_name) {
+    var parts = profileResult.data.full_name.trim().split(' ')
+    if (parts.length >= 2) {
+      initials = (parts[0][0] + parts[1][0]).toUpperCase()
+    } else if (parts[0].length >= 2) {
+      initials = parts[0].substring(0, 2).toUpperCase()
     }
-
-    if (!result.data || result.data.length === 0) {
-      document.getElementById('emptyState').classList.remove('hidden')
-      document.getElementById('quoteList').innerHTML = ''
-      return
+    if (avatarEl) {
+      avatarEl.innerHTML = '<span class="font-headline font-bold text-white text-sm">' + initials + '</span>'
     }
-
-    allQuotes = result.data
-    renderQuotes(allQuotes)
   }
 
-  // ════════════════════════════════════════════
-  // RENDER QUOTE CARDS
-  // ════════════════════════════════════════════
-  function renderQuotes(quotes) {
-    var container = document.getElementById('quoteList')
-    container.innerHTML = ''
+  // Clear any previously selected quote from sessionStorage
+  sessionStorage.removeItem('gstw_selected_quote_id')
+  sessionStorage.removeItem('gstw_selected_quote_text')
+  sessionStorage.removeItem('gstw_selected_quote_source')
+  sessionStorage.removeItem('gstw_selected_quote_category')
 
-    if (quotes.length === 0) {
-      document.getElementById('emptyState').classList.remove('hidden')
-      return
+  await loadQuotes()
+  await loadUserSharedQuotes()
+}
+
+// ════════════════════════════════════════════
+// LOAD QUOTES FROM SUPABASE
+// ════════════════════════════════════════════
+async function loadQuotes() {
+  var result = await supabaseClient
+    .from('quotes')
+    .select('*')
+    .eq('status', 'live')
+    .order('published_at', { ascending: false })
+
+  if (result.error) {
+    console.error('Load quotes error:', result.error)
+    showToast('Could not load quotes')
+    return
+  }
+
+  if (!result.data || result.data.length === 0) {
+    document.getElementById('emptyState').classList.remove('hidden')
+    document.getElementById('quoteList').innerHTML = ''
+    return
+  }
+
+  allQuotes = result.data
+  renderQuotes(allQuotes)
+}
+
+// ════════════════════════════════════════════
+// LOAD USER'S SHARED QUOTES
+// ════════════════════════════════════════════
+async function loadUserSharedQuotes() {
+  if (!currentUser) return
+
+  var result = await supabaseClient
+    .from('shares')
+    .select('quote_id')
+    .eq('user_id', currentUser.id)
+
+  if (result.data) {
+    userSharedQuoteIds = result.data.map(function(s) { return s.quote_id })
+  }
+
+  updateShareButtonStates()
+}
+
+function updateShareButtonStates() {
+  var cards = document.querySelectorAll('.quote-card')
+  cards.forEach(function(card) {
+    var quoteId = card.dataset.quoteId
+    var shareBtn = card.querySelector('.share-btn')
+    if (!shareBtn || !quoteId) return
+
+    if (userSharedQuoteIds.indexOf(quoteId) !== -1) {
+      shareBtn.innerHTML =
+        '<span class="material-symbols-outlined text-[15px] filled">check_circle</span> Shared'
+      shareBtn.className =
+        'bg-primary/10 text-primary px-4 py-2 rounded-full text-xs font-bold '
+        + 'flex items-center gap-1.5 active:scale-95 transition-transform flex-shrink-0 share-btn'
     }
+  })
+}
 
-    document.getElementById('emptyState').classList.add('hidden')
+// ════════════════════════════════════════════
+// RENDER QUOTE CARDS
+// ════════════════════════════════════════════
+function renderQuotes(quotes) {
+  var container = document.getElementById('quoteList')
+  container.innerHTML = ''
 
-    quotes.forEach(function(quote, index) {
-      var isToday      = index === 0
-      var isInspiration = quote.source && !quote.source.includes(':')
-      var dateStr      = quote.published_at
-        ? new Date(quote.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        : 'Recent'
-      var category = quote.category ? quote.category.toLowerCase() : 'faith'
-      var shareCount = quote.share_count || 0
+  if (quotes.length === 0) {
+    document.getElementById('emptyState').classList.remove('hidden')
+    return
+  }
 
-      var card = document.createElement('article')
-      card.className = 'quote-card bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft'
-        + (isInspiration ? ' reflection-plate' : '')
-      card.dataset.category = category
-      card.dataset.quoteId  = quote.id
+  document.getElementById('emptyState').classList.add('hidden')
 
-      // Store full quote data on the element
-      card.dataset.quoteText   = quote.text
-      card.dataset.quoteSource = quote.source
-      card.dataset.quoteCategory = category
+  quotes.forEach(function(quote, index) {
+    var isToday      = index === 0
+    var isInspiration = quote.source && !quote.source.includes(':')
+    var dateStr      = quote.published_at
+      ? new Date(quote.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      : 'Recent'
+    var category   = quote.category ? quote.category.toLowerCase() : 'faith'
+    var shareCount = quote.share_count || 0
+    var isShared   = userSharedQuoteIds.indexOf(quote.id) !== -1
 
-      card.innerHTML =
-        '<div class="flex items-center justify-between mb-3">'
-          + '<div class="flex items-center gap-2">'
-            + (isToday ? '<span class="w-2 h-2 rounded-full bg-primary animate-pulse flex-shrink-0"></span>' : '')
-            + '<span class="text-[10px] font-bold ' + (isToday ? 'text-primary' : 'text-text-light') + ' uppercase tracking-widest">'
-              + (isToday ? 'Today · ' : '') + dateStr
-            + '</span>'
-          + '</div>'
-          + (isToday
-            ? '<span class="text-[10px] font-bold text-gold-dim bg-gold/10 px-2.5 py-1 rounded-full uppercase tracking-wider">Today\'s Word</span>'
-            : '<span class="text-[10px] text-text-light font-body">' + shareCount + ' shares</span>'
-          )
+    var card = document.createElement('article')
+    card.className = 'quote-card bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft'
+      + (isInspiration ? ' reflection-plate' : '')
+    card.dataset.category    = category
+    card.dataset.quoteId     = quote.id
+    card.dataset.quoteText   = quote.text
+    card.dataset.quoteSource = quote.source
+    card.dataset.quoteCategory = category
+
+    // Share button — consistent color, shows "Shared" if already shared
+    var shareBtnHtml = isShared
+      ? '<button class="bg-primary/10 text-primary px-4 py-2 rounded-full text-xs font-bold '
+          + 'flex items-center gap-1.5 active:scale-95 transition-transform flex-shrink-0 share-btn">'
+          + '<span class="material-symbols-outlined text-[15px] filled">check_circle</span>'
+          + ' Shared'
+        + '</button>'
+      : '<button class="tactical-gradient text-white px-4 py-2 rounded-full text-xs font-bold '
+          + 'flex items-center gap-1.5 shadow-tactical active:scale-95 transition-transform flex-shrink-0 share-btn">'
+          + '<span class="material-symbols-outlined text-[15px]">campaign</span>'
+          + ' Share'
+        + '</button>'
+
+    card.innerHTML =
+      '<div class="flex items-center justify-between mb-3">'
+        + '<div class="flex items-center gap-2">'
+          + (isToday ? '<span class="w-2 h-2 rounded-full bg-primary animate-pulse flex-shrink-0"></span>' : '')
+          + '<span class="text-[10px] font-bold ' + (isToday ? 'text-primary' : 'text-text-light') + ' uppercase tracking-widest">'
+            + (isToday ? 'Today · ' : '') + dateStr
+          + '</span>'
         + '</div>'
-        + '<blockquote class="font-headline font-bold text-[' + (isToday ? '17' : '16') + 'px] text-text-dark leading-relaxed mb-2">'
-          + '&ldquo;' + quote.text + '&rdquo;'
-        + '</blockquote>'
-        + '<cite class="block not-italic font-body font-bold text-sm '
-          + (isInspiration ? 'text-gold-dim' : 'text-primary')
-          + ' mb-4 tracking-wider">— ' + quote.source.toUpperCase() + '</cite>'
-        + '<div class="flex items-center justify-between">'
-          + '<div class="flex gap-1.5 flex-wrap">'
-            + '<span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#SpreadTheWord</span>'
-            + '<span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#' + (quote.category || 'Faith') + '</span>'
-          + '</div>'
-          + '<button class="' + (isInspiration ? 'bg-gold' : 'tactical-gradient') + ' text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-tactical active:scale-95 transition-transform flex-shrink-0 share-btn">'
-            + '<span class="material-symbols-outlined text-[15px]">campaign</span>'
-            + ' Share'
-          + '</button>'
+        + (isToday
+          ? '<span class="text-[10px] font-bold text-gold-dim bg-gold/10 px-2.5 py-1 rounded-full uppercase tracking-wider">Today\'s Word</span>'
+          : '<span class="text-[10px] text-text-light font-body">' + shareCount + ' shares</span>'
+        )
+      + '</div>'
+      + '<blockquote class="font-headline font-bold text-[' + (isToday ? '17' : '16') + 'px] text-text-dark leading-relaxed mb-2">'
+        + '&ldquo;' + quote.text + '&rdquo;'
+      + '</blockquote>'
+      + '<cite class="block not-italic font-body font-bold text-sm '
+        + (isInspiration ? 'text-gold-dim' : 'text-primary')
+        + ' mb-4 tracking-wider">&mdash; ' + quote.source.toUpperCase() + '</cite>'
+      + '<div class="flex items-center justify-between">'
+        + '<div class="flex gap-1.5 flex-wrap">'
+          + '<span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#SpreadTheWord</span>'
+          + '<span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#' + (quote.category || 'Faith') + '</span>'
         + '</div>'
+        + shareBtnHtml
+      + '</div>'
 
-      // Tap card = open modal
-      card.addEventListener('click', function(e) {
-        if (e.target.closest('.share-btn')) return
-        openQuote(card)
-      })
-
-      // Tap Share button = go straight to backgrounds
-      var shareBtn = card.querySelector('.share-btn')
-      shareBtn.addEventListener('click', function(e) {
-        e.stopPropagation()
-        selectQuoteAndShare(quote.id, quote.text, quote.source, category)
-      })
-
-      container.appendChild(card)
+    // Tap card = open modal
+    card.addEventListener('click', function(e) {
+      if (e.target.closest('.share-btn')) return
+      openQuote(card)
     })
+
+    // Tap Share button = go straight to backgrounds
+    var shareBtn = card.querySelector('.share-btn')
+    shareBtn.addEventListener('click', function(e) {
+      e.stopPropagation()
+      selectQuoteAndShare(quote.id, quote.text, quote.source, category)
+    })
+
+    container.appendChild(card)
+  })
+}
+
+// ════════════════════════════════════════════
+// SELECT QUOTE AND GO TO BACKGROUNDS
+// ════════════════════════════════════════════
+function selectQuoteAndShare(id, text, source, category) {
+  sessionStorage.removeItem('gstw_final_image')
+  sessionStorage.setItem('gstw_selected_quote_id', id)
+  sessionStorage.setItem('gstw_selected_quote_text', text)
+  sessionStorage.setItem('gstw_selected_quote_source', source)
+  sessionStorage.setItem('gstw_selected_quote_category', category)
+  window.location.href = 'backgrounds.html'
+}
+
+// ════════════════════════════════════════════
+// OPEN QUOTE MODAL
+// ════════════════════════════════════════════
+function openQuote(card) {
+  activeQuoteId = card.dataset.quoteId
+
+  var modal = document.getElementById('quoteModal')
+  modal.dataset.quoteId       = card.dataset.quoteId
+  modal.dataset.quoteText     = card.dataset.quoteText
+  modal.dataset.quoteSource   = card.dataset.quoteSource
+  modal.dataset.quoteCategory = card.dataset.quoteCategory
+
+  document.getElementById('modalQuote').textContent = '\u201C' + card.dataset.quoteText + '\u201D'
+  document.getElementById('modalRef').textContent = '\u2014 ' + card.dataset.quoteSource.toUpperCase()
+
+  modal.classList.remove('hidden')
+  document.body.style.overflow = 'hidden'
+}
+
+function closeModal() {
+  document.getElementById('quoteModal').classList.add('hidden')
+  document.body.style.overflow = ''
+  activeQuoteId = null
+}
+
+document.getElementById('quoteModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal()
+})
+
+// ════════════════════════════════════════════
+// USE THIS WORD — from modal
+// ════════════════════════════════════════════
+function useThisWord() {
+  var modal = document.getElementById('quoteModal')
+  closeModal()
+  selectQuoteAndShare(
+    modal.dataset.quoteId,
+    modal.dataset.quoteText,
+    modal.dataset.quoteSource,
+    modal.dataset.quoteCategory
+  )
+}
+
+// ════════════════════════════════════════════
+// SEARCH
+// ════════════════════════════════════════════
+function toggleSearch() {
+  var bar = document.getElementById('searchBar')
+  bar.classList.toggle('hidden')
+  if (!bar.classList.contains('hidden')) {
+    document.getElementById('searchInput').focus()
+  }
+}
+
+function searchQuotes(query) {
+  var q = query.toLowerCase().trim()
+
+  if (!q) {
+    renderQuotes(allQuotes)
+    return
   }
 
-  // ════════════════════════════════════════════
-  // SELECT QUOTE AND GO TO BACKGROUNDS
-  // This is the KEY function that fixes the flow
-  // ════════════════════════════════════════════
-  function selectQuoteAndShare(id, text, source, category) {
-    // Clear any old final image so editor generates fresh
-    sessionStorage.removeItem('gstw_final_image')
-
-    // Save selected quote to sessionStorage
-    sessionStorage.setItem('gstw_selected_quote_id',       id)
-    sessionStorage.setItem('gstw_selected_quote_text',     text)
-    sessionStorage.setItem('gstw_selected_quote_source',   source)
-    sessionStorage.setItem('gstw_selected_quote_category', category)
-
-    // Navigate to backgrounds
-    window.location.href = 'backgrounds.html'
-  }
-
-  // ════════════════════════════════════════════
-  // OPEN QUOTE MODAL
-  // ════════════════════════════════════════════
-  function openQuote(card) {
-    // Store which quote this modal is for
-    activeQuoteId       = card.dataset.quoteId
-    var activeQuoteText = card.dataset.quoteText
-    var activeQuoteSource = card.dataset.quoteSource
-    var activeQuoteCategory = card.dataset.quoteCategory
-
-    // Store on modal for useThisWord() to access
-    var modal = document.getElementById('quoteModal')
-    modal.dataset.quoteId       = activeQuoteId
-    modal.dataset.quoteText     = activeQuoteText
-    modal.dataset.quoteSource   = activeQuoteSource
-    modal.dataset.quoteCategory = activeQuoteCategory
-
-    document.getElementById('modalQuote').textContent = '\u201C' + activeQuoteText + '\u201D'
-    document.getElementById('modalRef').textContent = '— ' + activeQuoteSource.toUpperCase()
-
-    modal.classList.remove('hidden')
-    document.body.style.overflow = 'hidden'
-  }
-
-  function closeModal() {
-    document.getElementById('quoteModal').classList.add('hidden')
-    document.body.style.overflow = ''
-    activeQuoteId = null
-  }
-
-  // Close modal on backdrop tap
-  document.getElementById('quoteModal').addEventListener('click', function(e) {
-    if (e.target === this) closeModal()
+  var filtered = allQuotes.filter(function(quote) {
+    return quote.text.toLowerCase().includes(q)
+      || quote.source.toLowerCase().includes(q)
+      || (quote.category && quote.category.toLowerCase().includes(q))
   })
 
-  // ════════════════════════════════════════════
-  // USE THIS WORD — from modal
-  // ════════════════════════════════════════════
-  function useThisWord() {
-    var modal = document.getElementById('quoteModal')
-    var id       = modal.dataset.quoteId
-    var text     = modal.dataset.quoteText
-    var source   = modal.dataset.quoteSource
-    var category = modal.dataset.quoteCategory
+  renderQuotes(filtered)
+}
 
-    closeModal()
-    selectQuoteAndShare(id, text, source, category)
-  }
+// ════════════════════════════════════════════
+// FILTER BY CATEGORY
+// ════════════════════════════════════════════
+function filterByCategory(cat, btn) {
+  document.querySelectorAll('.filter-tab').forEach(function(t) {
+    t.classList.remove('active', 'bg-primary', 'text-white')
+    t.classList.add('text-text-muted')
+  })
+  btn.classList.add('active', 'bg-primary', 'text-white')
+  btn.classList.remove('text-text-muted')
 
-  // ════════════════════════════════════════════
-  // SEARCH
-  // ════════════════════════════════════════════
-  function toggleSearch() {
-    var bar = document.getElementById('searchBar')
-    bar.classList.toggle('hidden')
-    if (!bar.classList.contains('hidden')) {
-      document.getElementById('searchInput').focus()
-    }
-  }
+  var filtered = cat === 'all'
+    ? allQuotes
+    : allQuotes.filter(function(q) {
+        return q.category && q.category.toLowerCase() === cat
+      })
 
-  function searchQuotes(query) {
-    var q = query.toLowerCase().trim()
+  renderQuotes(filtered)
+}
 
-    if (!q) {
-      renderQuotes(allQuotes)
-      return
-    }
+// ════════════════════════════════════════════
+// LOAD MORE
+// ════════════════════════════════════════════
+function loadMore() {
+  showToast('All quotes loaded')
+}
 
-    var filtered = allQuotes.filter(function(quote) {
-      return quote.text.toLowerCase().includes(q)
-        || quote.source.toLowerCase().includes(q)
-        || (quote.category && quote.category.toLowerCase().includes(q))
-    })
+// ════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════
+function showToast(msg) {
+  var existing = document.getElementById('libToast')
+  if (existing) existing.remove()
+  var t = document.createElement('div')
+  t.id = 'libToast'
+  t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2'
+  t.innerHTML = '<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:\'FILL\' 1">check_circle</span> ' + msg
+  document.body.appendChild(t)
+  setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
+}
 
-    renderQuotes(filtered)
-  }
-
-  // ════════════════════════════════════════════
-  // FILTER BY CATEGORY
-  // ════════════════════════════════════════════
-  function filterByCategory(cat, btn) {
-    // Update tab styles
-    document.querySelectorAll('.filter-tab').forEach(function(t) {
-      t.classList.remove('active', 'bg-primary', 'text-white')
-      t.classList.add('text-text-muted')
-    })
-    btn.classList.add('active', 'bg-primary', 'text-white')
-    btn.classList.remove('text-text-muted')
-
-    // Filter data
-    var filtered = cat === 'all'
-      ? allQuotes
-      : allQuotes.filter(function(q) {
-          return q.category && q.category.toLowerCase() === cat
-        })
-
-    renderQuotes(filtered)
-  }
-
-  // ════════════════════════════════════════════
-  // LOAD MORE
-  // ════════════════════════════════════════════
-  function loadMore() {
-    showToast('All quotes loaded')
-  }
-
-  // ════════════════════════════════════════════
-  // TOAST
-  // ════════════════════════════════════════════
-  function showToast(msg) {
-    var existing = document.getElementById('libToast')
-    if (existing) existing.remove()
-    var t = document.createElement('div')
-    t.id = 'libToast'
-    t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2'
-    t.innerHTML = '<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:\'FILL\' 1">check_circle</span> ' + msg
-    document.body.appendChild(t)
-    setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
-  }
-
-  // ════════════════════════════════════════════
-  // START
-  // ════════════════════════════════════════════
-  init()
-
-</script>
-</body>
-</html>
+// ════════════════════════════════════════════
+// START
+// ════════════════════════════════════════════
+init()
