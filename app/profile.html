@@ -326,21 +326,387 @@
     </span>
   </section>
 
-  <!-- ======================================
-       DANGER ZONE
-  ====================================== -->
-  <section class="space-y-1 px-1">
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Profile — Go Spread The Word</title>
 
-    <button onclick="confirmLogout()" class="w-full flex items-center gap-4 p-4 rounded-xl text-action font-bold text-sm hover:bg-action/5 transition-colors active:scale-[0.98]">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'primary':'#1E4060','primary-dim':'#152E45','primary-light':'#2B5780',
+            'action':'#E25B4D','action-dim':'#C84A3E',
+            'gold':'#D4A24C','gold-dim':'#B88A3D',
+            'cream':'#F7F4ED','dark':'#16202A',
+            'text-dark':'#1A1A1A','text-muted':'#5C6B7A','text-light':'#8E9AA8',
+            'border-soft':'rgba(92,107,122,0.15)',
+            'card-bg':'#FFFFFF','surface':'#F0EDE6',
+          },
+          fontFamily:{
+            'headline':['Plus Jakarta Sans','sans-serif'],
+            'body':['Manrope','sans-serif'],
+          },
+          boxShadow:{
+            'natural':'0 4px 16px rgba(26,32,42,0.06)',
+            'lifted':'0 8px 32px rgba(26,32,42,0.10)',
+            'tactical':'0 4px 20px rgba(30,64,96,0.25)',
+            'action-glow':'0 4px 20px rgba(226,91,77,0.35)',
+            'card':'0 2px 12px rgba(30,64,96,0.06)',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    body{
+      font-family:'Manrope',sans-serif;
+      background-color:#F0EDE6;
+      -webkit-tap-highlight-color:transparent;
+      min-height:100dvh;
+    }
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif}
+    .material-symbols-outlined{
+      font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+      vertical-align:middle;
+    }
+    .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+    .tactical-gradient{background:linear-gradient(145deg,#152E45,#1E4060)}
+    .action-gradient{background:linear-gradient(145deg,#E25B4D,#C84A3E)}
+
+    .toggle-switch{
+      width:44px;height:24px;background:#8E9AA8;
+      border-radius:12px;position:relative;cursor:pointer;
+      transition:background 0.2s;flex-shrink:0;
+    }
+    .toggle-switch.on{background:#1E4060}
+    .toggle-switch .dot{
+      width:18px;height:18px;background:white;border-radius:50%;
+      position:absolute;top:3px;left:3px;transition:left 0.2s;
+      box-shadow:0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle-switch.on .dot{left:23px}
+
+    ::-webkit-scrollbar{display:none}
+    body{-ms-overflow-style:none;scrollbar-width:none}
+
+    .settings-row{transition:background 0.15s ease}
+    .settings-row:active{background:rgba(30,64,96,0.04)}
+    .pb-safe{padding-bottom:env(safe-area-inset-bottom,16px)}
+
+    #heroCard{transition:transform 0.1s linear}
+
+    .skeleton{
+      background:linear-gradient(90deg,#e8e5de 25%,#f0ede6 50%,#e8e5de 75%);
+      background-size:200% 100%;
+      animation:shimmer 1.5s infinite;
+      border-radius:12px;
+    }
+    @keyframes shimmer{
+      0%{background-position:200% 0}
+      100%{background-position:-200% 0}
+    }
+
+    .milestone-ring{transform:rotate(-90deg)}
+  </style>
+</head>
+
+<body class="text-text-dark pb-32">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TOP APP BAR -->
+<!-- ═══════════════════════════════════════════ -->
+<header class="sticky top-0 z-50 bg-surface/90 backdrop-blur-xl border-b border-border-soft w-full">
+  <div class="flex justify-between items-center px-5 py-4 max-w-[430px] mx-auto">
+    <div class="flex items-center gap-2.5">
+      <span class="material-symbols-outlined text-primary text-[20px]">auto_stories</span>
+      <span class="font-headline font-bold text-primary text-base tracking-tight">Spread The Word</span>
+    </div>
+    <div id="headerAvatar"
+      class="w-9 h-9 rounded-full overflow-hidden bg-primary border-2 border-gold
+      flex items-center justify-center">
+      <span class="font-headline font-bold text-white text-sm">?</span>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- MAIN CONTENT -->
+<!-- ═══════════════════════════════════════════ -->
+<main class="px-5 pt-5 pb-10 flex flex-col gap-5 max-w-[430px] mx-auto">
+
+  <!-- ─────────────────────────────────────── -->
+  <!-- PROFILE HERO CARD -->
+  <!-- ─────────────────────────────────────── -->
+  <section id="heroCard" class="tactical-gradient p-6 rounded-2xl shadow-tactical text-white">
+
+    <div class="flex items-center gap-4 mb-5">
+      <!-- Avatar -->
+      <div id="heroAvatar"
+        class="w-16 h-16 rounded-2xl bg-primary-light border-2 border-gold
+        flex items-center justify-center flex-shrink-0 shadow-lifted">
+        <span class="font-headline font-extrabold text-white text-xl">?</span>
+      </div>
+
+      <!-- Name + Email -->
+      <div class="min-w-0 flex-1">
+        <h2 id="profileName"
+          class="font-headline font-extrabold text-xl text-white leading-tight">
+          Loading...
+        </h2>
+        <p id="profileEmail" class="text-white/70 text-sm font-body truncate"></p>
+        <div class="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10
+          text-[10px] font-bold tracking-wide">
+          <span class="material-symbols-outlined text-gold text-[13px] filled">workspace_premium</span>
+          <span id="profileSince">Warrior</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="h-px bg-white/15 mb-5"></div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-3 gap-3 text-center">
+      <div class="bg-white/10 rounded-xl py-3">
+        <span id="statShares" class="font-headline font-extrabold text-xl text-gold block">—</span>
+        <span class="text-[9px] uppercase tracking-widest text-white/60 font-bold">Shares</span>
+      </div>
+      <div class="bg-white/10 rounded-xl py-3">
+        <div class="flex items-center justify-center gap-1">
+          <span class="text-base">🔥</span>
+          <span id="statStreak" class="font-headline font-extrabold text-xl text-gold">—</span>
+        </div>
+        <span class="text-[9px] uppercase tracking-widest text-white/60 font-bold">Day Streak</span>
+      </div>
+      <div class="bg-white/10 rounded-xl py-3">
+        <span id="statPlatforms" class="font-headline font-extrabold text-xl text-gold block">—</span>
+        <span class="text-[9px] uppercase tracking-widest text-white/60 font-bold">Platforms</span>
+      </div>
+    </div>
+
+    <!-- Level Progress -->
+    <div class="mt-5 pt-4 border-t border-white/15">
+      <div class="flex justify-between items-center mb-2">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-gold text-[16px] filled">military_tech</span>
+          <span id="levelTitle" class="text-xs font-bold text-gold">Loading...</span>
+        </div>
+        <span id="levelNext" class="text-[10px] text-white/50 font-bold"></span>
+      </div>
+      <div class="h-2 bg-white/15 rounded-full overflow-hidden">
+        <div id="levelBar"
+          class="h-full bg-gold rounded-full transition-all duration-1000"
+          style="width:0%"></div>
+      </div>
+      <p id="levelRemaining" class="text-[10px] text-white/50 mt-1.5"></p>
+    </div>
+
+  </section>
+
+  <!-- ─────────────────────────────────────── -->
+  <!-- SUBSCRIPTION CARD -->
+  <!-- ─────────────────────────────────────── -->
+  <section class="bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft space-y-4">
+    <div class="flex justify-between items-start">
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <h3 class="font-headline font-bold text-base text-text-dark">Warrior Plan</h3>
+          <span class="bg-primary/10 text-primary text-[9px] font-bold px-2.5 py-0.5
+            rounded-full uppercase tracking-wider">Active</span>
+        </div>
+        <p class="text-sm text-text-muted font-body">$3.99 / month</p>
+      </div>
+      <div class="text-right">
+        <p class="text-[10px] text-text-light italic">Subscription active</p>
+        <p class="text-[10px] text-green-600 font-bold mt-0.5">✓ Current</p>
+      </div>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="showToast('Subscription management coming soon')"
+        class="flex-1 px-4 py-2.5 rounded-xl border-2 border-primary text-primary
+        font-bold text-sm active:scale-95 transition-transform">
+        Manage Plan
+      </button>
+      <button onclick="showToast('Billing history coming soon')"
+        class="flex-1 px-4 py-2.5 rounded-xl border-2 border-border-soft text-text-muted
+        font-bold text-sm active:scale-95 transition-all">
+        Billing
+      </button>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────── -->
+  <!-- PREFERENCES -->
+  <!-- ─────────────────────────────────────── -->
+  <section class="bg-card-bg rounded-2xl shadow-card border border-border-soft overflow-hidden">
+
+    <div class="px-5 pt-5 pb-2">
+      <h3 class="text-[10px] font-bold text-primary uppercase tracking-widest">Preferences</h3>
+    </div>
+
+    <!-- Push Notifications -->
+    <div class="settings-row flex items-center justify-between px-5 py-4 border-b border-border-soft">
+      <div class="flex items-center gap-3.5">
+        <div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-primary text-[18px]">notifications</span>
+        </div>
+        <div>
+          <span class="text-sm font-bold text-text-dark block">Push Notifications</span>
+          <span class="text-[11px] text-text-light">Daily briefings delivered</span>
+        </div>
+      </div>
+      <div id="notifToggle" class="toggle-switch on"
+        onclick="toggleNotifications(this)">
+        <div class="dot"></div>
+      </div>
+    </div>
+
+    <!-- Default Share Platform -->
+    <div class="settings-row flex items-center justify-between px-5 py-4 cursor-pointer border-b border-border-soft"
+      onclick="openPlatformPicker()">
+      <div class="flex items-center gap-3.5">
+        <div class="w-9 h-9 rounded-xl bg-gold/15 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-gold-dim text-[18px]">share</span>
+        </div>
+        <div>
+          <span class="text-sm font-bold text-text-dark block">Default Platform</span>
+          <span class="text-[11px] text-text-light">Where you share first</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 text-text-muted text-sm">
+        <span id="defaultPlatform">Instagram</span>
+        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+      </div>
+    </div>
+
+    <!-- Default Font -->
+    <div class="settings-row flex items-center justify-between px-5 py-4 cursor-pointer border-b border-border-soft"
+      onclick="showToast('Font selection coming soon')">
+      <div class="flex items-center gap-3.5">
+        <div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-primary text-[18px]">text_fields</span>
+        </div>
+        <div>
+          <span class="text-sm font-bold text-text-dark block">Default Font</span>
+          <span class="text-[11px] text-text-light">For scripture overlays</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 text-text-muted text-sm">
+        <span id="defaultFont">Jakarta</span>
+        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+      </div>
+    </div>
+
+    <!-- Language -->
+    <div class="settings-row flex items-center justify-between px-5 py-4 cursor-pointer"
+      onclick="showToast('Language settings coming soon')">
+      <div class="flex items-center gap-3.5">
+        <div class="w-9 h-9 rounded-xl bg-surface flex items-center justify-center flex-shrink-0
+          border border-border-soft">
+          <span class="material-symbols-outlined text-text-muted text-[18px]">language</span>
+        </div>
+        <div>
+          <span class="text-sm font-bold text-text-dark block">Language</span>
+          <span class="text-[11px] text-text-light">App display language</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 text-text-muted text-sm">
+        <span>English</span>
+        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ─────────────────────────────────────── -->
+  <!-- ACCOUNT & SUPPORT -->
+  <!-- ─────────────────────────────────────── -->
+  <section class="bg-card-bg rounded-2xl shadow-card border border-border-soft overflow-hidden">
+
+    <div class="px-5 pt-5 pb-2">
+      <h3 class="text-[10px] font-bold text-primary uppercase tracking-widest">Account & Support</h3>
+    </div>
+
+    <div class="settings-row flex items-center justify-between px-5 py-4 border-b border-border-soft cursor-pointer"
+      onclick="showToast('Edit profile — available after onboarding update')">
+      <span class="text-sm font-body font-medium text-text-dark">Edit Profile</span>
+      <div class="flex items-center gap-1">
+        <span class="text-[10px] text-text-light font-bold">Coming Soon</span>
+        <span class="material-symbols-outlined text-text-light text-[18px]">chevron_right</span>
+      </div>
+    </div>
+    <div class="settings-row flex items-center justify-between px-5 py-4 border-b border-border-soft cursor-pointer"
+      onclick="showToast('Password change — available after onboarding update')">
+      <span class="text-sm font-body font-medium text-text-dark">Change Password</span>
+      <div class="flex items-center gap-1">
+        <span class="text-[10px] text-text-light font-bold">Coming Soon</span>
+        <span class="material-symbols-outlined text-text-light text-[18px]">chevron_right</span>
+      </div>
+    </div>
+    <a href="#" class="settings-row flex items-center justify-between px-5 py-4 border-b border-border-soft">
+      <span class="text-sm font-body font-medium text-text-dark">Privacy Policy</span>
+      <span class="material-symbols-outlined text-text-light text-[18px]">chevron_right</span>
+    </a>
+    <a href="#" class="settings-row flex items-center justify-between px-5 py-4 border-b border-border-soft">
+      <span class="text-sm font-body font-medium text-text-dark">Terms of Service</span>
+      <span class="material-symbols-outlined text-text-light text-[18px]">chevron_right</span>
+    </a>
+    <a href="#" onclick="showToast('Opening support...')"
+      class="settings-row flex items-center justify-between px-5 py-4">
+      <span class="text-sm font-body font-medium text-text-dark">Contact Support</span>
+      <span class="material-symbols-outlined text-text-light text-[18px]">chevron_right</span>
+    </a>
+
+  </section>
+
+  <!-- ─────────────────────────────────────── -->
+  <!-- MINISTRY TEASER -->
+  <!-- ─────────────────────────────────────── -->
+  <section class="border-2 border-dashed border-border-soft rounded-2xl p-5
+    flex items-center justify-between bg-card-bg/60">
+    <div class="flex items-center gap-4">
+      <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+        <span class="material-symbols-outlined text-primary text-[20px]">church</span>
+      </div>
+      <div>
+        <h3 class="font-headline font-bold text-sm text-text-dark">Are you a Ministry?</h3>
+        <p class="text-[11px] text-text-muted">Unlock organisation-wide tools.</p>
+      </div>
+    </div>
+    <span class="bg-gold/15 text-gold-dim text-[9px] font-bold px-3 py-1.5
+      rounded-full uppercase tracking-wider whitespace-nowrap flex-shrink-0">
+      Phase 2
+    </span>
+  </section>
+
+  <!-- ─────────────────────────────────────── -->
+  <!-- DANGER ZONE -->
+  <!-- ─────────────────────────────────────── -->
+  <section class="space-y-1 px-1">
+    <button onclick="confirmLogout()"
+      class="w-full flex items-center gap-4 p-4 rounded-xl text-action font-bold text-sm
+      active:scale-[0.98] transition-transform">
       <span class="material-symbols-outlined text-[20px]">logout</span>
       Log Out
     </button>
-
-    <button onclick="confirmDelete()" class="w-full flex items-center gap-4 p-4 rounded-xl text-action font-bold text-sm hover:bg-action/5 transition-colors active:scale-[0.98]">
+    <button onclick="confirmDelete()"
+      class="w-full flex items-center gap-4 p-4 rounded-xl text-action/60 font-bold text-sm
+      active:scale-[0.98] transition-transform">
       <span class="material-symbols-outlined text-[20px]">delete_forever</span>
       Delete Account
     </button>
-
   </section>
 
   <!-- Footer -->
@@ -351,241 +717,415 @@
 
 </main>
 
-<!-- ============================================================
-     BOTTOM NAVIGATION
-============================================================ -->
-<nav class="fixed bottom-0 left-0 w-full bg-card-bg/90 backdrop-blur-xl border-t border-border-soft z-50 pb-safe" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
+<!-- ═══════════════════════════════════════════ -->
+<!-- BOTTOM NAVIGATION — Profile active -->
+<!-- ═══════════════════════════════════════════ -->
+<nav class="fixed bottom-0 left-0 w-full bg-card-bg/90 backdrop-blur-xl border-t border-border-soft z-50"
+  style="padding-bottom:max(16px,env(safe-area-inset-bottom))">
   <div class="flex justify-around items-center px-2 pt-2 pb-1 max-w-[430px] mx-auto">
-
     <a href="index.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
       <span class="material-symbols-outlined text-text-light text-[22px]">home</span>
       <span class="text-[10px] font-medium text-text-light">Home</span>
     </a>
-
     <a href="library.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
       <span class="material-symbols-outlined text-text-light text-[22px]">auto_stories</span>
       <span class="text-[10px] font-medium text-text-light">Library</span>
     </a>
-
-     <!-- Cause -->
-      <a href="cause.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
-        <span class="material-symbols-outlined text-text-light text-[22px]">volunteer_activism</span>
-        <span class="text-[10px] font-medium text-text-light">Cause</span>
-      </a>
-
-
+    <a href="cause.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
+      <span class="material-symbols-outlined text-text-light text-[22px]">volunteer_activism</span>
+      <span class="text-[10px] font-medium text-text-light">Projects</span>
+    </a>
     <a href="impact.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
       <span class="material-symbols-outlined text-text-light text-[22px]">bar_chart</span>
       <span class="text-[10px] font-medium text-text-light">Impact</span>
     </a>
-
-    <!-- Profile (Active) -->
     <a href="profile.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
       <span class="material-symbols-outlined text-primary text-[22px] filled">person</span>
       <span class="text-[10px] font-bold text-primary">Profile</span>
     </a>
-
   </div>
 </nav>
 
-<!-- ============================================================
-     PLATFORM PICKER SHEET
-============================================================ -->
-<div id="platformSheet" class="hidden fixed inset-0 bg-dark/50 backdrop-blur-sm z-[100] flex items-end justify-center" onclick="closePlatformPicker()">
-  <div class="w-full max-w-[430px] bg-card-bg rounded-t-3xl p-6 pb-10" onclick="event.stopPropagation()">
+<!-- ═══════════════════════════════════════════ -->
+<!-- PLATFORM PICKER SHEET -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="platformSheet"
+  class="hidden fixed inset-0 bg-dark/50 backdrop-blur-sm z-[100] flex items-end justify-center"
+  onclick="closePlatformPicker()">
+  <div class="w-full max-w-[430px] bg-card-bg rounded-t-3xl p-6 pb-10"
+    onclick="event.stopPropagation()">
     <div class="w-10 h-1 bg-text-light/30 rounded-full mx-auto mb-5"></div>
     <h3 class="font-headline font-bold text-lg text-text-dark mb-4">Default Platform</h3>
-    <div class="space-y-2">
-      <button onclick="setDefaultPlatform('Instagram')" class="platform-opt w-full flex items-center gap-3 p-3.5 rounded-2xl border border-border-soft hover:border-primary hover:bg-primary/5 transition-all active:scale-[0.98]">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/132px-Instagram_logo_2016.svg.png" class="w-7 h-7 rounded-lg" alt="Instagram">
-        <span class="font-bold text-sm text-text-dark">Instagram</span>
-        <span id="check-Instagram" class="material-symbols-outlined text-primary text-[18px] filled ml-auto">check_circle</span>
-      </button>
-      <button onclick="setDefaultPlatform('WhatsApp')" class="platform-opt w-full flex items-center gap-3 p-3.5 rounded-2xl border border-border-soft hover:border-primary hover:bg-primary/5 transition-all active:scale-[0.98]">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/120px-WhatsApp.svg.png" class="w-7 h-7 rounded-lg" alt="WhatsApp">
-        <span class="font-bold text-sm text-text-dark">WhatsApp</span>
-        <span id="check-WhatsApp" class="material-symbols-outlined text-primary text-[18px] filled ml-auto hidden">check_circle</span>
-      </button>
-      <button onclick="setDefaultPlatform('TikTok')" class="platform-opt w-full flex items-center gap-3 p-3.5 rounded-2xl border border-border-soft hover:border-primary hover:bg-primary/5 transition-all active:scale-[0.98]">
-        <img src="https://upload.wikimedia.org/wikipedia/en/thumb/a/a9/TikTok_logo.svg/100px-TikTok_logo.svg.png" class="w-7 h-7 rounded-lg bg-white p-0.5" alt="TikTok">
-        <span class="font-bold text-sm text-text-dark">TikTok</span>
-        <span id="check-TikTok" class="material-symbols-outlined text-primary text-[18px] filled ml-auto hidden">check_circle</span>
-      </button>
-      <button onclick="setDefaultPlatform('Facebook')" class="platform-opt w-full flex items-center gap-3 p-3.5 rounded-2xl border border-border-soft hover:border-primary hover:bg-primary/5 transition-all active:scale-[0.98]">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/2023_Facebook_icon.svg/120px-2023_Facebook_icon.svg.png" class="w-7 h-7 rounded-lg" alt="Facebook">
-        <span class="font-bold text-sm text-text-dark">Facebook</span>
-        <span id="check-Facebook" class="material-symbols-outlined text-primary text-[18px] filled ml-auto hidden">check_circle</span>
-      </button>
+    <div id="platformOptions" class="space-y-2">
+      <!-- Rendered by JS -->
     </div>
   </div>
 </div>
 
-<!-- CONFIRM MODALS -->
-<div id="confirmModal" class="hidden fixed inset-0 bg-dark/60 backdrop-blur-sm z-[100] flex items-center justify-center px-5">
+<!-- ═══════════════════════════════════════════ -->
+<!-- CONFIRM MODAL -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="confirmModal"
+  class="hidden fixed inset-0 bg-dark/60 backdrop-blur-sm z-[100] flex items-center justify-center px-5">
   <div class="bg-card-bg rounded-2xl p-7 w-full max-w-sm shadow-lifted text-center">
-    <div id="modalIcon" class="w-14 h-14 rounded-full bg-action/10 flex items-center justify-center mx-auto mb-4">
+    <div id="modalIcon"
+      class="w-14 h-14 rounded-full bg-action/10 flex items-center justify-center mx-auto mb-4">
       <span class="material-symbols-outlined text-action text-[28px]">logout</span>
     </div>
     <h3 id="modalTitle" class="font-headline font-bold text-xl text-text-dark mb-2">Log Out?</h3>
-    <p id="modalMsg" class="text-sm text-text-muted font-body mb-6">You can always log back in to continue your mission.</p>
+    <p id="modalMsg" class="text-sm text-text-muted font-body mb-6">
+      You can always log back in to continue your mission.
+    </p>
     <div class="flex gap-3">
-      <button onclick="closeModal()" class="flex-1 py-3 border-2 border-border-soft text-text-muted font-bold rounded-xl hover:bg-cream transition-all">Cancel</button>
-      <button id="modalConfirm" onclick="executeConfirm()" class="flex-1 py-3 action-gradient text-white font-bold rounded-xl shadow-action-glow hover:scale-[1.02] transition-transform">Confirm</button>
+      <button onclick="closeModal()"
+        class="flex-1 py-3 border-2 border-border-soft text-text-muted font-bold rounded-xl
+        hover:bg-cream transition-all">
+        Cancel
+      </button>
+      <button id="modalConfirm" onclick="executeConfirm()"
+        class="flex-1 py-3 action-gradient text-white font-bold rounded-xl shadow-action-glow
+        active:scale-[0.98] transition-transform">
+        Confirm
+      </button>
     </div>
   </div>
 </div>
 
-<!-- TOAST -->
-<div id="toast" class="hidden fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2">
-  <span class="material-symbols-outlined text-gold text-[14px] filled">check_circle</span>
-  <span id="toastMsg">Done</span>
-</div>
-
-<!-- ============================================================
-     JAVASCRIPT
-============================================================ -->
+<!-- ═══════════════════════════════════════════ -->
+<!-- SCRIPT -->
+<!-- ═══════════════════════════════════════════ -->
 <script>
- // ---- SUPABASE SETUP ----
-const { createClient } = supabase
-const db = createClient(
-  'https://nhymadutuhpjgkiurify.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
-)
 
- // ---- LOAD REAL PROFILE DATA ----
-async function loadProfile() {
-  const { data: { session } } = await db.auth.getSession()
-  if (!session) { window.location.href = 'login.html'; return }
+  // ════════════════════════════════════════════
+  // SUPABASE
+  // ════════════════════════════════════════════
+  var supabaseClient = supabase.createClient(
+    'https://nhymadutuhpjgkiurify.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+  )
 
-  const { data, error } = await db
-    .from('profiles')
-    .select('*')
-    .eq('id', session.user.id)
-    .single()
+  // ════════════════════════════════════════════
+  // STATE
+  // ════════════════════════════════════════════
+  var currentUser = null
+  var userProfile = null
+  var pendingAction = null
 
-  if (error || !data) return
+  // ════════════════════════════════════════════
+  // WARRIOR LEVELS
+  // ════════════════════════════════════════════
+  var warriorLevels = [
+    { level: 1, title: 'Recruit',   min: 0,   max: 9 },
+    { level: 2, title: 'Soldier',   min: 10,  max: 49 },
+    { level: 3, title: 'Sergeant',  min: 50,  max: 99 },
+    { level: 4, title: 'Commander', min: 100, max: 199 },
+    { level: 5, title: 'General',   min: 200, max: 99999 }
+  ]
 
-  // Update UI with real data
-  const nameEl   = document.querySelector('#heroCard h2')
-  const emailEl  = document.querySelector('#heroCard p')
-  const sharesEl = document.querySelector('.shares-stat')
-  const streakEl = document.querySelector('.streak-stat')
-
-  if (nameEl)   nameEl.textContent   = data.full_name || 'Soldier'
-  if (emailEl)  emailEl.textContent  = data.email     || ''
-  if (sharesEl) sharesEl.textContent = data.total_shares    || 0
-  if (streakEl) streakEl.textContent = data.current_streak  || 0
-}
-
-loadProfile()
-
-  // ---- TOGGLE SWITCH ----
-  function toggleSwitch(el) {
-    el.classList.toggle('on');
-    showToast(el.classList.contains('on') ? 'Notifications enabled' : 'Notifications disabled');
+  function getWarriorLevel(totalShares) {
+    for (var i = warriorLevels.length - 1; i >= 0; i--) {
+      if (totalShares >= warriorLevels[i].min) return warriorLevels[i]
+    }
+    return warriorLevels[0]
   }
 
-  // ---- PLATFORM PICKER ----
-  let currentPlatform = 'Instagram';
+  function getNextLevel(totalShares) {
+    for (var i = 0; i < warriorLevels.length; i++) {
+      if (totalShares <= warriorLevels[i].max) {
+        return i < warriorLevels.length - 1 ? warriorLevels[i + 1] : null
+      }
+    }
+    return null
+  }
 
+  // ════════════════════════════════════════════
+  // PLATFORM OPTIONS
+  // ════════════════════════════════════════════
+  var platformList = [
+    { name: 'Instagram', icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/132px-Instagram_logo_2016.svg.png' },
+    { name: 'WhatsApp',  icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/120px-WhatsApp.svg.png' },
+    { name: 'TikTok',    icon: 'https://upload.wikimedia.org/wikipedia/en/thumb/a/a9/TikTok_logo.svg/100px-TikTok_logo.svg.png' },
+    { name: 'Facebook',  icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/2023_Facebook_icon.svg/120px-2023_Facebook_icon.svg.png' },
+    { name: 'Telegram',  icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Telegram_logo.svg/120px-Telegram_logo.svg.png' },
+    { name: 'X / Twitter', icon: null },
+    { name: 'LinkedIn',  icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/LinkedIn_logo_initials.png/120px-LinkedIn_logo_initials.png' }
+  ]
+
+  // ════════════════════════════════════════════
+  // LOAD PROFILE
+  // ════════════════════════════════════════════
+  async function loadProfile() {
+    // Auth check
+    var sessionResult = await supabaseClient.auth.getSession()
+    if (!sessionResult.data.session) {
+      window.location.href = 'login.html'
+      return
+    }
+    currentUser = sessionResult.data.session.user
+
+    // Load profile data
+    var profileResult = await supabaseClient
+      .from('profiles')
+      .select('*')
+      .eq('id', currentUser.id)
+      .single()
+
+    userProfile = profileResult.data || {}
+
+    // Load shares for platform count
+    var sharesResult = await supabaseClient
+      .from('shares')
+      .select('platform')
+      .eq('user_id', currentUser.id)
+
+    var shares = sharesResult.data || []
+    var platformCounts = {}
+    shares.forEach(function(s) {
+      if (s.platform) platformCounts[s.platform] = true
+    })
+    var uniquePlatforms = Object.keys(platformCounts).length
+
+    // ── RENDER PROFILE ──
+    var fullName  = userProfile.full_name || ''
+    var email     = currentUser.email || ''
+    var totalShares = userProfile.total_shares || 0
+    var streak    = userProfile.current_streak || 0
+    var joinDate  = userProfile.created_at || currentUser.created_at
+    var defaultPlatform = userProfile.default_platform || 'Instagram'
+    var notifEnabled = userProfile.notifications_enabled !== false
+
+    // Generate initials
+    var initials = '?'
+    if (fullName) {
+      var parts = fullName.split(' ')
+      initials = parts.map(function(n) { return n[0] }).join('').substring(0, 2).toUpperCase()
+    } else if (email) {
+      initials = email.substring(0, 2).toUpperCase()
+    }
+
+    // Update avatars
+    document.getElementById('headerAvatar').innerHTML =
+      '<span class="font-headline font-bold text-white text-sm">' + initials + '</span>'
+    document.getElementById('heroAvatar').innerHTML =
+      '<span class="font-headline font-extrabold text-white text-xl">' + initials + '</span>'
+
+    // Update name and email
+    document.getElementById('profileName').textContent = fullName || 'Set up your profile'
+    document.getElementById('profileEmail').textContent = email
+
+    // Warrior since
+    if (joinDate) {
+      var date = new Date(joinDate)
+      var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+      document.getElementById('profileSince').textContent =
+        'Warrior since ' + monthNames[date.getMonth()] + ' ' + date.getFullYear()
+    }
+
+    // Stats
+    document.getElementById('statShares').textContent    = totalShares
+    document.getElementById('statStreak').textContent    = streak
+    document.getElementById('statPlatforms').textContent = uniquePlatforms
+
+    // Warrior level
+    var level = getWarriorLevel(totalShares)
+    var nextLevel = getNextLevel(totalShares)
+
+    document.getElementById('levelTitle').textContent = 'Level ' + level.level + ' — ' + level.title
+
+    if (nextLevel) {
+      var progress  = ((totalShares - level.min) / (nextLevel.min - level.min)) * 100
+      var remaining = nextLevel.min - totalShares
+      document.getElementById('levelNext').textContent      = 'Next: ' + nextLevel.title
+      document.getElementById('levelRemaining').textContent = remaining + ' more shares to level up'
+      setTimeout(function() {
+        document.getElementById('levelBar').style.width = Math.min(progress, 100) + '%'
+      }, 300)
+    } else {
+      document.getElementById('levelNext').textContent      = 'Max Rank!'
+      document.getElementById('levelRemaining').textContent = 'You\'ve reached the highest rank'
+      setTimeout(function() {
+        document.getElementById('levelBar').style.width = '100%'
+      }, 300)
+    }
+
+    // Preferences
+    document.getElementById('defaultPlatform').textContent = defaultPlatform
+
+    var notifToggle = document.getElementById('notifToggle')
+    if (notifEnabled) {
+      notifToggle.classList.add('on')
+    } else {
+      notifToggle.classList.remove('on')
+    }
+
+    // Render platform picker options
+    renderPlatformOptions(defaultPlatform)
+  }
+
+  // ════════════════════════════════════════════
+  // RENDER PLATFORM OPTIONS
+  // ════════════════════════════════════════════
+  function renderPlatformOptions(selected) {
+    var container = document.getElementById('platformOptions')
+    container.innerHTML = ''
+
+    platformList.forEach(function(p) {
+      var isSelected = p.name === selected
+
+      var iconHtml = p.icon
+        ? '<img src="' + p.icon + '" class="w-7 h-7 rounded-lg' + (p.name === 'TikTok' ? ' bg-white p-0.5' : '') + '" alt="' + p.name + '">'
+        : '<div class="w-7 h-7 rounded-lg bg-black flex items-center justify-center"><span class="text-white font-bold text-[12px]">𝕏</span></div>'
+
+      var btn = document.createElement('button')
+      btn.className = 'w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all active:scale-[0.98] '
+        + (isSelected ? 'border-primary bg-primary/5' : 'border-border-soft')
+      btn.onclick = function() { setDefaultPlatform(p.name) }
+
+      btn.innerHTML = iconHtml
+        + '<span class="font-bold text-sm text-text-dark">' + p.name + '</span>'
+        + (isSelected
+          ? '<span class="material-symbols-outlined text-primary text-[18px] filled ml-auto">check_circle</span>'
+          : '<span class="ml-auto"></span>')
+
+      container.appendChild(btn)
+    })
+  }
+
+  // ════════════════════════════════════════════
+  // TOGGLE NOTIFICATIONS — saves to DB
+  // ════════════════════════════════════════════
+  async function toggleNotifications(el) {
+    el.classList.toggle('on')
+    var isOn = el.classList.contains('on')
+    showToast(isOn ? 'Notifications enabled' : 'Notifications disabled')
+
+    if (currentUser) {
+      await supabaseClient.from('profiles').update({
+        notifications_enabled: isOn
+      }).eq('id', currentUser.id)
+    }
+  }
+
+  // ════════════════════════════════════════════
+  // SET DEFAULT PLATFORM — saves to DB
+  // ════════════════════════════════════════════
+  async function setDefaultPlatform(name) {
+    document.getElementById('defaultPlatform').textContent = name
+    renderPlatformOptions(name)
+    closePlatformPicker()
+    showToast('Default platform set to ' + name)
+
+    if (currentUser) {
+      await supabaseClient.from('profiles').update({
+        default_platform: name
+      }).eq('id', currentUser.id)
+    }
+  }
+
+  // ════════════════════════════════════════════
+  // PLATFORM PICKER
+  // ════════════════════════════════════════════
   function openPlatformPicker() {
-    document.getElementById('platformSheet').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
+    document.getElementById('platformSheet').classList.remove('hidden')
+    document.body.style.overflow = 'hidden'
   }
 
   function closePlatformPicker() {
-    document.getElementById('platformSheet').classList.add('hidden');
-    document.body.style.overflow = '';
+    document.getElementById('platformSheet').classList.add('hidden')
+    document.body.style.overflow = ''
   }
 
-  function setDefaultPlatform(name) {
-    document.querySelectorAll('[id^="check-"]').forEach(el => el.classList.add('hidden'));
-    document.getElementById('check-' + name).classList.remove('hidden');
-    document.getElementById('defaultPlatform').textContent = name;
-    currentPlatform = name;
-    closePlatformPicker();
-    showToast('Default platform set to ' + name);
-  }
-
-  // ---- CONFIRM MODALS ----
-  let pendingAction = null;
-
+  // ════════════════════════════════════════════
+  // CONFIRM MODALS
+  // ════════════════════════════════════════════
   function confirmLogout() {
-    pendingAction = 'logout';
-    document.getElementById('modalTitle').textContent = 'Log Out?';
-    document.getElementById('modalMsg').textContent = 'You can always log back in to continue your mission.';
-    document.getElementById('modalIcon').innerHTML = '<span class="material-symbols-outlined text-action text-[28px]">logout</span>';
-    document.getElementById('confirmModal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
+    pendingAction = 'logout'
+    document.getElementById('modalTitle').textContent = 'Log Out?'
+    document.getElementById('modalMsg').textContent =
+      'You can always log back in to continue your mission.'
+    document.getElementById('modalIcon').innerHTML =
+      '<span class="material-symbols-outlined text-action text-[28px]">logout</span>'
+    document.getElementById('confirmModal').classList.remove('hidden')
+    document.body.style.overflow = 'hidden'
   }
 
   function confirmDelete() {
-    pendingAction = 'delete';
-    document.getElementById('modalTitle').textContent = 'Delete Account?';
-    document.getElementById('modalMsg').textContent = 'This is permanent. All your data, streak and impact history will be lost forever.';
-    document.getElementById('modalIcon').innerHTML = '<span class="material-symbols-outlined text-action text-[28px]">delete_forever</span>';
-    document.getElementById('confirmModal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
+    pendingAction = 'delete'
+    document.getElementById('modalTitle').textContent = 'Delete Account?'
+    document.getElementById('modalMsg').textContent =
+      'This is permanent. All your data, streak and impact history will be lost forever.'
+    document.getElementById('modalIcon').innerHTML =
+      '<span class="material-symbols-outlined text-action text-[28px]">delete_forever</span>'
+    document.getElementById('confirmModal').classList.remove('hidden')
+    document.body.style.overflow = 'hidden'
   }
 
   function closeModal() {
-    document.getElementById('confirmModal').classList.add('hidden');
-    document.body.style.overflow = '';
+    document.getElementById('confirmModal').classList.add('hidden')
+    document.body.style.overflow = ''
   }
 
- async function executeConfirm() {
-  closeModal()
+  async function executeConfirm() {
+    closeModal()
 
-  if (pendingAction === 'logout') {
-    await db.auth.signOut()
-    window.location.href = 'login.html'
+    if (pendingAction === 'logout') {
+      await supabaseClient.auth.signOut()
+      window.location.href = 'login.html'
+    }
+
+    if (pendingAction === 'delete') {
+      showToast('Account deletion requires admin. Contact support.')
+      // Phase 2: implement proper account deletion via service role
+    }
+
+    pendingAction = null
   }
-
-  if (pendingAction === 'delete') {
-    // TODO: Supabase account deletion requires service role
-    // For now sign out and redirect
-    await db.auth.signOut()
-    window.location.href = 'login.html'
-  }
-
-  pendingAction = null
-}
 
   // Close modal on backdrop click
   document.getElementById('confirmModal').addEventListener('click', function(e) {
-    if (e.target === this) closeModal();
-  });
+    if (e.target === this) closeModal()
+  })
 
-  // ---- PARALLAX ----
+  // ════════════════════════════════════════════
+  // PARALLAX
+  // ════════════════════════════════════════════
   window.addEventListener('scroll', function() {
-    var hero = document.getElementById('heroCard');
+    var hero = document.getElementById('heroCard')
     if (hero) {
-      hero.style.transform = 'translateY(' + (window.scrollY * 0.04) + 'px)';
+      hero.style.transform = 'translateY(' + (window.scrollY * 0.04) + 'px)'
     }
-  }, { passive: true });
+  }, { passive: true })
 
-  // ---- TOAST ----
-  let toastTimer;
+  // ════════════════════════════════════════════
+  // TOAST
+  // ════════════════════════════════════════════
+  var toastTimer
   function showToast(msg) {
-    var existing = document.getElementById('profileToast');
-    if (existing) existing.remove();
-
-    var t = document.createElement('div');
-    t.id = 'profileToast';
-    t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2';
-    t.innerHTML = '<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:\'FILL\' 1">check_circle</span> ' + msg;
-    document.body.appendChild(t);
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function() { if (t.parentNode) t.remove(); }, 2200);
+    var existing = document.getElementById('profileToast')
+    if (existing) existing.remove()
+    var t = document.createElement('div')
+    t.id = 'profileToast'
+    t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2'
+    t.innerHTML = '<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:\'FILL\' 1">check_circle</span> ' + msg
+    document.body.appendChild(t)
+    clearTimeout(toastTimer)
+    toastTimer = setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
   }
 
-  // ---- HAPTICS ----
+  // ════════════════════════════════════════════
+  // HAPTICS
+  // ════════════════════════════════════════════
   document.querySelectorAll('button, a').forEach(function(el) {
     el.addEventListener('click', function() {
-      if (navigator.vibrate) navigator.vibrate(8);
-    });
-  });
-</script>
+      if (navigator.vibrate) navigator.vibrate(8)
+    })
+  })
 
+  // ════════════════════════════════════════════
+  // INIT
+  // ════════════════════════════════════════════
+  loadProfile()
+
+</script>
 </body>
 </html>
