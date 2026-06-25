@@ -900,8 +900,26 @@
       return
     }
 
-    // Load welcome stats
-    await loadWelcomeStats()
+async function loadWelcomeStats() {
+  try {
+    var results = await Promise.all([
+      supabaseClient.from('profiles').select('id', { count: 'exact', head: true }),
+      supabaseClient.from('shares').select('id', { count: 'exact', head: true })
+    ])
+    var wEl = document.getElementById('welcomeWarriors')
+    var sEl = document.getElementById('welcomeShares')
+    var warriors = (results[0].count || 0) + 1
+    var shares   = results[1].count || 0
+    if (wEl) wEl.textContent = warriors.toLocaleString() + ' warriors'
+    if (sEl) sEl.textContent = shares.toLocaleString() + ' shared'
+  } catch(e) {
+    console.error('Welcome stats failed:', e)
+    var wEl = document.getElementById('welcomeWarriors')
+    var sEl = document.getElementById('welcomeShares')
+    if (wEl) wEl.textContent = 'Join the warriors'
+    if (sEl) sEl.textContent = 'Start sharing'
+  }
+}
 
     // Render countries
     renderCountries()
