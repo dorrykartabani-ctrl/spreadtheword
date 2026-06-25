@@ -934,10 +934,38 @@ function renderCountries(filter) {
   // ════════════════════════════════════════════
   // INIT
   // ════════════════════════════════════════════
-  async function init() {
-    var user = await checkAuth()
-    if (!user) return
-    currentUser = user
+ async function init() {
+  var result = await supabaseClient.auth.getSession()
+  if (!result.data.session) {
+    window.location.href = 'login.html'
+    return
+  }
+  currentUser = result.data.session.user
+
+  // Verify profile exists
+  var profileCheck = await supabaseClient
+    .from('profiles')
+    .select('onboarding_complete')
+    .eq('id', currentUser.id)
+    .single()
+
+  if (!profileCheck.data) {
+    // No profile — session is stale, sign out
+    await supabaseClient.auth.signOut()
+    window.location.href = 'login.html'
+    return
+  }
+
+  if (profileCheck.data.onboarding_complete) {
+    window.location.href = 'index.html'
+    return
+  }
+
+  // Continue with onboarding...
+  await loadWelcomeStats()
+  renderCountries()
+  goToSlide(0)
+}
 
     // Check if already onboarded
     var profileCheck = await supabaseClient

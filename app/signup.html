@@ -333,13 +333,29 @@
   // ════════════════════════════════════════
   // CHECK IF ALREADY LOGGED IN
   // ════════════════════════════════════════
-  async function checkSession() {
-    var result = await supabaseClient.auth.getSession()
-    if (result.data.session) {
+async function checkSession() {
+  var result = await supabaseClient.auth.getSession()
+
+  // If there's a session, verify the user still exists
+  if (result.data.session) {
+    // Check if user profile exists
+    var profileCheck = await supabaseClient
+      .from('profiles')
+      .select('id')
+      .eq('id', result.data.session.user.id)
+      .single()
+
+    if (profileCheck.data) {
+      // Real user with real profile — redirect to home
       window.location.href = 'index.html'
+    } else {
+      // Session exists but no profile — sign out stale session
+      await supabaseClient.auth.signOut()
+      console.log('Cleared stale session')
     }
   }
-  checkSession()
+}
+checkSession()
 
   // ════════════════════════════════════════
   // SIGNUP
