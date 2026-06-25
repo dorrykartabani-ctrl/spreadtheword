@@ -610,97 +610,129 @@
 
   // ---- GENERATE IMAGE — called by goNext after html2canvas loads ----
   function generateImage(qt, qr, bg, overlay) {
-    try {
-      var tempContainer = document.createElement('div')
-      tempContainer.style.cssText = 'position:fixed;left:-9999px;top:0;width:1080px;height:1080px;overflow:hidden;z-index:-1'
+  try {
+    var tempContainer = document.createElement('div')
+    tempContainer.style.cssText = 'position:fixed;left:-9999px;top:0;width:1080px;height:1080px;overflow:hidden;z-index:-1'
 
-      // Background
-      var bgClone = document.createElement('div')
-      bgClone.style.cssText = 'position:absolute;inset:0;background-size:cover;background-position:center'
-      var bgType  = sessionStorage.getItem('gstw_bg_type')
-      var bgValue = sessionStorage.getItem('gstw_bg_value')
-      if (bgType === 'image' && bgValue) {
+    // Background — use solid color fallback if image fails
+    var bgClone = document.createElement('div')
+    bgClone.style.cssText = 'position:absolute;inset:0;background-size:cover;background-position:center'
+
+    var bgType  = sessionStorage.getItem('gstw_bg_type')
+    var bgValue = sessionStorage.getItem('gstw_bg_value')
+
+    if (bgType === 'image' && bgValue) {
+      // Check if it's a data URL (user uploaded) or external URL
+      if (bgValue.startsWith('data:')) {
         bgClone.style.backgroundImage = "url('" + bgValue + "')"
-      } else if (bgValue) {
-        bgClone.style.background = bgValue
-      } else if (bg && bg.style.backgroundImage) {
-        bgClone.style.backgroundImage = bg.style.backgroundImage
       } else {
-        bgClone.style.background = '#16202A'
+        // External URL — may fail CORS, use as-is but have fallback
+        bgClone.style.backgroundImage = "url('" + bgValue + "')"
       }
-      if (bg && bg.style.filter) {
-        bgClone.style.filter = bg.style.filter
-      }
-      tempContainer.appendChild(bgClone)
+    } else if (bgValue) {
+      bgClone.style.background = bgValue
+    } else {
+      bgClone.style.background = '#16202A'
+    }
 
-      // Darkness
-      var darkClone = document.createElement('div')
-      darkClone.style.cssText = 'position:absolute;inset:0'
-      darkClone.style.background = overlay ? (overlay.style.background || 'rgba(0,0,0,0.3)') : 'rgba(0,0,0,0.3)'
-      tempContainer.appendChild(darkClone)
+    if (bg && bg.style.filter) {
+      bgClone.style.filter = bg.style.filter
+    }
 
-      // Quote content
-      var align = qt ? (qt.style.textAlign || 'center') : 'center'
-      var alignItems = align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center'
-      var quoteWrap = document.createElement('div')
-      quoteWrap.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:60px;text-align:' + align + ';align-items:' + alignItems
+    tempContainer.appendChild(bgClone)
 
-      var markEl = document.createElement('span')
-      markEl.textContent = '\u201C'
-      markEl.style.cssText = 'font-family:Georgia,serif;font-size:120px;line-height:1;color:rgba(212,162,76,0.7);margin-bottom:8px;filter:drop-shadow(0 2px 12px rgba(0,0,0,0.4))'
-      quoteWrap.appendChild(markEl)
+    // Darkness overlay
+    var darkClone = document.createElement('div')
+    darkClone.style.cssText = 'position:absolute;inset:0'
+    darkClone.style.background = overlay
+      ? (overlay.style.background || 'rgba(0,0,0,0.3)')
+      : 'rgba(0,0,0,0.3)'
+    tempContainer.appendChild(darkClone)
 
-      var fontSize = parseInt(qt ? (qt.style.fontSize || '20') : '20')
-      var scaledSize = fontSize * 2.8
+    // Quote content
+    var align = qt ? (qt.style.textAlign || 'center') : 'center'
+    var alignItems = align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center'
 
-      var textEl = document.createElement('p')
-      textEl.textContent = qt ? qt.textContent : ''
-      textEl.style.cssText = 'font-weight:bold;line-height:1.4;text-shadow:0 2px 12px rgba(0,0,0,0.6),0 1px 3px rgba(0,0,0,0.4)'
-      textEl.style.fontFamily    = qt ? (qt.style.fontFamily || "'Plus Jakarta Sans',sans-serif") : "'Plus Jakarta Sans',sans-serif"
-      textEl.style.fontSize      = scaledSize + 'px'
-      textEl.style.color         = qt ? (qt.style.color || '#FFFFFF') : '#FFFFFF'
-      textEl.style.fontStyle     = qt ? (qt.style.fontStyle || 'normal') : 'normal'
-      textEl.style.textTransform = qt ? (qt.style.textTransform || 'none') : 'none'
-      textEl.style.textAlign     = align
-      quoteWrap.appendChild(textEl)
+    var quoteWrap = document.createElement('div')
+    quoteWrap.style.cssText =
+      'position:absolute;inset:0;display:flex;flex-direction:column;' +
+      'justify-content:center;padding:60px;' +
+      'text-align:' + align + ';align-items:' + alignItems
 
-      var refEl = document.createElement('p')
-      refEl.textContent = qr ? qr.textContent : ''
-      refEl.style.cssText = 'font-weight:bold;opacity:0.9;margin-top:24px;text-shadow:0 2px 12px rgba(0,0,0,0.4);letter-spacing:0.05em'
-      refEl.style.fontFamily = qt ? (qt.style.fontFamily || "'Plus Jakarta Sans',sans-serif") : "'Plus Jakarta Sans',sans-serif"
-      refEl.style.fontSize   = (fontSize * 1.6) + 'px'
-      refEl.style.color      = qt ? (qt.style.color || '#FFFFFF') : '#FFFFFF'
-      refEl.style.textAlign  = align
-      quoteWrap.appendChild(refEl)
+    // Quote mark
+    var markEl = document.createElement('span')
+    markEl.textContent = '\u201C'
+    markEl.style.cssText =
+      'font-family:Georgia,serif;font-size:120px;line-height:1;' +
+      'color:rgba(212,162,76,0.7);margin-bottom:8px;' +
+      'filter:drop-shadow(0 2px 12px rgba(0,0,0,0.4))'
+    quoteWrap.appendChild(markEl)
 
-      tempContainer.appendChild(quoteWrap)
-      document.body.appendChild(tempContainer)
+    // Quote text
+    var fontSize   = parseInt(qt ? (qt.style.fontSize || '20') : '20')
+    var scaledSize = fontSize * 2.8
 
-      html2canvas(tempContainer, {
-        useCORS: true,
-        allowTaint: false,
-        scale: 1,
-        width: 1080,
-        height: 1080,
-        backgroundColor: '#16202A'
-      }).then(function(canvas) {
+    var textEl = document.createElement('p')
+    textEl.textContent = qt ? qt.textContent : ''
+    textEl.style.cssText =
+      'font-weight:bold;line-height:1.4;' +
+      'text-shadow:0 2px 12px rgba(0,0,0,0.6),0 1px 3px rgba(0,0,0,0.4)'
+    textEl.style.fontFamily    = qt ? (qt.style.fontFamily || "'Plus Jakarta Sans',sans-serif") : "'Plus Jakarta Sans',sans-serif"
+    textEl.style.fontSize      = scaledSize + 'px'
+    textEl.style.color         = qt ? (qt.style.color || '#FFFFFF') : '#FFFFFF'
+    textEl.style.fontStyle     = qt ? (qt.style.fontStyle || 'normal') : 'normal'
+    textEl.style.textTransform = qt ? (qt.style.textTransform || 'none') : 'none'
+    textEl.style.textAlign     = align
+    quoteWrap.appendChild(textEl)
+
+    // Reference
+    var refEl = document.createElement('p')
+    refEl.textContent = qr ? qr.textContent : ''
+    refEl.style.cssText =
+      'font-weight:bold;opacity:0.9;margin-top:24px;' +
+      'text-shadow:0 2px 12px rgba(0,0,0,0.4);letter-spacing:0.05em'
+    refEl.style.fontFamily = qt ? (qt.style.fontFamily || "'Plus Jakarta Sans',sans-serif") : "'Plus Jakarta Sans',sans-serif"
+    refEl.style.fontSize   = (fontSize * 1.6) + 'px'
+    refEl.style.color      = qt ? (qt.style.color || '#FFFFFF') : '#FFFFFF'
+    refEl.style.textAlign  = align
+    quoteWrap.appendChild(refEl)
+
+    tempContainer.appendChild(quoteWrap)
+    document.body.appendChild(tempContainer)
+
+    // Capture
+    html2canvas(tempContainer, {
+      useCORS: true,
+      allowTaint: true,
+      scale: 1,
+      width: 1080,
+      height: 1080,
+      backgroundColor: '#16202A',
+      logging: false
+    }).then(function(canvas) {
+      try {
         var dataUrl = canvas.toDataURL('image/png')
         sessionStorage.setItem('gstw_final_image', dataUrl)
-        document.body.removeChild(tempContainer)
-        window.location.href = 'preview.html'
-      }).catch(function(err) {
-        console.error('Canvas capture failed:', err)
-        document.body.removeChild(tempContainer)
+        console.log('Image generated successfully, size:', dataUrl.length)
+      } catch(e) {
+        console.error('toDataURL failed (likely CORS):', e)
         sessionStorage.removeItem('gstw_final_image')
-        window.location.href = 'preview.html'
-      })
-
-    } catch (err) {
-      console.error('Image generation failed:', err)
+      }
+      document.body.removeChild(tempContainer)
+      window.location.href = 'preview.html'
+    }).catch(function(err) {
+      console.error('html2canvas failed:', err)
+      document.body.removeChild(tempContainer)
       sessionStorage.removeItem('gstw_final_image')
       window.location.href = 'preview.html'
-    }
+    })
+
+  } catch (err) {
+    console.error('Image generation failed:', err)
+    sessionStorage.removeItem('gstw_final_image')
+    window.location.href = 'preview.html'
   }
+}
 
   // ---- TOAST ----
   var toastTimer
