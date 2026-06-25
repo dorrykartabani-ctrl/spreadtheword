@@ -60,263 +60,130 @@
     .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-      display: inline-block; line-height: 1;
+      display: inline-block;
+      line-height: 1;
     }
     .filled { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
     .tactical-gradient { background: linear-gradient(145deg, #152E45, #1E4060); }
-    .action-gradient   { background: linear-gradient(145deg, #E25B4D, #C84A3E); }
 
-    /* Gold reflection plate */
     .reflection-plate { border-left: 4px solid #D4A24C; }
 
-    /* Scrollbar hidden */
     ::-webkit-scrollbar { display: none; }
     body { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* Card press */
-    .quote-card {
-      transition: all 0.2s ease;
-      cursor: pointer;
-    }
+    .quote-card { transition: all 0.2s ease; cursor: pointer; }
     .quote-card:active { transform: scale(0.98); }
 
-    /* Bottom nav active */
     .nav-item { transition: all 0.2s ease; }
     .nav-item.active .nav-icon { color: #1E4060; }
     .nav-item.active .nav-label { color: #1E4060; font-weight: 700; }
 
-    /* Search bar focus */
     .search-wrap { transition: transform 0.2s ease; }
     .search-wrap:focus-within { transform: scale(1.01); }
 
-    /* Filter tab active */
     .filter-tab { transition: all 0.15s ease; }
-    .filter-tab.active {
-      background: #1E4060;
-      color: white;
-    }
+    .filter-tab.active { background: #1E4060; color: white; }
 
-    /* Safe area */
     .pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); }
+
+    /* Loading skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, #e8e5de 25%, #f0ede6 50%, #e8e5de 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 12px;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
   </style>
 </head>
 
 <body class="text-text-dark pb-28">
 
-<!-- ============================================================
-     STICKY HEADER
-============================================================ -->
+<!-- ═══════════════════════════════════════════ -->
+<!-- STICKY HEADER -->
+<!-- ═══════════════════════════════════════════ -->
 <header class="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl border-b border-border-soft">
   <div class="flex items-center justify-between px-5 pt-12 pb-4 max-w-[430px] mx-auto">
-
-    <!-- Title -->
     <div>
       <h1 class="font-headline font-extrabold text-xl text-primary">The Library</h1>
       <p class="text-[11px] text-text-light font-body uppercase tracking-widest">All the Words</p>
     </div>
-
-    <!-- Right: Search + Avatar -->
     <div class="flex items-center gap-3">
-      <button onclick="toggleSearch()" class="w-10 h-10 rounded-full bg-cream border border-border-soft flex items-center justify-center text-text-muted hover:text-primary transition-colors active:scale-90">
+      <button onclick="toggleSearch()"
+        class="w-10 h-10 rounded-full bg-cream border border-border-soft flex items-center justify-center text-text-muted active:scale-90 transition-all">
         <span class="material-symbols-outlined text-[20px]">search</span>
       </button>
-      <div class="w-10 h-10 rounded-full overflow-hidden bg-primary border-2 border-primary/20 flex items-center justify-center">
-        <span class="font-headline font-bold text-white text-sm">SK</span>
+      <div id="avatarEl"
+        class="w-10 h-10 rounded-full overflow-hidden bg-primary border-2 border-primary/20 flex items-center justify-center">
+        <span class="font-headline font-bold text-white text-sm">?</span>
       </div>
     </div>
-
   </div>
 
-  <!-- Search Bar (collapsible) -->
+  <!-- Search Bar -->
   <div id="searchBar" class="hidden px-5 pb-3">
     <div class="search-wrap relative">
       <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-text-light text-[18px]">search</span>
-      <input
-        id="searchInput"
-        type="text"
-        oninput="searchQuotes(this.value)"
+      <input id="searchInput" type="text" oninput="searchQuotes(this.value)"
         placeholder="Search your collection..."
-        class="w-full bg-card-bg border border-border-soft rounded-2xl py-3 pl-10 pr-4 text-sm font-body text-text-dark focus:outline-none focus:ring-2 focus:ring-primary transition-all placeholder:text-text-light">
+        class="w-full bg-card-bg border border-border-soft rounded-2xl py-3 pl-10 pr-4 text-sm font-body
+        text-text-dark focus:outline-none focus:ring-2 focus:ring-primary transition-all placeholder:text-text-light">
     </div>
   </div>
 </header>
 
-<!-- ============================================================
-     MAIN CONTENT
-============================================================ -->
+<!-- ═══════════════════════════════════════════ -->
+<!-- MAIN CONTENT -->
+<!-- ═══════════════════════════════════════════ -->
 <main class="pt-28 px-5 space-y-4 max-w-[430px] mx-auto">
 
-  <!-- Page Title -->
   <div class="pt-2 pb-1">
     <h2 class="font-headline font-extrabold text-2xl text-text-dark">Quote Library</h2>
-    <p class="text-[12px] text-text-light font-body mt-0.5">Your daily briefings — ready to deploy again</p>
+    <p class="text-[12px] text-text-light font-body mt-0.5">
+      Your daily briefings — tap any quote to share it
+    </p>
   </div>
 
   <!-- Filter Tabs -->
-  <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-    <button onclick="filterByCategory('all', this)" class="filter-tab active flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border border-border-soft bg-primary text-white transition-all">
+  <div class="flex gap-2 overflow-x-auto pb-1" style="-ms-overflow-style:none;scrollbar-width:none">
+    <button onclick="filterByCategory('all',this)"
+      class="filter-tab active flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border border-border-soft bg-primary text-white">
       All
     </button>
-    <button onclick="filterByCategory('faith', this)" class="filter-tab flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border border-border-soft text-text-muted hover:text-primary transition-all">
+    <button onclick="filterByCategory('faith',this)"
+      class="filter-tab flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border border-border-soft text-text-muted">
       Faith
     </button>
-    <button onclick="filterByCategory('courage', this)" class="filter-tab flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border border-border-soft text-text-muted hover:text-primary transition-all">
+    <button onclick="filterByCategory('courage',this)"
+      class="filter-tab flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border border-border-soft text-text-muted">
       Courage
     </button>
-    <button onclick="filterByCategory('love', this)" class="filter-tab flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border border-border-soft text-text-muted hover:text-primary transition-all">
+    <button onclick="filterByCategory('love',this)"
+      class="filter-tab flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border border-border-soft text-text-muted">
       Love
     </button>
-    <button onclick="filterByCategory('strength', this)" class="filter-tab flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border border-border-soft text-text-muted hover:text-primary transition-all">
+    <button onclick="filterByCategory('strength',this)"
+      class="filter-tab flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border border-border-soft text-text-muted">
       Strength
     </button>
-    <button onclick="filterByCategory('peace', this)" class="filter-tab flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border border-border-soft text-text-muted hover:text-primary transition-all">
+    <button onclick="filterByCategory('peace',this)"
+      class="filter-tab flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border border-border-soft text-text-muted">
       Peace
     </button>
   </div>
 
-  <!-- ======================================
-       QUOTE CARDS
-  ====================================== -->
+  <!-- Quote Cards -->
   <div id="quoteList" class="space-y-4">
-
-    <!-- Card 1 — Today (Featured) -->
-    <article class="quote-card bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft" data-category="courage" onclick="openQuote(this)">
-      <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-primary animate-pulse flex-shrink-0"></span>
-          <span class="text-[10px] font-bold text-primary uppercase tracking-widest">Today · Dec 15</span>
-        </div>
-        <span class="text-[10px] font-bold text-gold-dim bg-gold/10 px-2.5 py-1 rounded-full uppercase tracking-wider">Today's Word</span>
-      </div>
-      <blockquote class="font-headline font-bold text-[17px] text-text-dark leading-relaxed mb-2">
-        "Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go."
-      </blockquote>
-      <cite class="block not-italic font-body font-bold text-sm text-primary mb-4 tracking-wider">— JOSHUA 1:9</cite>
-      <div class="flex items-center justify-between">
-        <div class="flex gap-1.5 flex-wrap">
-          <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#SpreadTheWord</span>
-          <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#Courage</span>
-        </div>
-        <button onclick="event.stopPropagation(); quickShare(this)" class="tactical-gradient text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-tactical active:scale-95 transition-transform flex-shrink-0">
-          <span class="material-symbols-outlined text-[15px]">share</span>
-          Share
-        </button>
-      </div>
-    </article>
-
-    <!-- Card 2 -->
-    <article class="quote-card bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft" data-category="love" onclick="openQuote(this)">
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-[10px] font-bold text-text-light uppercase tracking-widest">Dec 14</span>
-        <span class="text-[10px] text-text-light font-body">247 shares</span>
-      </div>
-      <blockquote class="font-headline font-bold text-[16px] text-text-dark leading-relaxed mb-2">
-        "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life."
-      </blockquote>
-      <cite class="block not-italic font-body font-bold text-sm text-primary mb-4 tracking-wider">— JOHN 3:16</cite>
-      <div class="flex items-center justify-between">
-        <div class="flex gap-1.5 flex-wrap">
-          <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#SpreadTheWord</span>
-          <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#Love</span>
-        </div>
-        <button onclick="event.stopPropagation(); quickShare(this)" class="tactical-gradient text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-tactical active:scale-95 transition-transform flex-shrink-0">
-          <span class="material-symbols-outlined text-[15px]">share</span>
-          Share
-        </button>
-      </div>
-    </article>
-
-    <!-- Card 3 — Gold reflection plate -->
-    <article class="quote-card reflection-plate bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft" data-category="love" onclick="openQuote(this)">
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-[10px] font-bold text-text-light uppercase tracking-widest">Dec 13</span>
-        <span class="text-[10px] text-gold-dim font-bold bg-gold/10 px-2 py-0.5 rounded-full">Inspiration</span>
-      </div>
-      <blockquote class="font-headline font-bold text-[16px] text-text-dark leading-relaxed mb-2">
-        "Darkness cannot drive out darkness; only light can do that. Hate cannot drive out hate; only love can do that."
-      </blockquote>
-      <cite class="block not-italic font-body font-bold text-sm text-gold-dim mb-4 tracking-wider">— DR. MARTIN LUTHER KING JR.</cite>
-      <div class="flex items-center justify-between">
-        <div class="flex gap-1.5 flex-wrap">
-          <span class="bg-gold/10 text-gold-dim px-2.5 py-1 rounded-full text-[10px] font-bold">#SpreadTheWord</span>
-          <span class="bg-gold/10 text-gold-dim px-2.5 py-1 rounded-full text-[10px] font-bold">#Light</span>
-        </div>
-        <button onclick="event.stopPropagation(); quickShare(this)" class="bg-gold text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-transform flex-shrink-0">
-          <span class="material-symbols-outlined text-[15px]">share</span>
-          Share
-        </button>
-      </div>
-    </article>
-
-    <!-- Card 4 -->
-    <article class="quote-card bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft" data-category="strength" onclick="openQuote(this)">
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-[10px] font-bold text-text-light uppercase tracking-widest">Dec 12</span>
-        <span class="text-[10px] text-text-light font-body">189 shares</span>
-      </div>
-      <blockquote class="font-headline font-bold text-[16px] text-text-dark leading-relaxed mb-2">
-        "I can do all things through Christ who strengthens me."
-      </blockquote>
-      <cite class="block not-italic font-body font-bold text-sm text-primary mb-4 tracking-wider">— PHILIPPIANS 4:13</cite>
-      <div class="flex items-center justify-between">
-        <div class="flex gap-1.5 flex-wrap">
-          <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#SpreadTheWord</span>
-          <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#Strength</span>
-        </div>
-        <button onclick="event.stopPropagation(); quickShare(this)" class="tactical-gradient text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-tactical active:scale-95 transition-transform flex-shrink-0">
-          <span class="material-symbols-outlined text-[15px]">share</span>
-          Share
-        </button>
-      </div>
-    </article>
-
-    <!-- Card 5 -->
-    <article class="quote-card bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft" data-category="peace" onclick="openQuote(this)">
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-[10px] font-bold text-text-light uppercase tracking-widest">Dec 11</span>
-        <span class="text-[10px] text-text-light font-body">312 shares</span>
-      </div>
-      <blockquote class="font-headline font-bold text-[16px] text-text-dark leading-relaxed mb-2">
-        "The Lord is my shepherd; I shall not want. He makes me to lie down in green pastures; He leads me beside the still waters."
-      </blockquote>
-      <cite class="block not-italic font-body font-bold text-sm text-primary mb-4 tracking-wider">— PSALM 23:1</cite>
-      <div class="flex items-center justify-between">
-        <div class="flex gap-1.5 flex-wrap">
-          <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#SpreadTheWord</span>
-          <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#Peace</span>
-        </div>
-        <button onclick="event.stopPropagation(); quickShare(this)" class="tactical-gradient text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-tactical active:scale-95 transition-transform flex-shrink-0">
-          <span class="material-symbols-outlined text-[15px]">share</span>
-          Share
-        </button>
-      </div>
-    </article>
-
-    <!-- Card 6 -->
-    <article class="quote-card bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft" data-category="faith" onclick="openQuote(this)">
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-[10px] font-bold text-text-light uppercase tracking-widest">Dec 10</span>
-        <span class="text-[10px] text-text-light font-body">98 shares</span>
-      </div>
-      <blockquote class="font-headline font-bold text-[16px] text-text-dark leading-relaxed mb-2">
-        "Now faith is the substance of things hoped for, the evidence of things not seen."
-      </blockquote>
-      <cite class="block not-italic font-body font-bold text-sm text-primary mb-4 tracking-wider">— HEBREWS 11:1</cite>
-      <div class="flex items-center justify-between">
-        <div class="flex gap-1.5 flex-wrap">
-          <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#SpreadTheWord</span>
-          <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#Faith</span>
-        </div>
-        <button onclick="event.stopPropagation(); quickShare(this)" class="tactical-gradient text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-tactical active:scale-95 transition-transform flex-shrink-0">
-          <span class="material-symbols-outlined text-[15px]">share</span>
-          Share
-        </button>
-      </div>
-    </article>
-
+    <!-- Loading skeletons -->
+    <div class="skeleton h-48 w-full"></div>
+    <div class="skeleton h-44 w-full"></div>
+    <div class="skeleton h-44 w-full"></div>
   </div>
 
-  <!-- Empty State (hidden) -->
+  <!-- Empty State -->
   <div id="emptyState" class="hidden text-center py-16">
     <div class="w-16 h-16 rounded-2xl bg-cream flex items-center justify-center mx-auto mb-4">
       <span class="material-symbols-outlined text-text-light text-[32px]">search_off</span>
@@ -327,155 +194,306 @@
 
   <!-- Load More -->
   <div class="pt-4 pb-6 flex justify-center">
-    <button onclick="loadMore()" class="border-2 border-primary/30 text-primary px-10 py-3 rounded-full font-bold text-sm hover:bg-primary hover:text-white transition-all active:scale-95">
+    <button onclick="loadMore()"
+      class="border-2 border-primary/30 text-primary px-10 py-3 rounded-full font-bold text-sm
+      active:scale-95 transition-all">
       Load More
     </button>
   </div>
 
 </main>
 
-<!-- ============================================================
-     BOTTOM NAVIGATION
-============================================================ -->
-<nav class="fixed bottom-0 left-0 w-full bg-card-bg/90 backdrop-blur-xl border-t border-border-soft z-50" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
+<!-- ═══════════════════════════════════════════ -->
+<!-- BOTTOM NAVIGATION -->
+<!-- ═══════════════════════════════════════════ -->
+<nav class="fixed bottom-0 left-0 w-full bg-card-bg/90 backdrop-blur-xl border-t border-border-soft z-50"
+  style="padding-bottom:max(16px,env(safe-area-inset-bottom))">
   <div class="flex justify-around items-center px-2 pt-2 pb-1 max-w-[430px] mx-auto">
-
-    <!-- Home -->
     <a href="index.html" class="nav-item flex flex-col items-center gap-0.5 px-4 py-1.5">
       <span class="nav-icon material-symbols-outlined text-text-light text-[22px]">home</span>
       <span class="nav-label text-[10px] font-medium text-text-light">Home</span>
     </a>
-
-    <!-- Library (Active) -->
     <a href="library.html" class="nav-item active flex flex-col items-center gap-0.5 px-4 py-1.5">
       <span class="nav-icon material-symbols-outlined text-primary text-[22px] filled">auto_stories</span>
       <span class="nav-label text-[10px] font-bold text-primary">Library</span>
     </a>
-
-      <!-- Cause -->
-      <a href="cause.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
-        <span class="material-symbols-outlined text-text-light text-[22px]">volunteer_activism</span>
-        <span class="text-[10px] font-medium text-text-light">Cause</span>
-      </a>
-
-    <!-- Impact -->
+    <a href="cause.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
+      <span class="material-symbols-outlined text-text-light text-[22px]">volunteer_activism</span>
+      <span class="text-[10px] font-medium text-text-light">Cause</span>
+    </a>
     <a href="impact.html" class="nav-item flex flex-col items-center gap-0.5 px-4 py-1.5">
       <span class="nav-icon material-symbols-outlined text-text-light text-[22px]">bar_chart</span>
       <span class="nav-label text-[10px] font-medium text-text-light">Impact</span>
     </a>
-
-    <!-- Profile -->
     <a href="profile.html" class="nav-item flex flex-col items-center gap-0.5 px-4 py-1.5">
       <span class="nav-icon material-symbols-outlined text-text-light text-[22px]">person</span>
       <span class="nav-label text-[10px] font-medium text-text-light">Profile</span>
     </a>
-
   </div>
 </nav>
 
-<!-- ============================================================
-     QUOTE DETAIL MODAL
-============================================================ -->
-<div id="quoteModal" class="hidden fixed inset-0 bg-dark/60 backdrop-blur-sm z-[100] flex items-end justify-center">
+<!-- ═══════════════════════════════════════════ -->
+<!-- QUOTE DETAIL MODAL -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="quoteModal"
+  class="hidden fixed inset-0 bg-dark/60 backdrop-blur-sm z-[100] flex items-end justify-center">
   <div class="w-full max-w-[430px] bg-card-bg rounded-t-3xl p-6 pb-10">
+
     <div class="w-10 h-1 bg-text-light/30 rounded-full mx-auto mb-5"></div>
-    <blockquote id="modalQuote" class="font-headline font-bold text-lg text-text-dark leading-relaxed mb-3 text-center">
+
+    <!-- Quote display -->
+    <blockquote id="modalQuote"
+      class="font-headline font-bold text-lg text-text-dark leading-relaxed mb-3 text-center">
     </blockquote>
-    <cite id="modalRef" class="block text-center not-italic font-bold text-sm text-primary tracking-wider mb-6"></cite>
+    <cite id="modalRef"
+      class="block text-center not-italic font-bold text-sm text-primary tracking-wider mb-6">
+    </cite>
+
+    <!-- Action buttons -->
     <div class="flex gap-3">
-      <button onclick="closeModal(); window.location.href='index.html'" class="flex-1 py-3.5 tactical-gradient text-white font-headline font-bold rounded-2xl text-sm flex items-center justify-center gap-2 shadow-tactical">
-        <span class="material-symbols-outlined text-[18px]">share</span>
+      <button onclick="useThisWord()"
+        class="flex-1 py-3.5 tactical-gradient text-white font-headline font-bold rounded-2xl text-sm
+        flex items-center justify-center gap-2 shadow-tactical active:scale-[0.98] transition-transform">
+        <span class="material-symbols-outlined text-[18px]">campaign</span>
         Use This Word
       </button>
-      <button onclick="closeModal()" class="w-14 h-12 bg-surface border border-border-soft rounded-2xl flex items-center justify-center text-text-muted hover:text-primary transition-colors">
+      <button onclick="closeModal()"
+        class="w-14 h-12 bg-surface border border-border-soft rounded-2xl flex items-center justify-center
+        text-text-muted active:scale-95 transition-all">
         <span class="material-symbols-outlined text-[20px]">close</span>
       </button>
     </div>
+
   </div>
 </div>
 
-<!-- ============================================================
-     JAVASCRIPT
-============================================================ -->
+<!-- ═══════════════════════════════════════════ -->
+<!-- SCRIPT -->
+<!-- ═══════════════════════════════════════════ -->
 <script>
-  // ---- SUPABASE ----
-  const { createClient } = supabase
-  const db = createClient(
+
+  // ════════════════════════════════════════════
+  // SUPABASE
+  // ════════════════════════════════════════════
+  var { createClient } = supabase
+  var db = createClient(
     'https://nhymadutuhpjgkiurify.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
   )
 
-  // ---- AUTH GUARD ----
-  async function checkAuth() {
-    const { data: { session } } = await db.auth.getSession()
-    if (!session) { window.location.href = 'login.html'; return null }
-    return session.user
+  // ════════════════════════════════════════════
+  // STATE
+  // ════════════════════════════════════════════
+  var currentUser   = null
+  var allQuotes     = []
+  var activeQuoteId = null  // tracks which quote modal is open
+
+  // ════════════════════════════════════════════
+  // AUTH + INIT
+  // ════════════════════════════════════════════
+  async function init() {
+    var sessionResult = await db.auth.getSession()
+    if (!sessionResult.data.session) {
+      window.location.href = 'login.html'
+      return
+    }
+    currentUser = sessionResult.data.session.user
+
+    // Set avatar initials
+    var email = currentUser.email || ''
+    var initials = email.substring(0, 2).toUpperCase()
+    var avatarEl = document.getElementById('avatarEl')
+    if (avatarEl) avatarEl.innerHTML = '<span class="font-headline font-bold text-white text-sm">' + initials + '</span>'
+
+    // Clear any previously selected quote from sessionStorage
+    // so home screen flow still works independently
+    sessionStorage.removeItem('gstw_selected_quote_id')
+    sessionStorage.removeItem('gstw_selected_quote_text')
+    sessionStorage.removeItem('gstw_selected_quote_source')
+    sessionStorage.removeItem('gstw_selected_quote_category')
+
+    await loadQuotes()
   }
 
-  // ---- LOAD QUOTES FROM DATABASE ----
+  // ════════════════════════════════════════════
+  // LOAD QUOTES FROM SUPABASE
+  // ════════════════════════════════════════════
   async function loadQuotes() {
-    const { data, error } = await db
+    var result = await db
       .from('quotes')
       .select('*')
       .eq('status', 'live')
       .order('published_at', { ascending: false })
 
-    if (error) { console.error('Load quotes error:', error); return }
-    if (!data || data.length === 0) return
+    if (result.error) {
+      console.error('Load quotes error:', result.error)
+      showToast('Could not load quotes')
+      return
+    }
 
-    renderQuotes(data)
+    if (!result.data || result.data.length === 0) {
+      document.getElementById('emptyState').classList.remove('hidden')
+      document.getElementById('quoteList').innerHTML = ''
+      return
+    }
+
+    allQuotes = result.data
+    renderQuotes(allQuotes)
   }
 
+  // ════════════════════════════════════════════
+  // RENDER QUOTE CARDS
+  // ════════════════════════════════════════════
   function renderQuotes(quotes) {
-    const container = document.getElementById('quoteList')
+    var container = document.getElementById('quoteList')
     container.innerHTML = ''
 
-    quotes.forEach((quote, index) => {
-      const isToday = index === 0
-      const isInspiration = !quote.source.includes(':')
-      const dateStr = quote.published_at
+    if (quotes.length === 0) {
+      document.getElementById('emptyState').classList.remove('hidden')
+      return
+    }
+
+    document.getElementById('emptyState').classList.add('hidden')
+
+    quotes.forEach(function(quote, index) {
+      var isToday      = index === 0
+      var isInspiration = quote.source && !quote.source.includes(':')
+      var dateStr      = quote.published_at
         ? new Date(quote.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        : 'Draft'
+        : 'Recent'
+      var category = quote.category ? quote.category.toLowerCase() : 'faith'
+      var shareCount = quote.share_count || 0
 
-      const card = document.createElement('article')
-      card.className = `quote-card bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft ${isInspiration ? 'reflection-plate' : ''}`
-      card.dataset.category = quote.category.toLowerCase()
-      card.onclick = function() { openQuote(this) }
+      var card = document.createElement('article')
+      card.className = 'quote-card bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft'
+        + (isInspiration ? ' reflection-plate' : '')
+      card.dataset.category = category
+      card.dataset.quoteId  = quote.id
 
-      card.innerHTML = `
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2">
-            ${isToday ? '<span class="w-2 h-2 rounded-full bg-primary animate-pulse flex-shrink-0"></span>' : ''}
-            <span class="text-[10px] font-bold ${isToday ? 'text-primary' : 'text-text-light'} uppercase tracking-widest">${isToday ? 'Today · ' : ''}${dateStr}</span>
-          </div>
-          ${isToday
+      // Store full quote data on the element
+      card.dataset.quoteText   = quote.text
+      card.dataset.quoteSource = quote.source
+      card.dataset.quoteCategory = category
+
+      card.innerHTML =
+        '<div class="flex items-center justify-between mb-3">'
+          + '<div class="flex items-center gap-2">'
+            + (isToday ? '<span class="w-2 h-2 rounded-full bg-primary animate-pulse flex-shrink-0"></span>' : '')
+            + '<span class="text-[10px] font-bold ' + (isToday ? 'text-primary' : 'text-text-light') + ' uppercase tracking-widest">'
+              + (isToday ? 'Today · ' : '') + dateStr
+            + '</span>'
+          + '</div>'
+          + (isToday
             ? '<span class="text-[10px] font-bold text-gold-dim bg-gold/10 px-2.5 py-1 rounded-full uppercase tracking-wider">Today\'s Word</span>'
-            : `<span class="text-[10px] text-text-light font-body">${quote.share_count} shares</span>`
-          }
-        </div>
-        <blockquote class="font-headline font-bold text-[${isToday ? '17' : '16'}px] text-text-dark leading-relaxed mb-2">
-          "${quote.text}"
-        </blockquote>
-        <cite class="block not-italic font-body font-bold text-sm ${isInspiration ? 'text-gold-dim' : 'text-primary'} mb-4 tracking-wider">— ${quote.source.toUpperCase()}</cite>
-        <div class="flex items-center justify-between">
-          <div class="flex gap-1.5 flex-wrap">
-            <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#SpreadTheWord</span>
-            <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#${quote.category}</span>
-          </div>
-          <button onclick="event.stopPropagation(); quickShare('${quote.id}', this)" class="${isInspiration ? 'bg-gold' : 'tactical-gradient'} text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-tactical active:scale-95 transition-transform flex-shrink-0">
-            <span class="material-symbols-outlined text-[15px]">share</span>
-            Share
-          </button>
-        </div>
-      `
+            : '<span class="text-[10px] text-text-light font-body">' + shareCount + ' shares</span>'
+          )
+        + '</div>'
+        + '<blockquote class="font-headline font-bold text-[' + (isToday ? '17' : '16') + 'px] text-text-dark leading-relaxed mb-2">'
+          + '&ldquo;' + quote.text + '&rdquo;'
+        + '</blockquote>'
+        + '<cite class="block not-italic font-body font-bold text-sm '
+          + (isInspiration ? 'text-gold-dim' : 'text-primary')
+          + ' mb-4 tracking-wider">— ' + quote.source.toUpperCase() + '</cite>'
+        + '<div class="flex items-center justify-between">'
+          + '<div class="flex gap-1.5 flex-wrap">'
+            + '<span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#SpreadTheWord</span>'
+            + '<span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold">#' + (quote.category || 'Faith') + '</span>'
+          + '</div>'
+          + '<button class="' + (isInspiration ? 'bg-gold' : 'tactical-gradient') + ' text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-tactical active:scale-95 transition-transform flex-shrink-0 share-btn">'
+            + '<span class="material-symbols-outlined text-[15px]">campaign</span>'
+            + ' Share'
+          + '</button>'
+        + '</div>'
+
+      // Tap card = open modal
+      card.addEventListener('click', function(e) {
+        if (e.target.closest('.share-btn')) return
+        openQuote(card)
+      })
+
+      // Tap Share button = go straight to backgrounds
+      var shareBtn = card.querySelector('.share-btn')
+      shareBtn.addEventListener('click', function(e) {
+        e.stopPropagation()
+        selectQuoteAndShare(quote.id, quote.text, quote.source, category)
+      })
 
       container.appendChild(card)
     })
   }
 
-  // ---- SEARCH ----
+  // ════════════════════════════════════════════
+  // SELECT QUOTE AND GO TO BACKGROUNDS
+  // This is the KEY function that fixes the flow
+  // ════════════════════════════════════════════
+  function selectQuoteAndShare(id, text, source, category) {
+    // Clear any old final image so editor generates fresh
+    sessionStorage.removeItem('gstw_final_image')
+
+    // Save selected quote to sessionStorage
+    sessionStorage.setItem('gstw_selected_quote_id',       id)
+    sessionStorage.setItem('gstw_selected_quote_text',     text)
+    sessionStorage.setItem('gstw_selected_quote_source',   source)
+    sessionStorage.setItem('gstw_selected_quote_category', category)
+
+    // Navigate to backgrounds
+    window.location.href = 'backgrounds.html'
+  }
+
+  // ════════════════════════════════════════════
+  // OPEN QUOTE MODAL
+  // ════════════════════════════════════════════
+  function openQuote(card) {
+    // Store which quote this modal is for
+    activeQuoteId       = card.dataset.quoteId
+    var activeQuoteText = card.dataset.quoteText
+    var activeQuoteSource = card.dataset.quoteSource
+    var activeQuoteCategory = card.dataset.quoteCategory
+
+    // Store on modal for useThisWord() to access
+    var modal = document.getElementById('quoteModal')
+    modal.dataset.quoteId       = activeQuoteId
+    modal.dataset.quoteText     = activeQuoteText
+    modal.dataset.quoteSource   = activeQuoteSource
+    modal.dataset.quoteCategory = activeQuoteCategory
+
+    document.getElementById('modalQuote').textContent = '\u201C' + activeQuoteText + '\u201D'
+    document.getElementById('modalRef').textContent = '— ' + activeQuoteSource.toUpperCase()
+
+    modal.classList.remove('hidden')
+    document.body.style.overflow = 'hidden'
+  }
+
+  function closeModal() {
+    document.getElementById('quoteModal').classList.add('hidden')
+    document.body.style.overflow = ''
+    activeQuoteId = null
+  }
+
+  // Close modal on backdrop tap
+  document.getElementById('quoteModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal()
+  })
+
+  // ════════════════════════════════════════════
+  // USE THIS WORD — from modal
+  // ════════════════════════════════════════════
+  function useThisWord() {
+    var modal = document.getElementById('quoteModal')
+    var id       = modal.dataset.quoteId
+    var text     = modal.dataset.quoteText
+    var source   = modal.dataset.quoteSource
+    var category = modal.dataset.quoteCategory
+
+    closeModal()
+    selectQuoteAndShare(id, text, source, category)
+  }
+
+  // ════════════════════════════════════════════
+  // SEARCH
+  // ════════════════════════════════════════════
   function toggleSearch() {
-    const bar = document.getElementById('searchBar')
+    var bar = document.getElementById('searchBar')
     bar.classList.toggle('hidden')
     if (!bar.classList.contains('hidden')) {
       document.getElementById('searchInput').focus()
@@ -483,97 +501,70 @@
   }
 
   function searchQuotes(query) {
-    const q = query.toLowerCase()
-    const cards = document.querySelectorAll('.quote-card')
-    let visible = 0
-    cards.forEach(card => {
-      const show = card.textContent.toLowerCase().includes(q)
-      card.style.display = show ? '' : 'none'
-      if (show) visible++
+    var q = query.toLowerCase().trim()
+
+    if (!q) {
+      renderQuotes(allQuotes)
+      return
+    }
+
+    var filtered = allQuotes.filter(function(quote) {
+      return quote.text.toLowerCase().includes(q)
+        || quote.source.toLowerCase().includes(q)
+        || (quote.category && quote.category.toLowerCase().includes(q))
     })
-    document.getElementById('emptyState').classList.toggle('hidden', visible > 0)
+
+    renderQuotes(filtered)
   }
 
-  // ---- FILTER ----
+  // ════════════════════════════════════════════
+  // FILTER BY CATEGORY
+  // ════════════════════════════════════════════
   function filterByCategory(cat, btn) {
-    document.querySelectorAll('.filter-tab').forEach(t => {
+    // Update tab styles
+    document.querySelectorAll('.filter-tab').forEach(function(t) {
       t.classList.remove('active', 'bg-primary', 'text-white')
       t.classList.add('text-text-muted')
     })
     btn.classList.add('active', 'bg-primary', 'text-white')
     btn.classList.remove('text-text-muted')
 
-    const cards = document.querySelectorAll('.quote-card')
-    let visible = 0
-    cards.forEach(card => {
-      const show = cat === 'all' || card.dataset.category === cat
-      card.style.display = show ? '' : 'none'
-      if (show) visible++
-    })
-    document.getElementById('emptyState').classList.toggle('hidden', visible > 0)
+    // Filter data
+    var filtered = cat === 'all'
+      ? allQuotes
+      : allQuotes.filter(function(q) {
+          return q.category && q.category.toLowerCase() === cat
+        })
+
+    renderQuotes(filtered)
   }
 
-  // ---- OPEN QUOTE DETAIL ----
-  function openQuote(card) {
-    const quote = card.querySelector('blockquote').textContent.trim()
-    const ref   = card.querySelector('cite').textContent.trim()
-    document.getElementById('modalQuote').textContent = quote
-    document.getElementById('modalRef').textContent   = ref
-    document.getElementById('quoteModal').classList.remove('hidden')
-    document.body.style.overflow = 'hidden'
+  // ════════════════════════════════════════════
+  // LOAD MORE
+  // ════════════════════════════════════════════
+  function loadMore() {
+    showToast('All quotes loaded')
   }
 
-  function closeModal() {
-    document.getElementById('quoteModal').classList.add('hidden')
-    document.body.style.overflow = ''
-  }
-
-  document.getElementById('quoteModal').addEventListener('click', function(e) {
-    if (e.target === this) closeModal()
-  })
-
-  // ---- QUICK SHARE ----
-  function quickShare(quoteId, btn) {
-    if (navigator.share) {
-      const card  = btn.closest('article')
-      const quote = card.querySelector('blockquote').textContent.trim()
-      const ref   = card.querySelector('cite').textContent.trim()
-      navigator.share({
-        title: 'Go Spread The Word',
-        text: quote + ' ' + ref + ' #SpreadTheWord',
-      }).catch(console.error)
-    } else {
-      window.location.href = 'sharesheet.html'
-    }
-  }
-
-  // ---- LOAD MORE ----
-  function loadMore() { showToast('All quotes loaded') }
-
-  // ---- CARD PRESS ----
-  document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.quote-card').forEach(card => {
-      card.addEventListener('touchstart', () => { card.style.transform = 'scale(0.98)' }, { passive: true })
-      card.addEventListener('touchend', () => { card.style.transform = 'scale(1)' }, { passive: true })
-    })
-  })
-
-  // ---- TOAST ----
+  // ════════════════════════════════════════════
+  // TOAST
+  // ════════════════════════════════════════════
   function showToast(msg) {
-    const t = document.createElement('div')
+    var existing = document.getElementById('libToast')
+    if (existing) existing.remove()
+    var t = document.createElement('div')
+    t.id = 'libToast'
     t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2'
     t.innerHTML = '<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:\'FILL\' 1">check_circle</span> ' + msg
     document.body.appendChild(t)
-    setTimeout(() => t.remove(), 2200)
+    setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
   }
 
-  // ---- INIT ----
-  async function init() {
-    await checkAuth()
-    await loadQuotes()
-  }
+  // ════════════════════════════════════════════
+  // START
+  // ════════════════════════════════════════════
   init()
-</script>
 
+</script>
 </body>
 </html>

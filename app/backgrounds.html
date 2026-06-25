@@ -21,16 +21,20 @@
             'primary':'#1E4060','primary-dim':'#152E45','primary-light':'#2B5780',
             'action':'#E25B4D','action-dim':'#C84A3E',
             'gold':'#D4A24C','gold-dim':'#B88A3D',
-            'cream':'#F7F4ED',
-            'dark':'#16202A',
+            'cream':'#F7F4ED','dark':'#16202A',
             'text-dark':'#1A1A1A','text-muted':'#5C6B7A','text-light':'#8E9AA8',
             'border-soft':'rgba(92,107,122,0.15)',
             'card-bg':'#FFFFFF','surface':'#F0EDE6',
           },
-          fontFamily:{'headline':['Plus Jakarta Sans','sans-serif'],'body':['Manrope','sans-serif']},
+          fontFamily:{
+            'headline':['Plus Jakarta Sans','sans-serif'],
+            'body':['Manrope','sans-serif']
+          },
           boxShadow:{
-            'natural':'0 4px 16px rgba(26,32,42,0.06)','lifted':'0 8px 32px rgba(26,32,42,0.10)',
-            'tactical':'0 4px 20px rgba(30,64,96,0.25)','card':'0 16px 40px -8px rgba(30,64,96,0.10)',
+            'natural':'0 4px 16px rgba(26,32,42,0.06)',
+            'lifted':'0 8px 32px rgba(26,32,42,0.10)',
+            'tactical':'0 4px 20px rgba(30,64,96,0.25)',
+            'card':'0 16px 40px -8px rgba(30,64,96,0.10)',
           },
         },
       },
@@ -46,16 +50,38 @@
     .scripture-mark{font-family:Georgia,'Times New Roman',serif}
     ::-webkit-scrollbar{display:none}
     body{-ms-overflow-style:none;scrollbar-width:none}
-    .bg-option{transition:all 0.2s ease;cursor:pointer;position:relative;overflow:hidden;border:3px solid transparent;border-radius:16px}
+
+    .bg-option{
+      transition:all 0.2s ease;cursor:pointer;
+      position:relative;overflow:hidden;
+      border:3px solid transparent;border-radius:16px
+    }
     .bg-option:active{transform:scale(0.96)}
-    .bg-option.selected{border-color:#1E4060;box-shadow:0 0 0 2px rgba(30,64,96,0.3)}
+    .bg-option.selected{
+      border-color:#1E4060;
+      box-shadow:0 0 0 2px rgba(30,64,96,0.3)
+    }
     .bg-option .check{display:none;position:absolute;top:8px;right:8px;z-index:10}
     .bg-option.selected .check{display:flex}
+
     .tab-btn{transition:all 0.2s ease}
-    .tab-btn.active{background:white;color:#1E4060;font-weight:700;box-shadow:0 2px 8px rgba(30,64,96,0.1)}
-    .color-option{width:48px;height:48px;border-radius:12px;cursor:pointer;transition:all 0.15s;border:3px solid transparent;flex-shrink:0}
+    .tab-btn.active{
+      background:white;color:#1E4060;
+      font-weight:700;
+      box-shadow:0 2px 8px rgba(30,64,96,0.1)
+    }
+
+    .color-option{
+      width:48px;height:48px;border-radius:12px;
+      cursor:pointer;transition:all 0.15s;
+      border:3px solid transparent;flex-shrink:0
+    }
     .color-option:active{transform:scale(0.9)}
-    .color-option.selected{border-color:#1E4060;box-shadow:0 0 0 2px rgba(30,64,96,0.3)}
+    .color-option.selected{
+      border-color:#1E4060;
+      box-shadow:0 0 0 2px rgba(30,64,96,0.3)
+    }
+
     .pb-safe{padding-bottom:env(safe-area-inset-bottom,20px)}
   </style>
 </head>
@@ -72,16 +98,27 @@
   <!-- HEADER -->
   <header class="sticky top-0 z-50 bg-surface/90 backdrop-blur-xl border-b border-border-soft">
     <div class="flex justify-between items-center px-5 py-3">
-      <div class="flex items-center gap-2">
-        <button onclick="goHome()" class="w-10 h-10 flex items-center justify-center text-text-muted hover:text-primary rounded-full active:scale-90 transition-all">
-          <span class="material-symbols-outlined text-[22px]">arrow_back</span>
-        </button>
-      </div>
+      <button onclick="goBack()"
+        class="w-10 h-10 flex items-center justify-center text-text-muted rounded-full active:scale-90 transition-all">
+        <span class="material-symbols-outlined text-[22px]">arrow_back</span>
+      </button>
       <div class="text-center">
         <span class="font-headline font-bold text-sm text-primary">Choose Your Canvas</span>
         <p class="text-[9px] text-text-light uppercase tracking-widest font-bold">Step 1 of 3</p>
       </div>
-      <button onclick="goHome()" class="text-text-muted font-bold text-xs hover:text-action transition-colors">Cancel</button>
+      <button onclick="goHome()"
+        class="text-text-muted font-bold text-xs active:opacity-60 transition-all">
+        Cancel
+      </button>
+    </div>
+
+    <!-- Selected quote banner — shows which quote is being used -->
+    <div id="quoteBanner" class="hidden px-5 pb-3">
+      <div class="bg-primary/8 border border-primary/20 rounded-xl px-4 py-2.5 flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary text-[16px] filled flex-shrink-0">format_quote</span>
+        <p id="quoteBannerText" class="text-[11px] font-bold text-primary truncate flex-grow"></p>
+        <span class="text-[10px] text-text-light font-bold flex-shrink-0">Selected</span>
+      </div>
     </div>
   </header>
 
@@ -90,32 +127,43 @@
     <div class="px-5 py-5 space-y-6">
 
       <!-- QUOTE PREVIEW -->
-      <section class="relative w-full aspect-[4/5] rounded-2xl overflow-hidden shadow-lifted flex flex-col items-center justify-center p-8" id="previewCard">
-        <div id="previewBg" class="absolute inset-0 bg-cover bg-center" style="background-image:url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80')"></div>
+      <section class="relative w-full aspect-[4/5] rounded-2xl overflow-hidden shadow-lifted
+        flex flex-col items-center justify-center p-8" id="previewCard">
+        <div id="previewBg" class="absolute inset-0 bg-cover bg-center"
+          style="background-image:url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80')">
+        </div>
         <div id="previewOverlay" class="absolute inset-0 bg-black/30"></div>
-        <div class="relative z-10 text-center">
+        <div class="relative z-10 text-center px-4">
           <span class="scripture-mark text-gold/60 text-5xl leading-none block mb-2">"</span>
-          <p id="previewQuote" class="font-headline font-bold text-xl text-white leading-relaxed drop-shadow-lg" style="opacity:0;transition:opacity 0.3s"></p>
+          <p id="previewQuote"
+            class="font-headline font-bold text-xl text-white leading-relaxed drop-shadow-lg"
+            style="opacity:0;transition:opacity 0.3s"></p>
           <div class="w-10 h-px bg-gold/50 mx-auto my-3"></div>
-          <p id="previewRef" class="font-body font-bold text-xs text-white/90 uppercase tracking-widest drop-shadow-md" style="opacity:0;transition:opacity 0.3s"></p>
+          <p id="previewRef"
+            class="font-body font-bold text-xs text-white/90 uppercase tracking-widest drop-shadow-md"
+            style="opacity:0;transition:opacity 0.3s"></p>
         </div>
       </section>
 
       <!-- TABS -->
       <nav class="flex bg-cream p-1.5 rounded-xl gap-1">
-        <button onclick="switchTab('camera',this)" class="tab-btn flex-1 flex flex-col items-center py-2.5 rounded-lg text-text-muted">
+        <button onclick="switchTab('camera',this)"
+          class="tab-btn flex-1 flex flex-col items-center py-2.5 rounded-lg text-text-muted">
           <span class="material-symbols-outlined text-[20px] mb-0.5">photo_camera</span>
           <span class="text-[9px] font-bold uppercase tracking-wider">Camera</span>
         </button>
-        <button onclick="switchTab('gallery',this)" class="tab-btn flex-1 flex flex-col items-center py-2.5 rounded-lg text-text-muted">
+        <button onclick="switchTab('gallery',this)"
+          class="tab-btn flex-1 flex flex-col items-center py-2.5 rounded-lg text-text-muted">
           <span class="material-symbols-outlined text-[20px] mb-0.5">image</span>
           <span class="text-[9px] font-bold uppercase tracking-wider">Gallery</span>
         </button>
-        <button onclick="switchTab('backgrounds',this)" id="presetsTab" class="tab-btn active flex-1 flex flex-col items-center py-2.5 rounded-lg">
+        <button onclick="switchTab('backgrounds',this)" id="presetsTab"
+          class="tab-btn active flex-1 flex flex-col items-center py-2.5 rounded-lg">
           <span class="material-symbols-outlined text-[20px] mb-0.5 filled">dashboard_customize</span>
           <span class="text-[9px] font-bold uppercase tracking-wider">Presets</span>
         </button>
-        <button onclick="switchTab('colors',this)" class="tab-btn flex-1 flex flex-col items-center py-2.5 rounded-lg text-text-muted">
+        <button onclick="switchTab('colors',this)"
+          class="tab-btn flex-1 flex flex-col items-center py-2.5 rounded-lg text-text-muted">
           <span class="material-symbols-outlined text-[20px] mb-0.5">palette</span>
           <span class="text-[9px] font-bold uppercase tracking-wider">Colors</span>
         </button>
@@ -123,7 +171,9 @@
 
       <!-- TAB: Camera -->
       <div id="tabCamera" class="hidden space-y-3">
-        <button onclick="openSelfie()" class="w-full flex items-center gap-4 p-4 rounded-2xl bg-card-bg border border-border-soft active:scale-[0.98] transition-transform shadow-natural">
+        <button onclick="openSelfie()"
+          class="w-full flex items-center gap-4 p-4 rounded-2xl bg-card-bg border border-border-soft
+          active:scale-[0.98] transition-transform shadow-natural">
           <div class="w-12 h-12 rounded-2xl tactical-gradient flex items-center justify-center text-white flex-shrink-0 shadow-tactical">
             <span class="material-symbols-outlined text-[22px] filled">face</span>
           </div>
@@ -133,7 +183,9 @@
           </div>
           <span class="material-symbols-outlined text-text-light text-[20px]">chevron_right</span>
         </button>
-        <button onclick="openCamera()" class="w-full flex items-center gap-4 p-4 rounded-2xl bg-card-bg border border-border-soft active:scale-[0.98] transition-transform shadow-natural">
+        <button onclick="openCamera()"
+          class="w-full flex items-center gap-4 p-4 rounded-2xl bg-card-bg border border-border-soft
+          active:scale-[0.98] transition-transform shadow-natural">
           <div class="w-12 h-12 rounded-2xl bg-gold flex items-center justify-center text-white flex-shrink-0">
             <span class="material-symbols-outlined text-[22px] filled">photo_camera</span>
           </div>
@@ -143,15 +195,21 @@
           </div>
           <span class="material-symbols-outlined text-text-light text-[20px]">chevron_right</span>
         </button>
-        <div id="desktopWarning" class="hidden bg-gold/10 border border-gold/30 rounded-xl p-3 flex items-start gap-3">
+        <div id="desktopWarning"
+          class="hidden bg-gold/10 border border-gold/30 rounded-xl p-3 flex items-start gap-3">
           <span class="material-symbols-outlined text-gold-dim text-[18px] flex-shrink-0 mt-0.5">warning</span>
-          <p class="text-[11px] text-text-muted font-body leading-relaxed"><span class="font-bold text-gold-dim">Desktop detected.</span> Camera works best on mobile. Use Gallery or Presets instead.</p>
+          <p class="text-[11px] text-text-muted font-body leading-relaxed">
+            <span class="font-bold text-gold-dim">Desktop detected.</span>
+            Camera works best on mobile. Use Gallery or Presets instead.
+          </p>
         </div>
       </div>
 
       <!-- TAB: Gallery -->
       <div id="tabGallery" class="hidden">
-        <button onclick="openGallery()" class="w-full flex items-center gap-4 p-6 rounded-2xl bg-card-bg border-2 border-dashed border-border-soft hover:border-primary/30 transition-all active:scale-[0.98]">
+        <button onclick="openGallery()"
+          class="w-full flex items-center gap-4 p-6 rounded-2xl bg-card-bg border-2 border-dashed
+          border-border-soft active:scale-[0.98] transition-all">
           <div class="w-14 h-14 rounded-2xl bg-cream flex items-center justify-center flex-shrink-0">
             <span class="material-symbols-outlined text-primary text-[28px]">upload</span>
           </div>
@@ -164,37 +222,69 @@
 
       <!-- TAB: Presets -->
       <div id="tabBackgrounds" class="grid grid-cols-2 gap-3">
-        <div class="bg-option selected aspect-square" onclick="selectPreset(this,'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80')">
-          <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80" class="w-full h-full object-cover rounded-[13px]" alt="Mountains">
-          <div class="check w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-tactical"><span class="material-symbols-outlined text-white text-[16px] filled">check</span></div>
+        <div class="bg-option selected aspect-square"
+          onclick="selectPreset(this,'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80')">
+          <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80"
+            class="w-full h-full object-cover rounded-[13px]" alt="Mountains">
+          <div class="check w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-tactical">
+            <span class="material-symbols-outlined text-white text-[16px] filled">check</span>
+          </div>
         </div>
-        <div class="bg-option aspect-square" onclick="selectPreset(this,'https://images.unsplash.com/photo-1477346611705-65d1883cee1e?w=800&q=80')">
-          <img src="https://images.unsplash.com/photo-1477346611705-65d1883cee1e?w=400&q=80" class="w-full h-full object-cover rounded-[13px]" alt="Sunset">
-          <div class="check w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-tactical"><span class="material-symbols-outlined text-white text-[16px] filled">check</span></div>
+        <div class="bg-option aspect-square"
+          onclick="selectPreset(this,'https://images.unsplash.com/photo-1477346611705-65d1883cee1e?w=800&q=80')">
+          <img src="https://images.unsplash.com/photo-1477346611705-65d1883cee1e?w=400&q=80"
+            class="w-full h-full object-cover rounded-[13px]" alt="Sunset">
+          <div class="check w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-tactical">
+            <span class="material-symbols-outlined text-white text-[16px] filled">check</span>
+          </div>
         </div>
-        <div class="bg-option aspect-square" onclick="selectPreset(this,'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80')">
-          <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80" class="w-full h-full object-cover rounded-[13px]" alt="Beach">
-          <div class="check w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-tactical"><span class="material-symbols-outlined text-white text-[16px] filled">check</span></div>
+        <div class="bg-option aspect-square"
+          onclick="selectPreset(this,'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80')">
+          <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80"
+            class="w-full h-full object-cover rounded-[13px]" alt="Beach">
+          <div class="check w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-tactical">
+            <span class="material-symbols-outlined text-white text-[16px] filled">check</span>
+          </div>
         </div>
-        <div class="bg-option aspect-square" onclick="selectPreset(this,'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&q=80')">
-          <img src="https://images.unsplash.com/photo-1501854140801-50d01698950b?w=400&q=80" class="w-full h-full object-cover rounded-[13px]" alt="Forest">
-          <div class="check w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-tactical"><span class="material-symbols-outlined text-white text-[16px] filled">check</span></div>
+        <div class="bg-option aspect-square"
+          onclick="selectPreset(this,'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&q=80')">
+          <img src="https://images.unsplash.com/photo-1501854140801-50d01698950b?w=400&q=80"
+            class="w-full h-full object-cover rounded-[13px]" alt="Forest">
+          <div class="check w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-tactical">
+            <span class="material-symbols-outlined text-white text-[16px] filled">check</span>
+          </div>
         </div>
-        <div class="bg-option aspect-square" onclick="selectPreset(this,'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=800&q=80')">
-          <img src="https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=400&q=80" class="w-full h-full object-cover rounded-[13px]" alt="Stars">
-          <div class="check w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-tactical"><span class="material-symbols-outlined text-white text-[16px] filled">check</span></div>
+        <div class="bg-option aspect-square"
+          onclick="selectPreset(this,'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=800&q=80')">
+          <img src="https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=400&q=80"
+            class="w-full h-full object-cover rounded-[13px]" alt="Stars">
+          <div class="check w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-tactical">
+            <span class="material-symbols-outlined text-white text-[16px] filled">check</span>
+          </div>
         </div>
-        <div class="bg-option aspect-square" onclick="selectPreset(this,'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800&q=80')">
-          <img src="https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=400&q=80" class="w-full h-full object-cover rounded-[13px]" alt="Meadow">
-          <div class="check w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-tactical"><span class="material-symbols-outlined text-white text-[16px] filled">check</span></div>
+        <div class="bg-option aspect-square"
+          onclick="selectPreset(this,'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800&q=80')">
+          <img src="https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=400&q=80"
+            class="w-full h-full object-cover rounded-[13px]" alt="Meadow">
+          <div class="check w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-tactical">
+            <span class="material-symbols-outlined text-white text-[16px] filled">check</span>
+          </div>
         </div>
-        <div class="bg-option aspect-square" onclick="selectPreset(this,'https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?w=800&q=80')">
-          <img src="https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?w=400&q=80" class="w-full h-full object-cover rounded-[13px]" alt="Desert">
-          <div class="check w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-tactical"><span class="material-symbols-outlined text-white text-[16px] filled">check</span></div>
+        <div class="bg-option aspect-square"
+          onclick="selectPreset(this,'https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?w=800&q=80')">
+          <img src="https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?w=400&q=80"
+            class="w-full h-full object-cover rounded-[13px]" alt="Desert">
+          <div class="check w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-tactical">
+            <span class="material-symbols-outlined text-white text-[16px] filled">check</span>
+          </div>
         </div>
-        <div class="bg-option aspect-square" onclick="selectPreset(this,'https://images.unsplash.com/photo-1490730141103-6cac27aaab94?w=800&q=80')">
-          <img src="https://images.unsplash.com/photo-1490730141103-6cac27aaab94?w=400&q=80" class="w-full h-full object-cover rounded-[13px]" alt="Sunrise">
-          <div class="check w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-tactical"><span class="material-symbols-outlined text-white text-[16px] filled">check</span></div>
+        <div class="bg-option aspect-square"
+          onclick="selectPreset(this,'https://images.unsplash.com/photo-1490730141103-6cac27aaab94?w=800&q=80')">
+          <img src="https://images.unsplash.com/photo-1490730141103-6cac27aaab94?w=400&q=80"
+            class="w-full h-full object-cover rounded-[13px]" alt="Sunrise">
+          <div class="check w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-tactical">
+            <span class="material-symbols-outlined text-white text-[16px] filled">check</span>
+          </div>
         </div>
       </div>
 
@@ -241,8 +331,11 @@
 
   <!-- FOOTER -->
   <footer class="fixed bottom-0 left-0 right-0 z-50 bg-card-bg/90 backdrop-blur-xl border-t border-border-soft">
-    <div class="max-w-[430px] mx-auto px-5 pt-3 pb-safe" style="padding-bottom:max(20px,env(safe-area-inset-bottom))">
-      <button onclick="goToEditor()" class="w-full py-4 tactical-gradient text-white font-headline font-bold text-base rounded-2xl flex items-center justify-center gap-2 shadow-tactical active:scale-[0.98] transition-transform">
+    <div class="max-w-[430px] mx-auto px-5 pt-3 pb-safe"
+      style="padding-bottom:max(20px,env(safe-area-inset-bottom))">
+      <button onclick="goToEditor()"
+        class="w-full py-4 tactical-gradient text-white font-headline font-bold text-base rounded-2xl
+        flex items-center justify-center gap-2 shadow-tactical active:scale-[0.98] transition-transform">
         Next — Edit Your Word
         <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
       </button>
@@ -252,35 +345,74 @@
 </div>
 
 <script>
-  // ---- SUPABASE (global) ----
+  // ════════════════════════════════════════════
+  // SUPABASE
+  // ════════════════════════════════════════════
   var { createClient } = supabase
-  var db = createClient('https://nhymadutuhpjgkiurify.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM')
+  var db = createClient(
+    'https://nhymadutuhpjgkiurify.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+  )
 
-  // ---- STATE (global) ----
-  var selectedBgType = 'image'
+  // ════════════════════════════════════════════
+  // STATE
+  // ════════════════════════════════════════════
+  var selectedBgType  = 'image'
   var selectedBgValue = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80'
 
-  // ---- INIT ----
+  // ════════════════════════════════════════════
+  // INIT — checks for library-selected quote first
+  // ════════════════════════════════════════════
   async function init() {
     var sessionResult = await db.auth.getSession()
-    if (!sessionResult.data.session) { window.location.href = 'login.html'; return }
-
-    var quoteEl = document.getElementById('previewQuote')
-    var refEl = document.getElementById('previewRef')
-
-    var result = await db.from('quotes').select('*').eq('status', 'live').order('published_at', { ascending: false }).limit(1)
-
-    if (result.data && result.data.length > 0) {
-      quoteEl.textContent = result.data[0].text
-      refEl.textContent = '— ' + result.data[0].source.toUpperCase()
-    } else {
-      quoteEl.textContent = 'The Word is with you today.'
-      refEl.textContent = '— GSTW'
+    if (!sessionResult.data.session) {
+      window.location.href = 'login.html'
+      return
     }
 
-    quoteEl.style.opacity = '1'
-    refEl.style.opacity = '1'
+    var quoteEl = document.getElementById('previewQuote')
+    var refEl   = document.getElementById('previewRef')
 
+    // ── CHECK FOR LIBRARY-SELECTED QUOTE FIRST ──
+    var selectedText   = sessionStorage.getItem('gstw_selected_quote_text')
+    var selectedSource = sessionStorage.getItem('gstw_selected_quote_source')
+
+    if (selectedText && selectedSource) {
+      // Use the quote selected from library
+      quoteEl.textContent = selectedText
+      refEl.textContent   = '— ' + selectedSource.toUpperCase()
+
+      // Show the quote banner so user knows which quote is selected
+      var banner     = document.getElementById('quoteBanner')
+      var bannerText = document.getElementById('quoteBannerText')
+      if (banner && bannerText) {
+        bannerText.textContent = selectedText.substring(0, 60) + (selectedText.length > 60 ? '...' : '')
+        banner.classList.remove('hidden')
+      }
+
+    } else {
+      // No library selection — fetch latest live quote
+      var result = await db
+        .from('quotes')
+        .select('*')
+        .eq('status', 'live')
+        .order('published_at', { ascending: false })
+        .limit(1)
+
+      if (result.data && result.data.length > 0) {
+        quoteEl.textContent = result.data[0].text
+        refEl.textContent   = '— ' + result.data[0].source.toUpperCase()
+      } else {
+        quoteEl.textContent = 'The Word is with you today.'
+        refEl.textContent   = '— GSTW'
+      }
+    }
+
+    // Fade in
+    quoteEl.style.opacity = '1'
+    refEl.style.opacity   = '1'
+
+    // Desktop warning
     if (isDesktop()) {
       var w = document.getElementById('desktopWarning')
       if (w) w.classList.remove('hidden')
@@ -289,7 +421,9 @@
 
   init()
 
-  // ---- TABS ----
+  // ════════════════════════════════════════════
+  // TABS
+  // ════════════════════════════════════════════
   function switchTab(tab, btn) {
     document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active') })
     btn.classList.add('active')
@@ -297,35 +431,38 @@
     document.getElementById('tabGallery').classList.add('hidden')
     document.getElementById('tabBackgrounds').classList.add('hidden')
     document.getElementById('tabColors').classList.add('hidden')
-    if (tab === 'camera') document.getElementById('tabCamera').classList.remove('hidden')
-    if (tab === 'gallery') document.getElementById('tabGallery').classList.remove('hidden')
+    if (tab === 'camera')      document.getElementById('tabCamera').classList.remove('hidden')
+    if (tab === 'gallery')     document.getElementById('tabGallery').classList.remove('hidden')
     if (tab === 'backgrounds') document.getElementById('tabBackgrounds').classList.remove('hidden')
-    if (tab === 'colors') document.getElementById('tabColors').classList.remove('hidden')
+    if (tab === 'colors')      document.getElementById('tabColors').classList.remove('hidden')
   }
 
-  // ---- SELECT PRESET ----
+  // ════════════════════════════════════════════
+  // SELECT PRESET
+  // ════════════════════════════════════════════
   function selectPreset(el, url) {
     document.querySelectorAll('.bg-option').forEach(function(o) { o.classList.remove('selected') })
     document.querySelectorAll('.color-option').forEach(function(o) { o.classList.remove('selected') })
     el.classList.add('selected')
-    selectedBgType = 'image'
+    selectedBgType  = 'image'
     selectedBgValue = url
     var bg = document.getElementById('previewBg')
     bg.style.backgroundImage = "url('" + url + "')"
     bg.style.backgroundSize = 'cover'
     bg.style.backgroundPosition = 'center'
     document.getElementById('previewOverlay').style.background = 'rgba(0,0,0,0.3)'
-    // Reset text color for image backgrounds
     document.getElementById('previewQuote').style.color = 'white'
-    document.getElementById('previewRef').style.color = 'rgba(255,255,255,0.9)'
+    document.getElementById('previewRef').style.color   = 'rgba(255,255,255,0.9)'
   }
 
-  // ---- SELECT COLOR ----
+  // ════════════════════════════════════════════
+  // SELECT COLOR
+  // ════════════════════════════════════════════
   function selectColor(el, color) {
     document.querySelectorAll('.bg-option').forEach(function(o) { o.classList.remove('selected') })
     document.querySelectorAll('.color-option').forEach(function(o) { o.classList.remove('selected') })
     el.classList.add('selected')
-    selectedBgType = 'color'
+    selectedBgType  = 'color'
     selectedBgValue = color
     var bg = document.getElementById('previewBg')
     bg.style.backgroundImage = 'none'
@@ -333,25 +470,29 @@
     var isLight = color === '#F7F4ED' || color === '#FFFFFF'
     document.getElementById('previewOverlay').style.background = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.1)'
     document.getElementById('previewQuote').style.color = isLight ? '#1A1A1A' : 'white'
-    document.getElementById('previewRef').style.color = isLight ? '#1E4060' : 'rgba(255,255,255,0.9)'
+    document.getElementById('previewRef').style.color   = isLight ? '#1E4060' : 'rgba(255,255,255,0.9)'
   }
 
-  // ---- SELECT GRADIENT ----
+  // ════════════════════════════════════════════
+  // SELECT GRADIENT
+  // ════════════════════════════════════════════
   function selectGradient(el, gradient) {
     document.querySelectorAll('.bg-option').forEach(function(o) { o.classList.remove('selected') })
     document.querySelectorAll('.color-option').forEach(function(o) { o.classList.remove('selected') })
     el.classList.add('selected')
-    selectedBgType = 'gradient'
+    selectedBgType  = 'gradient'
     selectedBgValue = gradient
     var bg = document.getElementById('previewBg')
     bg.style.backgroundImage = 'none'
     bg.style.background = gradient
     document.getElementById('previewOverlay').style.background = 'rgba(0,0,0,0.1)'
     document.getElementById('previewQuote').style.color = 'white'
-    document.getElementById('previewRef').style.color = 'rgba(255,255,255,0.9)'
+    document.getElementById('previewRef').style.color   = 'rgba(255,255,255,0.9)'
   }
 
-  // ---- CAMERA / GALLERY ----
+  // ════════════════════════════════════════════
+  // CAMERA / GALLERY
+  // ════════════════════════════════════════════
   function isDesktop() { return !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) }
 
   function openSelfie() {
@@ -373,7 +514,7 @@
     if (!file) return
     var reader = new FileReader()
     reader.onload = function(e) {
-      selectedBgType = 'image'
+      selectedBgType  = 'image'
       selectedBgValue = e.target.result
       var bg = document.getElementById('previewBg')
       bg.style.backgroundImage = "url('" + e.target.result + "')"
@@ -383,25 +524,35 @@
       document.querySelectorAll('.bg-option').forEach(function(o) { o.classList.remove('selected') })
       document.querySelectorAll('.color-option').forEach(function(o) { o.classList.remove('selected') })
       document.getElementById('previewQuote').style.color = 'white'
-      document.getElementById('previewRef').style.color = 'rgba(255,255,255,0.9)'
+      document.getElementById('previewRef').style.color   = 'rgba(255,255,255,0.9)'
       showToast('Photo selected!')
     }
     reader.readAsDataURL(file)
     input.value = ''
   }
 
-  // ---- NAVIGATION ----
+  // ════════════════════════════════════════════
+  // NAVIGATION
+  // ════════════════════════════════════════════
+  function goBack() {
+    // If came from library, go back to library
+    var fromLibrary = sessionStorage.getItem('gstw_selected_quote_id')
+    window.location.href = fromLibrary ? 'library.html' : 'index.html'
+  }
+
   function goHome() {
     window.location.href = 'index.html'
   }
 
   function goToEditor() {
-    sessionStorage.setItem('gstw_bg_type', selectedBgType)
+    sessionStorage.setItem('gstw_bg_type',  selectedBgType)
     sessionStorage.setItem('gstw_bg_value', selectedBgValue)
     window.location.href = 'editor.html'
   }
 
-  // ---- TOAST ----
+  // ════════════════════════════════════════════
+  // TOAST
+  // ════════════════════════════════════════════
   function showToast(msg) {
     var existing = document.getElementById('bgToast')
     if (existing) existing.remove()

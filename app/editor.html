@@ -316,25 +316,44 @@
 
   // ---- INIT ----
   async function init() {
-    var session = await db.auth.getSession()
-    if (!session.data.session) { window.location.href = 'login.html'; return }
+  var session = await db.auth.getSession()
+  if (!session.data.session) { window.location.href = 'login.html'; return }
 
-    var result = await db.from('quotes').select('*').eq('status', 'live').order('published_at', { ascending: false }).limit(1)
+  // ── CHECK FOR LIBRARY-SELECTED QUOTE FIRST ──
+  var selectedText   = sessionStorage.getItem('gstw_selected_quote_text')
+  var selectedSource = sessionStorage.getItem('gstw_selected_quote_source')
+  var selectedId     = sessionStorage.getItem('gstw_selected_quote_id')
+
+  if (selectedText && selectedSource) {
+    // Use library-selected quote
+    if (quoteText) quoteText.textContent = selectedText
+    if (quoteRef)  quoteRef.textContent  = '— ' + selectedSource.toUpperCase()
+    window.currentQuoteId = selectedId
+
+  } else {
+    // Fetch latest live quote from Supabase
+    var result = await db
+      .from('quotes')
+      .select('*')
+      .eq('status', 'live')
+      .order('published_at', { ascending: false })
+      .limit(1)
 
     if (result.data && result.data.length > 0) {
       if (quoteText) quoteText.textContent = result.data[0].text
-      if (quoteRef) quoteRef.textContent = '— ' + result.data[0].source.toUpperCase()
+      if (quoteRef)  quoteRef.textContent  = '— ' + result.data[0].source.toUpperCase()
       window.currentQuoteId = result.data[0].id
     } else {
       if (quoteText) quoteText.textContent = 'The Word is with you today.'
-      if (quoteRef) quoteRef.textContent = '— GSTW'
+      if (quoteRef)  quoteRef.textContent  = '— GSTW'
     }
-
-    if (quoteText) quoteText.style.opacity = '1'
-    if (quoteRef) quoteRef.style.opacity = '1'
-
-    loadBackgroundChoice()
   }
+
+  if (quoteText) quoteText.style.opacity = '1'
+  if (quoteRef)  quoteRef.style.opacity  = '1'
+
+  loadBackgroundChoice()
+}
 
   // ---- LOAD BACKGROUND ----
   function loadBackgroundChoice() {
