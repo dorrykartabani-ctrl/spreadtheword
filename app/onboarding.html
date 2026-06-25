@@ -314,21 +314,19 @@
 
           <!-- Search -->
           <div class="relative mb-3">
-            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2
-              text-text-light text-[18px]">search</span>
-            <input id="countrySearch" type="text" placeholder="Search countries..."
-              oninput="filterCountries(this.value)"
-              class="onboard-input w-full bg-card-bg border-2 border-border-soft rounded-2xl
-              pl-11 pr-4 py-3 font-body text-sm text-text-dark focus:outline-none
-              placeholder:text-text-light">
-          </div>
+  <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2
+    text-text-light text-[18px]">search</span>
+  <input id="countrySearch" type="text" placeholder="Search countries..."
+    oninput="filterCountries(this.value)"
+    class="onboard-input w-full bg-card-bg border-2 border-border-soft rounded-2xl
+    pl-11 pr-4 py-3 font-body text-sm text-text-dark focus:outline-none
+    placeholder:text-text-light">
+</div>
 
-          <!-- Country List -->
-          <div id="countryList" class="flex-1 overflow-y-auto space-y-1.5 max-h-[280px]
-            rounded-2xl border border-border-soft bg-card-bg p-2"
-            style="-ms-overflow-style:none;scrollbar-width:none">
-            <!-- Rendered by JS -->
-          </div>
+<div id="countryList" class="flex-1 overflow-y-auto max-h-[280px]
+  rounded-2xl border border-border-soft bg-card-bg p-2"
+  style="-ms-overflow-style:none;scrollbar-width:none">
+</div>
 
           <p id="selectedCountryLabel" class="text-center text-xs font-bold text-primary mt-3 hidden"></p>
         </div>
@@ -564,13 +562,17 @@
       backBtn.classList.remove('flex')
     }
 
-    // Skip button visibility (only on nickname and country slides)
-    var skipBtn = document.getElementById('skipBtn')
-    if (index === 1 || index === 2) {
-      skipBtn.classList.remove('hidden')
-    } else {
-      skipBtn.classList.add('hidden')
-    }
+  // Skip button visibility
+var skipBtn = document.getElementById('skipBtn')
+if (index === 1) {
+  skipBtn.classList.remove('hidden')
+  skipBtn.textContent = 'Skip Nickname'
+} else if (index === 2) {
+  skipBtn.classList.remove('hidden')
+  skipBtn.textContent = 'Skip'
+} else {
+  skipBtn.classList.add('hidden')
+}
 
     // Trigger rank reveal animation on last slide
     if (index === 4) {
@@ -590,9 +592,39 @@
     goToSlide(currentSlide - 1)
   }
 
-  function skipStep() {
-    nextSlide()
+ function skipStep() {
+  // On slide 1 (name slide) — skip should only skip nickname, not name
+  if (currentSlide === 1) {
+    var nameInput = document.getElementById('inputName')
+    if (!nameInput || nameInput.value.trim().length < 2) {
+      showToast('Please enter your name first')
+      return
+    }
+    // Save name without nickname
+    submitNameSkipNickname()
+    return
   }
+  // On slide 2 (country) — skip is fine
+  nextSlide()
+}
+
+async function submitNameSkipNickname() {
+  var name = document.getElementById('inputName').value.trim()
+  if (name.length < 2) return
+
+  if (currentUser) {
+    await supabaseClient.from('profiles').update({
+      full_name: name
+    }).eq('id', currentUser.id)
+  }
+
+  var greetEl = document.getElementById('rankGreeting')
+  if (greetEl) {
+    greetEl.textContent = 'Welcome to the mission, ' + name.split(' ')[0] + '. Your first Word is waiting.'
+  }
+
+  nextSlide()
+}
 
   // ════════════════════════════════════════════
   // SLIDE 0 — WELCOME: Load stats
@@ -704,38 +736,58 @@
   // ════════════════════════════════════════════
   // SLIDE 2 — COUNTRY
   // ════════════════════════════════════════════
-  function renderCountries(filter) {
-    var container = document.getElementById('countryList')
-    container.innerHTML = ''
+function renderCountries(filter) {
+  var container = document.getElementById('countryList')
+  container.innerHTML = ''
 
-    var filtered = filter
-      ? countries.filter(function(c) {
-          return c.toLowerCase().includes(filter.toLowerCase())
-        })
-      : countries
+  var filtered = filter
+    ? countries.filter(function(c) {
+        return c.toLowerCase().includes(filter.toLowerCase())
+      })
+    : countries
 
-    if (filtered.length === 0) {
-      container.innerHTML =
-        '<p class="text-center text-text-light text-xs py-4">No countries found</p>'
-      return
-    }
-
-    filtered.forEach(function(country) {
-      var isSelected = country === selectedCountry
-      var el = document.createElement('div')
-      el.className = 'country-option flex items-center gap-3 px-3 py-2.5 rounded-xl border-2 '
-        + (isSelected ? 'selected border-primary bg-primary/5' : 'border-transparent')
-      el.onclick = function() { selectCountry(country) }
-      el.innerHTML =
-        '<span class="text-sm">' + getFlag(country) + '</span>'
-        + '<span class="font-body font-medium text-sm text-text-dark flex-1">' + country + '</span>'
-        + (isSelected
-          ? '<span class="material-symbols-outlined text-primary text-[18px] filled">check_circle</span>'
-          : '')
-      container.appendChild(el)
-    })
+  if (filtered.length === 0) {
+    container.innerHTML =
+      '<div class="text-center py-6">'
+        + '<span class="material-symbols-outlined text-text-light text-[24px] mb-1 block">search_off</span>'
+        + '<p class="text-text-light text-xs font-bold">No countries found</p>'
+      + '</div>'
+    return
   }
 
+  filtered.forEach(function(country) {
+    var isSelected = country === selectedCountry
+    var flag = getFlag(country)
+
+    var el = document.createElement('button')
+    el.className = 'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all active:scale-[0.98] '
+      + (isSelected
+        ? 'bg-primary/8 border-2 border-primary'
+        : 'border-2 border-transparent hover:bg-surface')
+    el.onclick = function() { selectCountry(country) }
+
+    el.innerHTML =
+      '<span class="text-lg flex-shrink-0 w-8 text-center">' + flag + '</span>'
+      + '<span class="font-body font-medium text-sm text-text-dark flex-1 text-left">'
+        + country
+      + '</span>'
+      + (isSelected
+        ? '<span class="material-symbols-outlined text-primary text-[18px] filled flex-shrink-0">check_circle</span>'
+        : '')
+
+    container.appendChild(el)
+  })
+
+  // If a country is selected, scroll to it
+  if (selectedCountry && !filter) {
+    setTimeout(function() {
+      var selected = container.querySelector('.border-primary')
+      if (selected) {
+        selected.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      }
+    }, 100)
+  }
+}
   function filterCountries(query) {
     renderCountries(query)
   }
