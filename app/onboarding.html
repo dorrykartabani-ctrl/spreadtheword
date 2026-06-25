@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Welcome — Go Spread The Word</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'primary':'#1E4060','primary-dim':'#152E45','primary-light':'#2B5780',
+            'action':'#E25B4D','action-dim':'#C84A3E',
+            'gold':'#D4A24C','gold-dim':'#B88A3D',
+            'cream':'#F7F4ED','dark':'#16202A',
+            'text-dark':'#1A1A1A','text-muted':'#5C6B7A','text-light':'#8E9AA8',
+            'border-soft':'rgba(92,107,122,0.15)',
+            'card-bg':'#FFFFFF','surface':'#F0EDE6',
+          },
+          fontFamily:{
+            'headline':['Plus Jakarta Sans','sans-serif'],
+            'body':['Manrope','sans-serif'],
+          },
+          boxShadow:{
+            'natural':'0 4px 16px rgba(26,32,42,0.06)',
+            'lifted':'0 8px 32px rgba(26,32,42,0.10)',
+            'tactical':'0 4px 20px rgba(30,64,96,0.25)',
+            'card':'0 2px 12px rgba(30,64,96,0.06)',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    body{
+      font-family:'Manrope',sans-serif;
+      background-color:#F0EDE6;
+      -webkit-tap-highlight-color:transparent;
+      min-height:100dvh;
+      overflow:hidden;
+    }
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif}
+    .material-symbols-outlined{
+      font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+      vertical-align:middle;
+    }
+    .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+    .tactical-gradient{background:linear-gradient(145deg,#152E45,#1E4060)}
+
+    /* Slide container */
+    .slides-container{
+      display:flex;
+      transition:transform 0.5s cubic-bezier(0.4,0,0.2,1);
+      height:100%;
+    }
+    .slide{
+      min-width:100%;
+      height:100%;
+      display:flex;
+      flex-direction:column;
+    }
+
+    /* Progress dots */
+    .progress-dot{
+      width:8px;height:8px;border-radius:50%;
+      background:rgba(30,64,96,0.15);
+      transition:all 0.3s ease;
+    }
+    .progress-dot.active{
+      background:#1E4060;
+      width:24px;
+      border-radius:4px;
+    }
+    .progress-dot.done{
+      background:#D4A24C;
+    }
+
+    /* Input focus */
+    .onboard-input{
+      transition:all 0.2s ease;
+    }
+    .onboard-input:focus{
+      border-color:#1E4060;
+      box-shadow:0 0 0 3px rgba(30,64,96,0.1);
+    }
+
+    /* Nickname status */
+    .nick-status{
+      transition:all 0.2s ease;
+      font-size:11px;
+      font-weight:700;
+      margin-top:6px;
+    }
+
+    /* Country search */
+    .country-option{
+      transition:background 0.15s;
+      cursor:pointer;
+    }
+    .country-option:active{background:rgba(30,64,96,0.06)}
+    .country-option.selected{
+      background:rgba(30,64,96,0.08);
+      border-color:#1E4060;
+    }
+
+    /* Rank reveal animation */
+    @keyframes rankReveal{
+      0%{opacity:0;transform:scale(0.5) translateY(20px)}
+      60%{transform:scale(1.08) translateY(-5px)}
+      100%{opacity:1;transform:scale(1) translateY(0)}
+    }
+    .rank-reveal{animation:rankReveal 0.8s ease-out both}
+
+    @keyframes shimmer{
+      0%{background-position:200% 0}
+      100%{background-position:-200% 0}
+    }
+
+    @keyframes breathe{
+      0%,100%{opacity:0.3;transform:scale(1)}
+      50%{opacity:0.6;transform:scale(1.1)}
+    }
+    .shield-glow{animation:breathe 3s ease-in-out infinite}
+
+    /* Confetti */
+    @keyframes confettiFall{
+      0%{opacity:1;transform:translateY(0) rotate(0deg)}
+      100%{opacity:0;transform:translateY(120px) rotate(720deg)}
+    }
+    .confetti{
+      position:absolute;
+      animation:confettiFall ease-out both;
+      pointer-events:none;
+    }
+
+    ::-webkit-scrollbar{display:none}
+    body{-ms-overflow-style:none;scrollbar-width:none}
+  </style>
+</head>
+
+<body class="text-text-dark">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- APP WRAPPER -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="max-w-[430px] mx-auto relative overflow-hidden" style="height:100dvh">
+
+  <!-- ─────────────────────────────────────── -->
+  <!-- PROGRESS BAR -->
+  <!-- ─────────────────────────────────────── -->
+  <div class="absolute top-0 left-0 right-0 z-50 px-6 pt-14 pb-3 bg-surface/90 backdrop-blur-xl">
+    <div class="flex items-center justify-between mb-3">
+      <button id="backBtn" onclick="prevSlide()" class="hidden w-10 h-10 flex items-center justify-center
+        text-text-muted active:scale-90 transition-transform rounded-full">
+        <span class="material-symbols-outlined text-[22px]">arrow_back</span>
+      </button>
+      <div class="flex-1"></div>
+      <button id="skipBtn" onclick="skipStep()" class="hidden text-text-muted font-bold text-xs
+        active:opacity-60 transition-opacity">
+        Skip
+      </button>
+    </div>
+    <div class="flex items-center justify-center gap-2">
+      <div class="progress-dot active" data-step="0"></div>
+      <div class="progress-dot" data-step="1"></div>
+      <div class="progress-dot" data-step="2"></div>
+      <div class="progress-dot" data-step="3"></div>
+      <div class="progress-dot" data-step="4"></div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────── -->
+  <!-- SLIDES CONTAINER -->
+  <!-- ─────────────────────────────────────── -->
+  <div id="slidesContainer" class="slides-container" style="transform:translateX(0)">
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- SLIDE 0 — WELCOME -->
+    <!-- ═══════════════════════════════════════ -->
+    <div class="slide">
+      <div class="flex-1 flex flex-col items-center justify-center px-8 text-center pt-24 pb-32">
+
+        <!-- Logo -->
+        <div class="w-20 h-20 tactical-gradient rounded-3xl flex items-center justify-center
+          shadow-tactical mb-6 relative">
+          <span class="font-headline font-extrabold text-gold text-lg">GSTW</span>
+          <div class="absolute inset-0 bg-gold/20 rounded-3xl blur-xl shield-glow"></div>
+        </div>
+
+        <h1 class="font-headline font-extrabold text-3xl text-text-dark leading-tight mb-3">
+          Welcome to<br>
+          <span class="text-primary">Go Spread The Word</span>
+        </h1>
+
+        <p class="text-text-muted font-body text-sm leading-relaxed max-w-[300px] mb-2">
+          You're about to join a global community of warriors spreading
+          God's Word across every platform.
+        </p>
+
+        <div class="flex items-center gap-2 mt-4 mb-8">
+          <div class="flex items-center gap-1 bg-cream rounded-full px-3 py-1.5 border border-border-soft">
+            <span class="material-symbols-outlined text-primary text-[14px] filled">group</span>
+            <span id="welcomeWarriors" class="font-body font-bold text-xs text-text-dark">— warriors</span>
+          </div>
+          <div class="flex items-center gap-1 bg-cream rounded-full px-3 py-1.5 border border-border-soft">
+            <span class="material-symbols-outlined text-gold text-[14px] filled">share</span>
+            <span id="welcomeShares" class="font-body font-bold text-xs text-text-dark">— shared</span>
+          </div>
+        </div>
+
+        <!-- CTA -->
+        <button onclick="nextSlide()"
+          class="w-full max-w-xs py-4 tactical-gradient text-white font-headline font-bold text-base
+          rounded-2xl shadow-tactical active:scale-[0.98] transition-transform
+          flex items-center justify-center gap-2">
+          Begin Your Mission
+          <span class="material-symbols-outlined text-gold text-[20px]">arrow_forward</span>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- SLIDE 1 — YOUR NAME -->
+    <!-- ═══════════════════════════════════════ -->
+    <div class="slide">
+      <div class="flex-1 flex flex-col px-8 pt-28 pb-32">
+
+        <div class="flex-1 flex flex-col justify-center">
+          <!-- Icon -->
+          <div class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
+            <span class="material-symbols-outlined text-primary text-[28px]">person</span>
+          </div>
+
+          <h2 class="font-headline font-extrabold text-2xl text-text-dark mb-2">
+            What should we call you?
+          </h2>
+          <p class="text-text-muted text-sm font-body mb-6 leading-relaxed">
+            Enter your name and choose a unique nickname for the community.
+          </p>
+
+          <!-- Full Name -->
+          <div class="mb-4">
+            <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-2">
+              Your Name *
+            </label>
+            <input id="inputName" type="text" placeholder="e.g. John Smith"
+              class="onboard-input w-full bg-card-bg border-2 border-border-soft rounded-2xl
+              px-4 py-3.5 font-body text-base text-text-dark focus:outline-none
+              placeholder:text-text-light">
+          </div>
+
+          <!-- Nickname -->
+          <div>
+            <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-2">
+              Nickname
+              <span class="text-text-light font-normal normal-case">(optional, unique)</span>
+            </label>
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-text-light font-bold text-base">@</span>
+              <input id="inputNickname" type="text" placeholder="warrior123"
+                maxlength="20"
+                oninput="checkNickname(this.value)"
+                class="onboard-input w-full bg-card-bg border-2 border-border-soft rounded-2xl
+                pl-9 pr-4 py-3.5 font-body text-base text-text-dark focus:outline-none
+                placeholder:text-text-light">
+            </div>
+            <div id="nickStatus" class="nick-status text-text-light">
+              2–20 characters, letters, numbers and underscores
+            </div>
+          </div>
+        </div>
+
+        <!-- CTA -->
+        <button id="nameNextBtn" onclick="submitName()"
+          class="w-full py-4 tactical-gradient text-white font-headline font-bold text-base
+          rounded-2xl shadow-tactical active:scale-[0.98] transition-transform
+          flex items-center justify-center gap-2 opacity-50 pointer-events-none">
+          Continue
+          <span class="material-symbols-outlined text-gold text-[20px]">arrow_forward</span>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- SLIDE 2 — COUNTRY -->
+    <!-- ═══════════════════════════════════════ -->
+    <div class="slide">
+      <div class="flex-1 flex flex-col px-8 pt-28 pb-32">
+
+        <div class="flex-1 flex flex-col justify-center">
+          <div class="w-14 h-14 rounded-2xl bg-gold/15 flex items-center justify-center mb-5">
+            <span class="material-symbols-outlined text-gold-dim text-[28px]">public</span>
+          </div>
+
+          <h2 class="font-headline font-extrabold text-2xl text-text-dark mb-2">
+            Where are you based?
+          </h2>
+          <p class="text-text-muted text-sm font-body mb-6 leading-relaxed">
+            Help us show the global impact of the mission.
+          </p>
+
+          <!-- Search -->
+          <div class="relative mb-3">
+            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2
+              text-text-light text-[18px]">search</span>
+            <input id="countrySearch" type="text" placeholder="Search countries..."
+              oninput="filterCountries(this.value)"
+              class="onboard-input w-full bg-card-bg border-2 border-border-soft rounded-2xl
+              pl-11 pr-4 py-3 font-body text-sm text-text-dark focus:outline-none
+              placeholder:text-text-light">
+          </div>
+
+          <!-- Country List -->
+          <div id="countryList" class="flex-1 overflow-y-auto space-y-1.5 max-h-[280px]
+            rounded-2xl border border-border-soft bg-card-bg p-2"
+            style="-ms-overflow-style:none;scrollbar-width:none">
+            <!-- Rendered by JS -->
+          </div>
+
+          <p id="selectedCountryLabel" class="text-center text-xs font-bold text-primary mt-3 hidden"></p>
+        </div>
+
+        <!-- CTA -->
+        <button id="countryNextBtn" onclick="submitCountry()"
+          class="w-full py-4 tactical-gradient text-white font-headline font-bold text-base
+          rounded-2xl shadow-tactical active:scale-[0.98] transition-transform
+          flex items-center justify-center gap-2 mt-4 opacity-50 pointer-events-none">
+          Continue
+          <span class="material-symbols-outlined text-gold text-[20px]">arrow_forward</span>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- SLIDE 3 — NOTIFICATIONS -->
+    <!-- ═══════════════════════════════════════ -->
+    <div class="slide">
+      <div class="flex-1 flex flex-col items-center justify-center px-8 text-center pt-28 pb-32">
+
+        <!-- Icon -->
+        <div class="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mb-6 relative">
+          <span class="material-symbols-outlined text-primary text-[40px]">notifications_active</span>
+          <div class="absolute -top-1 -right-1 w-5 h-5 bg-action rounded-full flex items-center justify-center">
+            <span class="text-white text-[9px] font-bold">1</span>
+          </div>
+        </div>
+
+        <h2 class="font-headline font-extrabold text-2xl text-text-dark mb-3">
+          Stay on Mission
+        </h2>
+
+        <p class="text-text-muted text-sm font-body leading-relaxed max-w-[300px] mb-8">
+          Get notified when a new Word drops each day.
+          Never miss your daily deployment.
+        </p>
+
+        <!-- Benefits -->
+        <div class="w-full max-w-xs space-y-3 mb-8 text-left">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-gold/15 flex items-center justify-center flex-shrink-0">
+              <span class="material-symbols-outlined text-gold-dim text-[16px] filled">auto_awesome</span>
+            </div>
+            <p class="text-xs text-text-dark font-bold">
+              Daily Word alert <span class="font-normal text-text-muted">— fresh scripture every morning</span>
+            </p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <span class="material-symbols-outlined text-primary text-[16px] filled">local_fire_department</span>
+            </div>
+            <p class="text-xs text-text-dark font-bold">
+              Streak reminders <span class="font-normal text-text-muted">— keep your streak alive</span>
+            </p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-action/10 flex items-center justify-center flex-shrink-0">
+              <span class="material-symbols-outlined text-action text-[16px] filled">military_tech</span>
+            </div>
+            <p class="text-xs text-text-dark font-bold">
+              Milestone alerts <span class="font-normal text-text-muted">— celebrate your impact</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <button onclick="enableNotifications()"
+          class="w-full max-w-xs py-4 tactical-gradient text-white font-headline font-bold text-base
+          rounded-2xl shadow-tactical active:scale-[0.98] transition-transform
+          flex items-center justify-center gap-2 mb-3">
+          <span class="material-symbols-outlined text-gold text-[20px] filled">notifications_active</span>
+          Enable Notifications
+        </button>
+
+        <button onclick="skipNotifications()"
+          class="text-text-muted font-bold text-sm active:opacity-60 transition-opacity">
+          Not Now
+        </button>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- SLIDE 4 — YOUR RANK / READY -->
+    <!-- ═══════════════════════════════════════ -->
+    <div class="slide">
+      <div class="flex-1 flex flex-col items-center justify-center px-8 text-center pt-28 pb-32
+        relative overflow-hidden">
+
+        <!-- Confetti container -->
+        <div id="rankConfetti" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+
+        <div class="relative z-10">
+          <!-- Rank badge -->
+          <div id="rankBadge" class="w-24 h-24 rounded-3xl tactical-gradient flex items-center justify-center
+            mx-auto mb-6 shadow-tactical relative">
+            <span class="material-symbols-outlined text-gold text-[48px] filled">military_tech</span>
+            <div class="absolute inset-0 bg-gold/20 rounded-3xl blur-xl shield-glow"></div>
+          </div>
+
+          <h2 class="font-headline font-extrabold text-2xl text-text-dark mb-2">
+            You Are Now a
+          </h2>
+          <div class="inline-flex items-center gap-2 bg-gold/15 text-gold-dim px-5 py-2.5
+            rounded-full mb-4">
+            <span class="material-symbols-outlined text-[18px] filled">military_tech</span>
+            <span class="font-headline font-bold text-base">Level 1 — Recruit</span>
+          </div>
+
+          <p id="rankGreeting" class="text-text-muted text-sm font-body leading-relaxed max-w-[300px] mx-auto mb-3">
+            Welcome to the mission. Your first Word is waiting.
+          </p>
+
+          <!-- Quick stats -->
+          <div class="flex justify-center gap-4 mb-8">
+            <div class="bg-card-bg rounded-xl px-4 py-3 border border-border-soft shadow-card text-center">
+              <p class="font-headline font-extrabold text-lg text-primary">0</p>
+              <p class="text-[9px] text-text-light uppercase tracking-widest font-bold">Shares</p>
+            </div>
+            <div class="bg-card-bg rounded-xl px-4 py-3 border border-border-soft shadow-card text-center">
+              <p class="font-headline font-extrabold text-lg text-primary">0</p>
+              <p class="text-[9px] text-text-light uppercase tracking-widest font-bold">Streak</p>
+            </div>
+            <div class="bg-card-bg rounded-xl px-4 py-3 border border-border-soft shadow-card text-center">
+              <p class="font-headline font-extrabold text-lg text-action">∞</p>
+              <p class="text-[9px] text-text-light uppercase tracking-widest font-bold">Reach</p>
+            </div>
+          </div>
+
+          <!-- CTA -->
+          <button onclick="completeOnboarding()"
+            class="w-full max-w-xs py-4 tactical-gradient text-white font-headline font-bold text-base
+            rounded-2xl shadow-tactical active:scale-[0.98] transition-transform
+            flex items-center justify-center gap-2 mx-auto">
+            <span class="material-symbols-outlined text-gold text-[20px] filled">campaign</span>
+            Enter the Mission
+          </button>
+
+          <p class="text-text-light text-[11px] mt-4 italic font-body">
+            "Go into all the world and preach the gospel" — Mark 16:15
+          </p>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+<!-- ═══════════════════════════════════════════ -->
+<!-- SCRIPT -->
+<!-- ═══════════════════════════════════════════ -->
+<script>
+
+  // ════════════════════════════════════════════
+  // SUPABASE
+  // ════════════════════════════════════════════
+  var supabaseClient = supabase.createClient(
+    'https://nhymadutuhpjgkiurify.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+  )
+
+  // ════════════════════════════════════════════
+  // STATE
+  // ════════════════════════════════════════════
+  var currentUser   = null
+  var currentSlide  = 0
+  var totalSlides   = 5
+  var selectedCountry = ''
+  var nicknameValid   = true
+  var nicknameTimer   = null
+
+  // ════════════════════════════════════════════
+  // COUNTRIES LIST
+  // ════════════════════════════════════════════
+  var countries = [
+    'Afghanistan','Albania','Algeria','Argentina','Australia','Austria','Bangladesh',
+    'Belgium','Bolivia','Brazil','Cambodia','Cameroon','Canada','Chile','China',
+    'Colombia','Congo','Costa Rica','Croatia','Cuba','Czech Republic','Denmark',
+    'Dominican Republic','Ecuador','Egypt','El Salvador','Estonia','Ethiopia',
+    'Finland','France','Germany','Ghana','Greece','Guatemala','Haiti','Honduras',
+    'Hungary','Iceland','India','Indonesia','Iran','Iraq','Ireland','Israel','Italy',
+    'Jamaica','Japan','Jordan','Kenya','Kuwait','Latvia','Lebanon','Liberia','Libya',
+    'Lithuania','Madagascar','Malaysia','Mali','Mexico','Mongolia','Morocco',
+    'Mozambique','Myanmar','Nepal','Netherlands','New Zealand','Nicaragua','Niger',
+    'Nigeria','North Korea','Norway','Oman','Pakistan','Palestine','Panama',
+    'Papua New Guinea','Paraguay','Peru','Philippines','Poland','Portugal','Qatar',
+    'Romania','Russia','Rwanda','Saudi Arabia','Senegal','Serbia','Sierra Leone',
+    'Singapore','Slovakia','Slovenia','Somalia','South Africa','South Korea','Spain',
+    'Sri Lanka','Sudan','Sweden','Switzerland','Syria','Taiwan','Tanzania','Thailand',
+    'Trinidad and Tobago','Tunisia','Turkey','Uganda','Ukraine','United Arab Emirates',
+    'United Kingdom','United States','Uruguay','Venezuela','Vietnam','Yemen','Zambia',
+    'Zimbabwe'
+  ]
+
+  // ════════════════════════════════════════════
+  // AUTH CHECK
+  // ════════════════════════════════════════════
+  async function checkAuth() {
+    var result = await supabaseClient.auth.getSession()
+    if (!result.data.session) {
+      window.location.href = 'login.html'
+      return null
+    }
+    return result.data.session.user
+  }
+
+  // ════════════════════════════════════════════
+  // SLIDE NAVIGATION
+  // ════════════════════════════════════════════
+  function goToSlide(index) {
+    if (index < 0 || index >= totalSlides) return
+    currentSlide = index
+
+    var container = document.getElementById('slidesContainer')
+    container.style.transform = 'translateX(-' + (index * 100) + '%)'
+
+    // Update progress dots
+    document.querySelectorAll('.progress-dot').forEach(function(dot, i) {
+      dot.classList.remove('active', 'done')
+      if (i < index) dot.classList.add('done')
+      if (i === index) dot.classList.add('active')
+    })
+
+    // Back button visibility
+    var backBtn = document.getElementById('backBtn')
+    if (index > 0 && index < totalSlides - 1) {
+      backBtn.classList.remove('hidden')
+      backBtn.classList.add('flex')
+    } else {
+      backBtn.classList.add('hidden')
+      backBtn.classList.remove('flex')
+    }
+
+    // Skip button visibility (only on nickname and country slides)
+    var skipBtn = document.getElementById('skipBtn')
+    if (index === 1 || index === 2) {
+      skipBtn.classList.remove('hidden')
+    } else {
+      skipBtn.classList.add('hidden')
+    }
+
+    // Trigger rank reveal animation on last slide
+    if (index === 4) {
+      setTimeout(function() {
+        var badge = document.getElementById('rankBadge')
+        if (badge) badge.classList.add('rank-reveal')
+        spawnConfetti()
+      }, 300)
+    }
+  }
+
+  function nextSlide() {
+    goToSlide(currentSlide + 1)
+  }
+
+  function prevSlide() {
+    goToSlide(currentSlide - 1)
+  }
+
+  function skipStep() {
+    nextSlide()
+  }
+
+  // ════════════════════════════════════════════
+  // SLIDE 0 — WELCOME: Load stats
+  // ════════════════════════════════════════════
+  async function loadWelcomeStats() {
+    var results = await Promise.all([
+      supabaseClient.from('profiles').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('shares').select('*', { count: 'exact', head: true })
+    ])
+    var wEl = document.getElementById('welcomeWarriors')
+    var sEl = document.getElementById('welcomeShares')
+    if (wEl) wEl.textContent = ((results[0].count || 0) + 1).toLocaleString() + ' warriors'
+    if (sEl) sEl.textContent = (results[1].count || 0).toLocaleString() + ' shared'
+  }
+
+  // ════════════════════════════════════════════
+  // SLIDE 1 — NAME + NICKNAME
+  // ════════════════════════════════════════════
+  // Enable continue button when name is filled
+  document.addEventListener('DOMContentLoaded', function() {
+    var nameInput = document.getElementById('inputName')
+    if (nameInput) {
+      nameInput.addEventListener('input', function() {
+        var btn = document.getElementById('nameNextBtn')
+        if (this.value.trim().length >= 2) {
+          btn.classList.remove('opacity-50', 'pointer-events-none')
+        } else {
+          btn.classList.add('opacity-50', 'pointer-events-none')
+        }
+      })
+    }
+  })
+
+  // Nickname live check with debounce
+  function checkNickname(value) {
+    var statusEl = document.getElementById('nickStatus')
+    var cleaned  = value.replace(/[^a-zA-Z0-9_]/g, '').substring(0, 20)
+
+    // Update input with cleaned value
+    document.getElementById('inputNickname').value = cleaned
+
+    if (!cleaned) {
+      statusEl.textContent = '2–20 characters, letters, numbers and underscores'
+      statusEl.className   = 'nick-status text-text-light'
+      nicknameValid = true
+      return
+    }
+
+    if (cleaned.length < 2) {
+      statusEl.textContent = 'Too short — minimum 2 characters'
+      statusEl.className   = 'nick-status text-action'
+      nicknameValid = false
+      return
+    }
+
+    // Show checking state
+    statusEl.textContent = 'Checking availability...'
+    statusEl.className   = 'nick-status text-text-muted'
+
+    // Debounce
+    clearTimeout(nicknameTimer)
+    nicknameTimer = setTimeout(async function() {
+      var result = await supabaseClient
+        .from('profiles')
+        .select('id')
+        .eq('nickname', cleaned.toLowerCase())
+        .neq('id', currentUser ? currentUser.id : '')
+
+      if (result.data && result.data.length > 0) {
+        statusEl.textContent = '❌ @' + cleaned + ' is taken'
+        statusEl.className   = 'nick-status text-action'
+        nicknameValid = false
+      } else {
+        statusEl.textContent = '✓ @' + cleaned + ' is available'
+        statusEl.className   = 'nick-status text-green-600'
+        nicknameValid = true
+      }
+    }, 500)
+  }
+
+  async function submitName() {
+    var name     = document.getElementById('inputName').value.trim()
+    var nickname = document.getElementById('inputNickname').value.trim().toLowerCase()
+
+    if (name.length < 2) return
+
+    if (nickname && !nicknameValid) {
+      showToast('Nickname is not available')
+      return
+    }
+
+    // Save to profile
+    var updateData = { full_name: name }
+    if (nickname) updateData.nickname = nickname
+
+    if (currentUser) {
+      await supabaseClient.from('profiles').update(updateData).eq('id', currentUser.id)
+    }
+
+    // Update rank greeting
+    var greetEl = document.getElementById('rankGreeting')
+    if (greetEl) {
+      greetEl.textContent = 'Welcome to the mission, ' + name.split(' ')[0] + '. Your first Word is waiting.'
+    }
+
+    nextSlide()
+  }
+
+  // ════════════════════════════════════════════
+  // SLIDE 2 — COUNTRY
+  // ════════════════════════════════════════════
+  function renderCountries(filter) {
+    var container = document.getElementById('countryList')
+    container.innerHTML = ''
+
+    var filtered = filter
+      ? countries.filter(function(c) {
+          return c.toLowerCase().includes(filter.toLowerCase())
+        })
+      : countries
+
+    if (filtered.length === 0) {
+      container.innerHTML =
+        '<p class="text-center text-text-light text-xs py-4">No countries found</p>'
+      return
+    }
+
+    filtered.forEach(function(country) {
+      var isSelected = country === selectedCountry
+      var el = document.createElement('div')
+      el.className = 'country-option flex items-center gap-3 px-3 py-2.5 rounded-xl border-2 '
+        + (isSelected ? 'selected border-primary bg-primary/5' : 'border-transparent')
+      el.onclick = function() { selectCountry(country) }
+      el.innerHTML =
+        '<span class="text-sm">' + getFlag(country) + '</span>'
+        + '<span class="font-body font-medium text-sm text-text-dark flex-1">' + country + '</span>'
+        + (isSelected
+          ? '<span class="material-symbols-outlined text-primary text-[18px] filled">check_circle</span>'
+          : '')
+      container.appendChild(el)
+    })
+  }
+
+  function filterCountries(query) {
+    renderCountries(query)
+  }
+
+  function selectCountry(country) {
+    selectedCountry = country
+    renderCountries(document.getElementById('countrySearch').value)
+
+    var label = document.getElementById('selectedCountryLabel')
+    label.textContent = '🌍 ' + country
+    label.classList.remove('hidden')
+
+    var btn = document.getElementById('countryNextBtn')
+    btn.classList.remove('opacity-50', 'pointer-events-none')
+  }
+
+  async function submitCountry() {
+    if (!selectedCountry) return
+
+    if (currentUser) {
+      await supabaseClient.from('profiles').update({
+        country: selectedCountry
+      }).eq('id', currentUser.id)
+    }
+
+    nextSlide()
+  }
+
+  // Simple flag emoji from country name
+  function getFlag(country) {
+    var flags = {
+      'United States':'🇺🇸','United Kingdom':'🇬🇧','Canada':'🇨🇦','Australia':'🇦🇺',
+      'Germany':'🇩🇪','France':'🇫🇷','Brazil':'🇧🇷','India':'🇮🇳','China':'🇨🇳',
+      'Japan':'🇯🇵','South Korea':'🇰🇷','Mexico':'🇲🇽','Nigeria':'🇳🇬','Ghana':'🇬🇭',
+      'Kenya':'🇰🇪','South Africa':'🇿🇦','Egypt':'🇪🇬','Philippines':'🇵🇭',
+      'Indonesia':'🇮🇩','Pakistan':'🇵🇰','Bangladesh':'🇧🇩','Russia':'🇷🇺',
+      'Italy':'🇮🇹','Spain':'🇪🇸','Netherlands':'🇳🇱','Sweden':'🇸🇪','Norway':'🇳🇴',
+      'Denmark':'🇩🇰','Finland':'🇫🇮','Ireland':'🇮🇪','New Zealand':'🇳🇿',
+      'Singapore':'🇸🇬','Malaysia':'🇲🇾','Thailand':'🇹🇭','Vietnam':'🇻🇳',
+      'Colombia':'🇨🇴','Argentina':'🇦🇷','Chile':'🇨🇱','Peru':'🇵🇪',
+      'Jamaica':'🇯🇲','Trinidad and Tobago':'🇹🇹','Ethiopia':'🇪🇹','Tanzania':'🇹🇿',
+      'Uganda':'🇺🇬','Rwanda':'🇷🇼','Cameroon':'🇨🇲','Senegal':'🇸🇳',
+      'United Arab Emirates':'🇦🇪','Saudi Arabia':'🇸🇦','Israel':'🇮🇱','Turkey':'🇹🇷',
+      'Poland':'🇵🇱','Ukraine':'🇺🇦','Romania':'🇷🇴','Czech Republic':'🇨🇿',
+      'Hungary':'🇭🇺','Greece':'🇬🇷','Portugal':'🇵🇹','Switzerland':'🇨🇭',
+      'Austria':'🇦🇹','Belgium':'🇧🇪','Croatia':'🇭🇷','Serbia':'🇷🇸'
+    }
+    return flags[country] || '🌍'
+  }
+
+  // ════════════════════════════════════════════
+  // SLIDE 3 — NOTIFICATIONS
+  // ════════════════════════════════════════════
+  async function enableNotifications() {
+    // Request browser permission
+    if ('Notification' in window) {
+      try {
+        var permission = await Notification.requestPermission()
+        if (permission === 'granted') {
+          showToast('Notifications enabled!')
+        } else {
+          showToast('You can enable notifications later in settings')
+        }
+      } catch(e) {
+        showToast('Notifications not supported on this browser')
+      }
+    } else {
+      showToast('Notifications not supported')
+    }
+
+    // Save preference
+    if (currentUser) {
+      await supabaseClient.from('profiles').update({
+        notifications_enabled: true
+      }).eq('id', currentUser.id)
+    }
+
+    nextSlide()
+  }
+
+  function skipNotifications() {
+    if (currentUser) {
+      supabaseClient.from('profiles').update({
+        notifications_enabled: false
+      }).eq('id', currentUser.id)
+    }
+    nextSlide()
+  }
+
+  // ════════════════════════════════════════════
+  // SLIDE 4 — COMPLETE ONBOARDING
+  // ════════════════════════════════════════════
+  async function completeOnboarding() {
+    if (currentUser) {
+      await supabaseClient.from('profiles').update({
+        onboarding_complete: true,
+        total_shares: 0,
+        current_streak: 0
+      }).eq('id', currentUser.id)
+    }
+
+    window.location.href = 'index.html'
+  }
+
+  // ════════════════════════════════════════════
+  // CONFETTI
+  // ════════════════════════════════════════════
+  function spawnConfetti() {
+    var container = document.getElementById('rankConfetti')
+    if (!container) return
+    container.innerHTML = ''
+
+    var colors = ['#D4A24C','#E25B4D','#1E4060','#86EFAC','#93C5FD','#F9A8D4','#FDE047']
+
+    for (var i = 0; i < 40; i++) {
+      var particle = document.createElement('div')
+      particle.className = 'confetti'
+      particle.style.left = Math.random() * 100 + '%'
+      particle.style.top  = -10 + '%'
+      particle.style.width  = (4 + Math.random() * 8) + 'px'
+      particle.style.height = (4 + Math.random() * 8) + 'px'
+      particle.style.background = colors[Math.floor(Math.random() * colors.length)]
+      particle.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px'
+      particle.style.animationDelay    = (Math.random() * 1.5) + 's'
+      particle.style.animationDuration = (1.5 + Math.random() * 2) + 's'
+      container.appendChild(particle)
+    }
+  }
+
+  // ════════════════════════════════════════════
+  // TOAST
+  // ════════════════════════════════════════════
+  function showToast(msg) {
+    var existing = document.getElementById('onboardToast')
+    if (existing) existing.remove()
+    var t = document.createElement('div')
+    t.id = 'onboardToast'
+    t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2'
+    t.innerHTML = '<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:\'FILL\' 1">check_circle</span> ' + msg
+    document.body.appendChild(t)
+    setTimeout(function() { if (t.parentNode) t.remove() }, 2500)
+  }
+
+  // ════════════════════════════════════════════
+  // INIT
+  // ════════════════════════════════════════════
+  async function init() {
+    var user = await checkAuth()
+    if (!user) return
+    currentUser = user
+
+    // Check if already onboarded
+    var profileCheck = await supabaseClient
+      .from('profiles')
+      .select('onboarding_complete')
+      .eq('id', user.id)
+      .single()
+
+    if (profileCheck.data && profileCheck.data.onboarding_complete) {
+      // Already completed — go to home
+      window.location.href = 'index.html'
+      return
+    }
+
+    // Load welcome stats
+    await loadWelcomeStats()
+
+    // Render countries
+    renderCountries()
+
+    // Start on slide 0
+    goToSlide(0)
+  }
+
+  init()
+
+</script>
+</body>
+</html>
