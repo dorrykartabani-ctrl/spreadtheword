@@ -90,8 +90,7 @@
     <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all"><span class="material-symbols-outlined text-[20px]">dashboard</span><span class="font-body text-sm">Dashboard</span></a>
     <a href="manage-quotes.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all"><span class="material-symbols-outlined text-[20px]">format_quote</span><span class="font-body text-sm">Quotes</span></a>
     <a href="schedule.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-lg font-bold text-sm"><span class="material-symbols-outlined text-[20px] filled">calendar_today</span><span class="font-body text-sm">Schedule</span></a>
-    <a href="ai-generator.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all"><span class="material-symbols-outlined text-[20px]">auto_awesome</span><span class="font-body text-sm">AI Generator</span></a>
-    <a href="projects.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all"><span class="material-symbols-outlined text-[20px]">folder_shared</span><span class="font-body text-sm">Projects</span></a>
+      <a href="projects.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all"><span class="material-symbols-outlined text-[20px]">folder_shared</span><span class="font-body text-sm">Projects</span></a>
     <a href="analytics.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all"><span class="material-symbols-outlined text-[20px]">analytics</span><span class="font-body text-sm">Analytics</span></a>
     <a href="warriors.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all"><span class="material-symbols-outlined text-[20px]">group</span><span class="font-body text-sm">Warriors</span></a>
     <a href="settings.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all"><span class="material-symbols-outlined text-[20px]">settings</span><span class="font-body text-sm">Settings</span></a>
@@ -585,10 +584,23 @@
     document.getElementById('editStatus').value = q.status
 
     const dateSection = document.getElementById('editDateSection')
-    if (q.status === 'scheduled' && q.scheduled_for) {
-      dateSection.classList.remove('hidden')
-      document.getElementById('editDate').value = q.scheduled_for.substring(0, 16)
-    } else {
+   if (q.status === 'scheduled' && q.scheduled_for) {
+  dateSection.classList.remove('hidden')
+  // Convert UTC to AEST for display
+  var utcDate  = new Date(q.scheduled_for)
+  var aestDate = new Date(utcDate.getTime() + (10 * 60 * 60 * 1000))
+  var aestStr  = aestDate.toISOString().substring(0, 16).replace('T', 'T')
+  document.getElementById('editDate').value = aestStr.substring(0, 16)
+} else if (status === 'scheduled') {
+  dateSection.classList.remove('hidden')
+  // Default to tomorrow at 5:30 AM AEST
+  var tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  var year  = tomorrow.getFullYear()
+  var month = String(tomorrow.getMonth() + 1).padStart(2, '0')
+  var day   = String(tomorrow.getDate()).padStart(2, '0')
+  document.getElementById('editDate').value = year + '-' + month + '-' + day + 'T05:30'
+} else {
       dateSection.classList.add('hidden')
     }
 
@@ -615,7 +627,15 @@
       updates.published_at = new Date().toISOString()
       updates.scheduled_for = null
     } else if (status === 'scheduled') {
-      updates.scheduled_for = document.getElementById('editDate').value || null
+      var rawDate = document.getElementById('editDate').value
+if (rawDate) {
+  // editDate is datetime-local which is local time
+  // Convert to UTC for storage
+  var localDate = new Date(rawDate)
+  updates.scheduled_for = localDate.toISOString()
+} else {
+  updates.scheduled_for = null
+}
       updates.published_at = null
     } else {
       updates.published_at = null
