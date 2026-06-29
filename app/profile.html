@@ -1,331 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>Profile — Go Spread The Word</title>
-
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            'primary':       '#1E4060',
-            'primary-dim':   '#152E45',
-            'primary-light': '#2B5780',
-            'action':        '#E25B4D',
-            'action-dim':    '#C84A3E',
-            'gold':          '#D4A24C',
-            'gold-dim':      '#B88A3D',
-            'cream':         '#F7F4ED',
-            'dark':          '#16202A',
-            'text-dark':     '#1A1A1A',
-            'text-muted':    '#5C6B7A',
-            'text-light':    '#8E9AA8',
-            'border-soft':   'rgba(92, 107, 122, 0.15)',
-            'card-bg':       '#FFFFFF',
-            'surface':       '#F0EDE6',
-          },
-          fontFamily: {
-            'headline': ['Plus Jakarta Sans', 'sans-serif'],
-            'body':     ['Manrope', 'sans-serif'],
-          },
-          boxShadow: {
-            'natural':     '0 4px 16px rgba(26, 32, 42, 0.06)',
-            'lifted':      '0 8px 32px rgba(26, 32, 42, 0.10)',
-            'tactical':    '0 4px 20px rgba(30, 64, 96, 0.25)',
-            'action-glow': '0 4px 20px rgba(226, 91, 77, 0.35)',
-            'card':        '0 2px 12px rgba(30, 64, 96, 0.06)',
-          },
-        },
-      },
-    }
-  </script>
-
-  <style>
-    body {
-      font-family: 'Manrope', sans-serif;
-      background-color: #F0EDE6;
-      -webkit-tap-highlight-color: transparent;
-      min-height: 100dvh;
-    }
-    .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .material-symbols-outlined {
-      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-      vertical-align: middle;
-    }
-    .filled { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-    .tactical-gradient { background: linear-gradient(145deg, #152E45, #1E4060); }
-    .action-gradient   { background: linear-gradient(145deg, #E25B4D, #C84A3E); }
-
-    /* Toggle switch */
-    .toggle-switch {
-      width: 44px; height: 24px;
-      background: #8E9AA8;
-      border-radius: 12px;
-      position: relative;
-      cursor: pointer;
-      transition: background 0.2s;
-      flex-shrink: 0;
-    }
-    .toggle-switch.on { background: #1E4060; }
-    .toggle-switch .dot {
-      width: 18px; height: 18px;
-      background: white;
-      border-radius: 50%;
-      position: absolute;
-      top: 3px; left: 3px;
-      transition: left 0.2s;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    }
-    .toggle-switch.on .dot { left: 23px; }
-
-    /* Scrollbar hidden */
-    ::-webkit-scrollbar { display: none; }
-    body { -ms-overflow-style: none; scrollbar-width: none; }
-
-    /* Row press */
-    .settings-row { transition: background 0.15s ease; }
-    .settings-row:active { background: rgba(30,64,96,0.04); }
-
-    /* Safe area */
-    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); }
-
-    /* Parallax on hero */
-    #heroCard { transition: transform 0.1s linear; }
-  </style>
-</head>
-
-<body class="text-text-dark pb-32">
-
-<!-- ============================================================
-     TOP APP BAR
-============================================================ -->
-<header class="sticky top-0 z-50 bg-surface/90 backdrop-blur-xl border-b border-border-soft w-full">
-  <div class="flex justify-between items-center px-5 py-4 max-w-[430px] mx-auto">
-  <div class="flex items-center gap-2.5">
-    <span class="material-symbols-outlined text-primary text-[20px]">auto_stories</span>
-    <span class="font-headline font-bold text-primary text-base tracking-tight">Spread The Word</span>
-  </div>
-  <div class="w-9 h-9 rounded-full overflow-hidden bg-primary border-2 border-gold flex items-center justify-center">
-    <span class="font-headline font-bold text-white text-sm">SK</span>
-  </div>
-</header>
-
-<!-- ============================================================
-     MAIN CONTENT
-============================================================ -->
-<main class="px-5 pt-5 pb-10 flex flex-col gap-5 max-w-[430px] mx-auto">
-
-  <!-- ======================================
-       PROFILE HERO CARD
-  ====================================== -->
-  <section id="heroCard" class="tactical-gradient p-6 rounded-2xl shadow-tactical text-white">
-
-    <div class="flex items-center gap-4 mb-5">
-      <!-- Avatar -->
-      <div class="w-16 h-16 rounded-2xl bg-primary-light border-2 border-gold flex items-center justify-center flex-shrink-0 shadow-lifted">
-        <span class="font-headline font-extrabold text-white text-xl">SK</span>
-      </div>
-
-      <!-- Name + Email -->
-      <div class="min-w-0 flex-1">
-        <h2 class="font-headline font-extrabold text-xl text-white leading-tight">Sarah Kim</h2>
-        <p class="text-white/70 text-sm font-body truncate">sarah.kim@email.com</p>
-        <div class="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-[10px] font-bold tracking-wide">
-          <span class="material-symbols-outlined text-gold text-[13px] filled">workspace_premium</span>
-          Warrior since Nov 2024
-        </div>
-      </div>
-    </div>
-
-    <div class="h-px bg-white/15 mb-5"></div>
-
-    <!-- Stats -->
-    <div class="grid grid-cols-3 gap-3 text-center">
-      <div class="bg-white/10 rounded-xl py-3">
-        <span class="font-headline font-extrabold text-xl text-gold block">47</span>
-        <span class="text-[9px] uppercase tracking-widest text-white/60 font-bold">Shares</span>
-      </div>
-      <div class="bg-white/10 rounded-xl py-3">
-        <div class="flex items-center justify-center gap-1">
-          <span class="text-base">🔥</span>
-          <span class="font-headline font-extrabold text-xl text-gold">12</span>
-        </div>
-        <span class="text-[9px] uppercase tracking-widest text-white/60 font-bold">Day Streak</span>
-      </div>
-      <div class="bg-white/10 rounded-xl py-3">
-        <span class="font-headline font-extrabold text-xl text-gold block">4</span>
-        <span class="text-[9px] uppercase tracking-widest text-white/60 font-bold">Platforms</span>
-      </div>
-    </div>
-
-  </section>
-
-  <!-- ======================================
-       SUBSCRIPTION CARD
-  ====================================== -->
-  <section class="bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft space-y-4">
-
-    <div class="flex justify-between items-start">
-      <div>
-        <div class="flex items-center gap-2 mb-1">
-          <h3 class="font-headline font-bold text-base text-text-dark">Warrior Plan</h3>
-          <span class="bg-primary/10 text-primary text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Active</span>
-        </div>
-        <p class="text-sm text-text-muted font-body">$3.99 / month</p>
-      </div>
-      <div class="text-right">
-        <p class="text-[10px] text-text-light italic">Renews Jan 12, 2025</p>
-        <p class="text-[10px] text-green-600 font-bold mt-0.5">✓ Subscription current</p>
-      </div>
-    </div>
-
-    <div class="flex gap-3">
-      <button onclick="showToast('Opening subscription management...')" class="flex-1 px-4 py-2.5 rounded-xl border-2 border-primary text-primary font-bold text-sm active:scale-95 transition-transform">
-        Manage Plan
-      </button>
-      <button onclick="showToast('Loading billing history...')" class="flex-1 px-4 py-2.5 rounded-xl border-2 border-border-soft text-text-muted font-bold text-sm active:scale-95 transition-transform hover:border-primary hover:text-primary transition-all">
-        Billing History
-      </button>
-    </div>
-
-  </section>
-
-  <!-- ======================================
-       PREFERENCES
-  ====================================== -->
-  <section class="bg-card-bg rounded-2xl shadow-card border border-border-soft overflow-hidden">
-
-    <div class="px-5 pt-5 pb-2">
-      <h3 class="text-[10px] font-bold text-primary uppercase tracking-widest">Preferences</h3>
-    </div>
-
-    <!-- Push Notifications -->
-    <div class="settings-row flex items-center justify-between px-5 py-4 cursor-pointer border-b border-border-soft">
-      <div class="flex items-center gap-3.5">
-        <div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-          <span class="material-symbols-outlined text-primary text-[18px]">notifications</span>
-        </div>
-        <div>
-          <span class="text-sm font-bold text-text-dark block">Push Notifications</span>
-          <span class="text-[11px] text-text-light">Daily briefings delivered</span>
-        </div>
-      </div>
-      <div class="toggle-switch on" onclick="toggleSwitch(this)"><div class="dot"></div></div>
-    </div>
-
-    <!-- Default Share Platform -->
-    <div class="settings-row flex items-center justify-between px-5 py-4 cursor-pointer border-b border-border-soft" onclick="openPlatformPicker()">
-      <div class="flex items-center gap-3.5">
-        <div class="w-9 h-9 rounded-xl bg-gold/15 flex items-center justify-center flex-shrink-0">
-          <span class="material-symbols-outlined text-gold-dim text-[18px]">share</span>
-        </div>
-        <div>
-          <span class="text-sm font-bold text-text-dark block">Default Platform</span>
-          <span class="text-[11px] text-text-light">Where you share first</span>
-        </div>
-      </div>
-      <div class="flex items-center gap-1 text-text-muted text-sm">
-        <span id="defaultPlatform">Instagram</span>
-        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
-      </div>
-    </div>
-
-    <!-- Default Font -->
-    <div class="settings-row flex items-center justify-between px-5 py-4 cursor-pointer border-b border-border-soft" onclick="showToast('Font selection coming soon')">
-      <div class="flex items-center gap-3.5">
-        <div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-          <span class="material-symbols-outlined text-primary text-[18px]">text_fields</span>
-        </div>
-        <div>
-          <span class="text-sm font-bold text-text-dark block">Default Font</span>
-          <span class="text-[11px] text-text-light">For scripture overlays</span>
-        </div>
-      </div>
-      <div class="flex items-center gap-1 text-text-muted text-sm">
-        <span>Jakarta</span>
-        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
-      </div>
-    </div>
-
-    <!-- Language -->
-    <div class="settings-row flex items-center justify-between px-5 py-4 cursor-pointer" onclick="showToast('Language settings coming soon')">
-      <div class="flex items-center gap-3.5">
-        <div class="w-9 h-9 rounded-xl bg-surface flex items-center justify-center flex-shrink-0 border border-border-soft">
-          <span class="material-symbols-outlined text-text-muted text-[18px]">language</span>
-        </div>
-        <div>
-          <span class="text-sm font-bold text-text-dark block">Language</span>
-          <span class="text-[11px] text-text-light">App display language</span>
-        </div>
-      </div>
-      <div class="flex items-center gap-1 text-text-muted text-sm">
-        <span>English</span>
-        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
-      </div>
-    </div>
-
-  </section>
-
-  <!-- ======================================
-       ACCOUNT & SUPPORT
-  ====================================== -->
-  <section class="bg-card-bg rounded-2xl shadow-card border border-border-soft overflow-hidden">
-
-    <div class="px-5 pt-5 pb-2">
-      <h3 class="text-[10px] font-bold text-primary uppercase tracking-widest">Account & Support</h3>
-    </div>
-
-    <a href="#" onclick="showToast('Edit profile coming soon')" class="settings-row flex items-center justify-between px-5 py-4 border-b border-border-soft">
-      <span class="text-sm font-body font-medium text-text-dark">Edit Profile</span>
-      <span class="material-symbols-outlined text-text-light text-[18px]">chevron_right</span>
-    </a>
-    <a href="#" onclick="showToast('Password change coming soon')" class="settings-row flex items-center justify-between px-5 py-4 border-b border-border-soft">
-      <span class="text-sm font-body font-medium text-text-dark">Change Password</span>
-      <span class="material-symbols-outlined text-text-light text-[18px]">chevron_right</span>
-    </a>
-    <a href="#" onclick="showToast('Opening Privacy Policy...')" class="settings-row flex items-center justify-between px-5 py-4 border-b border-border-soft">
-      <span class="text-sm font-body font-medium text-text-dark">Privacy Policy</span>
-      <span class="material-symbols-outlined text-text-light text-[18px]">chevron_right</span>
-    </a>
-    <a href="#" onclick="showToast('Opening Terms of Service...')" class="settings-row flex items-center justify-between px-5 py-4 border-b border-border-soft">
-      <span class="text-sm font-body font-medium text-text-dark">Terms of Service</span>
-      <span class="material-symbols-outlined text-text-light text-[18px]">chevron_right</span>
-    </a>
-    <a href="#" onclick="showToast('Opening support chat...')" class="settings-row flex items-center justify-between px-5 py-4">
-      <span class="text-sm font-body font-medium text-text-dark">Contact Support</span>
-      <span class="material-symbols-outlined text-text-light text-[18px]">chevron_right</span>
-    </a>
-
-  </section>
-
-  <!-- ======================================
-       MINISTRY TEASER
-  ====================================== -->
-  <section class="border-2 border-dashed border-border-soft rounded-2xl p-5 flex items-center justify-between bg-card-bg/60">
-    <div class="flex items-center gap-4">
-      <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-        <span class="material-symbols-outlined text-primary text-[20px]">church</span>
-      </div>
-      <div>
-        <h3 class="font-headline font-bold text-sm text-text-dark">Are you a Ministry?</h3>
-        <p class="text-[11px] text-text-muted">Unlock organisation-wide tools.</p>
-      </div>
-    </div>
-    <span class="bg-gold/15 text-gold-dim text-[9px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider whitespace-nowrap flex-shrink-0">
-      Phase 2
-    </span>
-  </section>
-
   <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -854,113 +526,157 @@
   // ════════════════════════════════════════════
   // LOAD PROFILE
   // ════════════════════════════════════════════
-  async function loadProfile() {
-    // Auth check
-    var sessionResult = await supabaseClient.auth.getSession()
-    if (!sessionResult.data.session) {
-      window.location.href = 'login.html'
-      return
-    }
-    currentUser = sessionResult.data.session.user
+ async function loadProfile() {
+  // Auth check
+  var sessionResult = await supabaseClient.auth.getSession()
+  if (!sessionResult.data.session) {
+    window.location.href = 'login.html'
+    return
+  }
+  currentUser = sessionResult.data.session.user
 
-    // Load profile data
-    var profileResult = await supabaseClient
-      .from('profiles')
-      .select('*')
-      .eq('id', currentUser.id)
-      .single()
+  // Load profile data
+  var profileResult = await supabaseClient
+    .from('profiles')
+    .select('*')
+    .eq('id', currentUser.id)
+    .single()
 
-    userProfile = profileResult.data || {}
+  userProfile = profileResult.data || {}
 
-    // Load shares for platform count
-    var sharesResult = await supabaseClient
-      .from('shares')
-      .select('platform')
-      .eq('user_id', currentUser.id)
+  // Load shares for platform count
+  var sharesResult = await supabaseClient
+    .from('shares')
+    .select('platform')
+    .eq('user_id', currentUser.id)
 
-    var shares = sharesResult.data || []
-    var platformCounts = {}
-    shares.forEach(function(s) {
-      if (s.platform) platformCounts[s.platform] = true
-    })
-    var uniquePlatforms = Object.keys(platformCounts).length
+  var shares = sharesResult.data || []
+  var platformCounts = {}
+  shares.forEach(function(s) {
+    if (s.platform) platformCounts[s.platform] = true
+  })
+  var uniquePlatforms = Object.keys(platformCounts).length
 
-    // ── RENDER PROFILE ──
-    var fullName  = userProfile.full_name || ''
-    var email     = currentUser.email || ''
-    var totalShares = userProfile.total_shares || 0
-    var streak    = userProfile.current_streak || 0
-    var joinDate  = userProfile.created_at || currentUser.created_at
-    var defaultPlatform = userProfile.default_platform || 'Instagram'
-    var notifEnabled = userProfile.notifications_enabled !== false
+  // Use profile data with auth fallbacks
+  var fullName     = userProfile.full_name || ''
+  var email        = userProfile.email || currentUser.email || ''
+  var totalShares  = userProfile.total_shares || 0
+  var streak       = userProfile.current_streak || 0
+  var joinDate     = userProfile.created_at || currentUser.created_at || null
+  var defaultPlatform = userProfile.default_platform || 'Instagram'
+  var notifEnabled = userProfile.notifications_enabled !== false
 
-    // Generate initials
-    var initials = '?'
-    if (fullName) {
-      var parts = fullName.split(' ')
-      initials = parts.map(function(n) { return n[0] }).join('').substring(0, 2).toUpperCase()
-    } else if (email) {
-      initials = email.substring(0, 2).toUpperCase()
-    }
-
-    // Update avatars
-    document.getElementById('headerAvatar').innerHTML =
-      '<span class="font-headline font-bold text-white text-sm">' + initials + '</span>'
-    document.getElementById('heroAvatar').innerHTML =
-      '<span class="font-headline font-extrabold text-white text-xl">' + initials + '</span>'
-
-    // Update name and email
-    document.getElementById('profileName').textContent = fullName || 'Set up your profile'
-    document.getElementById('profileEmail').textContent = email
-
-    // Warrior since
-    if (joinDate) {
-      var date = new Date(joinDate)
-      var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-      document.getElementById('profileSince').textContent =
-        'Warrior since ' + monthNames[date.getMonth()] + ' ' + date.getFullYear()
-    }
-
-    // Stats
-    document.getElementById('statShares').textContent    = totalShares
-    document.getElementById('statStreak').textContent    = streak
-    document.getElementById('statPlatforms').textContent = uniquePlatforms
-
-    // Warrior level
-    var level = getWarriorLevel(totalShares)
-    var nextLevel = getNextLevel(totalShares)
-
-    document.getElementById('levelTitle').textContent = 'Level ' + level.level + ' — ' + level.title
-
-    if (nextLevel) {
-      var progress  = ((totalShares - level.min) / (nextLevel.min - level.min)) * 100
-      var remaining = nextLevel.min - totalShares
-      document.getElementById('levelNext').textContent      = 'Next: ' + nextLevel.title
-      document.getElementById('levelRemaining').textContent = remaining + ' more shares to level up'
-      setTimeout(function() {
-        document.getElementById('levelBar').style.width = Math.min(progress, 100) + '%'
-      }, 300)
+  // Generate initials
+  var initials = '?'
+  if (fullName && fullName.length >= 2) {
+    var parts = fullName.trim().split(' ')
+    if (parts.length >= 2) {
+      initials = (parts[0][0] + parts[1][0]).toUpperCase()
     } else {
-      document.getElementById('levelNext').textContent      = 'Max Rank!'
-      document.getElementById('levelRemaining').textContent = 'You\'ve reached the highest rank'
+      initials = parts[0].substring(0, 2).toUpperCase()
+    }
+  } else if (email) {
+    initials = email.substring(0, 2).toUpperCase()
+  }
+
+  // Update avatars
+  var headerAvatar = document.getElementById('headerAvatar')
+  var heroAvatar   = document.getElementById('heroAvatar')
+
+  if (headerAvatar) {
+    headerAvatar.innerHTML =
+      '<span class="font-headline font-bold text-white text-sm">' + initials + '</span>'
+  }
+
+  if (heroAvatar) {
+    heroAvatar.innerHTML =
+      '<span class="font-headline font-extrabold text-white text-xl">' + initials + '</span>'
+  }
+
+  // Name
+  var nameEl = document.getElementById('profileName')
+  if (nameEl) {
+    nameEl.textContent = fullName || 'Complete your profile'
+    if (!fullName) nameEl.classList.add('text-white/60')
+  }
+
+  // Email
+  var emailEl = document.getElementById('profileEmail')
+  if (emailEl) emailEl.textContent = email
+
+  // Warrior since
+  var sinceEl = document.getElementById('profileSince')
+  if (sinceEl && joinDate) {
+    var date = new Date(joinDate)
+    if (!isNaN(date.getTime())) {
+      var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+      sinceEl.textContent = 'Warrior since ' + monthNames[date.getMonth()] + ' ' + date.getFullYear()
+    } else {
+      sinceEl.textContent = 'Warrior'
+    }
+  }
+
+  // Stats
+  var statSharesEl    = document.getElementById('statShares')
+  var statStreakEl    = document.getElementById('statStreak')
+  var statPlatformsEl = document.getElementById('statPlatforms')
+
+  if (statSharesEl) statSharesEl.textContent = totalShares
+  if (statStreakEl) statStreakEl.textContent = streak
+  if (statPlatformsEl) statPlatformsEl.textContent = uniquePlatforms
+
+  // Warrior level
+  var level = getWarriorLevel(totalShares)
+  var nextLevel = getNextLevel(totalShares)
+
+  var levelTitleEl     = document.getElementById('levelTitle')
+  var levelNextEl      = document.getElementById('levelNext')
+  var levelRemainingEl = document.getElementById('levelRemaining')
+  var levelBarEl       = document.getElementById('levelBar')
+
+  if (levelTitleEl) levelTitleEl.textContent = 'Level ' + level.level + ' — ' + level.title
+
+  if (nextLevel) {
+    var progress = level.min < nextLevel.min
+      ? ((totalShares - level.min) / (nextLevel.min - level.min)) * 100
+      : 100
+    var remaining = nextLevel.min - totalShares
+
+    if (levelNextEl) levelNextEl.textContent = 'Next: ' + nextLevel.title
+    if (levelRemainingEl) levelRemainingEl.textContent = remaining + ' more shares to level up'
+
+    if (levelBarEl) {
       setTimeout(function() {
-        document.getElementById('levelBar').style.width = '100%'
+        levelBarEl.style.width = Math.min(progress, 100) + '%'
       }, 300)
     }
+  } else {
+    if (levelNextEl) levelNextEl.textContent = 'Max Rank!'
+    if (levelRemainingEl) levelRemainingEl.textContent = 'You have reached the highest rank'
 
-    // Preferences
-    document.getElementById('defaultPlatform').textContent = defaultPlatform
+    if (levelBarEl) {
+      setTimeout(function() {
+        levelBarEl.style.width = '100%'
+      }, 300)
+    }
+  }
 
-    var notifToggle = document.getElementById('notifToggle')
+  // Preferences
+  var platformEl = document.getElementById('defaultPlatform')
+  if (platformEl) platformEl.textContent = defaultPlatform
+
+  var notifToggle = document.getElementById('notifToggle')
+  if (notifToggle) {
     if (notifEnabled) {
       notifToggle.classList.add('on')
     } else {
       notifToggle.classList.remove('on')
     }
-
-    // Render platform picker options
-    renderPlatformOptions(defaultPlatform)
   }
+
+  // Render platform picker
+  renderPlatformOptions(defaultPlatform)
+}
 
   // ════════════════════════════════════════════
   // RENDER PLATFORM OPTIONS
