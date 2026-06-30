@@ -455,26 +455,47 @@
   // ADMIN AUTH GUARD + DYNAMIC NAME
   // ════════════════════════════════════════════
   async function checkAdminAuth() {
-    var result = await supabaseClient.auth.getSession()
-
-    if (!result.data.session) {
-      window.location.href = '../app/login.html'
-      return false
-    }
-
-    var email    = result.data.session.user.email || ''
-    var initials = email.substring(0, 2).toUpperCase()
-
-    // Update all admin name/initials elements
-    document.querySelectorAll('.admin-initials').forEach(function(el) {
-      el.textContent = initials
-    })
-    document.querySelectorAll('.admin-name').forEach(function(el) {
-      el.textContent = email
-    })
-
-    return true
+  // Check session exists
+  var result = await supabaseClient.auth.getSession()
+  if (!result.data.session) {
+    window.location.href = '../app/login.html'
+    return false
   }
+
+  var userId = result.data.session.user.id
+  var email  = result.data.session.user.email || ''
+
+  // Check role in profiles table
+  var profileResult = await supabaseClient
+    .from('profiles')
+    .select('role, full_name')
+    .eq('id', userId)
+    .single()
+
+  if (profileResult.error || !profileResult.data) {
+    window.location.href = '../app/login.html'
+    return false
+  }
+
+  if (profileResult.data.role !== 'admin') {
+    // Not admin — send back to app
+    window.location.href = '../app/index.html'
+    return false
+  }
+
+  // Admin confirmed — update display name
+  var initials = email.substring(0, 2).toUpperCase()
+  var name = profileResult.data.full_name || email
+
+  document.querySelectorAll('.admin-initials').forEach(function(el) {
+    el.textContent = initials
+  })
+  document.querySelectorAll('.admin-name').forEach(function(el) {
+    el.textContent = name
+  })
+
+  return true
+}
 
   // ════════════════════════════════════════════
   // LOAD DASHBOARD DATA
@@ -676,12 +697,12 @@
   // ════════════════════════════════════════════
   // INIT
   // ════════════════════════════════════════════
- async function init() {
+async function init() {
+  var isAdmin = await checkAdminAuth()
+  if (!isAdmin) return
   await loadDashboard()
 }
-
-  init()
-
+init()
 </script>
 
 </body>

@@ -323,7 +323,48 @@
     'https://nhymadutuhpjgkiurify.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
   )
+async function checkAdminAuth() {
+  // Check session exists
+  var result = await supabaseClient.auth.getSession()
+  if (!result.data.session) {
+    window.location.href = '../app/login.html'
+    return false
+  }
 
+  var userId = result.data.session.user.id
+  var email  = result.data.session.user.email || ''
+
+  // Check role in profiles table
+  var profileResult = await supabaseClient
+    .from('profiles')
+    .select('role, full_name')
+    .eq('id', userId)
+    .single()
+
+  if (profileResult.error || !profileResult.data) {
+    window.location.href = '../app/login.html'
+    return false
+  }
+
+  if (profileResult.data.role !== 'admin') {
+    // Not admin — send back to app
+    window.location.href = '../app/index.html'
+    return false
+  }
+
+  // Admin confirmed — update display name
+  var initials = email.substring(0, 2).toUpperCase()
+  var name = profileResult.data.full_name || email
+
+  document.querySelectorAll('.admin-initials').forEach(function(el) {
+    el.textContent = initials
+  })
+  document.querySelectorAll('.admin-name').forEach(function(el) {
+    el.textContent = name
+  })
+
+  return true
+}
   // ---- STATE ----
   let allQuotes = []
   let currentYear = new Date().getFullYear()
@@ -704,7 +745,12 @@ async function handleLogout() {
   window.location.href = '../app/login.html'
   }
   // ---- INIT ----
-  loadQuotes()
+ async function init() {
+  var isAdmin = await checkAdminAuth()
+  if (!isAdmin) return
+  await loadQuotes()
+}
+init()
 </script>
 
 </body>

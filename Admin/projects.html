@@ -93,9 +93,6 @@
     <a href="schedule.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
       <span class="material-symbols-outlined text-[20px]">calendar_today</span><span class="font-body text-sm">Schedule</span>
     </a>
-    <a href="ai-generator.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
-      <span class="material-symbols-outlined text-[20px]">auto_awesome</span><span class="font-body text-sm">AI Generator</span>
-    </a>
     <a href="projects.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-lg font-bold text-sm">
       <span class="material-symbols-outlined text-[20px] filled">folder_shared</span><span class="font-body text-sm">Projects</span>
     </a>
@@ -115,11 +112,12 @@
       <span class="text-xs uppercase tracking-widest">Create New Quote</span>
     </a>
     <div class="flex items-center gap-3 px-2 py-3 border-t border-white/10">
-      <div class="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center text-white font-headline font-bold text-sm admin-initials">AD</div>
-      <div>
-        <p class="text-sm font-bold text-white leading-none admin-name">Admin</p>
-        <p class="text-[10px] text-text-light">Super Admin</p>
-      </div>
+      <div class="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center
+  text-white font-headline font-bold text-sm admin-initials">AD</div>
+<div>
+  <p class="text-sm font-bold text-white leading-none admin-name">Admin</p>
+  <p class="text-[10px] text-text-light">Super Admin</p>
+     </div>
     </div>
   </div>
 </aside>
@@ -153,7 +151,13 @@
             Logout <span class="material-symbols-outlined text-[12px]">logout</span>
           </button>
         </div>
-        <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white font-headline font-bold text-sm admin-initials">AD</div>
+       <div class="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center
+  text-white font-headline font-bold text-sm admin-initials">AD</div>
+<div>
+ <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center
+  text-white font-headline font-bold text-sm admin-initials">AD</div>
+  <p class="text-[10px] text-text-light">Super Admin</p>
+</div>
       </div>
     </div>
   </header>
@@ -673,7 +677,48 @@
     'https://nhymadutuhpjgkiurify.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
   )
+async function checkAdminAuth() {
+  // Check session exists
+  var result = await supabaseClient.auth.getSession()
+  if (!result.data.session) {
+    window.location.href = '../app/login.html'
+    return false
+  }
 
+  var userId = result.data.session.user.id
+  var email  = result.data.session.user.email || ''
+
+  // Check role in profiles table
+  var profileResult = await supabaseClient
+    .from('profiles')
+    .select('role, full_name')
+    .eq('id', userId)
+    .single()
+
+  if (profileResult.error || !profileResult.data) {
+    window.location.href = '../app/login.html'
+    return false
+  }
+
+  if (profileResult.data.role !== 'admin') {
+    // Not admin — send back to app
+    window.location.href = '../app/index.html'
+    return false
+  }
+
+  // Admin confirmed — update display name
+  var initials = email.substring(0, 2).toUpperCase()
+  var name = profileResult.data.full_name || email
+
+  document.querySelectorAll('.admin-initials').forEach(function(el) {
+    el.textContent = initials
+  })
+  document.querySelectorAll('.admin-name').forEach(function(el) {
+    el.textContent = name
+  })
+
+  return true
+}
   // ════════════════════════════════════════════
   // STATE
   // ════════════════════════════════════════════
@@ -1263,7 +1308,22 @@
  async function init() {
   await loadDashboard()
 }
-
+// Dynamic admin name
+var sessionResult = await supabaseClient.auth.getSession()
+if (sessionResult.data.session) {
+  var email = sessionResult.data.session.user.email || ''
+  var initials = email.substring(0, 2).toUpperCase()
+  document.querySelectorAll('.admin-initials').forEach(function(el) {
+    el.textContent = initials
+  })
+  document.querySelectorAll('.admin-name').forEach(function(el) {
+    el.textContent = email
+  })
+}
+  var isAdmin = await checkAdminAuth()
+  if (!isAdmin) return
+  await loadProjects()
+}
   init()
 
 </script>
