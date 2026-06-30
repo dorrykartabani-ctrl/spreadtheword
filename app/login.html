@@ -303,24 +303,27 @@
   // ════════════════════════════════════════
 async function checkSession() {
   var result = await supabaseClient.auth.getSession()
+  if (!result.data.session) return
 
-  if (result.data.session) {
-    var profileCheck = await supabaseClient
-      .from('profiles')
-      .select('id')
-      .eq('id', result.data.session.user.id)
-      .single()
+  // Already logged in — check where to send them
+  var params = new URLSearchParams(window.location.search)
+  var redirect = params.get('redirect')
 
-    if (profileCheck.data) {
-      window.location.href = 'index.html'
-    } else {
-      await supabaseClient.auth.signOut()
-      console.log('Cleared stale session')
-    }
+  var profileResult = await supabaseClient
+    .from('profiles')
+    .select('role, onboarding_complete')
+    .eq('id', result.data.session.user.id)
+    .single()
+
+  if (profileResult.data && profileResult.data.role === 'admin' && redirect === 'admin') {
+    window.location.href = '../Admin/index.html'
+  } else if (!profileResult.data || !profileResult.data.onboarding_complete) {
+    window.location.href = 'onboarding.html'
+  } else {
+    window.location.href = 'index.html'
   }
 }
 checkSession()
-
   // ════════════════════════════════════════
   // LOGIN
   // ════════════════════════════════════════
@@ -355,10 +358,30 @@ checkSession()
       return
     }
 
-    // Success
-    icon.textContent = 'check_circle'
-    icon.classList.remove('spin')
-    label.textContent = 'Welcome back!'
+   // Success
+icon.textContent = 'check_circle'
+icon.classList.remove('spin')
+label.textContent = 'Welcome back!'
+
+setTimeout(async function() {
+  var profileResult = await supabaseClient
+    .from('profiles')
+    .select('role, onboarding_complete')
+    .eq('id', result.data.user.id)
+    .single()
+
+  // Check for redirect parameter
+  var params = new URLSearchParams(window.location.search)
+  var redirect = params.get('redirect')
+
+  if (profileResult.data && profileResult.data.role === 'admin' && redirect === 'admin') {
+    window.location.href = '../Admin/index.html'
+  } else if (!profileResult.data || !profileResult.data.onboarding_complete) {
+    window.location.href = 'onboarding.html'
+  } else {
+    window.location.href = 'index.html'
+  }
+}, 500)
 
     // index.html will handle onboarding check
     setTimeout(function() {
