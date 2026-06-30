@@ -738,23 +738,56 @@ async function checkAdminAuth() {
   // ════════════════════════════════════════════
   // AUTH GUARD
   // ════════════════════════════════════════════
-  async function checkAdminAuth() {
+ async function checkAdminAuth() {
+  try {
     var result = await supabaseClient.auth.getSession()
+
     if (!result.data.session) {
+      var refreshResult = await supabaseClient.auth.refreshSession()
+      if (!refreshResult.data.session) {
+        window.location.href = '../app/login.html'
+        return false
+      }
+      result = refreshResult
+    }
+
+    var userId = result.data.session.user.id
+    var email  = result.data.session.user.email || ''
+
+    var profileResult = await supabaseClient
+      .from('profiles')
+      .select('role, full_name')
+      .eq('id', userId)
+      .single()
+
+    if (profileResult.error || !profileResult.data) {
       window.location.href = '../app/login.html'
       return false
     }
-    var email = result.data.session.user.email || ''
+
+    if (profileResult.data.role !== 'admin') {
+      window.location.href = '../app/index.html'
+      return false
+    }
+
     var initials = email.substring(0, 2).toUpperCase()
+    var name = profileResult.data.full_name || email
+
     document.querySelectorAll('.admin-initials').forEach(function(el) {
       el.textContent = initials
     })
     document.querySelectorAll('.admin-name').forEach(function(el) {
-      el.textContent = email
+      el.textContent = name
     })
-    return true
-  }
 
+    return true
+
+  } catch(e) {
+    console.error('checkAdminAuth error:', e)
+    window.location.href = '../app/login.html'
+    return false
+  }
+}
   // ════════════════════════════════════════════
   // UTILITIES
   // ════════════════════════════════════════════
@@ -1324,7 +1357,9 @@ if (sessionResult.data.session) {
   if (!isAdmin) return
   await loadProjects()
 }
+setTimeout(function() {
   init()
+}, 150)
 
 </script>
 </body>

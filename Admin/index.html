@@ -454,47 +454,67 @@
   // ════════════════════════════════════════════
   // ADMIN AUTH GUARD + DYNAMIC NAME
   // ════════════════════════════════════════════
-  async function checkAdminAuth() {
-  // Check session exists
-  var result = await supabaseClient.auth.getSession()
-  if (!result.data.session) {
+ async function checkAdminAuth() {
+  try {
+    // Try to get session
+    var result = await supabaseClient.auth.getSession()
+
+    // If no session, try refreshing once
+    if (!result.data.session) {
+      var refreshResult = await supabaseClient.auth.refreshSession()
+      if (!refreshResult.data.session) {
+        window.location.href = '../app/login.html'
+        return false
+      }
+      result = refreshResult
+    }
+
+    var userId = result.data.session.user.id
+    var email  = result.data.session.user.email || ''
+
+    // Check role
+    var profileResult = await supabaseClient
+      .from('profiles')
+      .select('role, full_name')
+      .eq('id', userId)
+      .single()
+
+    if (profileResult.error) {
+      console.error('Profile error:', profileResult.error)
+      window.location.href = '../app/login.html'
+      return false
+    }
+
+    if (!profileResult.data) {
+      console.error('No profile found for user:', userId)
+      window.location.href = '../app/login.html'
+      return false
+    }
+
+    if (profileResult.data.role !== 'admin') {
+      console.log('Not admin. Role is:', profileResult.data.role)
+      window.location.href = '../app/index.html'
+      return false
+    }
+
+    // Admin confirmed
+    var initials = email.substring(0, 2).toUpperCase()
+    var name = profileResult.data.full_name || email
+
+    document.querySelectorAll('.admin-initials').forEach(function(el) {
+      el.textContent = initials
+    })
+    document.querySelectorAll('.admin-name').forEach(function(el) {
+      el.textContent = name
+    })
+
+    return true
+
+  } catch(e) {
+    console.error('checkAdminAuth error:', e)
     window.location.href = '../app/login.html'
     return false
   }
-
-  var userId = result.data.session.user.id
-  var email  = result.data.session.user.email || ''
-
-  // Check role in profiles table
-  var profileResult = await supabaseClient
-    .from('profiles')
-    .select('role, full_name')
-    .eq('id', userId)
-    .single()
-
-  if (profileResult.error || !profileResult.data) {
-    window.location.href = '../app/login.html'
-    return false
-  }
-
-  if (profileResult.data.role !== 'admin') {
-    // Not admin — send back to app
-    window.location.href = '../app/index.html'
-    return false
-  }
-
-  // Admin confirmed — update display name
-  var initials = email.substring(0, 2).toUpperCase()
-  var name = profileResult.data.full_name || email
-
-  document.querySelectorAll('.admin-initials').forEach(function(el) {
-    el.textContent = initials
-  })
-  document.querySelectorAll('.admin-name').forEach(function(el) {
-    el.textContent = name
-  })
-
-  return true
 }
 
   // ════════════════════════════════════════════
@@ -702,7 +722,10 @@ async function init() {
   if (!isAdmin) return
   await loadDashboard()
 }
-init()
+// Small delay to ensure Supabase session is loaded
+setTimeout(function() {
+  init()
+}, 150)
 </script>
 
 </body>
