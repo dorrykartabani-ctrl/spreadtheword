@@ -271,35 +271,33 @@
   // ════════════════════════════════════════════
   // LOAD REAL SUBSCRIPTION STATE
   // ════════════════════════════════════════════
-  async function loadSubscriptionData() {
-    if (!currentUser) return
+async function loadSubscriptionData() {
+  if (!currentUser) return
 
-    var subResult = await supabaseClient
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', currentUser.id)
-      .single()
+  var subResult = await supabaseClient
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .single()
 
-    userSubscription = subResult.data
+  userSubscription = subResult.data
 
-    if (!userSubscription) {
-      // Create fallback/stale subscription if none found (fallback safety)
-      var fallbackEnd = new Date()
-      fallbackDateEnd.setMonth(fallbackDateEnd.getMonth() + 1)
-      userSubscription = {
-        plan: 'warrior',
-        status: 'active',
-        price: 3.99,
-        currency: 'USD',
-        started_at: new Date().toISOString(),
-        current_period_end: fallbackEnd.toISOString()
-      }
+  if (!userSubscription) {
+    var fallbackEnd = new Date()
+    fallbackEnd.setMonth(fallbackEnd.getMonth() + 1)
+    userSubscription = {
+      tier: 'warrior',
+      status: 'active',
+      price: 3.99,
+      currency: 'USD',
+      created_at: new Date().toISOString(),
+      current_period_end: fallbackEnd.toISOString()
     }
-
-    renderSubscriptionCard()
-    renderBillingHistory()
   }
 
+  renderSubscriptionCard()
+  renderBillingHistory()
+}
   // ════════════════════════════════════════════
   // RENDER HERO CARD
   // ════════════════════════════════════════════
@@ -332,58 +330,55 @@
   // ════════════════════════════════════════════
   // RENDER BILLING HISTORY (Dynamic receipts list)
   // ════════════════════════════════════════════
-  function renderBillingHistory() {
-    var container = document.getElementById('billingHistoryList')
-    if (!container || !userSubscription) return
+ function renderBillingHistory() {
+  var container = document.getElementById('billingHistoryList')
+  if (!container || !userSubscription) return
 
-    container.innerHTML = ''
+  container.innerHTML = ''
 
-    var startDate = new Date(userSubscription.started_at)
-    var today     = new Date()
-    var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  var startDate = new Date(userSubscription.created_at)
+  var today     = new Date()
+  var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
-    // Generate receipts list from signup date to today
-    var tempDate = new Date(today.getFullYear(), today.getMonth(), 1)
-    var receipts = []
+  var tempDate = new Date(today.getFullYear(), today.getMonth(), 1)
+  var receipts = []
 
-    while (tempDate >= startDate) {
-      var dateStr = monthNames[tempDate.getMonth()] + ' ' + tempDate.getDate() + ', ' + tempDate.getFullYear()
-      receipts.push({
-        date: dateStr,
-        price: '$' + Number(userSubscription.price).toFixed(2),
-        invoice: 'INV-' + tempDate.getFullYear() + String(tempDate.getMonth()+1).padStart(2,'0') + String(tempDate.getDate()).padStart(2,'0')
-      })
-      // Subtract 1 month
-      tempDate.setMonth(tempDate.getMonth() - 1)
-    }
-
-    // Render receipts
-    if (receipts.length === 0) {
-      container.innerHTML = '<p class="text-xs text-text-light text-center py-4">No payment history yet</p>'
-      return
-    }
-
-    receipts.forEach(function(r) {
-      var row = document.createElement('div')
-      row.className = 'flex items-center justify-between p-3.5 bg-surface rounded-xl border border-border-soft'
-      row.innerHTML =
-        '<div class="flex items-center gap-3">'
-          + '<div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">'
-            + '<span class="material-symbols-outlined text-[16px] filled">receipt</span>'
-          + '</div>'
-          + '<div>'
-            + '<span class="text-xs font-bold text-text-dark block">' + r.date + '</span>'
-            + '<span class="text-[10px] text-text-light font-body">' + r.invoice + '</span>'
-          + '</div>'
-        + '</div>'
-        + '<div class="text-right">'
-          + '<span class="text-xs font-bold text-primary block">' + r.price + '</span>'
-          + '<span class="text-[9px] text-green-600 font-bold">Paid ✓</span>'
-        + '</div>'
-
-      container.appendChild(row)
+  while (tempDate >= startDate) {
+    var dateStr = monthNames[tempDate.getMonth()] + ' ' + tempDate.getDate() + ', ' + tempDate.getFullYear()
+    var price = userSubscription.price || 3.99
+    receipts.push({
+      date: dateStr,
+      price: '$' + Number(price).toFixed(2),
+      invoice: 'INV-' + tempDate.getFullYear() + String(tempDate.getMonth()+1).padStart(2,'0') + String(tempDate.getDate()).padStart(2,'0')
     })
+    tempDate.setMonth(tempDate.getMonth() - 1)
   }
+
+  if (receipts.length === 0) {
+    container.innerHTML = '<p class="text-xs text-text-light text-center py-4">No payment history yet</p>'
+    return
+  }
+
+  receipts.forEach(function(r) {
+    var row = document.createElement('div')
+    row.className = 'flex items-center justify-between p-3.5 bg-surface rounded-xl border border-border-soft'
+    row.innerHTML =
+      '<div class="flex items-center gap-3">'
+        + '<div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">'
+          + '<span class="material-symbols-outlined text-[16px] filled">receipt</span>'
+        + '</div>'
+        + '<div>'
+          + '<span class="text-xs font-bold text-text-dark block">' + r.date + '</span>'
+          + '<span class="text-[10px] text-text-light font-body">' + r.invoice + '</span>'
+        + '</div>'
+      + '</div>'
+      + '<div class="text-right">'
+        + '<span class="text-xs font-bold text-primary block">' + r.price + '</span>'
+        + '<span class="text-[9px] text-green-600 font-bold">Paid ✓</span>'
+      + '</div>'
+    container.appendChild(row)
+  })
+}
 
   // ════════════════════════════════════════════
   // CANCEL MODAL ACTIONS
