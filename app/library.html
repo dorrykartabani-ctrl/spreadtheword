@@ -256,19 +256,14 @@ async function init() {
   }
   currentUser = sessionResult.data.session.user
 
-  var email = currentUser.email || ''
-  var initials = email.substring(0, 2).toUpperCase()
-  var avatarEl = document.getElementById('avatarEl')
-  if (avatarEl) {
-    avatarEl.innerHTML = '<span class="font-headline font-bold text-white text-sm">' + initials + '</span>'
-  }
-
+  // Get profile for avatar
   var profileResult = await supabaseClient
     .from('profiles')
-    .select('full_name')
+    .select('full_name, nickname')
     .eq('id', currentUser.id)
     .single()
 
+  var initials = currentUser.email.substring(0, 2).toUpperCase()
   if (profileResult.data && profileResult.data.full_name) {
     var parts = profileResult.data.full_name.trim().split(' ')
     if (parts.length >= 2) {
@@ -276,11 +271,13 @@ async function init() {
     } else if (parts[0].length >= 2) {
       initials = parts[0].substring(0, 2).toUpperCase()
     }
-    if (avatarEl) {
-      avatarEl.innerHTML = '<span class="font-headline font-bold text-white text-sm">' + initials + '</span>'
-    }
+  }
+  var avatarEl = document.getElementById('avatarEl')
+  if (avatarEl) {
+    avatarEl.innerHTML = '<span class="font-headline font-bold text-white text-sm">' + initials + '</span>'
   }
 
+  // Clear previous sharing state
   sessionStorage.removeItem('gstw_selected_quote_id')
   sessionStorage.removeItem('gstw_selected_quote_text')
   sessionStorage.removeItem('gstw_selected_quote_source')
@@ -297,12 +294,7 @@ async function loadQuotes() {
     .eq('status', 'live')
     .order('published_at', { ascending: false })
 
-  if (result.error) {
-    console.error('Load quotes error:', result.error)
-    showToast('Could not load quotes')
-    return
-  }
-
+  if (result.error) { showToast('Could not load quotes'); return }
   if (!result.data || result.data.length === 0) {
     document.getElementById('emptyState').classList.remove('hidden')
     document.getElementById('quoteList').innerHTML = ''
@@ -315,7 +307,6 @@ async function loadQuotes() {
 
 async function loadUserSharedQuotes() {
   if (!currentUser) return
-
   var result = await supabaseClient
     .from('shares')
     .select('quote_id')
@@ -324,7 +315,6 @@ async function loadUserSharedQuotes() {
   if (result.data) {
     userSharedQuoteIds = result.data.map(function(s) { return s.quote_id })
   }
-
   updateShareButtonStates()
 }
 
@@ -334,13 +324,9 @@ function updateShareButtonStates() {
     var quoteId = card.dataset.quoteId
     var shareBtn = card.querySelector('.share-btn')
     if (!shareBtn || !quoteId) return
-
     if (userSharedQuoteIds.indexOf(quoteId) !== -1) {
-      shareBtn.innerHTML =
-        '<span class="material-symbols-outlined text-[15px] filled">check_circle</span> Shared'
-      shareBtn.className =
-        'bg-primary/10 text-primary px-4 py-2 rounded-full text-xs font-bold '
-        + 'flex items-center gap-1.5 active:scale-95 transition-transform flex-shrink-0 share-btn'
+      shareBtn.innerHTML = '<span class="material-symbols-outlined text-[15px] filled">check_circle</span> Shared'
+      shareBtn.className = 'bg-primary/10 text-primary px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-transform flex-shrink-0 share-btn'
     }
   })
 }
@@ -353,7 +339,6 @@ function renderQuotes(quotes) {
     document.getElementById('emptyState').classList.remove('hidden')
     return
   }
-
   document.getElementById('emptyState').classList.add('hidden')
 
   quotes.forEach(function(quote, index) {
@@ -376,33 +361,24 @@ function renderQuotes(quotes) {
     card.dataset.quoteCategory = category
 
     var shareBtnHtml = isShared
-      ? '<button class="bg-primary/10 text-primary px-4 py-2 rounded-full text-xs font-bold '
-          + 'flex items-center gap-1.5 active:scale-95 transition-transform flex-shrink-0 share-btn">'
-          + '<span class="material-symbols-outlined text-[15px] filled">check_circle</span>'
-          + ' Shared'
-        + '</button>'
-      : '<button class="tactical-gradient text-white px-4 py-2 rounded-full text-xs font-bold '
-          + 'flex items-center gap-1.5 shadow-tactical active:scale-95 transition-transform flex-shrink-0 share-btn">'
-          + '<span class="material-symbols-outlined text-[15px]">campaign</span>'
-          + ' Share'
-        + '</button>'
+      ? '<button class="bg-primary/10 text-primary px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-transform flex-shrink-0 share-btn">'
+          + '<span class="material-symbols-outlined text-[15px] filled">check_circle</span> Shared</button>'
+      : '<button class="tactical-gradient text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-tactical active:scale-95 transition-transform flex-shrink-0 share-btn">'
+          + '<span class="material-symbols-outlined text-[15px]">campaign</span> Share</button>'
 
     card.innerHTML =
       '<div class="flex items-center justify-between mb-3">'
         + '<div class="flex items-center gap-2">'
           + (isToday ? '<span class="w-2 h-2 rounded-full bg-primary animate-pulse flex-shrink-0"></span>' : '')
           + '<span class="text-[10px] font-bold ' + (isToday ? 'text-primary' : 'text-text-light') + ' uppercase tracking-widest">'
-            + (isToday ? 'Today \u00B7 ' : '') + dateStr
-          + '</span>'
+            + (isToday ? 'Today \u00B7 ' : '') + dateStr + '</span>'
         + '</div>'
         + (isToday
           ? '<span class="text-[10px] font-bold text-gold-dim bg-gold/10 px-2.5 py-1 rounded-full uppercase tracking-wider">Today\'s Word</span>'
-          : '<span class="text-[10px] text-text-light font-body">' + shareCount + ' shares</span>'
-        )
+          : '<span class="text-[10px] text-text-light font-body">' + shareCount + ' shares</span>')
       + '</div>'
       + '<blockquote class="font-headline font-bold text-[' + (isToday ? '17' : '16') + 'px] text-text-dark leading-relaxed mb-2">'
-        + '\u201C' + quote.text + '\u201D'
-      + '</blockquote>'
+        + '\u201C' + quote.text + '\u201D</blockquote>'
       + '<cite class="block not-italic font-body font-bold text-sm '
         + (isInspiration ? 'text-gold-dim' : 'text-primary')
         + ' mb-4 tracking-wider">\u2014 ' + quote.source.toUpperCase() + '</cite>'
@@ -429,18 +405,32 @@ function renderQuotes(quotes) {
   })
 }
 
+// ════════════════════════════════════════════
+// SELECT QUOTE — clears ALL old state
+// ════════════════════════════════════════════
 function selectQuoteAndShare(id, text, source, category) {
+  // Clear ALL previous sharing state
   sessionStorage.removeItem('gstw_final_image')
+  sessionStorage.removeItem('gstw_personal_msg')
+  sessionStorage.removeItem('gstw_hashtags')
+  sessionStorage.removeItem('gstw_full_caption')
+  sessionStorage.removeItem('gstw_overlay_x')
+  sessionStorage.removeItem('gstw_overlay_y')
+  sessionStorage.removeItem('gstw_bg_type')
+  sessionStorage.removeItem('gstw_bg_value')
+
+  // Set new quote
   sessionStorage.setItem('gstw_selected_quote_id', id)
   sessionStorage.setItem('gstw_selected_quote_text', text)
   sessionStorage.setItem('gstw_selected_quote_source', source)
   sessionStorage.setItem('gstw_selected_quote_category', category)
-  window.location.href = 'backgrounds.html'
+
+  // Go directly to editor (backgrounds merged in)
+  window.location.href = 'editor.html'
 }
 
 function openQuote(card) {
   activeQuoteId = card.dataset.quoteId
-
   var modal = document.getElementById('quoteModal')
   modal.dataset.quoteId       = card.dataset.quoteId
   modal.dataset.quoteText     = card.dataset.quoteText
@@ -485,16 +475,12 @@ function toggleSearch() {
 
 function searchQuotes(query) {
   var q = query.toLowerCase().trim()
-  if (!q) {
-    renderQuotes(allQuotes)
-    return
-  }
-  var filtered = allQuotes.filter(function(quote) {
+  if (!q) { renderQuotes(allQuotes); return }
+  renderQuotes(allQuotes.filter(function(quote) {
     return quote.text.toLowerCase().includes(q)
       || quote.source.toLowerCase().includes(q)
       || (quote.category && quote.category.toLowerCase().includes(q))
-  })
-  renderQuotes(filtered)
+  }))
 }
 
 function filterByCategory(cat, btn) {
@@ -504,19 +490,12 @@ function filterByCategory(cat, btn) {
   })
   btn.classList.add('active', 'bg-primary', 'text-white')
   btn.classList.remove('text-text-muted')
-
-  var filtered = cat === 'all'
-    ? allQuotes
-    : allQuotes.filter(function(q) {
-        return q.category && q.category.toLowerCase() === cat
-      })
-
-  renderQuotes(filtered)
+  renderQuotes(cat === 'all' ? allQuotes : allQuotes.filter(function(q) {
+    return q.category && q.category.toLowerCase() === cat
+  }))
 }
 
-function loadMore() {
-  showToast('All quotes loaded')
-}
+function loadMore() { showToast('All quotes loaded') }
 
 function showToast(msg) {
   var existing = document.getElementById('libToast')
