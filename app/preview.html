@@ -342,10 +342,10 @@
 
     // Get nickname
     var profileResult = await supabaseClient
-      .from('profiles')
-      .select('nickname, full_name')
-      .eq('id', currentUser.id)
-      .single()
+  .from('profiles')
+  .select('nickname, full_name, default_platform')
+  .eq('id', currentUser.id)
+  .single()
 
     if (profileResult.data) {
       userNickname = profileResult.data.nickname
@@ -375,10 +375,42 @@
       try { hashtags = JSON.parse(savedHashtags) } catch(e) {}
     }
 
-    // Render everything
-    renderHashtags()
-    updateCaption()
-    renderMockup(currentPreview)
+  // Check user's default platform from profile
+if (profileResult.data && profileResult.data.default_platform) {
+  var defaultPlatform = profileResult.data.default_platform.toLowerCase()
+
+  // Map the profile platform to preview platform
+  var platformMap = {
+    'instagram': 'instagram',
+    'facebook':  'facebook',
+    'whatsapp':  'whatsapp',
+    'x':         'twitter',
+    'x / twitter': 'twitter',
+    'twitter':   'twitter'
+  }
+
+  var mapped = platformMap[defaultPlatform]
+  if (mapped) {
+    currentPreview = mapped
+
+    // Update active tab
+    setTimeout(function() {
+      document.querySelectorAll('.platform-tab').forEach(function(t) {
+        t.classList.remove('active')
+        var tabText = t.textContent.trim().toLowerCase()
+        if ((mapped === 'twitter' && tabText === 'x')
+          || tabText === mapped) {
+          t.classList.add('active')
+        }
+      })
+    }, 50)
+  }
+}
+
+// Render everything
+renderHashtags()
+updateCaption()
+renderMockup(currentPreview)
 
     // Smart hint
     var hintEl = document.getElementById('shareHint')
