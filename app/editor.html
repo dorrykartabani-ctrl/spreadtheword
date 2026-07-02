@@ -694,154 +694,271 @@
   function goBack() { window.location.href = 'index.html' }
   function goHome() { window.location.href = 'index.html' }
 
-  function goNext() {
-    var qt      = document.getElementById('quoteText')
-    var qr      = document.getElementById('quoteRef')
-    var bg      = document.getElementById('bgCanvas')
-    var overlay = document.getElementById('bgOverlay')
+ function goNext() {
+  var qt      = document.getElementById('quoteText')
+  var qr      = document.getElementById('quoteRef')
+  var bg      = document.getElementById('bgCanvas')
+  var overlay = document.getElementById('bgOverlay')
 
-    // Save all editor state
-    sessionStorage.setItem('gstw_quote_text',     qt ? qt.textContent : '')
-    sessionStorage.setItem('gstw_quote_ref',      qr ? qr.textContent : '')
-    sessionStorage.setItem('gstw_font_size',      qt ? (qt.style.fontSize || '20px') : '20px')
-    sessionStorage.setItem('gstw_text_color',     qt ? (qt.style.color || '#FFFFFF') : '#FFFFFF')
-    sessionStorage.setItem('gstw_text_align',     qt ? (qt.style.textAlign || 'center') : 'center')
-    sessionStorage.setItem('gstw_font_family',    qt ? (qt.style.fontFamily || "'Lora', serif") : "'Lora', serif")
-    sessionStorage.setItem('gstw_font_style',     qt ? (qt.style.fontStyle || 'normal') : 'normal')
-    sessionStorage.setItem('gstw_text_transform', qt ? (qt.style.textTransform || 'none') : 'none')
-    sessionStorage.setItem('gstw_blur',           bg ? (bg.style.filter || '') : '')
-    sessionStorage.setItem('gstw_darkness',       overlay ? (overlay.style.background || 'rgba(0,0,0,0.3)') : 'rgba(0,0,0,0.3)')
-    sessionStorage.setItem('gstw_quote_id',       window.currentQuoteId || '')
-    sessionStorage.setItem('gstw_bg_type',        selectedBgType)
-    sessionStorage.setItem('gstw_bg_value',       selectedBgValue)
+  // Save all editor state
+  sessionStorage.setItem('gstw_quote_text',     qt ? qt.textContent : '')
+  sessionStorage.setItem('gstw_quote_ref',      qr ? qr.textContent : '')
+  sessionStorage.setItem('gstw_font_size',      qt ? (qt.style.fontSize || '20px') : '20px')
+  sessionStorage.setItem('gstw_text_color',     qt ? (qt.style.color || '#FFFFFF') : '#FFFFFF')
+  sessionStorage.setItem('gstw_text_align',     qt ? (qt.style.textAlign || 'center') : 'center')
+  sessionStorage.setItem('gstw_font_family',    qt ? (qt.style.fontFamily || "'Lora', serif") : "'Lora', serif")
+  sessionStorage.setItem('gstw_text_transform', qt ? (qt.style.textTransform || 'none') : 'none')
+  sessionStorage.setItem('gstw_blur',           bg ? (bg.style.filter || '') : '')
+  sessionStorage.setItem('gstw_darkness',       overlay ? (overlay.style.background || 'rgba(0,0,0,0.3)') : 'rgba(0,0,0,0.3)')
+  sessionStorage.setItem('gstw_quote_id',       window.currentQuoteId || '')
+  sessionStorage.setItem('gstw_bg_type',        selectedBgType)
+  sessionStorage.setItem('gstw_bg_value',       selectedBgValue)
 
-    // Save position as percentages
-    if (quoteOverlay && quoteOverlay.parentElement) {
-      var parentRect = quoteOverlay.parentElement.getBoundingClientRect()
-      var overlayRect = quoteOverlay.getBoundingClientRect()
-      var xPercent = ((overlayRect.left - parentRect.left) / parentRect.width) * 100
-      var yPercent = ((overlayRect.top - parentRect.top) / parentRect.height) * 100
-      sessionStorage.setItem('gstw_overlay_x', xPercent)
-      sessionStorage.setItem('gstw_overlay_y', yPercent)
-    }
-
-    // Show loading
-    var btn = document.querySelector('[onclick="goNext()"]')
-    if (btn) {
-      btn.innerHTML = '<span class="material-symbols-outlined text-[20px] spin">progress_activity</span> Generating...'
-      btn.style.pointerEvents = 'none'
-    }
-
-    // Load html2canvas and generate image
-    var script = document.createElement('script')
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'
-    script.onload = function() { generateImage(qt, qr, bg, overlay) }
-    script.onerror = function() {
-      sessionStorage.removeItem('gstw_final_image')
-      window.location.href = 'caption.html'
-    }
-    document.head.appendChild(script)
+  // Save position as percentages
+  if (quoteOverlay && quoteOverlay.parentElement) {
+    var parentRect = quoteOverlay.parentElement.getBoundingClientRect()
+    var overlayRect = quoteOverlay.getBoundingClientRect()
+    var xPercent = ((overlayRect.left - parentRect.left) / parentRect.width) * 100
+    var yPercent = ((overlayRect.top - parentRect.top) / parentRect.height) * 100
+    sessionStorage.setItem('gstw_overlay_x', xPercent)
+    sessionStorage.setItem('gstw_overlay_y', yPercent)
   }
 
-  // ════════════════════════════════════════════
-  // GENERATE IMAGE
-  // ════════════════════════════════════════════
-  function generateImage(qt, qr, bg, overlay) {
-    try {
-      var tempContainer = document.createElement('div')
-      tempContainer.style.cssText = 'position:fixed;left:-9999px;top:0;width:1080px;height:1080px;overflow:hidden;z-index:-1'
+  // Show loading state
+  var btn = document.querySelector('[onclick="goNext()"]')
+  if (btn) {
+    btn.innerHTML = '<span class="material-symbols-outlined text-[20px] spin">progress_activity</span> Generating...'
+    btn.style.pointerEvents = 'none'
+  }
 
-      // Background
-      var bgClone = document.createElement('div')
-      bgClone.style.cssText = 'position:absolute;inset:0;background-size:cover;background-position:center'
-      if (selectedBgType === 'image') {
-        bgClone.style.backgroundImage = "url('" + selectedBgValue + "')"
+  // Generate image directly with Canvas API (no external library needed)
+  setTimeout(function() {
+    generateImage(qt, qr, bg, overlay)
+  }, 100)
+}
+ // ════════════════════════════════════════════
+// GENERATE IMAGE — Canvas API (reliable)
+// ════════════════════════════════════════════
+function generateImage(qt, qr, bg, overlay) {
+  var canvas = document.createElement('canvas')
+  canvas.width = 1080
+  canvas.height = 1080
+  var ctx = canvas.getContext('2d')
+
+  // Fill with dark background as safety net
+  ctx.fillStyle = '#16202A'
+  ctx.fillRect(0, 0, 1080, 1080)
+
+  // Get all editor state
+  var bgType    = sessionStorage.getItem('gstw_bg_type') || 'image'
+  var bgValue   = sessionStorage.getItem('gstw_bg_value') || selectedBgValue
+  var xPct      = parseFloat(sessionStorage.getItem('gstw_overlay_x')) || 15
+  var yPct      = parseFloat(sessionStorage.getItem('gstw_overlay_y')) || 30
+  var align     = qt ? (qt.style.textAlign || 'center') : 'center'
+  var textColor = qt ? (qt.style.color || '#FFFFFF') : '#FFFFFF'
+  var fontSize  = parseInt(qt ? (qt.style.fontSize || '20') : '20')
+  var fontFam   = qt ? (qt.style.fontFamily || "'Lora', serif") : "'Lora', serif"
+  var textTransform = qt ? (qt.style.textTransform || 'none') : 'none'
+  var darkness  = overlay ? overlay.style.background : 'rgba(0,0,0,0.3)'
+  var blurAmount = 0
+  if (bg && bg.style.filter) {
+    var match = bg.style.filter.match(/blur\((\d+)/)
+    if (match) blurAmount = parseInt(match[1])
+  }
+
+  // Helper — draw text with word wrap and drop shadow
+  function drawText(ctx, text, x, y, maxWidth, lineHeight, align) {
+    if (textTransform === 'uppercase') text = text.toUpperCase()
+    var words = text.split(' ')
+    var line = ''
+    var lines = []
+
+    for (var n = 0; n < words.length; n++) {
+      var testLine = line + words[n] + ' '
+      var metrics = ctx.measureText(testLine)
+      if (metrics.width > maxWidth && n > 0) {
+        lines.push(line.trim())
+        line = words[n] + ' '
       } else {
-        bgClone.style.background = selectedBgValue
+        line = testLine
       }
-      if (bg && bg.style.filter) bgClone.style.filter = bg.style.filter
-      tempContainer.appendChild(bgClone)
-
-      // Darkness overlay
-      var darkClone = document.createElement('div')
-      darkClone.style.cssText = 'position:absolute;inset:0'
-      darkClone.style.background = overlay ? (overlay.style.background || 'rgba(0,0,0,0.3)') : 'rgba(0,0,0,0.3)'
-      tempContainer.appendChild(darkClone)
-
-      // Text container — positioned based on saved percentages
-      var xPct = parseFloat(sessionStorage.getItem('gstw_overlay_x')) || 50
-      var yPct = parseFloat(sessionStorage.getItem('gstw_overlay_y')) || 50
-      var align = qt ? (qt.style.textAlign || 'center') : 'center'
-      var alignItems = align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center'
-
-      // Use a background panel behind text instead of text-shadow
-      var textBg = document.createElement('div')
-      textBg.style.cssText = 'position:absolute;padding:40px;border-radius:16px;background:rgba(0,0,0,0.25);display:flex;flex-direction:column;text-align:' + align + ';align-items:' + alignItems + ';max-width:85%'
-      textBg.style.left = Math.max(2, Math.min(xPct, 60)) + '%'
-      textBg.style.top  = Math.max(5, Math.min(yPct, 70)) + '%'
-
-      // Quote mark
-      var markEl = document.createElement('span')
-      markEl.textContent = '\u201C'
-      markEl.style.cssText = "font-family:'Lora',serif;font-size:100px;line-height:1;color:rgba(212,162,76,0.5);margin-bottom:4px"
-      textBg.appendChild(markEl)
-
-      // Quote text — no text-shadow
-      var fontSize = parseInt(qt ? (qt.style.fontSize || '20') : '20')
-      var textEl = document.createElement('p')
-      textEl.textContent = qt ? qt.textContent : ''
-      textEl.style.cssText = 'font-weight:600;line-height:1.4'
-      textEl.style.fontFamily = qt ? (qt.style.fontFamily || "'Lora', serif") : "'Lora', serif"
-      textEl.style.fontSize = (fontSize * 2.8) + 'px'
-      textEl.style.color = qt ? (qt.style.color || '#FFFFFF') : '#FFFFFF'
-      textEl.style.fontStyle = qt ? (qt.style.fontStyle || 'normal') : 'normal'
-      textEl.style.textTransform = qt ? (qt.style.textTransform || 'none') : 'none'
-      textEl.style.textAlign = align
-      textBg.appendChild(textEl)
-
-      // Reference
-      var refEl = document.createElement('p')
-      refEl.textContent = qr ? qr.textContent : ''
-      refEl.style.cssText = 'font-weight:bold;opacity:0.9;margin-top:20px;letter-spacing:0.05em'
-      refEl.style.fontFamily = qt ? (qt.style.fontFamily || "'Lora', serif") : "'Lora', serif"
-      refEl.style.fontSize = (fontSize * 1.4) + 'px'
-      refEl.style.color = qt ? (qt.style.color || '#FFFFFF') : '#FFFFFF'
-      refEl.style.textAlign = align
-      textBg.appendChild(refEl)
-
-      tempContainer.appendChild(textBg)
-      document.body.appendChild(tempContainer)
-
-      html2canvas(tempContainer, {
-        useCORS: true,
-        allowTaint: true,
-        scale: 1,
-        width: 1080,
-        height: 1080,
-        backgroundColor: '#16202A',
-        logging: false
-      }).then(function(canvas) {
-        try {
-          var dataUrl = canvas.toDataURL('image/png')
-          sessionStorage.setItem('gstw_final_image', dataUrl)
-        } catch(e) {
-          sessionStorage.removeItem('gstw_final_image')
-        }
-        document.body.removeChild(tempContainer)
-        window.location.href = 'caption.html'
-      }).catch(function(err) {
-        console.error('Canvas capture failed:', err)
-        document.body.removeChild(tempContainer)
-        sessionStorage.removeItem('gstw_final_image')
-        window.location.href = 'caption.html'
-      })
-
-    } catch (err) {
-      console.error('Image generation failed:', err)
-      sessionStorage.removeItem('gstw_final_image')
-      window.location.href = 'caption.html'
     }
+    lines.push(line.trim())
+
+    // Apply subtle drop shadow for readability
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)'
+    ctx.shadowBlur = 8
+    ctx.shadowOffsetX = 0
+    ctx.shadowOffsetY = 2
+
+    var startY = y
+    for (var i = 0; i < lines.length; i++) {
+      var lineX = x
+      if (align === 'center') lineX = x + maxWidth / 2
+      if (align === 'right')  lineX = x + maxWidth
+      ctx.fillText(lines[i], lineX, startY + (i * lineHeight))
+    }
+
+    // Reset shadow
+    ctx.shadowColor = 'transparent'
+    ctx.shadowBlur = 0
+    ctx.shadowOffsetX = 0
+    ctx.shadowOffsetY = 0
+
+    return startY + (lines.length * lineHeight)
   }
+
+  // Helper — draw everything after background is ready
+  function drawContent() {
+    // Darkness overlay
+    ctx.fillStyle = darkness
+    ctx.fillRect(0, 0, 1080, 1080)
+
+    // Position text — convert percentages to pixels
+    // Add safety padding so text doesn't go off edges
+    var padding = 60
+    var textAreaX = Math.max(padding, Math.min(xPct * 10.8, 1080 - padding - 200))
+    var textAreaY = Math.max(padding, Math.min(yPct * 10.8, 1080 - padding - 300))
+    var textMaxWidth = 1080 - (textAreaX * 2)
+    if (textMaxWidth < 600) textMaxWidth = 900 - (padding * 2)
+
+    // Text alignment
+    if (align === 'center') {
+      ctx.textAlign = 'center'
+      textAreaX = 540
+      textMaxWidth = 900
+    } else if (align === 'right') {
+      ctx.textAlign = 'right'
+    } else {
+      ctx.textAlign = 'left'
+    }
+
+    // Draw decorative quote mark
+    ctx.font = '600 140px Georgia, serif'
+    ctx.fillStyle = 'rgba(212, 162, 76, 0.5)'
+    ctx.textBaseline = 'top'
+    if (align === 'center') {
+      ctx.fillText('"', 540, textAreaY - 60)
+    } else if (align === 'right') {
+      ctx.fillText('"', textAreaX, textAreaY - 60)
+    } else {
+      ctx.fillText('"', textAreaX, textAreaY - 60)
+    }
+
+    // Draw quote text
+    var scaledFontSize = fontSize * 3.2
+    ctx.font = '600 ' + scaledFontSize + 'px ' + fontFam
+    ctx.fillStyle = textColor
+    ctx.textBaseline = 'top'
+
+    var textEndY = drawText(
+      ctx,
+      qt ? qt.textContent : '',
+      align === 'center' ? 90 : textAreaX,
+      textAreaY + 80,
+      align === 'center' ? 900 : textMaxWidth,
+      scaledFontSize * 1.35,
+      align
+    )
+
+    // Draw reference
+    var refFontSize = Math.round(fontSize * 1.6)
+    ctx.font = 'bold ' + refFontSize + 'px "Plus Jakarta Sans", sans-serif'
+    ctx.fillStyle = textColor
+    ctx.globalAlpha = 0.9
+
+    // Subtle shadow on reference too
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'
+    ctx.shadowBlur = 6
+    ctx.shadowOffsetY = 2
+
+    var refText = qr ? qr.textContent : ''
+    var refY = textEndY + 30
+    var refX = align === 'center' ? 540 : textAreaX
+
+    ctx.fillText(refText, refX, refY)
+
+    // Reset
+    ctx.globalAlpha = 1
+    ctx.shadowColor = 'transparent'
+    ctx.shadowBlur = 0
+    ctx.shadowOffsetY = 0
+
+    // Export
+    try {
+      var dataUrl = canvas.toDataURL('image/png')
+      sessionStorage.setItem('gstw_final_image', dataUrl)
+    } catch(e) {
+      console.error('Export failed:', e)
+      sessionStorage.removeItem('gstw_final_image')
+    }
+
+    window.location.href = 'preview.html'
+  }
+
+  // Load background based on type
+  if (bgType === 'image') {
+    var img = new Image()
+    img.crossOrigin = 'anonymous'
+
+    img.onload = function() {
+      // Draw image covering the canvas (like object-fit: cover)
+      var iw = img.width
+      var ih = img.height
+      var scale = Math.max(1080 / iw, 1080 / ih)
+      var sw = iw * scale
+      var sh = ih * scale
+      var sx = (1080 - sw) / 2
+      var sy = (1080 - sh) / 2
+
+      // Apply blur if needed
+      if (blurAmount > 0) {
+        ctx.filter = 'blur(' + (blurAmount * 3) + 'px)'
+      }
+      ctx.drawImage(img, sx, sy, sw, sh)
+      ctx.filter = 'none'
+
+      drawContent()
+    }
+
+    img.onerror = function() {
+      console.error('Image failed to load, using fallback')
+      // Fill with primary color as fallback
+      ctx.fillStyle = '#1E4060'
+      ctx.fillRect(0, 0, 1080, 1080)
+      drawContent()
+    }
+
+    img.src = bgValue
+
+  } else if (bgType === 'color') {
+    ctx.fillStyle = bgValue
+    ctx.fillRect(0, 0, 1080, 1080)
+    drawContent()
+
+  } else if (bgType === 'gradient') {
+    // Parse the gradient
+    var gradient = ctx.createLinearGradient(0, 0, 1080, 1080)
+    // Simple parse — takes the two hex colors from linear-gradient(...,#hex,#hex)
+    var colorMatches = bgValue.match(/#[0-9A-Fa-f]{6}/g)
+    if (colorMatches && colorMatches.length >= 2) {
+      gradient.addColorStop(0, colorMatches[0])
+      gradient.addColorStop(1, colorMatches[1])
+    } else {
+      gradient.addColorStop(0, '#152E45')
+      gradient.addColorStop(1, '#1E4060')
+    }
+    ctx.fillStyle = gradient
+    ctx.fillRect(0, 0, 1080, 1080)
+    drawContent()
+
+  } else {
+    // Unknown — default background
+    ctx.fillStyle = '#16202A'
+    ctx.fillRect(0, 0, 1080, 1080)
+    drawContent()
+  }
+}
 
   // ════════════════════════════════════════════
   // TOAST
