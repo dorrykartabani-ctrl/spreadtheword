@@ -220,6 +220,72 @@
   </section>
 
   <!-- ─────────────────────────────────────── -->
+  <!-- RECRUIT WARRIORS -->
+  <!-- ─────────────────────────────────────── -->
+  <section class="bg-card-bg rounded-2xl shadow-card border border-border-soft overflow-hidden">
+
+    <div class="p-5 space-y-4">
+
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gold/15 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-gold-dim text-[20px] filled">handshake</span>
+        </div>
+        <div>
+          <h3 class="font-headline font-bold text-base text-text-dark">Recruit Warriors</h3>
+          <p class="text-[11px] text-text-muted">Invite others to spread the Word</p>
+        </div>
+      </div>
+
+      <!-- Recruit stats -->
+      <div class="bg-surface rounded-xl p-4 border border-border-soft">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-xs font-bold text-text-muted uppercase tracking-widest">Your Recruits</span>
+          <span id="recruitCountDisplay" class="font-headline font-extrabold text-2xl text-primary">0</span>
+        </div>
+        <div class="h-2 bg-card-bg rounded-full overflow-hidden mb-2">
+          <div id="recruitProgressBar" class="h-full tactical-gradient rounded-full transition-all duration-700" style="width:0%"></div>
+        </div>
+        <p id="recruitNextMilestone" class="text-[11px] text-text-light font-body">
+          Loading milestones...
+        </p>
+      </div>
+
+      <!-- Invite link -->
+      <div class="space-y-2">
+        <label class="text-[10px] font-bold text-text-muted uppercase tracking-widest">Your Invite Link</label>
+        <div class="flex items-center gap-2 bg-surface border border-border-soft rounded-xl px-3 py-2.5">
+          <span class="material-symbols-outlined text-text-light text-[18px]">link</span>
+          <p id="inviteLinkDisplay" class="flex-1 text-xs text-text-dark font-body truncate">
+            Loading...
+          </p>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex gap-2">
+        <button onclick="copyInviteLink()"
+          class="flex-1 py-3 bg-primary text-white font-bold text-sm rounded-xl
+          flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-tactical">
+          <span class="material-symbols-outlined text-[16px]">content_copy</span>
+          Copy
+        </button>
+        <button onclick="shareInviteLink()"
+          class="flex-1 py-3 bg-gold text-white font-bold text-sm rounded-xl
+          flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
+          <span class="material-symbols-outlined text-[16px]">share</span>
+          Share
+        </button>
+      </div>
+
+      <p class="text-[10px] text-text-light font-body text-center italic">
+        Every recruit strengthens the mission. Rewards coming soon.
+      </p>
+
+    </div>
+
+  </section>
+
+  <!-- ─────────────────────────────────────── -->
   <!-- PREFERENCES -->
   <!-- ─────────────────────────────────────── -->
   <section class="bg-card-bg rounded-2xl shadow-card border border-border-soft overflow-hidden">
@@ -236,7 +302,7 @@
         </div>
         <div>
           <span class="text-sm font-bold text-text-dark block">Push Notifications</span>
-          <span class="text-[11px] text-text-light">Daily briefings delivered</span>
+          <span class="text-[11px] text-text-light">Updates and Announcements from Head Command</span>
         </div>
       </div>
       <div id="notifToggle" class="toggle-switch on"
@@ -263,25 +329,7 @@
       </div>
     </div>
 
-    <!-- Default Font -->
-    <div class="settings-row flex items-center justify-between px-5 py-4 cursor-pointer border-b border-border-soft"
-      onclick="showToast('Font selection coming soon')">
-      <div class="flex items-center gap-3.5">
-        <div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-          <span class="material-symbols-outlined text-primary text-[18px]">text_fields</span>
-        </div>
-        <div>
-          <span class="text-sm font-bold text-text-dark block">Default Font</span>
-          <span class="text-[11px] text-text-light">For scripture overlays</span>
-        </div>
-      </div>
-      <div class="flex items-center gap-1 text-text-muted text-sm">
-        <span id="defaultFont">Jakarta</span>
-        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
-      </div>
-    </div>
-
-    <!-- Language -->
+        <!-- Language -->
     <div class="settings-row flex items-center justify-between px-5 py-4 cursor-pointer"
       onclick="showToast('Language settings coming soon')">
       <div class="flex items-center gap-3.5">
@@ -482,6 +530,8 @@
   var currentUser = null
   var userProfile = null
   var pendingAction = null
+  var inviteLink = ''
+  var recruitCount = 0
 
   // ════════════════════════════════════════════
   // WARRIOR LEVELS
@@ -676,8 +726,102 @@ if (nameEl) {
     }
   }
 
+  // ── Recruitment info ──
+  recruitCount = userProfile.recruit_count || 0
+  var inviteCode = userProfile.invite_code || ''
+
+  // Build invite link
+  inviteLink = window.location.origin + '/app/signup.html?ref=' + inviteCode
+
+  // Show invite link
+  var linkEl = document.getElementById('inviteLinkDisplay')
+  if (linkEl) linkEl.textContent = inviteLink
+
+  // Show recruit count
+  var countEl = document.getElementById('recruitCountDisplay')
+  if (countEl) countEl.textContent = recruitCount
+
+  // Show progress to next recruit milestone
+  var recruitMilestones = [1, 5, 10, 25, 50]
+  var nextMilestone = null
+  for (var i = 0; i < recruitMilestones.length; i++) {
+    if (recruitCount < recruitMilestones[i]) {
+      nextMilestone = recruitMilestones[i]
+      break
+    }
+  }
+
+  var progressBar = document.getElementById('recruitProgressBar')
+  var nextMsEl    = document.getElementById('recruitNextMilestone')
+
+  if (nextMilestone) {
+    var prevMilestone = 0
+    for (var j = recruitMilestones.length - 1; j >= 0; j--) {
+      if (recruitMilestones[j] <= recruitCount) {
+        prevMilestone = recruitMilestones[j]
+        break
+      }
+    }
+    var progress = ((recruitCount - prevMilestone) / (nextMilestone - prevMilestone)) * 100
+    var remaining = nextMilestone - recruitCount
+    if (nextMsEl) nextMsEl.textContent = remaining + ' more to unlock next milestone (' + nextMilestone + ')'
+    if (progressBar) setTimeout(function() { progressBar.style.width = Math.min(progress, 100) + '%' }, 300)
+  } else {
+    if (nextMsEl) nextMsEl.textContent = 'All recruit milestones unlocked! Legendary status.'
+    if (progressBar) setTimeout(function() { progressBar.style.width = '100%' }, 300)
+  }
+
   // Render platform picker
   renderPlatformOptions(defaultPlatform)
+}
+
+// ════════════════════════════════════════════
+// RECRUITMENT — Copy invite link
+// ════════════════════════════════════════════
+function copyInviteLink() {
+  if (!inviteLink) { showToast('Invite link not ready'); return }
+
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(inviteLink).then(function() {
+      showToast('Invite link copied!')
+    })
+  } else {
+    var ta = document.createElement('textarea')
+    ta.value = inviteLink
+    document.body.appendChild(ta)
+    ta.select()
+    document.execCommand('copy')
+    document.body.removeChild(ta)
+    showToast('Invite link copied!')
+  }
+}
+
+// ════════════════════════════════════════════
+// RECRUITMENT — Share invite link
+// ════════════════════════════════════════════
+async function shareInviteLink() {
+  if (!inviteLink) { showToast('Invite link not ready'); return }
+
+  var shareText = 'Join me in spreading the Word every day. Sign up here: ' + inviteLink
+
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: 'Join Go Spread The Word',
+        text: shareText,
+        url: inviteLink
+      })
+    } catch(e) {
+      if (e.name !== 'AbortError') {
+        console.error('Share failed:', e)
+        // Fallback to copy
+        copyInviteLink()
+      }
+    }
+  } else {
+    // Desktop — copy instead
+    copyInviteLink()
+  }
 }
 
   // ════════════════════════════════════════════
