@@ -287,62 +287,260 @@
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-  var supabaseClient = supabase.createClient(
+   var supabaseClient = supabase.createClient(
     'https://nhymadutuhpjgkiurify.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
   )
 
   async function checkAdminAuth() {
-  try {
-    var result = await supabaseClient.auth.getSession()
+    try {
+      var result = await supabaseClient.auth.getSession()
 
-    if (!result.data.session) {
-      await new Promise(function(r) { setTimeout(r, 500) })
-      result = await supabaseClient.auth.getSession()
-    }
+      if (!result.data.session) {
+        await new Promise(function(r) { setTimeout(r, 500) })
+        result = await supabaseClient.auth.getSession()
+      }
 
-    if (!result.data.session) {
-      var refreshed = await supabaseClient.auth.refreshSession()
-      if (!refreshed.data.session) {
+      if (!result.data.session) {
+        var refreshed = await supabaseClient.auth.refreshSession()
+        if (!refreshed.data.session) {
+          window.location.href = 'login.html'
+          return false
+        }
+        result = refreshed
+      }
+
+      var userId = result.data.session.user.id
+      var email  = result.data.session.user.email || ''
+
+      var profileResult = await supabaseClient
+        .from('profiles')
+        .select('role, full_name')
+        .eq('id', userId)
+        .single()
+
+      if (profileResult.error || !profileResult.data) {
         window.location.href = 'login.html'
         return false
       }
-      result = refreshed
-    }
 
-    var userId = result.data.session.user.id
-    var email  = result.data.session.user.email || ''
+      if (profileResult.data.role !== 'admin') {
+        window.location.href = '../app/index.html'
+        return false
+      }
 
-    var profileResult = await supabaseClient
-      .from('profiles')
-      .select('role, full_name')
-      .eq('id', userId)
-      .single()
+      var initials = email.substring(0, 2).toUpperCase()
+      var name = profileResult.data.full_name || email
 
-    if (profileResult.error || !profileResult.data) {
+      document.querySelectorAll('.admin-initials').forEach(function(el) { el.textContent = initials })
+      document.querySelectorAll('.admin-name').forEach(function(el) { el.textContent = name })
+
+      return true
+
+    } catch(e) {
+      console.error('checkAdminAuth error:', e)
       window.location.href = 'login.html'
       return false
     }
+  }
 
-    if (profileResult.data.role !== 'admin') {
-      window.location.href = '../app/index.html'
-      return false
+  function toggleSidebar() {
+    var s = document.getElementById('sidebar')
+    var o = document.getElementById('sidebarOverlay')
+    s.classList.toggle('hidden')
+    s.classList.toggle('flex')
+    o.classList.toggle('hidden')
+  }
+
+  function animateCounter(el, target, duration, prefix) {
+    if (!el) return
+    var current = 0
+    var step = target / (duration / 16)
+    var timer = setInterval(function() {
+      current += step
+      if (current >= target) { current = target; clearInterval(timer) }
+      el.textContent = (prefix || '') + Math.floor(current).toLocaleString()
+    }, 16)
+  }
+
+  function timeAgo(dateStr) {
+    if (!dateStr) return 'Unknown'
+    var now  = new Date()
+    var then = new Date(dateStr)
+    var mins = Math.floor((now - then) / 60000)
+    var hrs  = Math.floor(mins / 60)
+    var days = Math.floor(hrs / 24)
+    if (mins < 1)  return 'Just now'
+    if (mins < 60) return mins + ' min ago'
+    if (hrs < 24)  return hrs + 'h ago'
+    if (days < 7)  return days + 'd ago'
+    return then.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
+  async function loadDashboard() {
+    var results = await Promise.all([
+      supabaseClient.from('profiles').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('shares').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('quotes').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('projects').select('*', { count: 'exact', head: true }).eq('status', 'active')
+    ])
+
+    animateCounter(document.getElementById('statWarriors'), results[0].count || 0, 800)
+    animateCounter(document.getElementById('statShares'),   results[1].count || 0, 800)
+    animateCounter(document.getElementById('statQuotes'),   results[2].count || 0, 800)
+    animateCounter(document.getElementById('statProjects'), results[3].count || 0, 800)
+
+    // Recent activity
+    var quotesResult = await supabaseClient
+      .from('quotes')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(4)
+
+    var sharesResult = await supabaseClient
+      .from('shares')
+      .select('*')
+      .order('shared_at', { ascending: false })
+      .limit(3)
+
+    var activityEl = document.getElementById('activityList')
+    if (activityEl) {
+      activityEl.innerHTML = ''
+
+      if (quotesResult.data && quotesResult.data.length > 0) {
+        quotesResult.data.forEach(function(q) {
+          activityEl.innerHTML +=
+            '<div class="flex items-start gap-4 p-4 hover:bg-cream rounded-xl transition-colors">'
+              + '<div class="mt-1.5 w-3 h-3 rounded-full bg-primary flex-shrink-0"></div>'
+              + '<div class="flex-1 min-w-0">'
+                + '<p class="text-sm font-body text-text-dark leading-snug">'
+                  + '<span class="font-bold">Quote ' + q.status + ':</span> '
+                  + '"' + (q.text || '').substring(0, 50) + '..." — ' + (q.source || '')
+                + '</p>'
+                + '<p class="text-xs text-text-light mt-1">' + timeAgo(q.created_at) + ' · Content</p>'
+              + '</div>'
+            + '</div>'
+        })
+      }
+
+      if (sharesResult.data && sharesResult.data.length > 0) {
+        sharesResult.data.forEach(function(s) {
+          activityEl.innerHTML +=
+            '<div class="flex items-start gap-4 p-4 hover:bg-cream rounded-xl transition-colors">'
+              + '<div class="mt-1.5 w-3 h-3 rounded-full bg-gold flex-shrink-0"></div>'
+              + '<div class="flex-1 min-w-0">'
+                + '<p class="text-sm font-body text-text-dark leading-snug">'
+                  + '<span class="font-bold">Shared:</span> via ' + (s.platform || 'unknown')
+                + '</p>'
+                + '<p class="text-xs text-text-light mt-1">' + timeAgo(s.shared_at) + ' · Engagement</p>'
+              + '</div>'
+            + '</div>'
+        })
+      }
+
+      if (activityEl.innerHTML === '') {
+        activityEl.innerHTML = '<p class="p-6 text-center text-text-light text-sm">No activity yet.</p>'
+      }
     }
 
-    var initials = email.substring(0, 2).toUpperCase()
-    var name = profileResult.data.full_name || email
+    // Active projects
+    var projectsResult = await supabaseClient
+      .from('projects')
+      .select('*')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(3)
 
-    document.querySelectorAll('.admin-initials').forEach(function(el) { el.textContent = initials })
-    document.querySelectorAll('.admin-name').forEach(function(el) { el.textContent = name })
+    var projectsEl = document.getElementById('projectCards')
+    if (projectsEl) {
+      projectsEl.innerHTML = ''
 
-    document.body.classList.add('auth-ready')
-    return true
+      if (projectsResult.data && projectsResult.data.length > 0) {
+        projectsResult.data.forEach(function(p) {
+          var pct = Math.round((Number(p.raised_amount) / Math.max(Number(p.goal_amount), 1)) * 100)
+          projectsEl.innerHTML +=
+            '<div class="bg-card-bg p-6 rounded-2xl shadow-card flex flex-col gap-5">'
+              + '<div>'
+                + '<div class="flex justify-between items-start mb-2">'
+                  + '<h4 class="font-headline font-bold text-text-dark">' + p.title + '</h4>'
+                  + '<span class="bg-primary/10 text-primary text-[10px] font-bold px-2.5 py-1 rounded-full">ACTIVE</span>'
+                + '</div>'
+                + '<p class="text-xs text-text-muted leading-relaxed">' + ((p.description || '').substring(0, 80)) + '...</p>'
+              + '</div>'
+              + '<div class="space-y-2">'
+                + '<div class="flex justify-between text-xs font-bold">'
+                  + '<span class="text-text-dark">$' + Number(p.raised_amount).toLocaleString() + ' / $' + Number(p.goal_amount).toLocaleString() + '</span>'
+                  + '<span class="text-primary">' + pct + '%</span>'
+                + '</div>'
+                + '<div class="h-2 w-full bg-cream rounded-full overflow-hidden">'
+                  + '<div class="h-full tactical-gradient rounded-full" style="width:' + pct + '%"></div>'
+                + '</div>'
+              + '</div>'
+              + '<a href="projects.html" class="w-full py-2.5 bg-cream text-text-muted font-bold text-xs rounded-xl text-center border border-border-soft block">Manage</a>'
+            + '</div>'
+        })
+      } else {
+        projectsEl.innerHTML = '<p class="col-span-3 text-center text-text-light text-sm py-8">No active projects. <a href="projects.html" class="text-primary font-bold">Create one</a></p>'
+      }
+    }
 
-  } catch(e) {
-    console.error('checkAdminAuth error:', e)
-    window.location.href = 'login.html'
-    return false
+    // Mission quote
+    var quoteResult = await supabaseClient
+      .from('quotes')
+      .select('text, source')
+      .eq('status', 'live')
+      .limit(1)
+      .single()
+
+    if (quoteResult.data) {
+      var mq = document.getElementById('missionQuote')
+      var mr = document.getElementById('missionRef')
+      if (mq) mq.textContent = '"' + quoteResult.data.text.substring(0, 80) + '..."'
+      if (mr) mr.textContent = '— ' + quoteResult.data.source
+    }
+
+    // Platform stats
+    var platformResult = await supabaseClient.from('shares').select('platform')
+    var platformEl = document.getElementById('platformStats')
+    if (platformEl) {
+      platformEl.innerHTML = ''
+
+      if (platformResult.data && platformResult.data.length > 0) {
+        var counts = {}
+        platformResult.data.forEach(function(s) {
+          var p = s.platform || 'Unknown'
+          counts[p] = (counts[p] || 0) + 1
+        })
+        var sorted = Object.keys(counts).sort(function(a, b) { return counts[b] - counts[a] })
+        sorted.slice(0, 8).forEach(function(platform) {
+          var count = counts[platform]
+          var pct = Math.round((count / platformResult.data.length) * 100)
+          platformEl.innerHTML +=
+            '<div class="bg-card-bg p-4 rounded-2xl shadow-card border border-border-soft">'
+              + '<p class="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1">' + platform + '</p>'
+              + '<p class="font-headline font-extrabold text-2xl text-text-dark mb-2">' + count.toLocaleString() + '</p>'
+              + '<div class="h-1.5 bg-surface rounded-full overflow-hidden">'
+                + '<div class="h-full tactical-gradient rounded-full" style="width:' + pct + '%"></div>'
+              + '</div>'
+              + '<p class="text-[10px] text-text-light mt-1">' + pct + '% of shares</p>'
+            + '</div>'
+        })
+      } else {
+        platformEl.innerHTML = '<p class="col-span-4 text-center text-text-light text-sm py-6">No share data yet</p>'
+      }
+    }
   }
-}</body>
-</html>
+
+  async function handleLogout() {
+    await supabaseClient.auth.signOut()
+    window.location.href = 'login.html'
+  }
+
+  async function init() {
+    var isAdmin = await checkAdminAuth()
+    if (!isAdmin) return
+    await loadDashboard()
+  }
+
+  init()
 </script>
