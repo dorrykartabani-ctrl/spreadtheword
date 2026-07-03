@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Edit — Go Spread The Word</title>
+  <title>Create — Go Spread The Word</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -41,15 +41,15 @@
     *{box-sizing:border-box}
     body{
       font-family:'Manrope',sans-serif;
-      background:#000;
+      background:#F0EDE6;
       -webkit-tap-highlight-color:transparent;
-      overflow:hidden;
-      height:100dvh;
+      overflow-y:auto;
+      min-height:100dvh;
       user-select:none;
       margin:0;
     }
     .font-headline{font-family:'Plus Jakarta Sans',sans-serif}
-    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle}
     .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
     .tactical-gradient{background:linear-gradient(145deg,#152E45,#1E4060)}
 
@@ -61,124 +61,230 @@
     .font-bebas{font-family:'Bebas Neue',sans-serif!important;letter-spacing:0.08em}
     .font-merri{font-family:'Merriweather',serif!important}
 
-    /* Quote overlay */
-    #quoteOverlay{cursor:grab;touch-action:none}
+    /* Preview canvas */
+    .preview-canvas{
+      position:relative;
+      width:100%;
+      aspect-ratio:1;
+      border-radius:16px;
+      overflow:hidden;
+      box-shadow:0 8px 32px rgba(0,0,0,0.15);
+      background:#16202A;
+      touch-action:none;
+    }
+
+    /* Quote overlay — draggable */
+    #quoteOverlay{cursor:grab;touch-action:none;position:absolute;z-index:10}
     #quoteOverlay:active{cursor:grabbing}
-    #quoteOverlay.dragging{border-color:#D4A24C!important}
 
     /* Tool buttons */
     .tool-btn{transition:all 0.15s ease;-webkit-tap-highlight-color:transparent}
-    .tool-btn.active{background:#1E4060!important}
-    .tool-btn.active .tool-icon{color:white!important}
-    .tool-btn.active .tool-label{color:white!important}
+    .tool-btn.active{background:#1E4060!important;color:white!important}
 
     /* Sub panel */
-    #subPanel{transition:transform 0.3s cubic-bezier(0.4,0,0.2,1),opacity 0.2s;transform:translateY(100%);opacity:0}
-    #subPanel.open{transform:translateY(0);opacity:1}
+    #subPanel{transition:max-height 0.3s ease,opacity 0.2s;max-height:0;opacity:0;overflow:hidden}
+    #subPanel.open{max-height:200px;opacity:1}
 
     /* Font options */
     .font-opt{transition:all 0.15s ease;cursor:pointer}
     .font-opt.selected{background:#1E4060!important;color:white!important;border-color:#1E4060!important}
 
     /* Color swatches */
-    .color-swatch{width:32px;height:32px;border-radius:50%;cursor:pointer;transition:transform 0.15s;border:3px solid transparent;flex-shrink:0}
+    .color-swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;transition:transform 0.15s;border:3px solid transparent;flex-shrink:0}
     .color-swatch:active{transform:scale(0.9)}
     .color-swatch.selected{border-color:white;transform:scale(1.15);box-shadow:0 0 0 2px rgba(30,64,96,0.3)}
 
-    /* Range slider */
-    input[type="range"]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:#E0DDD6;outline:none}
-    input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#1E4060;cursor:pointer;box-shadow:0 2px 8px rgba(30,64,96,0.3)}
+    /* Background options */
+    .bg-thumb{width:56px;height:56px;border-radius:12px;overflow:hidden;cursor:pointer;border:3px solid transparent;flex-shrink:0;transition:all 0.15s}
+    .bg-thumb:active{transform:scale(0.95)}
+    .bg-thumb.selected{border-color:#1E4060;box-shadow:0 0 0 2px rgba(30,64,96,0.3)}
 
-    /* Background picker sheet */
-    .bg-sheet{transition:transform 0.4s cubic-bezier(0.32,0.72,0,1);transform:translateY(100%)}
-    .bg-sheet.open{transform:translateY(0)}
-    .bg-option{transition:all 0.2s ease;cursor:pointer;position:relative;overflow:hidden;border:3px solid transparent;border-radius:12px}
-    .bg-option:active{transform:scale(0.96)}
-    .bg-option.selected{border-color:#1E4060;box-shadow:0 0 0 2px rgba(30,64,96,0.3)}
+    /* Filter options */
+    .filter-btn{transition:all 0.15s}
+    .filter-btn.active{background:#1E4060;color:white;border-color:#1E4060}
+
+    /* Text style options */
+    .style-btn{transition:all 0.15s}
+    .style-btn.active{background:#1E4060;color:white;border-color:#1E4060}
+
+    /* Range slider */
+    input[type="range"]{-webkit-appearance:none;width:100%;height:5px;border-radius:3px;background:#E0DDD6;outline:none}
+    input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#1E4060;cursor:pointer}
 
     /* No scrollbar */
     .no-scrollbar::-webkit-scrollbar{display:none}
     .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
 
-    @keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin 1s linear infinite;display:inline-block}
   </style>
 </head>
 
 <body>
 
-<!-- MOBILE WRAPPER -->
-<div class="max-w-[430px] mx-auto relative overflow-hidden" style="height:100dvh">
+<div class="max-w-[430px] mx-auto flex flex-col min-h-[100dvh]">
 
-  <!-- Hidden file input -->
-  <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelect(this)">
+  <!-- Hidden file inputs -->
+  <input type="file" id="selfieInput" accept="image/*" capture="user" class="hidden" onchange="handleImageSelect(this)">
   <input type="file" id="galleryInput" accept="image/*" class="hidden" onchange="handleImageSelect(this)">
 
-  <!-- BACKGROUND IMAGE -->
-  <div id="bgCanvas" class="absolute inset-0 z-0 bg-cover bg-center" style="background-image:url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80');background-color:#16202A">
-    <div id="bgOverlay" class="absolute inset-0 bg-black/30"></div>
-  </div>
-
-  <!-- TOP BAR -->
-  <header class="absolute top-0 left-0 right-0 h-14 z-50 flex items-center justify-between px-4 pt-2">
-    <div class="flex items-center gap-2">
-      <button onclick="goBack()" class="w-10 h-10 flex items-center justify-center bg-black/30 backdrop-blur-md rounded-full active:scale-90 transition-transform">
-        <span class="material-symbols-outlined text-white text-[22px]">arrow_back</span>
-      </button>
-      <button onclick="goHome()" class="w-10 h-10 flex items-center justify-center bg-black/30 backdrop-blur-md rounded-full active:scale-90 transition-transform">
-        <span class="material-symbols-outlined text-white text-[22px]">home</span>
-      </button>
-    </div>
-    <div class="bg-black/30 backdrop-blur-md px-4 py-1.5 rounded-full">
-      <span class="text-white text-xs font-body font-bold uppercase tracking-wider">Edit Your Word</span>
-    </div>
-    <button onclick="openBgPicker()" class="bg-black/30 backdrop-blur-md text-white font-body font-bold text-sm px-4 py-2 rounded-full active:scale-95 transition-transform flex items-center gap-1.5">
-      <span class="material-symbols-outlined text-[16px]">image</span>
-      Background
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- HEADER — Minimal -->
+  <!-- ═══════════════════════════════════════════ -->
+  <header class="flex items-center justify-between px-4 py-3 bg-surface border-b border-border-soft">
+    <button onclick="goBack()" class="w-10 h-10 flex items-center justify-center text-text-muted active:scale-90 transition-transform">
+      <span class="material-symbols-outlined text-[22px]">arrow_back</span>
     </button>
+    <span class="font-headline font-bold text-sm text-text-dark">Create</span>
+    <div class="w-10"></div>
   </header>
 
-  <!-- QUOTE OVERLAY — draggable -->
-  <div class="absolute inset-0 z-10 flex items-center justify-center px-6">
-    <div id="quoteOverlay" class="w-full max-w-sm border-2 border-dashed border-white/40 rounded-2xl p-6 flex flex-col items-center text-center">
-      <span id="quoteMark" class="text-[48px] leading-none text-gold/70 mb-1 drop-shadow-lg" style="font-family:Georgia,serif">"</span>
-      <p id="quoteText" class="font-lora font-semibold text-[20px] text-white leading-relaxed" style="opacity:0;transition:opacity 0.3s"></p>
-      <p id="quoteRef" class="mt-4 font-body font-bold text-sm text-white/90 tracking-wider" style="opacity:0;transition:opacity 0.3s"></p>
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- PREVIEW — Square 1:1 -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section class="px-4 pt-4">
+    <div class="preview-canvas" id="previewCanvas">
+      <!-- Background -->
+      <div id="bgLayer" class="absolute inset-0 bg-cover bg-center"
+        style="background-image:url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80')"></div>
+      <!-- Darkness overlay -->
+      <div id="darkLayer" class="absolute inset-0 bg-black/30"></div>
+      <!-- Filter layer -->
+      <div id="filterLayer" class="absolute inset-0"></div>
+
+      <!-- Quote overlay — draggable -->
+      <div id="quoteOverlay"
+        class="absolute left-[10%] top-[25%] w-[80%] p-4 flex flex-col text-center">
+        <span id="quoteMark" class="text-[36px] leading-none text-gold/60 mb-1" style="font-family:Georgia,serif">"</span>
+        <p id="quoteText" class="font-lora font-semibold text-[16px] text-white leading-snug"
+          style="opacity:0;transition:opacity 0.3s"></p>
+        <p id="quoteRef" class="mt-3 font-body font-bold text-[11px] text-white/90 tracking-wider"
+          style="opacity:0;transition:opacity 0.3s"></p>
+      </div>
     </div>
-  </div>
+  </section>
 
-  <!-- BOTTOM TOOLBAR -->
-  <div class="absolute bottom-0 left-0 right-0 bg-card-bg z-50 shadow-[0_-8px_32px_rgba(0,0,0,0.15)]">
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SELFIE BUTTON — Primary Action -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section class="px-4 pt-4">
+    <button onclick="takeSelfie()"
+      class="w-full py-3.5 bg-gold text-dark font-headline font-bold text-base rounded-2xl
+      flex items-center justify-center gap-3 shadow-lifted active:scale-[0.98] transition-transform">
+      <span class="material-symbols-outlined text-[22px]">photo_camera</span>
+      Take a Selfie
+    </button>
+  </section>
 
-    <!-- Sub Panel -->
-    <div id="subPanel" class="absolute bottom-full left-0 right-0 bg-card-bg border-t border-border-soft">
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- BACKGROUNDS — Inline horizontal scroll -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section class="px-4 pt-4">
+    <p class="text-[10px] font-bold text-text-light uppercase tracking-widest mb-2">Or choose a background</p>
+    <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+      <!-- Gallery pick -->
+      <button onclick="openGallery()"
+        class="bg-thumb bg-surface border-border-soft flex items-center justify-center flex-shrink-0 border-2">
+        <span class="material-symbols-outlined text-text-muted text-[20px]">image</span>
+      </button>
+      <!-- Presets -->
+      <div class="bg-thumb selected" onclick="selectPreset(this,'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80')">
+        <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=100&q=60" class="w-full h-full object-cover" alt="">
+      </div>
+      <div class="bg-thumb" onclick="selectPreset(this,'https://images.unsplash.com/photo-1477346611705-65d1883cee1e?w=800&q=80')">
+        <img src="https://images.unsplash.com/photo-1477346611705-65d1883cee1e?w=100&q=60" class="w-full h-full object-cover" alt="">
+      </div>
+      <div class="bg-thumb" onclick="selectPreset(this,'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80')">
+        <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=100&q=60" class="w-full h-full object-cover" alt="">
+      </div>
+      <div class="bg-thumb" onclick="selectPreset(this,'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&q=80')">
+        <img src="https://images.unsplash.com/photo-1501854140801-50d01698950b?w=100&q=60" class="w-full h-full object-cover" alt="">
+      </div>
+      <div class="bg-thumb" onclick="selectPreset(this,'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=800&q=80')">
+        <img src="https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=100&q=60" class="w-full h-full object-cover" alt="">
+      </div>
+      <div class="bg-thumb" onclick="selectPreset(this,'https://images.unsplash.com/photo-1490730141103-6cac27aaab94?w=800&q=80')">
+        <img src="https://images.unsplash.com/photo-1490730141103-6cac27aaab94?w=100&q=60" class="w-full h-full object-cover" alt="">
+      </div>
+      <!-- Colors -->
+      <div class="bg-thumb" style="background:#16202A" onclick="selectSolid(this,'#16202A')"></div>
+      <div class="bg-thumb" style="background:#1E4060" onclick="selectSolid(this,'#1E4060')"></div>
+      <div class="bg-thumb" style="background:#000000" onclick="selectSolid(this,'#000000')"></div>
+      <div class="bg-thumb" style="background:linear-gradient(145deg,#152E45,#1E4060)" onclick="selectGradient(this,'linear-gradient(145deg,#152E45,#1E4060)')"></div>
+      <div class="bg-thumb" style="background:linear-gradient(145deg,#D4A24C,#8B6914)" onclick="selectGradient(this,'linear-gradient(145deg,#D4A24C,#8B6914)')"></div>
+    </div>
+  </section>
 
-      <!-- FONT -->
-      <div id="panelFont" class="hidden p-4 pb-2">
-        <p class="text-[10px] font-bold uppercase tracking-widest text-text-light mb-3">Choose Font</p>
-        <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-          <button onclick="setFont('font-lora',this)" class="font-opt selected bg-primary text-white text-sm px-4 py-3 rounded-xl whitespace-nowrap border-2 border-primary" style="font-family:'Lora',serif">Lora</button>
-          <button onclick="setFont('font-jakarta',this)" class="font-opt bg-surface text-text-dark text-sm font-bold px-4 py-3 rounded-xl whitespace-nowrap border-2 border-border-soft" style="font-family:'Plus Jakarta Sans'">Jakarta</button>
-          <button onclick="setFont('font-playfair',this)" class="font-opt bg-surface text-text-dark text-sm font-bold px-4 py-3 rounded-xl whitespace-nowrap border-2 border-border-soft" style="font-family:'Playfair Display',serif">Playfair</button>
-          <button onclick="setFont('font-oswald',this)" class="font-opt bg-surface text-text-dark text-sm font-bold px-4 py-3 rounded-xl whitespace-nowrap border-2 border-border-soft" style="font-family:'Oswald'">OSWALD</button>
-          <button onclick="setFont('font-bebas',this)" class="font-opt bg-surface text-text-dark text-sm px-4 py-3 rounded-xl whitespace-nowrap border-2 border-border-soft" style="font-family:'Bebas Neue';letter-spacing:0.08em">BEBAS</button>
-          <button onclick="setFont('font-merri',this)" class="font-opt bg-surface text-text-dark text-sm font-bold px-4 py-3 rounded-xl whitespace-nowrap border-2 border-border-soft" style="font-family:'Merriweather',serif">Merriweather</button>
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- FILTERS — Horizontal scroll -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section class="px-4 pt-4">
+    <p class="text-[10px] font-bold text-text-light uppercase tracking-widest mb-2">Filter</p>
+    <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+      <button onclick="setFilter('none',this)" class="filter-btn active text-[10px] font-bold px-3 py-1.5 rounded-full border border-border-soft bg-card-bg">None</button>
+      <button onclick="setFilter('warm',this)" class="filter-btn text-[10px] font-bold px-3 py-1.5 rounded-full border border-border-soft bg-card-bg text-text-muted">Warm</button>
+      <button onclick="setFilter('cool',this)" class="filter-btn text-[10px] font-bold px-3 py-1.5 rounded-full border border-border-soft bg-card-bg text-text-muted">Cool</button>
+      <button onclick="setFilter('bw',this)" class="filter-btn text-[10px] font-bold px-3 py-1.5 rounded-full border border-border-soft bg-card-bg text-text-muted">B&W</button>
+      <button onclick="setFilter('sepia',this)" class="filter-btn text-[10px] font-bold px-3 py-1.5 rounded-full border border-border-soft bg-card-bg text-text-muted">Sepia</button>
+      <button onclick="setFilter('vivid',this)" class="filter-btn text-[10px] font-bold px-3 py-1.5 rounded-full border border-border-soft bg-card-bg text-text-muted">Vivid</button>
+      <button onclick="setFilter('dramatic',this)" class="filter-btn text-[10px] font-bold px-3 py-1.5 rounded-full border border-border-soft bg-card-bg text-text-muted">Dramatic</button>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- TEXT TOOLS -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section class="px-4 pt-4">
+    <p class="text-[10px] font-bold text-text-light uppercase tracking-widest mb-2">Text</p>
+
+    <!-- Tool buttons row -->
+    <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
+      <button onclick="toggleTool('font',this)" class="tool-btn flex-shrink-0 px-3 py-2 bg-card-bg border border-border-soft rounded-xl text-[10px] font-bold text-text-muted flex items-center gap-1">
+        <span class="material-symbols-outlined text-[16px]">text_fields</span> Font
+      </button>
+      <button onclick="toggleTool('size',this)" class="tool-btn flex-shrink-0 px-3 py-2 bg-card-bg border border-border-soft rounded-xl text-[10px] font-bold text-text-muted flex items-center gap-1">
+        <span class="material-symbols-outlined text-[16px]">format_size</span> Size
+      </button>
+      <button onclick="toggleTool('color',this)" class="tool-btn flex-shrink-0 px-3 py-2 bg-card-bg border border-border-soft rounded-xl text-[10px] font-bold text-text-muted flex items-center gap-1">
+        <div id="colorDot" class="w-4 h-4 rounded-full bg-white border border-text-light/30"></div> Color
+      </button>
+      <button onclick="cycleAlign()" class="tool-btn flex-shrink-0 px-3 py-2 bg-card-bg border border-border-soft rounded-xl text-[10px] font-bold text-text-muted flex items-center gap-1">
+        <span id="alignIcon" class="material-symbols-outlined text-[16px]">format_align_center</span> Align
+      </button>
+      <button onclick="toggleTool('style',this)" class="tool-btn flex-shrink-0 px-3 py-2 bg-card-bg border border-border-soft rounded-xl text-[10px] font-bold text-text-muted flex items-center gap-1">
+        <span class="material-symbols-outlined text-[16px]">auto_fix_high</span> Style
+      </button>
+      <button onclick="toggleTool('dark',this)" class="tool-btn flex-shrink-0 px-3 py-2 bg-card-bg border border-border-soft rounded-xl text-[10px] font-bold text-text-muted flex items-center gap-1">
+        <span class="material-symbols-outlined text-[16px]">brightness_4</span> Dark
+      </button>
+    </div>
+
+    <!-- Sub panel — slides open -->
+    <div id="subPanel" class="bg-card-bg rounded-xl border border-border-soft mt-2 px-4 py-3">
+
+      <!-- Font picker -->
+      <div id="toolFont" class="hidden">
+        <div class="flex gap-2 overflow-x-auto no-scrollbar">
+          <button onclick="setFont('font-lora',this)" class="font-opt selected text-xs px-3 py-2 rounded-lg whitespace-nowrap border-2 border-primary bg-primary text-white" style="font-family:'Lora',serif">Lora</button>
+          <button onclick="setFont('font-jakarta',this)" class="font-opt text-xs font-bold px-3 py-2 rounded-lg whitespace-nowrap border-2 border-border-soft bg-surface text-text-dark" style="font-family:'Plus Jakarta Sans'">Jakarta</button>
+          <button onclick="setFont('font-playfair',this)" class="font-opt text-xs font-bold px-3 py-2 rounded-lg whitespace-nowrap border-2 border-border-soft bg-surface text-text-dark" style="font-family:'Playfair Display',serif">Playfair</button>
+          <button onclick="setFont('font-oswald',this)" class="font-opt text-xs font-bold px-3 py-2 rounded-lg whitespace-nowrap border-2 border-border-soft bg-surface text-text-dark" style="font-family:'Oswald'">OSWALD</button>
+          <button onclick="setFont('font-bebas',this)" class="font-opt text-xs px-3 py-2 rounded-lg whitespace-nowrap border-2 border-border-soft bg-surface text-text-dark" style="font-family:'Bebas Neue';letter-spacing:0.08em">BEBAS</button>
+          <button onclick="setFont('font-merri',this)" class="font-opt text-xs font-bold px-3 py-2 rounded-lg whitespace-nowrap border-2 border-border-soft bg-surface text-text-dark" style="font-family:'Merriweather',serif">Merriweather</button>
         </div>
       </div>
 
-      <!-- SIZE -->
-      <div id="panelSize" class="hidden p-4 pb-2">
-        <div class="flex items-center justify-between mb-3">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-text-light">Text Size</p>
-          <span id="sizeLabel" class="text-sm font-bold text-primary">20px</span>
+      <!-- Size slider -->
+      <div id="toolSize" class="hidden">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] font-bold text-text-light">Text Size</span>
+          <span id="sizeLabel" class="text-xs font-bold text-primary">16px</span>
         </div>
-        <input type="range" min="14" max="34" value="20" oninput="setSize(this.value)">
-        <div class="flex justify-between text-[10px] text-text-light mt-1"><span>Small</span><span>Large</span></div>
+        <input type="range" min="12" max="28" value="16" oninput="setSize(this.value)">
       </div>
 
-      <!-- COLOR -->
-      <div id="panelColor" class="hidden p-4 pb-2">
-        <p class="text-[10px] font-bold uppercase tracking-widest text-text-light mb-3">Text Color</p>
-        <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+      <!-- Color swatches -->
+      <div id="toolColor" class="hidden">
+        <div class="flex gap-2 overflow-x-auto no-scrollbar">
           <div class="color-swatch selected" style="background:#FFFFFF;border-color:#1E4060" onclick="setColor('#FFFFFF',this)"></div>
           <div class="color-swatch" style="background:#FDE047" onclick="setColor('#FDE047',this)"></div>
           <div class="color-swatch" style="background:#D4A24C" onclick="setColor('#D4A24C',this)"></div>
@@ -187,158 +293,46 @@
           <div class="color-swatch" style="background:#F87171" onclick="setColor('#F87171',this)"></div>
           <div class="color-swatch" style="background:#93C5FD" onclick="setColor('#93C5FD',this)"></div>
           <div class="color-swatch" style="background:#86EFAC" onclick="setColor('#86EFAC',this)"></div>
-          <div class="color-swatch" style="background:#F9A8D4" onclick="setColor('#F9A8D4',this)"></div>
         </div>
       </div>
 
-      <!-- BLUR -->
-      <div id="panelBlur" class="hidden p-4 pb-2">
-        <div class="flex items-center justify-between mb-3">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-text-light">Background Blur</p>
-          <span id="blurLabel" class="text-sm font-bold text-primary">None</span>
+      <!-- Text style -->
+      <div id="toolStyle" class="hidden">
+        <div class="flex gap-2">
+          <button onclick="setTextStyle('clean',this)" class="style-btn active text-[10px] font-bold px-3 py-1.5 rounded-lg border border-border-soft bg-card-bg">Clean</button>
+          <button onclick="setTextStyle('shadow',this)" class="style-btn text-[10px] font-bold px-3 py-1.5 rounded-lg border border-border-soft bg-card-bg text-text-muted">Shadow</button>
+          <button onclick="setTextStyle('outline',this)" class="style-btn text-[10px] font-bold px-3 py-1.5 rounded-lg border border-border-soft bg-card-bg text-text-muted">Outline</button>
+          <button onclick="setTextStyle('pill',this)" class="style-btn text-[10px] font-bold px-3 py-1.5 rounded-lg border border-border-soft bg-card-bg text-text-muted">Background</button>
         </div>
-        <input type="range" min="0" max="20" value="0" oninput="setBlur(this.value)">
-        <div class="flex justify-between text-[10px] text-text-light mt-1"><span>None</span><span>Heavy</span></div>
       </div>
 
-      <!-- DARKNESS -->
-      <div id="panelDark" class="hidden p-4 pb-2">
-        <div class="flex items-center justify-between mb-3">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-text-light">Photo Darkness</p>
-          <span id="darkLabel" class="text-sm font-bold text-primary">30%</span>
+      <!-- Darkness slider -->
+      <div id="toolDark" class="hidden">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] font-bold text-text-light">Darkness</span>
+          <span id="darkLabel" class="text-xs font-bold text-primary">30%</span>
         </div>
         <input type="range" min="0" max="80" value="30" oninput="setDarkness(this.value)">
-        <div class="flex justify-between text-[10px] text-text-light mt-1"><span>None</span><span>Dark</span></div>
       </div>
+
     </div>
+  </section>
 
-    <!-- Tools Row -->
-    <div class="flex items-center gap-2 px-4 py-3 overflow-x-auto no-scrollbar border-t border-border-soft">
-      <button onclick="togglePanel('Font',this)" class="tool-btn flex-shrink-0 w-[60px] h-14 bg-surface flex flex-col items-center justify-center rounded-2xl gap-0.5">
-        <span class="tool-icon material-symbols-outlined text-primary text-[22px]">text_fields</span>
-        <span class="tool-label text-[9px] font-bold uppercase tracking-tight text-text-muted">Font</span>
-      </button>
-      <button onclick="togglePanel('Size',this)" class="tool-btn flex-shrink-0 w-[60px] h-14 bg-surface flex flex-col items-center justify-center rounded-2xl gap-0.5">
-        <span class="tool-icon material-symbols-outlined text-primary text-[22px]">format_size</span>
-        <span class="tool-label text-[9px] font-bold uppercase tracking-tight text-text-muted">Size</span>
-      </button>
-      <button onclick="togglePanel('Color',this)" class="tool-btn flex-shrink-0 w-[60px] h-14 bg-surface flex flex-col items-center justify-center rounded-2xl gap-0.5">
-        <div id="colorPreview" class="w-6 h-6 rounded-full bg-white border-2 border-primary/30 shadow-sm"></div>
-        <span class="tool-label text-[9px] font-bold uppercase tracking-tight text-text-muted">Color</span>
-      </button>
-      <button onclick="togglePanel('Blur',this)" class="tool-btn flex-shrink-0 w-[60px] h-14 bg-surface flex flex-col items-center justify-center rounded-2xl gap-0.5">
-        <span class="tool-icon material-symbols-outlined text-primary text-[22px]">water_drop</span>
-        <span class="tool-label text-[9px] font-bold uppercase tracking-tight text-text-muted">Blur</span>
-      </button>
-      <button onclick="togglePanel('Dark',this)" class="tool-btn flex-shrink-0 w-[60px] h-14 bg-surface flex flex-col items-center justify-center rounded-2xl gap-0.5">
-        <span class="tool-icon material-symbols-outlined text-primary text-[22px]">brightness_4</span>
-        <span class="tool-label text-[9px] font-bold uppercase tracking-tight text-text-muted">Dark</span>
-      </button>
-      <button onclick="cycleAlign()" class="tool-btn flex-shrink-0 w-[60px] h-14 bg-surface flex flex-col items-center justify-center rounded-2xl gap-0.5">
-        <span id="alignIcon" class="tool-icon material-symbols-outlined text-primary text-[22px]">format_align_center</span>
-        <span class="tool-label text-[9px] font-bold uppercase tracking-tight text-text-muted">Align</span>
-      </button>
-    </div>
-
-    <!-- Next Button -->
-    <div class="px-5 pb-5 pt-1" style="padding-bottom:max(20px,env(safe-area-inset-bottom))">
-      <button onclick="goNext()" class="w-full py-3.5 tactical-gradient text-white font-headline font-bold text-base rounded-2xl flex items-center justify-center gap-2 shadow-tactical active:scale-[0.98] transition-transform">
-        Next — Add Caption
-        <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- BACKGROUND PICKER SHEET -->
-  <div id="bgPickerSheet" class="hidden absolute inset-0 bg-dark/50 backdrop-blur-sm z-[80] flex items-end justify-center" onclick="closeBgPicker()">
-    <div class="w-full bg-card-bg rounded-t-3xl p-6 pb-10 bg-sheet max-h-[70vh] overflow-y-auto no-scrollbar" onclick="event.stopPropagation()">
-      <div class="w-10 h-1 bg-text-light/30 rounded-full mx-auto mb-5"></div>
-      <h3 class="font-headline font-bold text-lg text-text-dark text-center mb-5">Choose Background</h3>
-
-      <!-- Camera + Gallery -->
-      <div class="flex gap-3 mb-5">
-        <button onclick="openCamera()" class="flex-1 flex items-center gap-3 p-4 rounded-2xl bg-surface border border-border-soft active:scale-[0.98] transition-transform">
-          <div class="w-10 h-10 rounded-xl tactical-gradient flex items-center justify-center text-white flex-shrink-0">
-            <span class="material-symbols-outlined text-[20px] filled">photo_camera</span>
-          </div>
-          <div class="text-left">
-            <span class="font-headline font-bold text-sm text-text-dark block">Camera</span>
-            <span class="font-body text-[10px] text-text-muted">Take a photo</span>
-          </div>
-        </button>
-        <button onclick="openGallery()" class="flex-1 flex items-center gap-3 p-4 rounded-2xl bg-surface border border-border-soft active:scale-[0.98] transition-transform">
-          <div class="w-10 h-10 rounded-xl bg-gold flex items-center justify-center text-white flex-shrink-0">
-            <span class="material-symbols-outlined text-[20px] filled">image</span>
-          </div>
-          <div class="text-left">
-            <span class="font-headline font-bold text-sm text-text-dark block">Gallery</span>
-            <span class="font-body text-[10px] text-text-muted">Pick a photo</span>
-          </div>
-        </button>
-      </div>
-
-      <!-- Preset Images -->
-      <p class="text-[10px] font-bold uppercase tracking-widest text-text-light mb-3">Preset Images</p>
-      <div class="grid grid-cols-4 gap-2 mb-5">
-        <div class="bg-option selected aspect-square rounded-xl overflow-hidden" onclick="selectPreset(this,'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80')">
-          <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=200&q=60" class="w-full h-full object-cover" alt="">
-        </div>
-        <div class="bg-option aspect-square rounded-xl overflow-hidden" onclick="selectPreset(this,'https://images.unsplash.com/photo-1477346611705-65d1883cee1e?w=800&q=80')">
-          <img src="https://images.unsplash.com/photo-1477346611705-65d1883cee1e?w=200&q=60" class="w-full h-full object-cover" alt="">
-        </div>
-        <div class="bg-option aspect-square rounded-xl overflow-hidden" onclick="selectPreset(this,'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80')">
-          <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=200&q=60" class="w-full h-full object-cover" alt="">
-        </div>
-        <div class="bg-option aspect-square rounded-xl overflow-hidden" onclick="selectPreset(this,'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&q=80')">
-          <img src="https://images.unsplash.com/photo-1501854140801-50d01698950b?w=200&q=60" class="w-full h-full object-cover" alt="">
-        </div>
-        <div class="bg-option aspect-square rounded-xl overflow-hidden" onclick="selectPreset(this,'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=800&q=80')">
-          <img src="https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=200&q=60" class="w-full h-full object-cover" alt="">
-        </div>
-        <div class="bg-option aspect-square rounded-xl overflow-hidden" onclick="selectPreset(this,'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800&q=80')">
-          <img src="https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=200&q=60" class="w-full h-full object-cover" alt="">
-        </div>
-        <div class="bg-option aspect-square rounded-xl overflow-hidden" onclick="selectPreset(this,'https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?w=800&q=80')">
-          <img src="https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?w=200&q=60" class="w-full h-full object-cover" alt="">
-        </div>
-        <div class="bg-option aspect-square rounded-xl overflow-hidden" onclick="selectPreset(this,'https://images.unsplash.com/photo-1490730141103-6cac27aaab94?w=800&q=80')">
-          <img src="https://images.unsplash.com/photo-1490730141103-6cac27aaab94?w=200&q=60" class="w-full h-full object-cover" alt="">
-        </div>
-      </div>
-
-      <!-- Solid Colors -->
-      <p class="text-[10px] font-bold uppercase tracking-widest text-text-light mb-3">Solid Colors</p>
-      <div class="grid grid-cols-8 gap-2 mb-5">
-        <div class="bg-option w-full aspect-square rounded-lg" style="background:#16202A" onclick="selectSolid(this,'#16202A')"></div>
-        <div class="bg-option w-full aspect-square rounded-lg" style="background:#1E4060" onclick="selectSolid(this,'#1E4060')"></div>
-        <div class="bg-option w-full aspect-square rounded-lg" style="background:#0F1E2E" onclick="selectSolid(this,'#0F1E2E')"></div>
-        <div class="bg-option w-full aspect-square rounded-lg" style="background:#D4A24C" onclick="selectSolid(this,'#D4A24C')"></div>
-        <div class="bg-option w-full aspect-square rounded-lg" style="background:#E25B4D" onclick="selectSolid(this,'#E25B4D')"></div>
-        <div class="bg-option w-full aspect-square rounded-lg" style="background:#1B5E20" onclick="selectSolid(this,'#1B5E20')"></div>
-        <div class="bg-option w-full aspect-square rounded-lg" style="background:#000000" onclick="selectSolid(this,'#000000')"></div>
-        <div class="bg-option w-full aspect-square rounded-lg" style="background:#FFFFFF;border:1px solid #ddd" onclick="selectSolid(this,'#FFFFFF')"></div>
-      </div>
-
-      <!-- Gradients -->
-      <p class="text-[10px] font-bold uppercase tracking-widest text-text-light mb-3">Gradients</p>
-      <div class="grid grid-cols-4 gap-2 mb-4">
-        <div class="bg-option w-full aspect-square rounded-lg" style="background:linear-gradient(145deg,#152E45,#1E4060)" onclick="selectGradient(this,'linear-gradient(145deg,#152E45,#1E4060)')"></div>
-        <div class="bg-option w-full aspect-square rounded-lg" style="background:linear-gradient(145deg,#D4A24C,#8B6914)" onclick="selectGradient(this,'linear-gradient(145deg,#D4A24C,#8B6914)')"></div>
-        <div class="bg-option w-full aspect-square rounded-lg" style="background:linear-gradient(145deg,#E25B4D,#C84A3E)" onclick="selectGradient(this,'linear-gradient(145deg,#E25B4D,#C84A3E)')"></div>
-        <div class="bg-option w-full aspect-square rounded-lg" style="background:linear-gradient(135deg,#000000,#434343)" onclick="selectGradient(this,'linear-gradient(135deg,#000000,#434343)')"></div>
-      </div>
-
-      <button onclick="closeBgPicker()" class="w-full py-3 text-text-muted font-bold text-sm text-center active:scale-95 transition-transform">
-        Close
-      </button>
-    </div>
-  </div>
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- NEXT BUTTON -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section class="px-4 pt-5 pb-8">
+    <button onclick="goNext()"
+      class="w-full py-3.5 tactical-gradient text-white font-headline font-bold text-base rounded-2xl
+      flex items-center justify-center gap-2 shadow-tactical active:scale-[0.98] transition-transform">
+      Next — Preview & Share
+      <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+    </button>
+  </section>
 
 </div>
 <script>
-  // ════════════════════════════════════════════
-  // SUPABASE
-  // ════════════════════════════════════════════
+
   var supabaseClient = supabase.createClient(
     'https://nhymadutuhpjgkiurify.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
@@ -347,13 +341,14 @@
   // ════════════════════════════════════════════
   // STATE
   // ════════════════════════════════════════════
-  var quoteText, quoteRef, quoteOverlay, bgCanvas, bgOverlay, subPanel
-  var currentPanel = null
-  var currentBtn = null
+  var selectedBgType  = 'image'
+  var selectedBgValue = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80'
+  var currentFilter   = 'none'
+  var currentTextStyle = 'clean'
+  var currentTool     = null
+  var currentToolBtn  = null
   var dragActive = false
   var dragStartX = 0, dragStartY = 0, overlayStartX = 0, overlayStartY = 0
-  var selectedBgType = 'image'
-  var selectedBgValue = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80'
 
   var fontMap = {
     'font-lora': "'Lora', serif",
@@ -365,55 +360,47 @@
   }
   var fontClasses = Object.keys(fontMap)
 
+  var filterCSS = {
+    'none':     '',
+    'warm':     'saturate(1.3) sepia(0.15)',
+    'cool':     'saturate(0.9) hue-rotate(10deg) brightness(1.05)',
+    'bw':       'grayscale(1)',
+    'sepia':    'sepia(0.8)',
+    'vivid':    'saturate(1.5) contrast(1.1)',
+    'dramatic': 'contrast(1.3) brightness(0.9) saturate(1.2)'
+  }
+
   // ════════════════════════════════════════════
-  // DOM READY
+  // INIT
   // ════════════════════════════════════════════
   document.addEventListener('DOMContentLoaded', function() {
-    quoteText    = document.getElementById('quoteText')
-    quoteRef     = document.getElementById('quoteRef')
-    quoteOverlay = document.getElementById('quoteOverlay')
-    bgCanvas     = document.getElementById('bgCanvas')
-    bgOverlay    = document.getElementById('bgOverlay')
-    subPanel     = document.getElementById('subPanel')
-
-    // Drag listeners
-    if (quoteOverlay) {
-      quoteOverlay.addEventListener('mousedown', onDragStart)
-      quoteOverlay.addEventListener('touchstart', onDragStart, { passive: false })
+    var overlay = document.getElementById('quoteOverlay')
+    if (overlay) {
+      overlay.addEventListener('mousedown', onDragStart)
+      overlay.addEventListener('touchstart', onDragStart, { passive: false })
     }
     document.addEventListener('mousemove', onDragMove)
     document.addEventListener('touchmove', onDragMove, { passive: false })
     document.addEventListener('mouseup', onDragEnd)
     document.addEventListener('touchend', onDragEnd)
 
-    // Close panel on background tap
-    document.addEventListener('click', function(e) {
-      if (!currentPanel) return
-      if (e.target.closest('.tool-btn') || e.target.closest('#subPanel') || e.target.closest('#quoteOverlay') || e.target.closest('#bgPickerSheet')) return
-      if (subPanel) subPanel.classList.remove('open')
-      if (currentBtn) currentBtn.classList.remove('active')
-      currentPanel = null
-      currentBtn = null
-    })
-
-    init()
+    initEditor()
   })
 
-  // ════════════════════════════════════════════
-  // INIT
-  // ════════════════════════════════════════════
-  async function init() {
+  async function initEditor() {
     var session = await supabaseClient.auth.getSession()
     if (!session.data.session) { window.location.href = 'login.html'; return }
 
-    // Check for library-selected quote first
+    var qt = document.getElementById('quoteText')
+    var qr = document.getElementById('quoteRef')
+
     var selectedText   = sessionStorage.getItem('gstw_selected_quote_text')
     var selectedSource = sessionStorage.getItem('gstw_selected_quote_source')
     var selectedId     = sessionStorage.getItem('gstw_selected_quote_id')
 
     if (selectedText && selectedSource) {
-      if (quoteText) quoteText.textContent = selectedText
-      if (quoteRef) quoteRef.textContent = '— ' + selectedSource.toUpperCase()
+      if (qt) qt.textContent = selectedText
+      if (qr) qr.textContent = '— ' + selectedSource.toUpperCase()
       window.currentQuoteId = selectedId
     } else {
       var result = await supabaseClient
@@ -424,72 +411,80 @@
         .limit(1)
 
       if (result.data && result.data.length > 0) {
-        if (quoteText) quoteText.textContent = result.data[0].text
-        if (quoteRef) quoteRef.textContent = '— ' + result.data[0].source.toUpperCase()
+        if (qt) qt.textContent = result.data[0].text
+        if (qr) qr.textContent = '— ' + result.data[0].source.toUpperCase()
         window.currentQuoteId = result.data[0].id
       } else {
-        if (quoteText) quoteText.textContent = 'The Word is with you today.'
-        if (quoteRef) quoteRef.textContent = '— GSTW'
+        if (qt) qt.textContent = 'The Word is with you today.'
+        if (qr) qr.textContent = '— GSTW'
       }
     }
 
-    if (quoteText) quoteText.style.opacity = '1'
-    if (quoteRef) quoteRef.style.opacity = '1'
+    if (qt) qt.style.opacity = '1'
+    if (qr) qr.style.opacity = '1'
 
-    // Load saved background if coming back from caption page
+    // Restore saved background
     var savedBgType  = sessionStorage.getItem('gstw_bg_type')
     var savedBgValue = sessionStorage.getItem('gstw_bg_value')
     if (savedBgType && savedBgValue) {
-      selectedBgType  = savedBgType
+      selectedBgType = savedBgType
       selectedBgValue = savedBgValue
       applyBackground(savedBgType, savedBgValue)
     }
   }
 
   // ════════════════════════════════════════════
-  // BACKGROUND FUNCTIONS
+  // CAMERA / GALLERY
+  // ════════════════════════════════════════════
+  function takeSelfie() {
+    document.getElementById('selfieInput').click()
+  }
+
+  function openGallery() {
+    document.getElementById('galleryInput').click()
+  }
+
+  function handleImageSelect(input) {
+    var file = input.files[0]
+    if (!file) return
+    var reader = new FileReader()
+    reader.onload = function(e) {
+      selectedBgType = 'image'
+      selectedBgValue = e.target.result
+      applyBackground('image', e.target.result)
+      clearBgSelections()
+      showToast('Photo loaded')
+    }
+    reader.readAsDataURL(file)
+    input.value = ''
+  }
+
+  // ════════════════════════════════════════════
+  // BACKGROUNDS
   // ════════════════════════════════════════════
   function applyBackground(type, value) {
-    if (!bgCanvas) return
+    var bg = document.getElementById('bgLayer')
+    if (!bg) return
+
     if (type === 'image') {
-      bgCanvas.style.backgroundImage = "url('" + value + "')"
-      bgCanvas.style.backgroundSize = 'cover'
-      bgCanvas.style.backgroundPosition = 'center'
-      bgOverlay.style.background = 'rgba(0,0,0,0.3)'
-      if (quoteText) quoteText.style.color = 'white'
-      if (quoteRef) quoteRef.style.color = 'rgba(255,255,255,0.9)'
+      bg.style.backgroundImage = "url('" + value + "')"
+      bg.style.backgroundSize = 'cover'
+      bg.style.backgroundPosition = 'center'
+      bg.style.background = ''
+      bg.style.backgroundImage = "url('" + value + "')"
+      bg.style.backgroundSize = 'cover'
+      bg.style.backgroundPosition = 'center'
     } else if (type === 'color') {
-      bgCanvas.style.backgroundImage = 'none'
-      bgCanvas.style.background = value
-      var isLight = value === '#FFFFFF' || value === '#F7F4ED'
-      bgOverlay.style.background = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.1)'
-      if (quoteText) quoteText.style.color = isLight ? '#1A1A1A' : 'white'
-      if (quoteRef) quoteRef.style.color = isLight ? '#1E4060' : 'rgba(255,255,255,0.9)'
+      bg.style.backgroundImage = 'none'
+      bg.style.background = value
     } else if (type === 'gradient') {
-      bgCanvas.style.backgroundImage = 'none'
-      bgCanvas.style.background = value
-      bgOverlay.style.background = 'rgba(0,0,0,0.1)'
-      if (quoteText) quoteText.style.color = 'white'
-      if (quoteRef) quoteRef.style.color = 'rgba(255,255,255,0.9)'
+      bg.style.backgroundImage = 'none'
+      bg.style.background = value
     }
   }
 
-  function openBgPicker() {
-    var sheet = document.getElementById('bgPickerSheet')
-    var panel = sheet.querySelector('.bg-sheet')
-    sheet.classList.remove('hidden')
-    requestAnimationFrame(function() { panel.classList.add('open') })
-  }
-
-  function closeBgPicker() {
-    var sheet = document.getElementById('bgPickerSheet')
-    var panel = sheet.querySelector('.bg-sheet')
-    panel.classList.remove('open')
-    setTimeout(function() { sheet.classList.add('hidden') }, 400)
-  }
-
   function clearBgSelections() {
-    document.querySelectorAll('.bg-option').forEach(function(o) { o.classList.remove('selected') })
+    document.querySelectorAll('.bg-thumb').forEach(function(t) { t.classList.remove('selected') })
   }
 
   function selectPreset(el, url) {
@@ -516,86 +511,75 @@
     applyBackground('gradient', gradient)
   }
 
-  function openCamera() {
-    closeBgPicker()
-    setTimeout(function() { document.getElementById('cameraInput').click() }, 300)
-  }
+  // ════════════════════════════════════════════
+  // FILTERS
+  // ════════════════════════════════════════════
+  function setFilter(name, btn) {
+    currentFilter = name
+    var bg = document.getElementById('bgLayer')
+    if (bg) bg.style.filter = filterCSS[name] || ''
 
-  function openGallery() {
-    closeBgPicker()
-    setTimeout(function() { document.getElementById('galleryInput').click() }, 300)
-  }
-
-  function handleImageSelect(input) {
-    var file = input.files[0]
-    if (!file || !bgCanvas) return
-    var reader = new FileReader()
-    reader.onload = function(e) {
-      selectedBgType = 'image'
-      selectedBgValue = e.target.result
-      applyBackground('image', e.target.result)
-      clearBgSelections()
-      showToast('Photo loaded')
-    }
-    reader.readAsDataURL(file)
-    input.value = ''
+    document.querySelectorAll('.filter-btn').forEach(function(b) {
+      b.classList.remove('active', 'bg-primary', 'text-white')
+      b.classList.add('text-text-muted')
+    })
+    btn.classList.add('active', 'bg-primary', 'text-white')
+    btn.classList.remove('text-text-muted')
   }
 
   // ════════════════════════════════════════════
-  // PANEL TOGGLE
+  // TEXT TOOLS
   // ════════════════════════════════════════════
-  function togglePanel(name, btn) {
-    var panelEl = document.getElementById('panel' + name)
-    if (!panelEl || !subPanel) return
-    if (currentPanel === name) {
-      subPanel.classList.remove('open')
-      if (currentBtn) currentBtn.classList.remove('active')
-      currentPanel = null; currentBtn = null; return
+  function toggleTool(name, btn) {
+    var panel = document.getElementById('subPanel')
+    var toolEl = document.getElementById('tool' + name.charAt(0).toUpperCase() + name.slice(1))
+
+    if (currentTool === name) {
+      panel.classList.remove('open')
+      if (currentToolBtn) currentToolBtn.classList.remove('active')
+      currentTool = null
+      currentToolBtn = null
+      return
     }
-    if (currentBtn) currentBtn.classList.remove('active')
-    document.querySelectorAll('#subPanel > div').forEach(function(p) { p.classList.add('hidden') })
-    panelEl.classList.remove('hidden')
-    subPanel.classList.add('open')
+
+    document.querySelectorAll('#subPanel > div').forEach(function(d) { d.classList.add('hidden') })
+    if (toolEl) toolEl.classList.remove('hidden')
+    panel.classList.add('open')
+
+    if (currentToolBtn) currentToolBtn.classList.remove('active')
     btn.classList.add('active')
-    currentPanel = name; currentBtn = btn
+    currentTool = name
+    currentToolBtn = btn
   }
 
-  // ════════════════════════════════════════════
-  // FONT
-  // ════════════════════════════════════════════
   function setFont(fontClass, btn) {
-    if (!quoteText || !quoteRef) return
-    fontClasses.forEach(function(f) { quoteText.classList.remove(f); quoteRef.classList.remove(f) })
-    quoteText.classList.add(fontClass)
-    quoteRef.classList.add(fontClass)
-    quoteText.style.fontFamily = fontMap[fontClass]
-    quoteRef.style.fontFamily = fontMap[fontClass]
-    quoteText.style.fontStyle = fontClass === 'font-lora' ? 'normal' : 'normal'
-    quoteText.style.textTransform = fontClass === 'font-oswald' ? 'uppercase' : 'none'
+    var qt = document.getElementById('quoteText')
+    var qr = document.getElementById('quoteRef')
+    if (!qt || !qr) return
+    fontClasses.forEach(function(f) { qt.classList.remove(f); qr.classList.remove(f) })
+    qt.classList.add(fontClass)
+    qr.classList.add(fontClass)
+    qt.style.fontFamily = fontMap[fontClass]
+    qr.style.fontFamily = fontMap[fontClass]
+    qt.style.textTransform = fontClass === 'font-oswald' ? 'uppercase' : 'none'
     document.querySelectorAll('.font-opt').forEach(function(b) { b.classList.remove('selected') })
     btn.classList.add('selected')
-    showToast('Font: ' + btn.textContent.trim())
   }
 
-  // ════════════════════════════════════════════
-  // SIZE
-  // ════════════════════════════════════════════
   function setSize(val) {
-    if (!quoteText) return
-    quoteText.style.fontSize = val + 'px'
+    var qt = document.getElementById('quoteText')
+    if (qt) qt.style.fontSize = val + 'px'
     var label = document.getElementById('sizeLabel')
     if (label) label.textContent = val + 'px'
   }
 
-  // ════════════════════════════════════════════
-  // COLOR
-  // ════════════════════════════════════════════
   function setColor(hex, swatch) {
-    if (!quoteText || !quoteRef) return
-    quoteText.style.color = hex
-    quoteRef.style.color = hex
-    var preview = document.getElementById('colorPreview')
-    if (preview) preview.style.background = hex
+    var qt = document.getElementById('quoteText')
+    var qr = document.getElementById('quoteRef')
+    if (qt) qt.style.color = hex
+    if (qr) qr.style.color = hex
+    var dot = document.getElementById('colorDot')
+    if (dot) dot.style.background = hex
     document.querySelectorAll('.color-swatch').forEach(function(s) {
       s.classList.remove('selected')
       s.style.borderColor = 'transparent'
@@ -604,30 +588,13 @@
     swatch.style.borderColor = hex === '#000000' ? '#666' : 'white'
   }
 
-  // ════════════════════════════════════════════
-  // BLUR
-  // ════════════════════════════════════════════
-  function setBlur(val) {
-    if (!bgCanvas) return
-    bgCanvas.style.filter = 'blur(' + parseInt(val) + 'px)'
-    var labels = ['None','Low','Medium','High','Heavy']
-    var label = document.getElementById('blurLabel')
-    if (label) label.textContent = labels[Math.min(Math.floor(parseInt(val) / 5), 4)]
-  }
-
-  // ════════════════════════════════════════════
-  // DARKNESS
-  // ════════════════════════════════════════════
   function setDarkness(val) {
-    if (!bgOverlay) return
-    bgOverlay.style.background = 'rgba(0,0,0,' + (val / 100) + ')'
+    var dark = document.getElementById('darkLayer')
+    if (dark) dark.style.background = 'rgba(0,0,0,' + (val / 100) + ')'
     var label = document.getElementById('darkLabel')
     if (label) label.textContent = val + '%'
   }
 
-  // ════════════════════════════════════════════
-  // ALIGN
-  // ════════════════════════════════════════════
   var alignCycle = ['center','left','right']
   var alignIcons = { center:'format_align_center', left:'format_align_left', right:'format_align_right' }
   var alignIdx = 0
@@ -635,335 +602,292 @@
   function cycleAlign() {
     var qt = document.getElementById('quoteText')
     var qr = document.getElementById('quoteRef')
-    var qo = document.getElementById('quoteOverlay')
+    var overlay = document.getElementById('quoteOverlay')
     var icon = document.getElementById('alignIcon')
-    if (!qt || !qr || !qo || !icon) return
+    if (!qt || !qr || !overlay || !icon) return
     alignIdx = (alignIdx + 1) % alignCycle.length
     var a = alignCycle[alignIdx]
     qt.style.textAlign = a
     qr.style.textAlign = a
-    qo.style.textAlign = a
+    overlay.style.textAlign = a
     icon.textContent = alignIcons[a]
-    showToast('Align: ' + a)
+  }
+
+  function setTextStyle(style, btn) {
+    currentTextStyle = style
+    var qt = document.getElementById('quoteText')
+    var qr = document.getElementById('quoteRef')
+    var overlay = document.getElementById('quoteOverlay')
+    if (!qt) return
+
+    // Reset all styles
+    qt.style.textShadow = 'none'
+    qt.style.webkitTextStroke = ''
+    qr.style.textShadow = 'none'
+    overlay.style.background = 'transparent'
+    overlay.style.borderRadius = '0'
+    overlay.style.padding = '16px'
+
+    if (style === 'shadow') {
+      qt.style.textShadow = '0 2px 8px rgba(0,0,0,0.5)'
+      qr.style.textShadow = '0 2px 8px rgba(0,0,0,0.5)'
+    } else if (style === 'outline') {
+      qt.style.webkitTextStroke = '1px rgba(0,0,0,0.5)'
+      qr.style.webkitTextStroke = '0.5px rgba(0,0,0,0.5)'
+    } else if (style === 'pill') {
+      overlay.style.background = 'rgba(0,0,0,0.35)'
+      overlay.style.borderRadius = '16px'
+      overlay.style.padding = '20px'
+    }
+
+    document.querySelectorAll('.style-btn').forEach(function(b) {
+      b.classList.remove('active', 'bg-primary', 'text-white')
+      b.classList.add('text-text-muted')
+    })
+    btn.classList.add('active', 'bg-primary', 'text-white')
+    btn.classList.remove('text-text-muted')
   }
 
   // ════════════════════════════════════════════
   // DRAG
   // ════════════════════════════════════════════
   function onDragStart(e) {
-    if (!quoteOverlay) return
-    if (e.target.closest('.tool-btn') || e.target.closest('#subPanel')) return
+    var overlay = document.getElementById('quoteOverlay')
+    if (!overlay) return
     dragActive = true
-    quoteOverlay.classList.add('dragging')
     var cx = e.touches ? e.touches[0].clientX : e.clientX
     var cy = e.touches ? e.touches[0].clientY : e.clientY
-    var rect = quoteOverlay.getBoundingClientRect()
-    var parentRect = quoteOverlay.parentElement.getBoundingClientRect()
-    quoteOverlay.style.transform = 'none'
-    quoteOverlay.style.position = 'absolute'
-    quoteOverlay.style.left = (rect.left - parentRect.left) + 'px'
-    quoteOverlay.style.top = (rect.top - parentRect.top) + 'px'
-    dragStartX = cx; dragStartY = cy
-    overlayStartX = rect.left - parentRect.left
-    overlayStartY = rect.top - parentRect.top
+    var canvas = document.getElementById('previewCanvas')
+    var rect = overlay.getBoundingClientRect()
+    var canvasRect = canvas.getBoundingClientRect()
+    overlayStartX = rect.left - canvasRect.left
+    overlayStartY = rect.top - canvasRect.top
+    overlay.style.left = overlayStartX + 'px'
+    overlay.style.top = overlayStartY + 'px'
+    dragStartX = cx
+    dragStartY = cy
     if (e.cancelable) e.preventDefault()
   }
 
   function onDragMove(e) {
-    if (!dragActive || !quoteOverlay) return
+    if (!dragActive) return
+    var overlay = document.getElementById('quoteOverlay')
+    var canvas = document.getElementById('previewCanvas')
+    if (!overlay || !canvas) return
     var cx = e.touches ? e.touches[0].clientX : e.clientX
     var cy = e.touches ? e.touches[0].clientY : e.clientY
-    var parentRect = quoteOverlay.parentElement.getBoundingClientRect()
-    var maxX = parentRect.width - quoteOverlay.offsetWidth
-    var maxY = parentRect.height - quoteOverlay.offsetHeight
+    var canvasRect = canvas.getBoundingClientRect()
+    var maxX = canvasRect.width - overlay.offsetWidth
+    var maxY = canvasRect.height - overlay.offsetHeight
     var newX = Math.max(0, Math.min(overlayStartX + (cx - dragStartX), maxX))
     var newY = Math.max(0, Math.min(overlayStartY + (cy - dragStartY), maxY))
-    quoteOverlay.style.left = newX + 'px'
-    quoteOverlay.style.top = newY + 'px'
+    overlay.style.left = newX + 'px'
+    overlay.style.top = newY + 'px'
     if (e.cancelable) e.preventDefault()
   }
 
-  function onDragEnd() {
-    dragActive = false
-    if (quoteOverlay) quoteOverlay.classList.remove('dragging')
-  }
+  function onDragEnd() { dragActive = false }
 
   // ════════════════════════════════════════════
   // NAVIGATION
   // ════════════════════════════════════════════
   function goBack() { window.location.href = 'index.html' }
-  function goHome() { window.location.href = 'index.html' }
 
- function goNext() {
-  var qt      = document.getElementById('quoteText')
-  var qr      = document.getElementById('quoteRef')
-  var bg      = document.getElementById('bgCanvas')
-  var overlay = document.getElementById('bgOverlay')
+  function goNext() {
+    var qt = document.getElementById('quoteText')
+    var qr = document.getElementById('quoteRef')
+    var overlay = document.getElementById('quoteOverlay')
+    var canvas  = document.getElementById('previewCanvas')
+    var darkLayer = document.getElementById('darkLayer')
 
-  // Save all editor state
-  sessionStorage.setItem('gstw_quote_text',     qt ? qt.textContent : '')
-  sessionStorage.setItem('gstw_quote_ref',      qr ? qr.textContent : '')
-  sessionStorage.setItem('gstw_font_size',      qt ? (qt.style.fontSize || '20px') : '20px')
-  sessionStorage.setItem('gstw_text_color',     qt ? (qt.style.color || '#FFFFFF') : '#FFFFFF')
-  sessionStorage.setItem('gstw_text_align',     qt ? (qt.style.textAlign || 'center') : 'center')
-  sessionStorage.setItem('gstw_font_family',    qt ? (qt.style.fontFamily || "'Lora', serif") : "'Lora', serif")
-  sessionStorage.setItem('gstw_text_transform', qt ? (qt.style.textTransform || 'none') : 'none')
-  sessionStorage.setItem('gstw_blur',           bg ? (bg.style.filter || '') : '')
-  sessionStorage.setItem('gstw_darkness',       overlay ? (overlay.style.background || 'rgba(0,0,0,0.3)') : 'rgba(0,0,0,0.3)')
-  sessionStorage.setItem('gstw_quote_id',       window.currentQuoteId || '')
-  sessionStorage.setItem('gstw_bg_type',        selectedBgType)
-  sessionStorage.setItem('gstw_bg_value',       selectedBgValue)
+    // Save state
+    sessionStorage.setItem('gstw_quote_text', qt ? qt.textContent : '')
+    sessionStorage.setItem('gstw_quote_ref', qr ? qr.textContent : '')
+    sessionStorage.setItem('gstw_font_size', qt ? (qt.style.fontSize || '16px') : '16px')
+    sessionStorage.setItem('gstw_text_color', qt ? (qt.style.color || '#FFFFFF') : '#FFFFFF')
+    sessionStorage.setItem('gstw_text_align', qt ? (qt.style.textAlign || 'center') : 'center')
+    sessionStorage.setItem('gstw_font_family', qt ? (qt.style.fontFamily || "'Lora', serif") : "'Lora', serif")
+    sessionStorage.setItem('gstw_text_transform', qt ? (qt.style.textTransform || 'none') : 'none')
+    sessionStorage.setItem('gstw_text_style', currentTextStyle)
+    sessionStorage.setItem('gstw_filter', currentFilter)
+    sessionStorage.setItem('gstw_darkness', darkLayer ? (darkLayer.style.background || 'rgba(0,0,0,0.3)') : 'rgba(0,0,0,0.3)')
+    sessionStorage.setItem('gstw_quote_id', window.currentQuoteId || '')
+    sessionStorage.setItem('gstw_bg_type', selectedBgType)
+    sessionStorage.setItem('gstw_bg_value', selectedBgValue)
 
-  // Save position as percentages
-  if (quoteOverlay && quoteOverlay.parentElement) {
-    var parentRect = quoteOverlay.parentElement.getBoundingClientRect()
-    var overlayRect = quoteOverlay.getBoundingClientRect()
-    var xPercent = ((overlayRect.left - parentRect.left) / parentRect.width) * 100
-    var yPercent = ((overlayRect.top - parentRect.top) / parentRect.height) * 100
-    sessionStorage.setItem('gstw_overlay_x', xPercent)
-    sessionStorage.setItem('gstw_overlay_y', yPercent)
-  }
-
-  // Show loading state
-  var btn = document.querySelector('[onclick="goNext()"]')
-  if (btn) {
-    btn.innerHTML = '<span class="material-symbols-outlined text-[20px] spin">progress_activity</span> Generating...'
-    btn.style.pointerEvents = 'none'
-  }
-
-  // Generate image directly with Canvas API (no external library needed)
-  setTimeout(function() {
-    generateImage(qt, qr, bg, overlay)
-  }, 100)
-}
- // ════════════════════════════════════════════
-// GENERATE IMAGE — Canvas API (reliable)
-// ════════════════════════════════════════════
-function generateImage(qt, qr, bg, overlay) {
-  var canvas = document.createElement('canvas')
-  canvas.width = 1080
-  canvas.height = 1080
-  var ctx = canvas.getContext('2d')
-
-  // Fill with dark background as safety net
-  ctx.fillStyle = '#16202A'
-  ctx.fillRect(0, 0, 1080, 1080)
-
-  // Get all editor state
-  var bgType    = sessionStorage.getItem('gstw_bg_type') || 'image'
-  var bgValue   = sessionStorage.getItem('gstw_bg_value') || selectedBgValue
-  var xPct      = parseFloat(sessionStorage.getItem('gstw_overlay_x')) || 15
-  var yPct      = parseFloat(sessionStorage.getItem('gstw_overlay_y')) || 30
-  var align     = qt ? (qt.style.textAlign || 'center') : 'center'
-  var textColor = qt ? (qt.style.color || '#FFFFFF') : '#FFFFFF'
-  var fontSize  = parseInt(qt ? (qt.style.fontSize || '20') : '20')
-  var fontFam   = qt ? (qt.style.fontFamily || "'Lora', serif") : "'Lora', serif"
-  var textTransform = qt ? (qt.style.textTransform || 'none') : 'none'
-  var darkness  = overlay ? overlay.style.background : 'rgba(0,0,0,0.3)'
-  var blurAmount = 0
-  if (bg && bg.style.filter) {
-    var match = bg.style.filter.match(/blur\((\d+)/)
-    if (match) blurAmount = parseInt(match[1])
-  }
-
-  // Helper — draw text with word wrap and drop shadow
-  function drawText(ctx, text, x, y, maxWidth, lineHeight, align) {
-    if (textTransform === 'uppercase') text = text.toUpperCase()
-    var words = text.split(' ')
-    var line = ''
-    var lines = []
-
-    for (var n = 0; n < words.length; n++) {
-      var testLine = line + words[n] + ' '
-      var metrics = ctx.measureText(testLine)
-      if (metrics.width > maxWidth && n > 0) {
-        lines.push(line.trim())
-        line = words[n] + ' '
-      } else {
-        line = testLine
-      }
-    }
-    lines.push(line.trim())
-
-    // Apply subtle drop shadow for readability
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)'
-    ctx.shadowBlur = 8
-    ctx.shadowOffsetX = 0
-    ctx.shadowOffsetY = 2
-
-    var startY = y
-    for (var i = 0; i < lines.length; i++) {
-      var lineX = x
-      if (align === 'center') lineX = x + maxWidth / 2
-      if (align === 'right')  lineX = x + maxWidth
-      ctx.fillText(lines[i], lineX, startY + (i * lineHeight))
+    // Save position as percentages
+    if (overlay && canvas) {
+      var canvasRect = canvas.getBoundingClientRect()
+      var overlayRect = overlay.getBoundingClientRect()
+      var xPct = ((overlayRect.left - canvasRect.left) / canvasRect.width) * 100
+      var yPct = ((overlayRect.top - canvasRect.top) / canvasRect.height) * 100
+      sessionStorage.setItem('gstw_overlay_x', xPct)
+      sessionStorage.setItem('gstw_overlay_y', yPct)
     }
 
-    // Reset shadow
-    ctx.shadowColor = 'transparent'
-    ctx.shadowBlur = 0
-    ctx.shadowOffsetX = 0
-    ctx.shadowOffsetY = 0
+    // Show loading
+    var btn = document.querySelector('[onclick="goNext()"]')
+    if (btn) {
+      btn.innerHTML = '<span class="material-symbols-outlined text-[20px] spin">progress_activity</span> Generating...'
+      btn.style.pointerEvents = 'none'
+    }
 
-    return startY + (lines.length * lineHeight)
+    setTimeout(function() {
+      generateImage(qt, qr)
+    }, 100)
   }
 
-  // Helper — draw everything after background is ready
-  function drawContent() {
-    // Darkness overlay
-    ctx.fillStyle = darkness
+  // ════════════════════════════════════════════
+  // GENERATE IMAGE — Canvas API
+  // ════════════════════════════════════════════
+  function generateImage(qt, qr) {
+    var canvas = document.createElement('canvas')
+    canvas.width = 1080
+    canvas.height = 1080
+    var ctx = canvas.getContext('2d')
+
+    ctx.fillStyle = '#16202A'
     ctx.fillRect(0, 0, 1080, 1080)
 
-    // Position text — convert percentages to pixels
-    // Add safety padding so text doesn't go off edges
-    var padding = 60
-    var textAreaX = Math.max(padding, Math.min(xPct * 10.8, 1080 - padding - 200))
-    var textAreaY = Math.max(padding, Math.min(yPct * 10.8, 1080 - padding - 300))
-    var textMaxWidth = 1080 - (textAreaX * 2)
-    if (textMaxWidth < 600) textMaxWidth = 900 - (padding * 2)
+    var xPct = parseFloat(sessionStorage.getItem('gstw_overlay_x')) || 15
+    var yPct = parseFloat(sessionStorage.getItem('gstw_overlay_y')) || 30
+    var align = qt ? (qt.style.textAlign || 'center') : 'center'
+    var textColor = qt ? (qt.style.color || '#FFFFFF') : '#FFFFFF'
+    var fontSize = parseInt(qt ? (qt.style.fontSize || '16') : '16')
+    var fontFam = qt ? (qt.style.fontFamily || "'Lora', serif") : "'Lora', serif"
+    var textTransform = qt ? (qt.style.textTransform || 'none') : 'none'
+    var darkness = sessionStorage.getItem('gstw_darkness') || 'rgba(0,0,0,0.3)'
+    var textStyle = sessionStorage.getItem('gstw_text_style') || 'clean'
+    var filter = sessionStorage.getItem('gstw_filter') || 'none'
 
-    // Text alignment
-    if (align === 'center') {
-      ctx.textAlign = 'center'
-      textAreaX = 540
-      textMaxWidth = 900
-    } else if (align === 'right') {
-      ctx.textAlign = 'right'
-    } else {
-      ctx.textAlign = 'left'
-    }
-
-    // Draw decorative quote mark
-    ctx.font = '600 140px Georgia, serif'
-    ctx.fillStyle = 'rgba(212, 162, 76, 0.5)'
-    ctx.textBaseline = 'top'
-    if (align === 'center') {
-      ctx.fillText('"', 540, textAreaY - 60)
-    } else if (align === 'right') {
-      ctx.fillText('"', textAreaX, textAreaY - 60)
-    } else {
-      ctx.fillText('"', textAreaX, textAreaY - 60)
-    }
-
-    // Draw quote text
-    var scaledFontSize = fontSize * 3.2
-    ctx.font = '600 ' + scaledFontSize + 'px ' + fontFam
-    ctx.fillStyle = textColor
-    ctx.textBaseline = 'top'
-
-    var textEndY = drawText(
-      ctx,
-      qt ? qt.textContent : '',
-      align === 'center' ? 90 : textAreaX,
-      textAreaY + 80,
-      align === 'center' ? 900 : textMaxWidth,
-      scaledFontSize * 1.35,
-      align
-    )
-
-    // Draw reference
-    var refFontSize = Math.round(fontSize * 1.6)
-    ctx.font = 'bold ' + refFontSize + 'px "Plus Jakarta Sans", sans-serif'
-    ctx.fillStyle = textColor
-    ctx.globalAlpha = 0.9
-
-    // Subtle shadow on reference too
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'
-    ctx.shadowBlur = 6
-    ctx.shadowOffsetY = 2
-
-    var refText = qr ? qr.textContent : ''
-    var refY = textEndY + 30
-    var refX = align === 'center' ? 540 : textAreaX
-
-    ctx.fillText(refText, refX, refY)
-
-    // Reset
-    ctx.globalAlpha = 1
-    ctx.shadowColor = 'transparent'
-    ctx.shadowBlur = 0
-    ctx.shadowOffsetY = 0
-
-    // Export
-    try {
-      var dataUrl = canvas.toDataURL('image/png')
-      sessionStorage.setItem('gstw_final_image', dataUrl)
-    } catch(e) {
-      console.error('Export failed:', e)
-      sessionStorage.removeItem('gstw_final_image')
-    }
-
-    window.location.href = 'preview.html'
-  }
-
-  // Load background based on type
-  if (bgType === 'image') {
-    var img = new Image()
-    img.crossOrigin = 'anonymous'
-
-    img.onload = function() {
-      // Draw image covering the canvas (like object-fit: cover)
-      var iw = img.width
-      var ih = img.height
-      var scale = Math.max(1080 / iw, 1080 / ih)
-      var sw = iw * scale
-      var sh = ih * scale
-      var sx = (1080 - sw) / 2
-      var sy = (1080 - sh) / 2
-
-      // Apply blur if needed
-      if (blurAmount > 0) {
-        ctx.filter = 'blur(' + (blurAmount * 3) + 'px)'
+    function drawText(ctx, text, x, y, maxWidth, lineHeight, align) {
+      if (textTransform === 'uppercase') text = text.toUpperCase()
+      var words = text.split(' ')
+      var line = ''
+      var lines = []
+      for (var n = 0; n < words.length; n++) {
+        var testLine = line + words[n] + ' '
+        if (ctx.measureText(testLine).width > maxWidth && n > 0) {
+          lines.push(line.trim())
+          line = words[n] + ' '
+        } else { line = testLine }
       }
-      ctx.drawImage(img, sx, sy, sw, sh)
-      ctx.filter = 'none'
+      lines.push(line.trim())
 
-      drawContent()
+      if (textStyle === 'shadow') {
+        ctx.shadowColor = 'rgba(0,0,0,0.5)'
+        ctx.shadowBlur = 8
+        ctx.shadowOffsetY = 2
+      }
+
+      for (var i = 0; i < lines.length; i++) {
+        var lx = x
+        if (align === 'center') lx = x + maxWidth / 2
+        if (align === 'right') lx = x + maxWidth
+        ctx.fillText(lines[i], lx, y + (i * lineHeight))
+      }
+      ctx.shadowColor = 'transparent'
+      ctx.shadowBlur = 0
+      ctx.shadowOffsetY = 0
+      return y + (lines.length * lineHeight)
     }
 
-    img.onerror = function() {
-      console.error('Image failed to load, using fallback')
-      // Fill with primary color as fallback
-      ctx.fillStyle = '#1E4060'
+    function drawContent() {
+      ctx.fillStyle = darkness
+      ctx.fillRect(0, 0, 1080, 1080)
+
+      var padding = 60
+      var textX = Math.max(padding, xPct * 10.8)
+      var textY = Math.max(padding, yPct * 10.8)
+      var maxW = 900
+
+      if (align === 'center') { ctx.textAlign = 'center'; textX = 90 }
+      else if (align === 'right') { ctx.textAlign = 'right' }
+      else { ctx.textAlign = 'left' }
+
+      // Pill background if selected
+      if (textStyle === 'pill') {
+        var pillX = align === 'center' ? 60 : textX - 20
+        var pillW = align === 'center' ? 960 : maxW + 40
+        ctx.fillStyle = 'rgba(0,0,0,0.35)'
+        ctx.beginPath()
+        ctx.roundRect(pillX, textY - 20, pillW, 500, 20)
+        ctx.fill()
+      }
+
+      // Quote mark
+      ctx.font = "600 120px Georgia, serif"
+      ctx.fillStyle = 'rgba(212,162,76,0.5)'
+      ctx.textBaseline = 'top'
+      ctx.fillText('"', align === 'center' ? 540 : textX, textY - 40)
+
+      // Quote text
+      var scaled = fontSize * 3.2
+      ctx.font = '600 ' + scaled + 'px ' + fontFam
+      ctx.fillStyle = textColor
+      ctx.textBaseline = 'top'
+
+      var endY = drawText(ctx, qt ? qt.textContent : '', textX, textY + 80, maxW, scaled * 1.35, align)
+
+      // Reference
+      ctx.font = 'bold ' + Math.round(fontSize * 1.4) + 'px "Plus Jakarta Sans", sans-serif'
+      ctx.fillStyle = textColor
+      ctx.globalAlpha = 0.9
+      if (textStyle === 'shadow') {
+        ctx.shadowColor = 'rgba(0,0,0,0.4)'
+        ctx.shadowBlur = 6
+        ctx.shadowOffsetY = 2
+      }
+      ctx.fillText(qr ? qr.textContent : '', align === 'center' ? 540 : textX, endY + 25)
+      ctx.globalAlpha = 1
+      ctx.shadowColor = 'transparent'
+
+      try {
+        sessionStorage.setItem('gstw_final_image', canvas.toDataURL('image/png'))
+      } catch(e) {
+        sessionStorage.removeItem('gstw_final_image')
+      }
+      window.location.href = 'preview.html'
+    }
+
+    if (selectedBgType === 'image') {
+      var img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = function() {
+        var scale = Math.max(1080 / img.width, 1080 / img.height)
+        var sw = img.width * scale
+        var sh = img.height * scale
+        if (filter !== 'none' && filterCSS[filter]) ctx.filter = filterCSS[filter]
+        ctx.drawImage(img, (1080 - sw) / 2, (1080 - sh) / 2, sw, sh)
+        ctx.filter = 'none'
+        drawContent()
+      }
+      img.onerror = function() {
+        ctx.fillStyle = '#1E4060'
+        ctx.fillRect(0, 0, 1080, 1080)
+        drawContent()
+      }
+      img.src = selectedBgValue
+    } else if (selectedBgType === 'gradient') {
+      var gradient = ctx.createLinearGradient(0, 0, 1080, 1080)
+      var colors = selectedBgValue.match(/#[0-9A-Fa-f]{6}/g)
+      if (colors && colors.length >= 2) {
+        gradient.addColorStop(0, colors[0])
+        gradient.addColorStop(1, colors[1])
+      }
+      ctx.fillStyle = gradient
+      ctx.fillRect(0, 0, 1080, 1080)
+      drawContent()
+    } else {
+      ctx.fillStyle = selectedBgValue
       ctx.fillRect(0, 0, 1080, 1080)
       drawContent()
     }
-
-    img.src = bgValue
-
-  } else if (bgType === 'color') {
-    ctx.fillStyle = bgValue
-    ctx.fillRect(0, 0, 1080, 1080)
-    drawContent()
-
-  } else if (bgType === 'gradient') {
-    // Parse the gradient
-    var gradient = ctx.createLinearGradient(0, 0, 1080, 1080)
-    // Simple parse — takes the two hex colors from linear-gradient(...,#hex,#hex)
-    var colorMatches = bgValue.match(/#[0-9A-Fa-f]{6}/g)
-    if (colorMatches && colorMatches.length >= 2) {
-      gradient.addColorStop(0, colorMatches[0])
-      gradient.addColorStop(1, colorMatches[1])
-    } else {
-      gradient.addColorStop(0, '#152E45')
-      gradient.addColorStop(1, '#1E4060')
-    }
-    ctx.fillStyle = gradient
-    ctx.fillRect(0, 0, 1080, 1080)
-    drawContent()
-
-  } else {
-    // Unknown — default background
-    ctx.fillStyle = '#16202A'
-    ctx.fillRect(0, 0, 1080, 1080)
-    drawContent()
   }
-}
 
   // ════════════════════════════════════════════
   // TOAST
   // ════════════════════════════════════════════
-  var toastTimer
   function showToast(msg) {
     var existing = document.getElementById('editorToast')
     if (existing) existing.remove()
@@ -973,10 +897,9 @@ function generateImage(qt, qr, bg, overlay) {
     t.style.transform = 'translateX(-50%)'
     t.innerHTML = '<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:\'FILL\' 1">check_circle</span> ' + msg
     document.body.appendChild(t)
-    clearTimeout(toastTimer)
-    toastTimer = setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
+    setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
   }
-</script>
 
+</script>
 </body>
 </html>
