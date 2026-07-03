@@ -14,6 +14,7 @@
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -170,60 +171,53 @@
 </header>
 
 <!-- =================================================================
-     2. HERO SECTION
+     2. HERO SECTION — Admin Controlled
 ================================================================= -->
 <section id="home" class="relative min-h-screen flex items-center justify-center overflow-hidden pt-[72px]">
 
-  <!-- Background Image -->
+  <!-- Background Image — loaded from database -->
   <div class="absolute inset-0 z-0">
-    <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80"
-         alt="Mission landscape"
-         class="w-full h-full object-cover">
+    <img id="heroImage"
+      src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80"
+      alt="Mission"
+      class="w-full h-full object-cover transition-opacity duration-500"
+      style="opacity:0">
   </div>
 
-  <!-- Subtle dark overlay for text readability -->
-  <div class="absolute inset-0 z-[1] bg-gradient-to-b from-dark/30 via-dark/20 to-dark/40"></div>
+  <!-- Dark overlay for text readability -->
+  <div class="absolute inset-0 z-[1] bg-black/40"></div>
 
-  <!-- Content -->
-  <div class="relative z-10 w-full max-w-3xl mx-auto px-6 py-20 text-center">
-
-    <!-- Scripture Card (THE HERO) -->
-    <div class="bg-cream/93 backdrop-blur-sm rounded-2xl p-8 md:p-10 shadow-ambient border border-gold/40 mb-10">
-      <div class="scripture-mark text-gold text-7xl leading-none opacity-70 mb-2 text-left">"</div>
-      <p class="font-headline font-semibold italic text-xl md:text-2xl text-text-dark leading-relaxed">
-        And this gospel of the kingdom will be proclaimed throughout the whole world as a testimony to all nations, and then the end will come.
-      </p>
-      <p class="font-body font-bold text-sm md:text-base text-primary mt-5 tracking-wider">— MATTHEW 24:14</p>
-    </div>
+  <!-- Content — centered, clean, powerful -->
+  <div class="relative z-10 w-full max-w-2xl mx-auto px-6 py-20 text-center">
 
     <!-- Headline -->
-    <h1 class="font-headline font-extrabold text-4xl md:text-6xl text-white leading-tight tracking-tight mb-4" style="text-shadow: 2px 2px 16px rgba(0,0,0,0.5);">
-      A Call to Arms
+    <h1 id="heroHeadline"
+      class="font-headline font-extrabold text-4xl md:text-6xl text-white leading-tight tracking-tight mb-5"
+      style="text-shadow: 0 2px 20px rgba(0,0,0,0.4); opacity:0; transition: opacity 0.5s ease 0.2s">
+      Spread the Word.<br>Change the World.
     </h1>
 
     <!-- Subheadline -->
-    <p class="font-body font-medium text-base md:text-lg text-white/95 leading-relaxed max-w-xl mx-auto mb-3" style="text-shadow: 1px 1px 8px rgba(0,0,0,0.4);">
-      The Gospel must reach every nation, every tribe, every tongue before He returns. This is not optional. This is your commission. The clock is ticking.
+    <p id="heroSubheadline"
+      class="font-body font-medium text-base md:text-xl text-white/90 leading-relaxed max-w-lg mx-auto mb-10"
+      style="text-shadow: 0 1px 10px rgba(0,0,0,0.3); opacity:0; transition: opacity 0.5s ease 0.4s">
+      Join thousands sharing scripture and hope every day.
     </p>
 
-    <!-- Body -->
-    <p class="font-body text-sm md:text-base text-white/85 leading-relaxed max-w-xl mx-auto mb-8" style="text-shadow: 1px 1px 6px rgba(0,0,0,0.4);">
-      We are building an army of digital soldiers who carry the Word into every corner of the internet. Your face. Your platforms. His message. Your subscription funds the mission on the ground.
-    </p>
-
-    <!-- CTA Buttons -->
-    <div class="flex flex-col sm:flex-row gap-3 justify-center">
-      <a href="app/signup.html" class="action-gradient text-white font-headline font-bold text-base uppercase tracking-wider px-10 py-4 rounded-xl shadow-action-glow hover:scale-[1.02] transition-transform">
-        Enlist Now
-      </a>
-      <a href="app/signup.html" class="bg-white/15 backdrop-blur-sm text-white font-headline font-semibold text-base px-8 py-4 rounded-xl border border-white/40 hover:bg-white/25 transition-colors">
-        See the Mission
+    <!-- Single CTA -->
+    <div style="opacity:0; transition: opacity 0.5s ease 0.6s" id="heroCTA">
+      <a id="heroCTALink" href="app/signup.html"
+        class="inline-flex items-center gap-3 bg-gold text-dark font-headline font-bold text-base md:text-lg
+        uppercase tracking-wider px-10 py-5 rounded-2xl shadow-lifted
+        hover:bg-gold-dim hover:scale-[1.02] transition-all">
+        <span class="material-symbols-outlined text-[24px]">campaign</span>
+        <span id="heroCTAText">Spread The Word</span>
       </a>
     </div>
 
   </div>
-</section>
 
+</section>
 <!-- =================================================================
      3. WHY ENLIST?
 ================================================================= -->
@@ -1002,6 +996,82 @@
      JAVASCRIPT
 ================================================================= -->
 <script>
+
+// ════════════════════════════════════════════
+// LOAD HERO CONTENT FROM DATABASE
+// ════════════════════════════════════════════
+var landingSupabase = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+)
+
+async function loadHeroContent() {
+  try {
+    var result = await landingSupabase
+      .from('site_settings')
+      .select('id, value')
+
+    if (result.data && result.data.length > 0) {
+      var settings = {}
+      result.data.forEach(function(s) {
+        settings[s.id] = s.value
+      })
+
+      // Apply hero image
+      var heroImg = document.getElementById('heroImage')
+      if (heroImg && settings.hero_image) {
+        heroImg.src = settings.hero_image
+      }
+
+      // Apply headline
+      var headlineEl = document.getElementById('heroHeadline')
+      if (headlineEl && settings.hero_headline) {
+        // Support line breaks with |
+        headlineEl.innerHTML = settings.hero_headline.replace(/\|/g, '<br>')
+      }
+
+      // Apply subheadline
+      var subEl = document.getElementById('heroSubheadline')
+      if (subEl && settings.hero_subheadline) {
+        subEl.textContent = settings.hero_subheadline
+      }
+
+      // Apply CTA text
+      var ctaTextEl = document.getElementById('heroCTAText')
+      if (ctaTextEl && settings.hero_cta_text) {
+        ctaTextEl.textContent = settings.hero_cta_text
+      }
+
+      // Apply CTA link
+      var ctaLinkEl = document.getElementById('heroCTALink')
+      if (ctaLinkEl && settings.hero_cta_link) {
+        ctaLinkEl.href = settings.hero_cta_link
+      }
+    }
+  } catch(e) {
+    console.error('Failed to load hero content:', e)
+  }
+
+  // Fade in content regardless
+  var heroImg = document.getElementById('heroImage')
+  if (heroImg) {
+    heroImg.onload = function() { heroImg.style.opacity = '1' }
+    // If already loaded
+    if (heroImg.complete) heroImg.style.opacity = '1'
+  }
+
+  // Fade in text elements
+  setTimeout(function() {
+    var h = document.getElementById('heroHeadline')
+    var s = document.getElementById('heroSubheadline')
+    var c = document.getElementById('heroCTA')
+    if (h) h.style.opacity = '1'
+    if (s) s.style.opacity = '1'
+    if (c) c.style.opacity = '1'
+  }, 300)
+}
+
+loadHeroContent()
 
 // ════════════════════════════════════════════
 // MOBILE MENU TOGGLE
