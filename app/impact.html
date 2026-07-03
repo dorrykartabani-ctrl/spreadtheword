@@ -333,305 +333,327 @@
 </div>
 <script>
 
-  var supabaseClient = supabase.createClient(
-    'https://nhymadutuhpjgkiurify.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ4lEWeH1rngcbeHSxobOMIQahkM'
-  )
+ var supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+)
 
-  var currentUser = null
+var currentUser = null
 
-  var warriorLevels = [
-    { level: 1, title: 'Recruit',   min: 0,   max: 9 },
-    { level: 2, title: 'Soldier',   min: 10,  max: 49 },
-    { level: 3, title: 'Sergeant',  min: 50,  max: 99 },
-    { level: 4, title: 'Commander', min: 100, max: 199 },
-    { level: 5, title: 'General',   min: 200, max: 99999 }
-  ]
+// ════════════════════════════════════════════
+// WARRIOR LEVELS — Recruit renamed to Private
+// ════════════════════════════════════════════
+var warriorLevels = [
+  { level: 1, title: 'Private',   min: 0,   max: 9 },
+  { level: 2, title: 'Soldier',   min: 10,  max: 49 },
+  { level: 3, title: 'Sergeant',  min: 50,  max: 99 },
+  { level: 4, title: 'Commander', min: 100, max: 199 },
+  { level: 5, title: 'General',   min: 200, max: 99999 }
+]
 
-  var milestones = [
-    { id: 'first_share',   type: 'shares', threshold: 1,   title: 'First Word Shared',  icon: 'stars',            color: 'gold' },
-    { id: 'shares_10',     type: 'shares', threshold: 10,  title: '10 Words Deployed',  icon: 'shield',           color: 'primary' },
-    { id: 'shares_50',     type: 'shares', threshold: 50,  title: '50 Words Deployed',  icon: 'military_tech',    color: 'primary' },
-    { id: 'shares_100',    type: 'shares', threshold: 100, title: '100 Words Deployed', icon: 'military_tech',    color: 'gold' },
-    { id: 'shares_200',    type: 'shares', threshold: 200, title: '200 Words Deployed', icon: 'workspace_premium', color: 'action' },
-    { id: 'streak_7',      type: 'streak', threshold: 7,   title: '7 Day Streak',       icon: 'local_fire_department', color: 'action' },
-    { id: 'streak_30',     type: 'streak', threshold: 30,  title: '30 Day Streak',      icon: 'local_fire_department', color: 'gold' },
-    { id: 'streak_100',    type: 'streak', threshold: 100, title: 'Century Streak',     icon: 'emoji_events',     color: 'gold' }
-  ]
+// ════════════════════════════════════════════
+// MILESTONES — Shares + Streaks + Recruits
+// ════════════════════════════════════════════
+var milestones = [
+  { id: 'first_share',   type: 'shares',   threshold: 1,   title: 'First Word Shared',    icon: 'stars',              color: 'gold' },
+  { id: 'shares_10',     type: 'shares',   threshold: 10,  title: '10 Words Shared',      icon: 'shield',             color: 'primary' },
+  { id: 'shares_50',     type: 'shares',   threshold: 50,  title: '50 Words Shared',      icon: 'military_tech',      color: 'primary' },
+  { id: 'shares_100',    type: 'shares',   threshold: 100, title: '100 Words Shared',     icon: 'military_tech',      color: 'gold' },
+  { id: 'shares_200',    type: 'shares',   threshold: 200, title: '200 Words Shared',     icon: 'workspace_premium',  color: 'action' },
+  { id: 'streak_7',      type: 'streak',   threshold: 7,   title: '7 Day Streak',         icon: 'local_fire_department', color: 'action' },
+  { id: 'streak_30',     type: 'streak',   threshold: 30,  title: '30 Day Streak',        icon: 'local_fire_department', color: 'gold' },
+  { id: 'streak_100',    type: 'streak',   threshold: 100, title: 'Century Streak',       icon: 'emoji_events',       color: 'gold' },
+  { id: 'recruit_1',     type: 'recruits', threshold: 1,   title: 'First Recruit',        icon: 'handshake',          color: 'gold' },
+  { id: 'recruit_5',     type: 'recruits', threshold: 5,   title: 'Squad Leader',         icon: 'groups',             color: 'primary' },
+  { id: 'recruit_10',    type: 'recruits', threshold: 10,  title: 'Platoon Commander',    icon: 'military_tech',      color: 'primary' },
+  { id: 'recruit_25',    type: 'recruits', threshold: 25,  title: 'Battalion Chief',      icon: 'workspace_premium',  color: 'gold' },
+  { id: 'recruit_50',    type: 'recruits', threshold: 50,  title: 'Army Builder',         icon: 'emoji_events',       color: 'action' }
+]
 
-  function getWarriorLevel(shares) {
-    for (var i = warriorLevels.length - 1; i >= 0; i--) {
-      if (shares >= warriorLevels[i].min) return warriorLevels[i]
+function getWarriorLevel(shares) {
+  for (var i = warriorLevels.length - 1; i >= 0; i--) {
+    if (shares >= warriorLevels[i].min) return warriorLevels[i]
+  }
+  return warriorLevels[0]
+}
+
+function getNextLevel(shares) {
+  for (var i = 0; i < warriorLevels.length; i++) {
+    if (shares <= warriorLevels[i].max) {
+      return i < warriorLevels.length - 1 ? warriorLevels[i + 1] : null
     }
-    return warriorLevels[0]
   }
+  return null
+}
 
-  function getNextLevel(shares) {
-    for (var i = 0; i < warriorLevels.length; i++) {
-      if (shares <= warriorLevels[i].max) {
-        return i < warriorLevels.length - 1 ? warriorLevels[i + 1] : null
-      }
+async function checkAuth() {
+  var result = await supabaseClient.auth.getSession()
+  if (!result.data.session) { window.location.href = 'login.html'; return null }
+  return result.data.session.user
+}
+
+async function loadImpactData(userId) {
+  var profileResult = await supabaseClient.from('profiles').select('*').eq('id', userId).single()
+  var profile = profileResult.data || { total_shares: 0, current_streak: 0, nickname: '', full_name: '', recruit_count: 0 }
+  var currentStreak = profile.current_streak || 0
+  var recruitCount  = profile.recruit_count || 0
+
+  // Greeting with nickname
+  var displayName = profile.nickname || (profile.full_name ? profile.full_name.split(' ')[0] : 'Warrior')
+  var greetEl = document.getElementById('greetingName')
+  if (greetEl) greetEl.textContent = 'Hi ' + displayName + ' — here is your impact'
+
+  // Header streak
+  var headerStreak = document.getElementById('headerStreak')
+  if (headerStreak) headerStreak.textContent = currentStreak
+
+  var sharesResult = await supabaseClient.from('shares').select('platform, shared_at, quote_id').eq('user_id', userId).order('shared_at', { ascending: false })
+  var shares = sharesResult.data || []
+  var actualTotalShares = shares.length
+
+  var now = new Date()
+  var startOfWeek = new Date(now)
+  startOfWeek.setDate(now.getDate() - now.getDay())
+  startOfWeek.setHours(0, 0, 0, 0)
+  var weekShares = shares.filter(function(s) { return new Date(s.shared_at) >= startOfWeek })
+
+  var platformCounts = {}
+  shares.forEach(function(s) { var p = s.platform || 'Other'; platformCounts[p] = (platformCounts[p] || 0) + 1 })
+  var uniquePlatforms = Object.keys(platformCounts).length
+
+  var dailyCounts = [0, 0, 0, 0, 0, 0, 0]
+  weekShares.forEach(function(s) { dailyCounts[new Date(s.shared_at).getDay()]++ })
+
+  var level = getWarriorLevel(actualTotalShares)
+  var nextLevel = getNextLevel(actualTotalShares)
+
+  var communityResults = await Promise.all([
+    supabaseClient.from('profiles').select('*', { count: 'exact', head: true }),
+    supabaseClient.from('shares').select('*', { count: 'exact', head: true })
+  ])
+
+  var rankResult = await supabaseClient.from('profiles').select('id, total_shares').order('total_shares', { ascending: false })
+  var userRank = 1
+  if (rankResult.data) {
+    for (var i = 0; i < rankResult.data.length; i++) {
+      if (rankResult.data[i].id === userId) { userRank = i + 1; break }
     }
-    return null
   }
 
-  async function checkAuth() {
-    var result = await supabaseClient.auth.getSession()
-    if (!result.data.session) { window.location.href = 'login.html'; return null }
-    return result.data.session.user
+  renderHeroStats(actualTotalShares, weekShares.length, currentStreak, uniquePlatforms)
+  renderLevelProgress(actualTotalShares, level, nextLevel)
+  renderPlatformBars(platformCounts, shares.length)
+  renderMilestones(actualTotalShares, currentStreak, recruitCount)
+  renderWeekChart(dailyCounts, weekShares.length)
+  renderCommunityStats(communityResults[0].count || 0, communityResults[1].count || 0, userRank)
+  checkNewMilestones(actualTotalShares, currentStreak, recruitCount)
+}
+
+function renderHeroStats(total, week, streak, platforms) {
+  animateCounter(document.getElementById('totalShares'), total, 1000)
+  document.getElementById('weekShares').textContent = week
+  document.getElementById('streakCount').textContent = streak
+  document.getElementById('platformCount').textContent = platforms
+  document.getElementById('heroSubtext').textContent = total > 0
+    ? 'seeds planted across ' + platforms + ' platform' + (platforms !== 1 ? 's' : '')
+    : 'Start sharing to plant your first seed'
+}
+
+function renderLevelProgress(total, level, nextLevel) {
+  document.getElementById('headerLevel').textContent = 'Level ' + level.level + ' — ' + level.title
+  document.getElementById('levelLabel').textContent = 'Level ' + level.level + ' — ' + level.title
+
+  if (nextLevel) {
+    var progress = ((total - level.min) / (nextLevel.min - level.min)) * 100
+    document.getElementById('levelCurrent').textContent = level.title
+    document.getElementById('levelNext').textContent = nextLevel.title
+    document.getElementById('levelRemaining').textContent = (nextLevel.min - total) + ' more shares to ' + nextLevel.title
+    setTimeout(function() { document.getElementById('levelBar').style.width = Math.min(progress, 100) + '%' }, 300)
+  } else {
+    document.getElementById('levelCurrent').textContent = 'General'
+    document.getElementById('levelNext').textContent = 'Max Rank'
+    document.getElementById('levelRemaining').textContent = 'You have reached the highest rank'
+    setTimeout(function() { document.getElementById('levelBar').style.width = '100%' }, 300)
   }
+}
 
-  async function loadImpactData(userId) {
-    var profileResult = await supabaseClient.from('profiles').select('*').eq('id', userId).single()
-    var profile = profileResult.data || { total_shares: 0, current_streak: 0, nickname: '', full_name: '' }
-    var currentStreak = profile.current_streak || 0
+function renderPlatformBars(counts, total) {
+  var container = document.getElementById('platformBars')
+  container.innerHTML = ''
+  if (total === 0) { container.innerHTML = '<p class="text-center text-text-light text-sm py-4">Share to see platform stats</p>'; return }
 
-    // Greeting with nickname
-    var displayName = profile.nickname || (profile.full_name ? profile.full_name.split(' ')[0] : 'Warrior')
-    var greetEl = document.getElementById('greetingName')
-    if (greetEl) greetEl.textContent = 'Hi ' + displayName + ' — here is your impact'
+  var sorted = Object.keys(counts).sort(function(a, b) { return counts[b] - counts[a] })
+  sorted.forEach(function(platform, i) {
+    var count = counts[platform]
+    var pct = Math.round((count / total) * 100)
+    var el = document.createElement('div')
+    el.className = 'space-y-1.5'
+    el.innerHTML = '<div class="flex justify-between text-[12px] font-bold text-text-dark"><span>' + platform + '</span><span class="text-primary">' + count + '</span></div>'
+      + '<div class="h-2 w-full bg-surface rounded-full overflow-hidden"><div class="bar-col h-full tactical-gradient rounded-full" style="width:0%" data-target="' + pct + '"></div></div>'
+    container.appendChild(el)
+  })
+  setTimeout(function() {
+    container.querySelectorAll('.bar-col').forEach(function(bar, i) {
+      setTimeout(function() { bar.style.width = bar.dataset.target + '%' }, i * 100)
+    })
+  }, 300)
+}
 
-    // Header streak
-    var headerStreak = document.getElementById('headerStreak')
-    if (headerStreak) headerStreak.textContent = currentStreak
+// ════════════════════════════════════════════
+// RENDER MILESTONES — Supports 3 types: shares, streak, recruits
+// ════════════════════════════════════════════
+function renderMilestones(totalShares, currentStreak, recruitCount) {
+  var container = document.getElementById('milestonesList')
+  container.innerHTML = ''
 
-    var sharesResult = await supabaseClient.from('shares').select('platform, shared_at, quote_id').eq('user_id', userId).order('shared_at', { ascending: false })
-    var shares = sharesResult.data || []
-    var actualTotalShares = shares.length
+  milestones.forEach(function(m) {
+    var currentVal = 0
+    if (m.type === 'shares')   currentVal = totalShares
+    if (m.type === 'streak')   currentVal = currentStreak
+    if (m.type === 'recruits') currentVal = recruitCount || 0
 
-    var now = new Date()
-    var startOfWeek = new Date(now)
-    startOfWeek.setDate(now.getDate() - now.getDay())
-    startOfWeek.setHours(0, 0, 0, 0)
-    var weekShares = shares.filter(function(s) { return new Date(s.shared_at) >= startOfWeek })
+    var isComplete = currentVal >= m.threshold
+    var isInProgress = !isComplete && currentVal > 0 && currentVal >= m.threshold * 0.3
+    var progress = Math.min(Math.round((currentVal / m.threshold) * 100), 100)
 
-    var platformCounts = {}
-    shares.forEach(function(s) { var p = s.platform || 'Other'; platformCounts[p] = (platformCounts[p] || 0) + 1 })
-    var uniquePlatforms = Object.keys(platformCounts).length
+    var colorClass = m.color === 'gold' ? 'text-gold-dim' : m.color === 'action' ? 'text-action' : 'text-primary'
+    var bgClass = m.color === 'gold' ? 'bg-gold/10' : m.color === 'action' ? 'bg-action/10' : 'bg-primary/10'
 
-    var dailyCounts = [0, 0, 0, 0, 0, 0, 0]
-    weekShares.forEach(function(s) { dailyCounts[new Date(s.shared_at).getDay()]++ })
+    var el = document.createElement('div')
 
-    var level = getWarriorLevel(actualTotalShares)
-    var nextLevel = getNextLevel(actualTotalShares)
-
-    var communityResults = await Promise.all([
-      supabaseClient.from('profiles').select('*', { count: 'exact', head: true }),
-      supabaseClient.from('shares').select('*', { count: 'exact', head: true })
-    ])
-
-    var rankResult = await supabaseClient.from('profiles').select('id, total_shares').order('total_shares', { ascending: false })
-    var userRank = 1
-    if (rankResult.data) {
-      for (var i = 0; i < rankResult.data.length; i++) {
-        if (rankResult.data[i].id === userId) { userRank = i + 1; break }
-      }
-    }
-
-    renderHeroStats(actualTotalShares, weekShares.length, currentStreak, uniquePlatforms)
-    renderLevelProgress(actualTotalShares, level, nextLevel)
-    renderPlatformBars(platformCounts, shares.length)
-    renderMilestones(actualTotalShares, currentStreak)
-    renderWeekChart(dailyCounts, weekShares.length)
-    renderCommunityStats(communityResults[0].count || 0, communityResults[1].count || 0, userRank)
-    checkNewMilestones(actualTotalShares, currentStreak)
-  }
-
-  function renderHeroStats(total, week, streak, platforms) {
-    animateCounter(document.getElementById('totalShares'), total, 1000)
-    document.getElementById('weekShares').textContent = week
-    document.getElementById('streakCount').textContent = streak
-    document.getElementById('platformCount').textContent = platforms
-    document.getElementById('heroSubtext').textContent = total > 0
-      ? 'seeds planted across ' + platforms + ' platform' + (platforms !== 1 ? 's' : '')
-      : 'Start sharing to plant your first seed'
-  }
-
-  function renderLevelProgress(total, level, nextLevel) {
-    document.getElementById('headerLevel').textContent = 'Level ' + level.level + ' — ' + level.title
-    document.getElementById('levelLabel').textContent = 'Level ' + level.level + ' — ' + level.title
-
-    if (nextLevel) {
-      var progress = ((total - level.min) / (nextLevel.min - level.min)) * 100
-      document.getElementById('levelCurrent').textContent = level.title
-      document.getElementById('levelNext').textContent = nextLevel.title
-      document.getElementById('levelRemaining').textContent = (nextLevel.min - total) + ' more shares to ' + nextLevel.title
-      setTimeout(function() { document.getElementById('levelBar').style.width = Math.min(progress, 100) + '%' }, 300)
+    if (isComplete) {
+      el.className = 'flex items-center gap-4 bg-card-bg p-4 rounded-2xl border border-border-soft shadow-card'
+      el.innerHTML = '<div class="w-10 h-10 rounded-xl ' + bgClass + ' flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined ' + colorClass + ' text-[20px] filled">' + m.icon + '</span></div><div class="flex-1 min-w-0"><p class="text-xs font-bold text-text-dark">' + m.title + '</p><p class="text-[10px] text-text-light">Achieved ✓</p></div><span class="material-symbols-outlined text-primary text-[20px] filled flex-shrink-0">check_circle</span>'
+    } else if (isInProgress) {
+      var circumference = 2 * Math.PI * 16
+      var offset = circumference - (progress / 100) * circumference
+      el.className = 'flex items-center gap-4 bg-card-bg p-4 rounded-2xl border-l-4 border-gold shadow-card'
+      el.innerHTML = '<div class="w-10 h-10 rounded-xl ' + bgClass + ' flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined ' + colorClass + ' text-[20px]">' + m.icon + '</span></div><div class="flex-1 min-w-0"><p class="text-xs font-bold text-text-dark">' + m.title + '</p><p class="text-[10px] text-text-muted">In Progress · ' + currentVal + ' / ' + m.threshold + '</p></div><div class="w-10 h-10 flex-shrink-0 relative"><svg class="milestone-ring w-full h-full" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="#F0EDE6" stroke-width="3"/><circle cx="20" cy="20" r="16" fill="none" stroke="#D4A24C" stroke-width="3" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '" stroke-linecap="round"/></svg><span class="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-gold-dim">' + progress + '%</span></div>'
     } else {
-      document.getElementById('levelCurrent').textContent = 'General'
-      document.getElementById('levelNext').textContent = 'Max Rank'
-      document.getElementById('levelRemaining').textContent = 'You have reached the highest rank'
-      setTimeout(function() { document.getElementById('levelBar').style.width = '100%' }, 300)
+      el.className = 'flex items-center gap-4 bg-card-bg p-4 rounded-2xl border border-border-soft shadow-card opacity-40'
+      el.innerHTML = '<div class="w-10 h-10 rounded-xl bg-surface flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-text-light text-[20px]">' + m.icon + '</span></div><div class="flex-1 min-w-0"><p class="text-xs font-bold text-text-dark">' + m.title + '</p><p class="text-[10px] text-text-light">0 / ' + m.threshold + '</p></div><span class="material-symbols-outlined text-text-light text-[20px] flex-shrink-0">lock</span>'
+    }
+    container.appendChild(el)
+  })
+}
+
+function renderWeekChart(dailyCounts, weekTotal) {
+  var container = document.getElementById('weekChart')
+  document.getElementById('weekTotal').textContent = weekTotal + ' share' + (weekTotal !== 1 ? 's' : '')
+  container.innerHTML = ''
+
+  var dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+  var maxCount = Math.max.apply(null, dailyCounts) || 1
+  var today = new Date().getDay()
+
+  dailyCounts.forEach(function(count, i) {
+    var pct = Math.round((count / maxCount) * 100) || 4
+    var isToday = i === today
+    var col = document.createElement('div')
+    col.className = 'flex flex-col items-center gap-1.5 flex-1'
+    col.innerHTML = '<div class="chart-bar w-full ' + (isToday ? 'tactical-gradient' : 'bg-primary/20') + ' rounded-t-lg" style="height:0" data-h="' + pct + '%"></div>'
+      + '<span class="text-[9px] ' + (isToday ? 'font-extrabold text-primary' : 'font-bold text-text-light') + '">' + dayLabels[i] + '</span>'
+    container.appendChild(col)
+  })
+
+  setTimeout(function() {
+    container.querySelectorAll('.chart-bar').forEach(function(bar, i) {
+      setTimeout(function() { bar.style.height = bar.dataset.h }, i * 100)
+    })
+  }, 500)
+}
+
+function renderCommunityStats(warriors, globalShares, rank) {
+  document.getElementById('communityWarriors').textContent = warriors.toLocaleString()
+  document.getElementById('communityShares').textContent = globalShares.toLocaleString()
+  document.getElementById('communityRank').textContent = '#' + rank
+}
+
+// ════════════════════════════════════════════
+// CHECK NEW MILESTONES — Supports 3 types
+// ════════════════════════════════════════════
+function checkNewMilestones(totalShares, currentStreak, recruitCount) {
+  var celebrated = JSON.parse(localStorage.getItem('gstw_celebrated') || '[]')
+  for (var i = 0; i < milestones.length; i++) {
+    var m = milestones[i]
+    var val = 0
+    if (m.type === 'shares')   val = totalShares
+    if (m.type === 'streak')   val = currentStreak
+    if (m.type === 'recruits') val = recruitCount || 0
+
+    if (val >= m.threshold && celebrated.indexOf(m.id) === -1) {
+      celebrated.push(m.id)
+      localStorage.setItem('gstw_celebrated', JSON.stringify(celebrated))
+      setTimeout(function() { showCelebration(m) }, 1500)
+      break
     }
   }
+}
 
-  function renderPlatformBars(counts, total) {
-    var container = document.getElementById('platformBars')
-    container.innerHTML = ''
-    if (total === 0) { container.innerHTML = '<p class="text-center text-text-light text-sm py-4">Share to see platform stats</p>'; return }
+function showCelebration(milestone) {
+  document.getElementById('celebrationTitle').textContent = 'Milestone Unlocked!'
+  document.getElementById('celebrationDesc').textContent = 'You have achieved: ' + milestone.title + '. Keep spreading the Word!'
+  document.getElementById('celebrationBadgeText').textContent = milestone.title
+  var modal = document.getElementById('celebrationModal')
+  var card = document.getElementById('celebrationCard')
+  modal.classList.remove('hidden')
+  card.classList.add('celebrate-in')
+  spawnConfetti()
+  if (navigator.vibrate) navigator.vibrate([50, 30, 100])
+}
 
-    var sorted = Object.keys(counts).sort(function(a, b) { return counts[b] - counts[a] })
-    sorted.forEach(function(platform, i) {
-      var count = counts[platform]
-      var pct = Math.round((count / total) * 100)
-      var el = document.createElement('div')
-      el.className = 'space-y-1.5'
-      el.innerHTML = '<div class="flex justify-between text-[12px] font-bold text-text-dark"><span>' + platform + '</span><span class="text-primary">' + count + '</span></div>'
-        + '<div class="h-2 w-full bg-surface rounded-full overflow-hidden"><div class="bar-col h-full tactical-gradient rounded-full" style="width:0%" data-target="' + pct + '"></div></div>'
-      container.appendChild(el)
-    })
-    setTimeout(function() {
-      container.querySelectorAll('.bar-col').forEach(function(bar, i) {
-        setTimeout(function() { bar.style.width = bar.dataset.target + '%' }, i * 100)
-      })
-    }, 300)
+function closeCelebration() {
+  document.getElementById('celebrationModal').classList.add('hidden')
+  document.getElementById('celebrationCard').classList.remove('celebrate-in')
+  document.getElementById('confettiContainer').innerHTML = ''
+}
+
+function spawnConfetti() {
+  var container = document.getElementById('confettiContainer')
+  container.innerHTML = ''
+  var colors = ['#D4A24C','#E25B4D','#1E4060','#86EFAC','#93C5FD','#F9A8D4']
+  for (var i = 0; i < 30; i++) {
+    var p = document.createElement('div')
+    p.className = 'confetti-particle'
+    p.style.left = Math.random() * 100 + '%'
+    p.style.bottom = '40%'
+    p.style.width = (4 + Math.random() * 6) + 'px'
+    p.style.height = (4 + Math.random() * 6) + 'px'
+    p.style.background = colors[Math.floor(Math.random() * colors.length)]
+    p.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px'
+    p.style.animationDelay = (Math.random() * 0.8) + 's'
+    p.style.animationDuration = (1 + Math.random() * 1) + 's'
+    container.appendChild(p)
   }
+}
 
-  function renderMilestones(totalShares, currentStreak) {
-    var container = document.getElementById('milestonesList')
-    container.innerHTML = ''
+function animateCounter(el, target, duration) {
+  if (!el) return
+  var current = 0
+  var step = target / (duration / 16)
+  var timer = setInterval(function() {
+    current += step
+    if (current >= target) { current = target; clearInterval(timer) }
+    el.textContent = Math.floor(current)
+  }, 16)
+}
 
-    milestones.forEach(function(m) {
-      var currentVal = m.type === 'shares' ? totalShares : currentStreak
-      var isComplete = currentVal >= m.threshold
-      var isInProgress = !isComplete && currentVal > 0 && currentVal >= m.threshold * 0.3
-      var progress = Math.min(Math.round((currentVal / m.threshold) * 100), 100)
+function showToast(msg) {
+  var existing = document.getElementById('impactToast')
+  if (existing) existing.remove()
+  var t = document.createElement('div')
+  t.id = 'impactToast'
+  t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2'
+  t.innerHTML = '<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:\'FILL\' 1">check_circle</span> ' + msg
+  document.body.appendChild(t)
+  setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
+}
 
-      var colorClass = m.color === 'gold' ? 'text-gold-dim' : m.color === 'action' ? 'text-action' : 'text-primary'
-      var bgClass = m.color === 'gold' ? 'bg-gold/10' : m.color === 'action' ? 'bg-action/10' : 'bg-primary/10'
+async function init() {
+  var user = await checkAuth()
+  if (!user) return
+  currentUser = user
+  await loadImpactData(user.id)
+}
 
-      var el = document.createElement('div')
-
-      if (isComplete) {
-        el.className = 'flex items-center gap-4 bg-card-bg p-4 rounded-2xl border border-border-soft shadow-card'
-        el.innerHTML = '<div class="w-10 h-10 rounded-xl ' + bgClass + ' flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined ' + colorClass + ' text-[20px] filled">' + m.icon + '</span></div><div class="flex-1 min-w-0"><p class="text-xs font-bold text-text-dark">' + m.title + '</p><p class="text-[10px] text-text-light">Achieved ✓</p></div><span class="material-symbols-outlined text-primary text-[20px] filled flex-shrink-0">check_circle</span>'
-      } else if (isInProgress) {
-        var circumference = 2 * Math.PI * 16
-        var offset = circumference - (progress / 100) * circumference
-        el.className = 'flex items-center gap-4 bg-card-bg p-4 rounded-2xl border-l-4 border-gold shadow-card'
-        el.innerHTML = '<div class="w-10 h-10 rounded-xl ' + bgClass + ' flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined ' + colorClass + ' text-[20px]">' + m.icon + '</span></div><div class="flex-1 min-w-0"><p class="text-xs font-bold text-text-dark">' + m.title + '</p><p class="text-[10px] text-text-muted">In Progress · ' + currentVal + ' / ' + m.threshold + '</p></div><div class="w-10 h-10 flex-shrink-0 relative"><svg class="milestone-ring w-full h-full" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="#F0EDE6" stroke-width="3"/><circle cx="20" cy="20" r="16" fill="none" stroke="#D4A24C" stroke-width="3" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '" stroke-linecap="round"/></svg><span class="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-gold-dim">' + progress + '%</span></div>'
-      } else {
-        el.className = 'flex items-center gap-4 bg-card-bg p-4 rounded-2xl border border-border-soft shadow-card opacity-40'
-        el.innerHTML = '<div class="w-10 h-10 rounded-xl bg-surface flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-text-light text-[20px]">' + m.icon + '</span></div><div class="flex-1 min-w-0"><p class="text-xs font-bold text-text-dark">' + m.title + '</p><p class="text-[10px] text-text-light">0 / ' + m.threshold + '</p></div><span class="material-symbols-outlined text-text-light text-[20px] flex-shrink-0">lock</span>'
-      }
-      container.appendChild(el)
-    })
-  }
-
-  function renderWeekChart(dailyCounts, weekTotal) {
-    var container = document.getElementById('weekChart')
-    document.getElementById('weekTotal').textContent = weekTotal + ' share' + (weekTotal !== 1 ? 's' : '')
-    container.innerHTML = ''
-
-    var dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-    var maxCount = Math.max.apply(null, dailyCounts) || 1
-    var today = new Date().getDay()
-
-    dailyCounts.forEach(function(count, i) {
-      var pct = Math.round((count / maxCount) * 100) || 4
-      var isToday = i === today
-      var col = document.createElement('div')
-      col.className = 'flex flex-col items-center gap-1.5 flex-1'
-      col.innerHTML = '<div class="chart-bar w-full ' + (isToday ? 'tactical-gradient' : 'bg-primary/20') + ' rounded-t-lg" style="height:0" data-h="' + pct + '%"></div>'
-        + '<span class="text-[9px] ' + (isToday ? 'font-extrabold text-primary' : 'font-bold text-text-light') + '">' + dayLabels[i] + '</span>'
-      container.appendChild(col)
-    })
-
-    setTimeout(function() {
-      container.querySelectorAll('.chart-bar').forEach(function(bar, i) {
-        setTimeout(function() { bar.style.height = bar.dataset.h }, i * 100)
-      })
-    }, 500)
-  }
-
-  function renderCommunityStats(warriors, globalShares, rank) {
-    document.getElementById('communityWarriors').textContent = warriors.toLocaleString()
-    document.getElementById('communityShares').textContent = globalShares.toLocaleString()
-    document.getElementById('communityRank').textContent = '#' + rank
-  }
-
-  function checkNewMilestones(totalShares, currentStreak) {
-    var celebrated = JSON.parse(localStorage.getItem('gstw_celebrated') || '[]')
-    for (var i = 0; i < milestones.length; i++) {
-      var m = milestones[i]
-      var val = m.type === 'shares' ? totalShares : currentStreak
-      if (val >= m.threshold && celebrated.indexOf(m.id) === -1) {
-        celebrated.push(m.id)
-        localStorage.setItem('gstw_celebrated', JSON.stringify(celebrated))
-        setTimeout(function() { showCelebration(m) }, 1500)
-        break
-      }
-    }
-  }
-
-  function showCelebration(milestone) {
-    document.getElementById('celebrationTitle').textContent = 'Milestone Unlocked!'
-    document.getElementById('celebrationDesc').textContent = 'You have achieved: ' + milestone.title + '. Keep spreading the Word!'
-    document.getElementById('celebrationBadgeText').textContent = milestone.title
-    var modal = document.getElementById('celebrationModal')
-    var card = document.getElementById('celebrationCard')
-    modal.classList.remove('hidden')
-    card.classList.add('celebrate-in')
-    spawnConfetti()
-    if (navigator.vibrate) navigator.vibrate([50, 30, 100])
-  }
-
-  function closeCelebration() {
-    document.getElementById('celebrationModal').classList.add('hidden')
-    document.getElementById('celebrationCard').classList.remove('celebrate-in')
-    document.getElementById('confettiContainer').innerHTML = ''
-  }
-
-  function spawnConfetti() {
-    var container = document.getElementById('confettiContainer')
-    container.innerHTML = ''
-    var colors = ['#D4A24C','#E25B4D','#1E4060','#86EFAC','#93C5FD','#F9A8D4']
-    for (var i = 0; i < 30; i++) {
-      var p = document.createElement('div')
-      p.className = 'confetti-particle'
-      p.style.left = Math.random() * 100 + '%'
-      p.style.bottom = '40%'
-      p.style.width = (4 + Math.random() * 6) + 'px'
-      p.style.height = (4 + Math.random() * 6) + 'px'
-      p.style.background = colors[Math.floor(Math.random() * colors.length)]
-      p.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px'
-      p.style.animationDelay = (Math.random() * 0.8) + 's'
-      p.style.animationDuration = (1 + Math.random() * 1) + 's'
-      container.appendChild(p)
-    }
-  }
-
-  function animateCounter(el, target, duration) {
-    if (!el) return
-    var current = 0
-    var step = target / (duration / 16)
-    var timer = setInterval(function() {
-      current += step
-      if (current >= target) { current = target; clearInterval(timer) }
-      el.textContent = Math.floor(current)
-    }, 16)
-  }
-
-  function showToast(msg) {
-    var existing = document.getElementById('impactToast')
-    if (existing) existing.remove()
-    var t = document.createElement('div')
-    t.id = 'impactToast'
-    t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2'
-    t.innerHTML = '<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:\'FILL\' 1">check_circle</span> ' + msg
-    document.body.appendChild(t)
-    setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
-  }
-
-  async function init() {
-    var user = await checkAuth()
-    if (!user) return
-    currentUser = user
-    await loadImpactData(user.id)
-  }
-
-  init()
-
-</script>
-</body>
-</html>
+init()
