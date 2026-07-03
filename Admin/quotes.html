@@ -1026,7 +1026,7 @@ var quoteData = { text: text, source: source, category: category, context: conte
   // ════════════════════════════════════════════
   // EDIT MODE
   // ════════════════════════════════════════════
-  async function checkEditMode() {
+ async function checkEditMode() {
   var params = new URLSearchParams(window.location.search)
   var editId = params.get('edit')
   if (!editId) return
@@ -1055,33 +1055,43 @@ var quoteData = { text: text, source: source, category: category, context: conte
   document.getElementById('quoteText').value     = q.text || ''
   document.getElementById('quoteSource').value   = q.source || ''
   document.getElementById('quoteCategory').value = q.category || 'Faith'
-  document.getElementById('quoteContext').value   = q.context || ''
 
-  // Update context counter
+  var contextEl = document.getElementById('quoteContext')
+  if (contextEl) contextEl.value = q.context || ''
+
+  // Update counters
+  if (typeof updatePreviewAndCount === 'function') updatePreviewAndCount()
   if (typeof updateContextCount === 'function') updateContextCount()
 
   // Set publish state
   if (q.status === 'live') {
-    document.querySelector('input[value="now"]').checked = true
-    updatePublishState(document.querySelector('input[value="now"]'))
+    var nowRadio = document.querySelector('input[value="now"]')
+    if (nowRadio) {
+      nowRadio.checked = true
+      updatePublishState(nowRadio)
+    }
   } else if (q.status === 'scheduled' && q.scheduled_for) {
-    document.querySelector('input[value="schedule"]').checked = true
-    updatePublishState(document.querySelector('input[value="schedule"]'))
-    var utcDate  = new Date(q.scheduled_for)
-    var aestDate = new Date(utcDate.getTime() + (10 * 60 * 60 * 1000))
-    var dateStr  = aestDate.toISOString().split('T')[0]
-    var hours    = String(aestDate.getUTCHours()).padStart(2, '0')
-    var mins     = String(aestDate.getUTCMinutes()).padStart(2, '0')
-    document.getElementById('scheduleDate').value = dateStr
-    document.getElementById('scheduleTime').value = hours + ':' + mins
-    if (typeof updateScheduleNote === 'function') updateScheduleNote()
+    var schedRadio = document.querySelector('input[value="schedule"]')
+    if (schedRadio) {
+      schedRadio.checked = true
+      updatePublishState(schedRadio)
+    }
+    try {
+      var utcDate  = new Date(q.scheduled_for)
+      var aestDate = new Date(utcDate.getTime() + (10 * 60 * 60 * 1000))
+      document.getElementById('scheduleDate').value = aestDate.toISOString().split('T')[0]
+      document.getElementById('scheduleTime').value = String(aestDate.getUTCHours()).padStart(2,'0') + ':' + String(aestDate.getUTCMinutes()).padStart(2,'0')
+      if (typeof updateScheduleNote === 'function') updateScheduleNote()
+    } catch(e) {
+      console.error('Date parse error:', e)
+    }
   } else {
-    document.querySelector('input[value="draft"]').checked = true
-    updatePublishState(document.querySelector('input[value="draft"]'))
+    var draftRadio = document.querySelector('input[value="draft"]')
+    if (draftRadio) {
+      draftRadio.checked = true
+      updatePublishState(draftRadio)
+    }
   }
-
-  // Update preview
-  if (typeof updatePreviewAndCount === 'function') updatePreviewAndCount()
 }
 
   // ════════════════════════════════════════════
