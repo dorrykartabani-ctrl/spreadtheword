@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Edit Profile — Go Spread The Word</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'primary':'#1E4060','primary-dim':'#152E45','primary-light':'#2B5780',
+            'action':'#E25B4D','action-dim':'#C84A3E',
+            'gold':'#D4A24C','gold-dim':'#B88A3D',
+            'cream':'#F7F4ED','dark':'#16202A',
+            'text-dark':'#1A1A1A','text-muted':'#5C6B7A','text-light':'#8E9AA8',
+            'border-soft':'rgba(92,107,122,0.15)',
+            'card-bg':'#FFFFFF','surface':'#F0EDE6',
+          },
+          fontFamily:{
+            'headline':['Plus Jakarta Sans','sans-serif'],
+            'body':['Manrope','sans-serif'],
+          },
+          boxShadow:{
+            'natural':'0 4px 16px rgba(26,32,42,0.06)',
+            'lifted':'0 8px 32px rgba(26,32,42,0.10)',
+            'tactical':'0 4px 20px rgba(30,64,96,0.25)',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    body{
+      font-family:'Manrope',sans-serif;
+      background-color:#F0EDE6;
+      -webkit-tap-highlight-color:transparent;
+      min-height:100dvh;
+    }
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif}
+    .material-symbols-outlined{
+      font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+      vertical-align:middle;
+    }
+    .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+    .tactical-gradient{background:linear-gradient(145deg,#152E45,#1E4060)}
+
+    ::-webkit-scrollbar{display:none}
+    body{-ms-overflow-style:none;scrollbar-width:none}
+
+    .edit-input{
+      transition:all 0.2s ease;
+      border:2px solid rgba(92,107,122,0.15);
+    }
+    .edit-input:focus{
+      border-color:#1E4060;
+      box-shadow:0 0 0 3px rgba(30,64,96,0.1);
+      outline:none;
+    }
+
+    .nick-status{
+      transition:all 0.2s ease;
+      font-size:11px;
+      font-weight:700;
+      margin-top:6px;
+    }
+
+    .country-option{
+      transition:background 0.15s;
+      cursor:pointer;
+    }
+    .country-option:active{background:rgba(30,64,96,0.06)}
+
+    @keyframes fadeUp{
+      from{opacity:0;transform:translateY(12px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+    .fade-in{animation:fadeUp 0.4s ease-out both}
+    .fade-in-2{animation:fadeUp 0.4s ease-out 0.1s both}
+    .fade-in-3{animation:fadeUp 0.4s ease-out 0.2s both}
+  </style>
+</head>
+
+<body class="text-text-dark">
+
+<div class="max-w-[430px] mx-auto min-h-[100dvh] flex flex-col">
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- HEADER -->
+  <!-- ═══════════════════════════════════════════ -->
+  <header class="sticky top-0 z-50 bg-surface/90 backdrop-blur-xl border-b border-border-soft">
+    <div class="flex items-center justify-between px-5 py-4">
+      <button onclick="goBack()"
+        class="w-10 h-10 flex items-center justify-center text-text-muted active:scale-90 transition-all">
+        <span class="material-symbols-outlined text-[22px]">arrow_back</span>
+      </button>
+      <h1 class="font-headline font-bold text-base text-text-dark">Edit Profile</h1>
+      <div class="w-10"></div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- MAIN -->
+  <!-- ═══════════════════════════════════════════ -->
+  <main class="flex-1 px-5 py-6 flex flex-col gap-5">
+
+    <!-- ─────────────────────────────────────── -->
+    <!-- AVATAR PREVIEW -->
+    <!-- ─────────────────────────────────────── -->
+    <section class="fade-in flex flex-col items-center gap-3">
+      <div id="avatarPreview"
+        class="w-20 h-20 rounded-2xl tactical-gradient flex items-center justify-center
+        shadow-tactical border-2 border-gold/30">
+        <span id="avatarInitials"
+          class="font-headline font-extrabold text-white text-2xl">?</span>
+      </div>
+      <p class="text-[11px] text-text-light font-body">
+        Initials generated from your name
+      </p>
+    </section>
+
+    <!-- ─────────────────────────────────────── -->
+    <!-- FULL NAME -->
+    <!-- ─────────────────────────────────────── -->
+    <section class="fade-in bg-card-bg rounded-2xl p-5 shadow-natural border border-border-soft space-y-3">
+      <div>
+        <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-2">
+          Full Name *
+        </label>
+        <input id="inputName" type="text" placeholder="e.g. John Smith"
+          oninput="updateAvatarPreview()"
+          class="edit-input w-full bg-surface rounded-xl px-4 py-3.5 font-body text-base text-text-dark
+          placeholder:text-text-light">
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────── -->
+    <!-- NICKNAME -->
+    <!-- ─────────────────────────────────────── -->
+    <section class="fade-in-2 bg-card-bg rounded-2xl p-5 shadow-natural border border-border-soft space-y-3">
+      <div>
+        <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-2">
+          Nickname
+          <span class="text-text-light font-normal normal-case ml-1">(optional, unique)</span>
+        </label>
+        <div class="relative">
+          <span class="absolute left-4 top-1/2 -translate-y-1/2 text-text-light font-bold text-base">@</span>
+          <input id="inputNickname" type="text" placeholder="warrior123"
+            maxlength="20"
+            oninput="checkNickname(this.value)"
+            class="edit-input w-full bg-surface rounded-xl pl-9 pr-4 py-3.5 font-body text-base
+            text-text-dark placeholder:text-text-light">
+        </div>
+        <div id="nickStatus" class="nick-status text-text-light">
+          2–20 characters, letters, numbers and underscores
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────── -->
+    <!-- EMAIL (read-only) -->
+    <!-- ─────────────────────────────────────── -->
+    <section class="fade-in-2 bg-card-bg rounded-2xl p-5 shadow-natural border border-border-soft space-y-3">
+      <div>
+        <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-2">
+          Email
+          <span class="text-text-light font-normal normal-case ml-1">(cannot be changed)</span>
+        </label>
+        <div class="flex items-center gap-3 bg-surface rounded-xl px-4 py-3.5 border-2 border-border-soft">
+          <span class="material-symbols-outlined text-text-light text-[18px]">lock</span>
+          <span id="displayEmail" class="font-body text-sm text-text-muted"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────── -->
+    <!-- COUNTRY -->
+    <!-- ─────────────────────────────────────── -->
+    <section class="fade-in-3 bg-card-bg rounded-2xl p-5 shadow-natural border border-border-soft space-y-3">
+      <div>
+        <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-2">
+          Country
+        </label>
+
+        <!-- Search -->
+        <div class="relative mb-2">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-light text-[18px]">search</span>
+          <input id="countrySearch" type="text" placeholder="Search countries..."
+            oninput="filterCountries(this.value)"
+            class="edit-input w-full bg-surface rounded-xl pl-10 pr-4 py-3 font-body text-sm
+            text-text-dark placeholder:text-text-light">
+        </div>
+
+        <!-- Selected display -->
+        <div id="selectedCountryDisplay" class="hidden flex items-center gap-2 bg-primary/8 border-2 border-primary rounded-xl px-4 py-3 mb-2">
+          <span id="selectedCountryFlag" class="text-lg"></span>
+          <span id="selectedCountryName" class="font-body font-bold text-sm text-primary flex-1"></span>
+          <button onclick="clearCountry()" class="text-text-light hover:text-text-muted">
+            <span class="material-symbols-outlined text-[16px]">close</span>
+          </button>
+        </div>
+
+        <!-- Country list -->
+        <div id="countryList"
+          class="max-h-[200px] overflow-y-auto rounded-xl border border-border-soft bg-surface"
+          style="-ms-overflow-style:none;scrollbar-width:none">
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────── -->
+    <!-- SAVE BUTTON -->
+    <!-- ─────────────────────────────────────── -->
+    <section class="fade-in-3 pt-2 pb-8">
+      <button id="saveBtn" onclick="saveProfile()"
+        class="w-full py-4 tactical-gradient text-white font-headline font-bold text-base rounded-2xl
+        flex items-center justify-center gap-2 shadow-tactical active:scale-[0.98] transition-transform">
+        <span id="saveIcon" class="material-symbols-outlined text-gold text-[20px] filled">save</span>
+        <span id="saveLabel">Save Changes</span>
+      </button>
+      <p class="text-center text-[10px] text-text-light mt-3 font-body">
+        Changes will be reflected across the app immediately
+      </p>
+    </section>
+
+  </main>
+
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SCRIPT -->
+<!-- ═══════════════════════════════════════════ -->
+<script>
+
+  var supabaseClient = supabase.createClient(
+    'https://nhymadutuhpjgkiurify.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+  )
+
+  // ════════════════════════════════════════════
+  // STATE
+  // ════════════════════════════════════════════
+  var currentUser     = null
+  var currentProfile  = null
+  var selectedCountry = ''
+  var nicknameValid   = true
+  var nicknameTimer   = null
+  var originalNickname = ''
+
+  // ════════════════════════════════════════════
+  // COUNTRIES
+  // ════════════════════════════════════════════
+  var countries = [
+    'Afghanistan','Albania','Algeria','Argentina','Australia','Austria','Bangladesh',
+    'Belgium','Bolivia','Brazil','Cambodia','Cameroon','Canada','Chile','China',
+    'Colombia','Congo','Costa Rica','Croatia','Cuba','Czech Republic','Denmark',
+    'Dominican Republic','Ecuador','Egypt','El Salvador','Estonia','Ethiopia',
+    'Finland','France','Germany','Ghana','Greece','Guatemala','Haiti','Honduras',
+    'Hungary','Iceland','India','Indonesia','Iran','Iraq','Ireland','Israel','Italy',
+    'Jamaica','Japan','Jordan','Kenya','Kuwait','Latvia','Lebanon','Liberia','Libya',
+    'Lithuania','Madagascar','Malaysia','Mali','Mexico','Mongolia','Morocco',
+    'Mozambique','Myanmar','Nepal','Netherlands','New Zealand','Nicaragua','Niger',
+    'Nigeria','North Korea','Norway','Oman','Pakistan','Palestine','Panama',
+    'Papua New Guinea','Paraguay','Peru','Philippines','Poland','Portugal','Qatar',
+    'Romania','Russia','Rwanda','Saudi Arabia','Senegal','Serbia','Sierra Leone',
+    'Singapore','Slovakia','Slovenia','Somalia','South Africa','South Korea','Spain',
+    'Sri Lanka','Sudan','Sweden','Switzerland','Syria','Taiwan','Tanzania','Thailand',
+    'Trinidad and Tobago','Tunisia','Turkey','Uganda','Ukraine','United Arab Emirates',
+    'United Kingdom','United States','Uruguay','Venezuela','Vietnam','Yemen','Zambia',
+    'Zimbabwe'
+  ]
+
+  var flags = {
+    'United States':'🇺🇸','United Kingdom':'🇬🇧','Canada':'🇨🇦','Australia':'🇦🇺',
+    'Germany':'🇩🇪','France':'🇫🇷','Brazil':'🇧🇷','India':'🇮🇳','China':'🇨🇳',
+    'Japan':'🇯🇵','South Korea':'🇰🇷','Mexico':'🇲🇽','Nigeria':'🇳🇬','Ghana':'🇬🇭',
+    'Kenya':'🇰🇪','South Africa':'🇿🇦','Egypt':'🇪🇬','Philippines':'🇵🇭',
+    'Indonesia':'🇮🇩','Pakistan':'🇵🇰','Bangladesh':'🇧🇩','Russia':'🇷🇺',
+    'Italy':'🇮🇹','Spain':'🇪🇸','Netherlands':'🇳🇱','Sweden':'🇸🇪','Norway':'🇳🇴',
+    'Denmark':'🇩🇰','Finland':'🇫🇮','Ireland':'🇮🇪','New Zealand':'🇳🇿',
+    'Singapore':'🇸🇬','Malaysia':'🇲🇾','Thailand':'🇹🇭','Vietnam':'🇻🇳',
+    'Colombia':'🇨🇴','Argentina':'🇦🇷','Chile':'🇨🇱','Peru':'🇵🇪',
+    'Jamaica':'🇯🇲','Trinidad and Tobago':'🇹🇹','Ethiopia':'🇪🇹','Tanzania':'🇹🇿',
+    'Uganda':'🇺🇬','Rwanda':'🇷🇼','Cameroon':'🇨🇲','Senegal':'🇸🇳',
+    'United Arab Emirates':'🇦🇪','Saudi Arabia':'🇸🇦','Israel':'🇮🇱','Turkey':'🇹🇷',
+    'Poland':'🇵🇱','Ukraine':'🇺🇦','Romania':'🇷🇴','Czech Republic':'🇨🇿',
+    'Hungary':'🇭🇺','Greece':'🇬🇷','Portugal':'🇵🇹','Switzerland':'🇨🇭',
+    'Austria':'🇦🇹','Belgium':'🇧🇪','Croatia':'🇭🇷','Serbia':'🇷🇸'
+  }
+
+  function getFlag(country) { return flags[country] || '🌍' }
+
+  // ════════════════════════════════════════════
+  // INIT
+  // ════════════════════════════════════════════
+  async function initPage() {
+    var sessionResult = await supabaseClient.auth.getSession()
+    if (!sessionResult.data.session) {
+      window.location.href = 'login.html'
+      return
+    }
+    currentUser = sessionResult.data.session.user
+
+    // Load profile
+    var profileResult = await supabaseClient
+      .from('profiles')
+      .select('*')
+      .eq('id', currentUser.id)
+      .single()
+
+    currentProfile = profileResult.data || {}
+
+    // Populate fields
+    document.getElementById('inputName').value = currentProfile.full_name || ''
+    document.getElementById('inputNickname').value = currentProfile.nickname || ''
+    document.getElementById('displayEmail').textContent = currentUser.email || ''
+    originalNickname = currentProfile.nickname || ''
+
+    // Country
+    selectedCountry = currentProfile.country || ''
+    if (selectedCountry) {
+      showSelectedCountry(selectedCountry)
+    }
+
+    // Avatar
+    updateAvatarPreview()
+
+    // Render countries
+    renderCountries()
+  }
+
+  // ════════════════════════════════════════════
+  // AVATAR PREVIEW — live update as name changes
+  // ════════════════════════════════════════════
+  function updateAvatarPreview() {
+    var name = document.getElementById('inputName').value.trim()
+    var initials = '?'
+
+    if (name.length >= 2) {
+      var parts = name.split(' ')
+      if (parts.length >= 2) {
+        initials = (parts[0][0] + parts[1][0]).toUpperCase()
+      } else {
+        initials = parts[0].substring(0, 2).toUpperCase()
+      }
+    }
+
+    var el = document.getElementById('avatarInitials')
+    if (el) el.textContent = initials
+  }
+
+  // ════════════════════════════════════════════
+  // NICKNAME — live unique check
+  // ════════════════════════════════════════════
+  function checkNickname(value) {
+    var statusEl = document.getElementById('nickStatus')
+    var cleaned = value.replace(/[^a-zA-Z0-9_]/g, '').substring(0, 20)
+
+    document.getElementById('inputNickname').value = cleaned
+
+    if (!cleaned) {
+      statusEl.textContent = '2-20 characters, letters, numbers and underscores'
+      statusEl.className = 'nick-status text-text-light'
+      nicknameValid = true
+      return
+    }
+
+    if (cleaned.length < 2) {
+      statusEl.textContent = 'Too short — minimum 2 characters'
+      statusEl.className = 'nick-status text-action'
+      nicknameValid = false
+      return
+    }
+
+    // If same as their current nickname, it's fine
+    if (cleaned.toLowerCase() === originalNickname.toLowerCase()) {
+      statusEl.textContent = '✓ Your current nickname'
+      statusEl.className = 'nick-status text-green-600'
+      nicknameValid = true
+      return
+    }
+
+    statusEl.textContent = 'Checking availability...'
+    statusEl.className = 'nick-status text-text-muted'
+
+    clearTimeout(nicknameTimer)
+    nicknameTimer = setTimeout(async function() {
+      var result = await supabaseClient
+        .from('profiles')
+        .select('id')
+        .eq('nickname', cleaned.toLowerCase())
+        .neq('id', currentUser.id)
+
+      if (result.data && result.data.length > 0) {
+        statusEl.textContent = '❌ @' + cleaned + ' is taken'
+        statusEl.className = 'nick-status text-action'
+        nicknameValid = false
+      } else {
+        statusEl.textContent = '✓ @' + cleaned + ' is available'
+        statusEl.className = 'nick-status text-green-600'
+        nicknameValid = true
+      }
+    }, 500)
+  }
+
+  // ════════════════════════════════════════════
+  // COUNTRY — searchable list
+  // ════════════════════════════════════════════
+  function renderCountries(filter) {
+    var container = document.getElementById('countryList')
+    if (!container) return
+    container.innerHTML = ''
+
+    // Hide list if country already selected
+    if (selectedCountry && !filter) {
+      container.classList.add('hidden')
+      return
+    }
+    container.classList.remove('hidden')
+
+    var filtered = filter
+      ? countries.filter(function(c) { return c.toLowerCase().includes(filter.toLowerCase()) })
+      : countries
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="text-center py-4"><p class="text-text-light text-xs font-bold">No countries found</p></div>'
+      return
+    }
+
+    filtered.forEach(function(country) {
+      var isSelected = country === selectedCountry
+      var el = document.createElement('button')
+      el.className = 'country-option w-full flex items-center gap-3 px-4 py-2.5 transition-all active:scale-[0.98] '
+        + (isSelected ? 'bg-primary/8' : 'hover:bg-surface')
+      el.onclick = function() { selectCountry(country) }
+
+      el.innerHTML =
+        '<span class="text-lg flex-shrink-0 w-8 text-center">' + getFlag(country) + '</span>'
+        + '<span class="font-body font-medium text-sm text-text-dark flex-1 text-left">' + country + '</span>'
+        + (isSelected ? '<span class="material-symbols-outlined text-primary text-[18px] filled flex-shrink-0">check_circle</span>' : '')
+
+      container.appendChild(el)
+    })
+  }
+
+  function filterCountries(query) {
+    if (selectedCountry) {
+      clearCountry()
+    }
+    renderCountries(query)
+  }
+
+  function selectCountry(country) {
+    selectedCountry = country
+    showSelectedCountry(country)
+    document.getElementById('countrySearch').value = ''
+    renderCountries()
+  }
+
+  function showSelectedCountry(country) {
+    var display = document.getElementById('selectedCountryDisplay')
+    var flagEl  = document.getElementById('selectedCountryFlag')
+    var nameEl  = document.getElementById('selectedCountryName')
+
+    if (display) display.classList.remove('hidden')
+    if (flagEl)  flagEl.textContent = getFlag(country)
+    if (nameEl)  nameEl.textContent = country
+
+    var list = document.getElementById('countryList')
+    if (list) list.classList.add('hidden')
+  }
+
+  function clearCountry() {
+    selectedCountry = ''
+    var display = document.getElementById('selectedCountryDisplay')
+    if (display) display.classList.add('hidden')
+    renderCountries()
+  }
+
+  // ════════════════════════════════════════════
+  // SAVE PROFILE
+  // ════════════════════════════════════════════
+  async function saveProfile() {
+    var name     = document.getElementById('inputName').value.trim()
+    var nickname = document.getElementById('inputNickname').value.trim().toLowerCase()
+    var btn      = document.getElementById('saveBtn')
+    var icon     = document.getElementById('saveIcon')
+    var label    = document.getElementById('saveLabel')
+
+    // Validate
+    if (!name || name.length < 2) {
+      showToast('Please enter your full name')
+      return
+    }
+
+    if (nickname && !nicknameValid) {
+      showToast('Nickname is not available')
+      return
+    }
+
+    // Loading state
+    icon.textContent = 'progress_activity'
+    icon.style.display = 'inline-block'
+    icon.style.animation = 'spin 1s linear infinite'
+    label.textContent = 'Saving...'
+    btn.disabled = true
+    btn.style.opacity = '0.8'
+
+    // Build update data
+    var updateData = {
+      full_name: name,
+      country: selectedCountry || null
+    }
+
+    // Only update nickname if provided
+    if (nickname) {
+      updateData.nickname = nickname
+    } else if (originalNickname && !nickname) {
+      // User cleared their nickname
+      updateData.nickname = null
+    }
+
+    // Save to Supabase
+    var result = await supabaseClient
+      .from('profiles')
+      .update(updateData)
+      .eq('id', currentUser.id)
+
+    if (result.error) {
+      console.error('Save error:', result.error)
+
+      if (result.error.message && result.error.message.includes('unique')) {
+        showToast('Nickname is already taken')
+      } else {
+        showToast('Error saving profile')
+      }
+
+      icon.textContent = 'save'
+      icon.style.animation = ''
+      label.textContent = 'Save Changes'
+      btn.disabled = false
+      btn.style.opacity = '1'
+      return
+    }
+
+    // Success
+    icon.textContent = 'check_circle'
+    icon.style.animation = ''
+    label.textContent = 'Saved!'
+    showToast('Profile updated successfully')
+
+    // Update original nickname for future checks
+    originalNickname = nickname
+
+    setTimeout(function() {
+      icon.textContent = 'save'
+      label.textContent = 'Save Changes'
+      btn.disabled = false
+      btn.style.opacity = '1'
+    }, 2000)
+  }
+
+  // ════════════════════════════════════════════
+  // NAVIGATION
+  // ════════════════════════════════════════════
+  function goBack() {
+    window.location.href = 'profile.html'
+  }
+
+  // ════════════════════════════════════════════
+  // TOAST
+  // ════════════════════════════════════════════
+  function showToast(msg) {
+    var existing = document.getElementById('editToast')
+    if (existing) existing.remove()
+    var t = document.createElement('div')
+    t.id = 'editToast'
+    t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2'
+    t.innerHTML = '<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:\'FILL\' 1">check_circle</span> ' + msg
+    document.body.appendChild(t)
+    setTimeout(function() { if (t.parentNode) t.remove() }, 2500)
+  }
+
+  // ════════════════════════════════════════════
+  // SPIN ANIMATION
+  // ════════════════════════════════════════════
+  var style = document.createElement('style')
+  style.textContent = '@keyframes spin{to{transform:rotate(360deg)}}'
+  document.head.appendChild(style)
+
+  // ════════════════════════════════════════════
+  // START
+  // ════════════════════════════════════════════
+  initPage()
+
+</script>
+</body>
+</html>
