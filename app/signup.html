@@ -334,6 +334,54 @@
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
   )
 
+// ════════════════════════════════════════════
+// DETECT REFERRAL FROM URL
+// ════════════════════════════════════════════
+var referrerId = null
+var referrerCode = null
+
+async function detectReferral() {
+  var params = new URLSearchParams(window.location.search)
+  var refCode = params.get('ref')
+
+  if (!refCode) return
+
+  // Look up who owns this invite code
+  var result = await supabaseClient
+    .from('profiles')
+    .select('id, nickname, full_name, invite_code')
+    .eq('invite_code', refCode)
+    .single()
+
+  if (result.data) {
+    referrerId = result.data.id
+    referrerCode = refCode
+
+    // Show referrer info at top of signup
+    var displayName = result.data.nickname || result.data.full_name || 'A warrior'
+    showReferralBanner(displayName)
+  }
+}
+
+function showReferralBanner(name) {
+  var banner = document.createElement('div')
+  banner.className = 'bg-gold/10 border border-gold/30 rounded-2xl p-4 mb-5 flex items-center gap-3'
+  banner.innerHTML =
+    '<div class="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center flex-shrink-0">'
+      + '<span class="material-symbols-outlined text-gold-dim text-[20px] filled">handshake</span>'
+    + '</div>'
+    + '<div>'
+      + '<p class="text-[11px] font-bold text-gold-dim uppercase tracking-widest">You were invited by</p>'
+      + '<p class="text-sm font-headline font-bold text-text-dark mt-0.5">' + name + '</p>'
+    + '</div>'
+
+  // Insert banner into the form
+  var form = document.getElementById('signupForm')
+  if (form) form.parentNode.insertBefore(banner, form)
+}
+
+detectReferral()
+
   // ════════════════════════════════════════
   // STATE
   // ════════════════════════════════════════
@@ -418,14 +466,15 @@ checkSession()
 
     // Create account
     var result = await supabaseClient.auth.signUp({
-      email: email,
-      password: pass,
-      options: {
-        data: {
-          full_name: name  // Passed to trigger → profiles.full_name
-        }
-      }
-    })
+  email: email,
+  password: password,
+  options: {
+    data: {
+      full_name: fullName,
+      referrer_id: referrerId
+    }
+  }
+})
 
     if (result.error) {
       icon.textContent = 'military_tech'
