@@ -1027,48 +1027,62 @@ var quoteData = { text: text, source: source, category: category, context: conte
   // EDIT MODE
   // ════════════════════════════════════════════
   async function checkEditMode() {
-    var params = new URLSearchParams(window.location.search)
-    var editId = params.get('edit')
-    if (!editId) return
+  var params = new URLSearchParams(window.location.search)
+  var editId = params.get('edit')
+  if (!editId) return
 
-    isEditMode  = true
-    editQuoteId = editId
+  isEditMode  = true
+  editQuoteId = editId
 
-    document.getElementById('pageTitle').textContent = 'Edit Quote'
-    document.getElementById('formTitle').textContent  = 'Edit Quote'
-    document.getElementById('submitLabel').textContent = 'Update Quote'
+  document.getElementById('pageTitle').textContent = 'Edit Quote'
+  document.getElementById('formTitle').textContent  = 'Edit Quote'
+  document.getElementById('submitLabel').textContent = 'Update Quote'
 
-    var result = await supabaseClient.from('quotes').select('*').eq('id', editId).single()
-    if (result.error || !result.data) { showToast('Error loading quote'); return }
+  var result = await supabaseClient
+    .from('quotes')
+    .select('*')
+    .eq('id', editId)
+    .single()
 
-    var q = result.data
-    document.getElementById('quoteText').value     = q.text
-    document.getElementById('quoteSource').value   = q.source
-    document.getElementById('quoteCategory').value = q.category
-    document.getElementById('quoteContext').value = q.context || ''
-updateContextCount()
-
-    if (q.status === 'live') {
-      document.querySelector('input[value="now"]').checked = true
-      updatePublishState(document.querySelector('input[value="now"]'))
-    } else if (q.status === 'scheduled' && q.scheduled_for) {
-      document.querySelector('input[value="schedule"]').checked = true
-      updatePublishState(document.querySelector('input[value="schedule"]'))
-      var utcDate  = new Date(q.scheduled_for)
-      var aestDate = new Date(utcDate.getTime() + (10 * 60 * 60 * 1000))
-      var dateStr  = aestDate.toISOString().split('T')[0]
-      var hours    = String(aestDate.getUTCHours()).padStart(2, '0')
-      var mins     = String(aestDate.getUTCMinutes()).padStart(2, '0')
-      document.getElementById('scheduleDate').value = dateStr
-      document.getElementById('scheduleTime').value = hours + ':' + mins
-      updateScheduleNote()
-    } else {
-      document.querySelector('input[value="draft"]').checked = true
-      updatePublishState(document.querySelector('input[value="draft"]'))
-    }
-
-    updatePreviewAndCount()
+  if (result.error || !result.data) {
+    showToast('Error loading quote')
+    return
   }
+
+  var q = result.data
+
+  // Fill ALL form fields
+  document.getElementById('quoteText').value     = q.text || ''
+  document.getElementById('quoteSource').value   = q.source || ''
+  document.getElementById('quoteCategory').value = q.category || 'Faith'
+  document.getElementById('quoteContext').value   = q.context || ''
+
+  // Update context counter
+  if (typeof updateContextCount === 'function') updateContextCount()
+
+  // Set publish state
+  if (q.status === 'live') {
+    document.querySelector('input[value="now"]').checked = true
+    updatePublishState(document.querySelector('input[value="now"]'))
+  } else if (q.status === 'scheduled' && q.scheduled_for) {
+    document.querySelector('input[value="schedule"]').checked = true
+    updatePublishState(document.querySelector('input[value="schedule"]'))
+    var utcDate  = new Date(q.scheduled_for)
+    var aestDate = new Date(utcDate.getTime() + (10 * 60 * 60 * 1000))
+    var dateStr  = aestDate.toISOString().split('T')[0]
+    var hours    = String(aestDate.getUTCHours()).padStart(2, '0')
+    var mins     = String(aestDate.getUTCMinutes()).padStart(2, '0')
+    document.getElementById('scheduleDate').value = dateStr
+    document.getElementById('scheduleTime').value = hours + ':' + mins
+    if (typeof updateScheduleNote === 'function') updateScheduleNote()
+  } else {
+    document.querySelector('input[value="draft"]').checked = true
+    updatePublishState(document.querySelector('input[value="draft"]'))
+  }
+
+  // Update preview
+  if (typeof updatePreviewAndCount === 'function') updatePreviewAndCount()
+}
 
   // ════════════════════════════════════════════
   // LOGOUT
