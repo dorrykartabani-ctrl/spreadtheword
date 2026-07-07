@@ -1124,19 +1124,28 @@ var quoteData = { text: text, source: source, category: category, context: conte
 // EDIT MODE — loads existing quote into form
 // ════════════════════════════════════════════
 async function checkEditMode() {
-  var params = new URLSearchParams(window.location.search)
-  var editId = params.get('edit')
+  // Check URL parameter first
+  var editId = new URLSearchParams(window.location.search).get('edit')
+
+  // If not in URL, check sessionStorage
+  if (!editId) {
+    editId = sessionStorage.getItem('gstw_admin_edit_quote')
+  }
+
+  // Clear sessionStorage so it doesn't persist
+  sessionStorage.removeItem('gstw_admin_edit_quote')
+
   if (!editId) return
 
   isEditMode  = true
   editQuoteId = editId
 
   // Update page titles
-  var pageTitle  = document.getElementById('pageTitle')
-  var formTitle  = document.getElementById('formTitle')
+  var pageTitle   = document.getElementById('pageTitle')
+  var formTitle   = document.getElementById('formTitle')
   var submitLabel = document.getElementById('submitLabel')
-  if (pageTitle)   pageTitle.textContent  = 'Edit Quote'
-  if (formTitle)   formTitle.textContent  = 'Edit Quote'
+  if (pageTitle)   pageTitle.textContent   = 'Edit Quote'
+  if (formTitle)   formTitle.textContent   = 'Edit Quote'
   if (submitLabel) submitLabel.textContent = 'Update Quote'
 
   // Load the quote
@@ -1164,7 +1173,7 @@ async function checkEditMode() {
   if (categoryEl) categoryEl.value = q.category || 'Faith'
   if (contextEl)  contextEl.value  = q.context || ''
 
-  // Update counters
+  // Update counters and preview
   if (typeof updatePreviewAndCount === 'function') updatePreviewAndCount()
   if (typeof updateContextCount === 'function') updateContextCount()
 
@@ -1200,19 +1209,19 @@ async function checkEditMode() {
     }
   }
 }
-
   // ════════════════════════════════════════════
   // INIT
   // ════════════════════════════════════════════
-
 async function init() {
   var isAdmin = await checkAdminAuth()
   if (!isAdmin) return
 
   var tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
-  document.getElementById('scheduleDate').value = tomorrow.toISOString().split('T')[0]
-  document.getElementById('scheduleTime').value = '05:30'
+  var schedDate = document.getElementById('scheduleDate')
+  var schedTime = document.getElementById('scheduleTime')
+  if (schedDate) schedDate.value = tomorrow.toISOString().split('T')[0]
+  if (schedTime) schedTime.value = '05:30'
 
   await checkEditMode()
 }
