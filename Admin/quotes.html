@@ -1120,26 +1120,104 @@ var quoteData = { text: text, source: source, category: category, context: conte
     }, 3000)
   }
 
+// ════════════════════════════════════════════
+// EDIT MODE — loads existing quote into form
+// ════════════════════════════════════════════
+async function checkEditMode() {
+  var params = new URLSearchParams(window.location.search)
+  var editId = params.get('edit')
+  if (!editId) return
+
+  isEditMode  = true
+  editQuoteId = editId
+
+  // Update page titles
+  var pageTitle  = document.getElementById('pageTitle')
+  var formTitle  = document.getElementById('formTitle')
+  var submitLabel = document.getElementById('submitLabel')
+  if (pageTitle)   pageTitle.textContent  = 'Edit Quote'
+  if (formTitle)   formTitle.textContent  = 'Edit Quote'
+  if (submitLabel) submitLabel.textContent = 'Update Quote'
+
+  // Load the quote
+  var result = await supabaseClient
+    .from('quotes')
+    .select('*')
+    .eq('id', editId)
+    .single()
+
+  if (result.error || !result.data) {
+    showToast('Error loading quote')
+    return
+  }
+
+  var q = result.data
+
+  // Fill form fields
+  var textEl     = document.getElementById('quoteText')
+  var sourceEl   = document.getElementById('quoteSource')
+  var categoryEl = document.getElementById('quoteCategory')
+  var contextEl  = document.getElementById('quoteContext')
+
+  if (textEl)     textEl.value     = q.text || ''
+  if (sourceEl)   sourceEl.value   = q.source || ''
+  if (categoryEl) categoryEl.value = q.category || 'Faith'
+  if (contextEl)  contextEl.value  = q.context || ''
+
+  // Update counters
+  if (typeof updatePreviewAndCount === 'function') updatePreviewAndCount()
+  if (typeof updateContextCount === 'function') updateContextCount()
+
+  // Set publish state
+  if (q.status === 'live') {
+    var nowRadio = document.querySelector('input[value="now"]')
+    if (nowRadio) {
+      nowRadio.checked = true
+      updatePublishState(nowRadio)
+    }
+  } else if (q.status === 'scheduled' && q.scheduled_for) {
+    var schedRadio = document.querySelector('input[value="schedule"]')
+    if (schedRadio) {
+      schedRadio.checked = true
+      updatePublishState(schedRadio)
+    }
+    try {
+      var utcDate  = new Date(q.scheduled_for)
+      var aestDate = new Date(utcDate.getTime() + (10 * 60 * 60 * 1000))
+      var schedDate = document.getElementById('scheduleDate')
+      var schedTime = document.getElementById('scheduleTime')
+      if (schedDate) schedDate.value = aestDate.toISOString().split('T')[0]
+      if (schedTime) schedTime.value = String(aestDate.getUTCHours()).padStart(2,'0') + ':' + String(aestDate.getUTCMinutes()).padStart(2,'0')
+      if (typeof updateScheduleNote === 'function') updateScheduleNote()
+    } catch(e) {
+      console.error('Date parse error:', e)
+    }
+  } else {
+    var draftRadio = document.querySelector('input[value="draft"]')
+    if (draftRadio) {
+      draftRadio.checked = true
+      updatePublishState(draftRadio)
+    }
+  }
+}
+
   // ════════════════════════════════════════════
   // INIT
   // ════════════════════════════════════════════
 
- // Wait for page to be ready before running
-document.addEventListener('DOMContentLoaded', async function() {
+async function init() {
   var isAdmin = await checkAdminAuth()
   if (!isAdmin) return
 
-  // Set default schedule date
   var tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
-  var schedDate = document.getElementById('scheduleDate')
-  var schedTime = document.getElementById('scheduleTime')
-  if (schedDate) schedDate.value = tomorrow.toISOString().split('T')[0]
-  if (schedTime) schedTime.value = '05:30'
+  document.getElementById('scheduleDate').value = tomorrow.toISOString().split('T')[0]
+  document.getElementById('scheduleTime').value = '05:30'
 
-  // Check for edit mode
   await checkEditMode()
-})
+}
+
+init()
 
 </script>
 </body>
