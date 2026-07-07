@@ -56,6 +56,8 @@
     .no-scrollbar::-webkit-scrollbar{display:none}
     .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
     .filter-tab.active{color:#1E4060;font-weight:700;border-bottom-color:#1E4060}
+    .create-field.error{border-color:#E25B4D;animation:shake 0.3s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
     .project-card img{transition:transform 0.7s ease}
     .project-card:hover img{transform:scale(1.05)}
     .update-note{background:#fff;border-left:4px solid #D4A24C}
@@ -218,16 +220,20 @@
 
 <!-- CREATE MODAL -->
 <div id="createModal" class="hidden fixed inset-0 bg-dark/60 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-  <div class="bg-card-bg rounded-2xl p-7 max-w-lg w-full shadow-lifted max-h-[90vh] overflow-y-auto">
+  <div class="bg-card-bg rounded-2xl p-7 max-w-lg w-full shadow-lifted max-h-[90vh] overflow-y-auto no-scrollbar">
     <div class="flex items-center justify-between mb-5">
       <h3 class="font-headline font-bold text-xl text-text-dark">Create New Mission</h3>
-      <button onclick="closeCreateModal()" class="text-text-light hover:text-text-muted"><span class="material-symbols-outlined">close</span></button>
+      <button onclick="closeCreateModal()" class="text-text-light hover:text-text-muted">
+        <span class="material-symbols-outlined">close</span>
+      </button>
     </div>
     <div class="space-y-4">
 
       <!-- Mission Type -->
       <div>
-        <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-1.5">Mission Type *</label>
+        <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-1.5">
+          Mission Type <span class="text-action">*</span>
+        </label>
         <div class="grid grid-cols-3 gap-2">
           <button type="button" onclick="setCreateType('monetary',this)"
             class="mission-type-btn active flex flex-col items-center gap-1 p-3 rounded-xl border-2 border-primary bg-primary/8 text-primary text-center">
@@ -247,6 +253,128 @@
         </div>
       </div>
 
+      <!-- Mission Name -->
+      <div>
+        <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-1.5">
+          Mission Name <span class="text-action">*</span>
+        </label>
+        <input id="createName" type="text" placeholder="e.g. 500 Bibles for Nigeria"
+          class="create-field w-full bg-surface border-2 border-border-soft rounded-xl px-4 py-3 font-body text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all">
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-1.5">
+          Description <span class="text-action">*</span>
+        </label>
+        <textarea id="createDesc" rows="3" placeholder="Describe the mission and its impact..."
+          class="create-field w-full bg-surface border-2 border-border-soft rounded-xl px-4 py-3 font-body text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none transition-all"></textarea>
+      </div>
+
+      <!-- Goal -->
+      <div>
+        <label id="createGoalLabel" class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-1.5">
+          Goal ($) <span class="text-action">*</span>
+        </label>
+        <input id="createGoal" type="number" placeholder="5000"
+          class="create-field w-full bg-surface border-2 border-border-soft rounded-xl px-4 py-3 font-body text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all">
+      </div>
+
+      <!-- Auto-track notice -->
+      <div id="createAutoTrackNotice" class="hidden bg-primary/8 border border-primary/20 rounded-xl p-3 flex items-center gap-3">
+        <span class="material-symbols-outlined text-primary text-[18px] filled flex-shrink-0">auto_awesome</span>
+        <p class="text-[11px] text-text-muted">
+          <span class="font-bold text-primary">Auto-tracking enabled.</span>
+          Progress updates automatically from real app data.
+        </p>
+      </div>
+
+      <!-- Date Range -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-1.5">
+            Start Date
+          </label>
+          <input id="createStartDate" type="date"
+            class="w-full bg-surface border-2 border-border-soft rounded-xl px-4 py-3 font-body text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+        </div>
+        <div>
+          <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-1.5">
+            End Date
+          </label>
+          <input id="createEndDate" type="date"
+            class="w-full bg-surface border-2 border-border-soft rounded-xl px-4 py-3 font-body text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+        </div>
+      </div>
+
+      <!-- Initial Update -->
+      <div>
+        <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-1.5">
+          Launch Message <span class="text-text-light font-normal normal-case">(optional)</span>
+        </label>
+        <textarea id="createUpdate" rows="2" placeholder="Optional message to announce this mission..."
+          class="w-full bg-surface border-2 border-border-soft rounded-xl px-4 py-3 font-body text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"></textarea>
+      </div>
+
+      <!-- Mission Image -->
+      <div>
+        <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-1.5">
+          Mission Image <span class="text-text-light font-normal normal-case">(optional)</span>
+        </label>
+        <div class="flex gap-3 items-start">
+          <div id="createImagePreview"
+            class="w-20 h-14 rounded-xl bg-surface border border-border-soft overflow-hidden flex-shrink-0 flex items-center justify-center">
+            <span class="material-symbols-outlined text-text-light text-[20px]">image</span>
+          </div>
+          <div class="flex-1 space-y-2">
+            <input id="createImageUrl" type="text" placeholder="Paste image URL"
+              oninput="previewCreateImage(this.value)"
+              class="w-full bg-surface border border-border-soft rounded-xl px-3 py-2 font-body text-xs focus:outline-none focus:ring-2 focus:ring-primary">
+            <input id="createImageFile" type="file" accept="image/*" class="hidden"
+              onchange="handleCreateImageFile(this)">
+            <button type="button" onclick="document.getElementById('createImageFile').click()"
+              class="w-full py-2 bg-cream border border-border-soft rounded-xl text-xs font-bold text-text-muted
+              hover:text-primary hover:border-primary transition-all flex items-center justify-center gap-1.5">
+              <span class="material-symbols-outlined text-[14px]">upload</span> Upload
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Visible -->
+      <div class="flex items-center justify-between py-2">
+        <span class="text-xs font-bold text-text-muted uppercase tracking-widest">Visible to Users</span>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="createVisible" class="sr-only peer" checked>
+          <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full
+            peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+            after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+        </label>
+      </div>
+
+      <!-- Error message -->
+      <div id="createError" class="hidden bg-action/10 border border-action/20 rounded-xl p-3 flex items-center gap-2">
+        <span class="material-symbols-outlined text-action text-[16px]">error</span>
+        <p id="createErrorMsg" class="text-xs text-action font-bold"></p>
+      </div>
+
+    </div>
+
+    <!-- Actions -->
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeCreateModal()"
+        class="flex-1 py-3 border-2 border-border-soft text-text-muted font-bold rounded-xl hover:bg-cream transition-all">
+        Cancel
+      </button>
+      <button onclick="createProject()" id="createBtn"
+        class="flex-1 py-3 tactical-gradient text-white font-bold rounded-xl shadow-tactical
+        hover:scale-[1.02] transition-transform flex items-center justify-center gap-2">
+        <span id="createBtnIcon" class="material-symbols-outlined text-gold text-[18px] filled">rocket_launch</span>
+        <span id="createBtnLabel">Launch Mission</span>
+      </button>
+    </div>
+  </div>
+</div>
       <div>
         <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-1.5">Mission Name *</label>
         <input id="createName" type="text" placeholder="e.g. 500 Bibles for Nigeria" class="w-full bg-surface border border-border-soft rounded-xl px-4 py-3 font-body text-sm focus:outline-none focus:ring-2 focus:ring-primary">
@@ -489,91 +617,195 @@
   }
 
   // Mission type selector
-  function setCreateType(type, btn) {
-    createMissionType = type
-    document.querySelectorAll('.mission-type-btn').forEach(function(b) {
+ function setCreateType(type, btn) {
+  createMissionType = type
+  document.querySelectorAll('.mission-type-btn').forEach(function(b) {
+    b.classList.remove('active','border-primary','bg-primary/8','text-primary')
+    b.classList.add('border-border-soft','text-text-muted')
+  })
+  btn.classList.add('active','border-primary','bg-primary/8','text-primary')
+  btn.classList.remove('border-border-soft','text-text-muted')
+
+  var goalLabel = document.getElementById('createGoalLabel')
+  var goalInput = document.getElementById('createGoal')
+  var autoNotice = document.getElementById('createAutoTrackNotice')
+
+  if (type === 'monetary') {
+    if (goalLabel) goalLabel.innerHTML = 'Goal ($) <span class="text-action">*</span>'
+    if (goalInput) goalInput.placeholder = '5000'
+    if (autoNotice) autoNotice.classList.add('hidden')
+  } else if (type === 'users') {
+    if (goalLabel) goalLabel.innerHTML = 'Target Warriors <span class="text-action">*</span>'
+    if (goalInput) goalInput.placeholder = '1000'
+    if (autoNotice) autoNotice.classList.remove('hidden')
+  } else if (type === 'shares') {
+    if (goalLabel) goalLabel.innerHTML = 'Target Shares <span class="text-action">*</span>'
+    if (goalInput) goalInput.placeholder = '50000'
+    if (autoNotice) autoNotice.classList.remove('hidden')
+  }
+}
+
+function openCreateModal() {
+  createMissionType = 'monetary'
+  document.querySelectorAll('.mission-type-btn').forEach(function(b, i) {
+    if (i === 0) {
+      b.classList.add('active','border-primary','bg-primary/8','text-primary')
+      b.classList.remove('border-border-soft','text-text-muted')
+    } else {
       b.classList.remove('active','border-primary','bg-primary/8','text-primary')
       b.classList.add('border-border-soft','text-text-muted')
-    })
-    btn.classList.add('active','border-primary','bg-primary/8','text-primary')
-    btn.classList.remove('border-border-soft','text-text-muted')
-
-    var goalLabel = document.getElementById('createGoalLabel')
-    var goalInput = document.getElementById('createGoal')
-    var autoNotice = document.getElementById('createAutoTrackNotice')
-
-    if (type === 'monetary') {
-      if (goalLabel) goalLabel.textContent = 'Goal ($) *'
-      if (goalInput) goalInput.placeholder = '5000'
-      if (autoNotice) autoNotice.classList.add('hidden')
-    } else if (type === 'users') {
-      if (goalLabel) goalLabel.textContent = 'Target Warriors *'
-      if (goalInput) goalInput.placeholder = '1000'
-      if (autoNotice) autoNotice.classList.remove('hidden')
-    } else if (type === 'shares') {
-      if (goalLabel) goalLabel.textContent = 'Target Shares *'
-      if (goalInput) goalInput.placeholder = '50000'
-      if (autoNotice) autoNotice.classList.remove('hidden')
     }
+  })
+
+  var autoNotice = document.getElementById('createAutoTrackNotice')
+  if (autoNotice) autoNotice.classList.add('hidden')
+  var goalLabel = document.getElementById('createGoalLabel')
+  if (goalLabel) goalLabel.innerHTML = 'Goal ($) <span class="text-action">*</span>'
+
+  document.getElementById('createName').value = ''
+  document.getElementById('createDesc').value = ''
+  document.getElementById('createGoal').value = ''
+  document.getElementById('createUpdate').value = ''
+  document.getElementById('createImageUrl').value = ''
+  document.getElementById('createVisible').checked = true
+  document.getElementById('createError').classList.add('hidden')
+
+  // Set default dates
+  var today = new Date()
+  document.getElementById('createStartDate').value = today.toISOString().split('T')[0]
+  var endDate = new Date()
+  endDate.setDate(endDate.getDate() + 30)
+  document.getElementById('createEndDate').value = endDate.toISOString().split('T')[0]
+
+  // Reset image preview
+  var preview = document.getElementById('createImagePreview')
+  if (preview) preview.innerHTML = '<span class="material-symbols-outlined text-text-light text-[20px]">image</span>'
+
+  // Clear error states
+  document.querySelectorAll('.create-field').forEach(function(f) { f.classList.remove('error') })
+
+  document.getElementById('createModal').classList.remove('hidden')
+}
+
+function closeCreateModal() {
+  document.getElementById('createModal').classList.add('hidden')
+}
+
+function previewCreateImage(url) {
+  var preview = document.getElementById('createImagePreview')
+  if (!preview) return
+  if (url && url.trim()) {
+    preview.innerHTML = '<img src="' + url + '" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML=\'<span class=material-symbols-outlined text-text-light text-[20px]>broken_image</span>\'">'
+  } else {
+    preview.innerHTML = '<span class="material-symbols-outlined text-text-light text-[20px]">image</span>'
+  }
+}
+
+function handleCreateImageFile(input) {
+  var file = input.files[0]
+  if (!file) return
+  var reader = new FileReader()
+  reader.onload = function(e) {
+    document.getElementById('createImageUrl').value = e.target.result
+    previewCreateImage(e.target.result)
+  }
+  reader.readAsDataURL(file)
+}
+
+async function createProject() {
+  var name      = document.getElementById('createName').value.trim()
+  var desc      = document.getElementById('createDesc').value.trim()
+  var goal      = parseFloat(document.getElementById('createGoal').value)
+  var startDate = document.getElementById('createStartDate').value
+  var endDate   = document.getElementById('createEndDate').value
+  var update    = document.getElementById('createUpdate').value.trim()
+  var imageUrl  = document.getElementById('createImageUrl').value.trim()
+  var visible   = document.getElementById('createVisible').checked
+  var errorEl   = document.getElementById('createError')
+  var errorMsg  = document.getElementById('createErrorMsg')
+  var btn       = document.getElementById('createBtn')
+  var icon      = document.getElementById('createBtnIcon')
+  var label     = document.getElementById('createBtnLabel')
+
+  // Clear previous errors
+  errorEl.classList.add('hidden')
+  document.querySelectorAll('.create-field').forEach(function(f) { f.classList.remove('error') })
+
+  // Validate required fields
+  var hasError = false
+
+  if (!name) {
+    document.getElementById('createName').classList.add('error')
+    hasError = true
+  }
+  if (!desc) {
+    document.getElementById('createDesc').classList.add('error')
+    hasError = true
+  }
+  if (!goal || goal <= 0) {
+    document.getElementById('createGoal').classList.add('error')
+    hasError = true
   }
 
-  function openCreateModal() {
-    createMissionType = 'monetary'
-    document.querySelectorAll('.mission-type-btn').forEach(function(b, i) {
-      if (i === 0) { b.classList.add('active','border-primary','bg-primary/8','text-primary'); b.classList.remove('border-border-soft','text-text-muted') }
-      else { b.classList.remove('active','border-primary','bg-primary/8','text-primary'); b.classList.add('border-border-soft','text-text-muted') }
-    })
-    var autoNotice = document.getElementById('createAutoTrackNotice')
-    if (autoNotice) autoNotice.classList.add('hidden')
-    var goalLabel = document.getElementById('createGoalLabel')
-    if (goalLabel) goalLabel.textContent = 'Goal ($) *'
-
-    document.getElementById('createName').value = ''
-    document.getElementById('createDesc').value = ''
-    document.getElementById('createLatestUpdate').value = ''
-    document.getElementById('createGoal').value = ''
-    document.getElementById('createDays').value = ''
-    document.getElementById('createImageUrl').value = ''
-    document.getElementById('createVisible').checked = true
-    document.getElementById('createModal').classList.remove('hidden')
+  if (hasError) {
+    errorMsg.textContent = 'Please fill in all required fields'
+    errorEl.classList.remove('hidden')
+    return
   }
 
-  function closeCreateModal() {
-    document.getElementById('createModal').classList.add('hidden')
+  // Calculate days remaining from end date
+  var daysRemaining = null
+  if (endDate) {
+    var end = new Date(endDate)
+    var now = new Date()
+    daysRemaining = Math.max(0, Math.ceil((end - now) / (1000 * 60 * 60 * 24)))
   }
 
-  async function createProject() {
-    var name = document.getElementById('createName').value.trim()
-    var desc = document.getElementById('createDesc').value.trim()
-    var goal = parseFloat(document.getElementById('createGoal').value)
-    var category = document.getElementById('createCategory').value
-    var days = parseInt(document.getElementById('createDays').value) || null
-    var update = document.getElementById('createLatestUpdate').value.trim()
-    var imageUrl = document.getElementById('createImageUrl').value.trim()
-    var visible = document.getElementById('createVisible').checked
+  // Loading state
+  icon.textContent = 'progress_activity'
+  icon.style.animation = 'spin 1s linear infinite'
+  icon.style.display = 'inline-block'
+  label.textContent = 'Launching...'
+  btn.disabled = true
 
-    if (!name) { showToast('Mission name is required'); return }
-    if (!desc) { showToast('Description is required'); return }
-    if (!goal || goal <= 0) { showToast('Valid goal is required'); return }
+  var goalUnit = createMissionType === 'monetary' ? 'USD' : createMissionType === 'users' ? 'warriors' : 'shares'
+  var autoTrack = createMissionType !== 'monetary'
+  var autoSource = createMissionType === 'users' ? 'profiles_count' : createMissionType === 'shares' ? 'shares_count' : null
 
-    var goalUnit = createMissionType === 'monetary' ? 'USD' : createMissionType === 'users' ? 'warriors' : 'shares'
-    var autoTrack = createMissionType !== 'monetary'
-    var autoSource = createMissionType === 'users' ? 'profiles_count' : createMissionType === 'shares' ? 'shares_count' : null
+  var result = await supabaseClient.from('projects').insert({
+    title: name,
+    description: desc,
+    status: 'active',
+    goal_amount: goal,
+    raised_amount: 0,
+    days_remaining: daysRemaining,
+    start_date: startDate || null,
+    end_date: endDate || null,
+    latest_update: update || null,
+    image_url: imageUrl || null,
+    is_visible: visible,
+    goal_type: createMissionType,
+    goal_unit: goalUnit,
+    auto_track: autoTrack,
+    auto_track_source: autoSource
+  })
 
-    var result = await supabaseClient.from('projects').insert({
-      title: name, description: desc, category: category, status: 'active',
-      goal_amount: goal, raised_amount: 0, days_remaining: days,
-      warrior_count: 0, latest_update: update || null,
-      image_url: imageUrl || null, is_visible: visible,
-      goal_type: createMissionType, goal_unit: goalUnit,
-      auto_track: autoTrack, auto_track_source: autoSource
-    })
+  // Reset button
+  icon.textContent = 'rocket_launch'
+  icon.style.animation = ''
+  label.textContent = 'Launch Mission'
+  btn.disabled = false
 
-    if (result.error) { showToast('Error creating mission'); return }
-    showToast('Mission created!')
-    closeCreateModal()
-    await loadProjects()
+  if (result.error) {
+    errorMsg.textContent = 'Error: ' + result.error.message
+    errorEl.classList.remove('hidden')
+    return
   }
+
+  showToast('Mission launched!')
+  closeCreateModal()
+  await loadProjects()
+}
 
   async function pauseDirect(id) {
     await supabaseClient.from('projects').update({ status: 'paused' }).eq('id', id)
