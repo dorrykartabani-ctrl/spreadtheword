@@ -443,7 +443,7 @@ async function loadImpactData(userId) {
   renderHeroStats(actualTotalShares, weekShares.length, currentStreak, uniquePlatforms)
   renderLevelProgress(actualTotalShares, level, nextLevel)
   renderPlatformBars(platformCounts, shares.length)
-  renderMilestones(actualTotalShares, currentStreak, recruitCount)
+  renderMilestones(actualTotalShares, currentStreak, recruitCount, profile)
   renderWeekChart(dailyCounts, weekShares.length)
   renderCommunityStats(communityResults[0].count || 0, communityResults[1].count || 0, userRank)
   checkNewMilestones(actualTotalShares, currentStreak, recruitCount)
@@ -502,7 +502,7 @@ function renderPlatformBars(counts, total) {
 // ════════════════════════════════════════════
 // RENDER MILESTONES — Supports 3 types: shares, streak, recruits
 // ════════════════════════════════════════════
-function renderMilestones(totalShares, currentStreak, recruitCount) {
+function renderMilestones(totalShares, currentStreak, recruitCount, profile) {
   var container = document.getElementById('milestonesList')
   container.innerHTML = ''
 
@@ -533,8 +533,40 @@ function renderMilestones(totalShares, currentStreak, recruitCount) {
       el.className = 'flex items-center gap-4 bg-card-bg p-4 rounded-2xl border border-border-soft shadow-card opacity-40'
       el.innerHTML = '<div class="w-10 h-10 rounded-xl bg-surface flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-text-light text-[20px]">' + m.icon + '</span></div><div class="flex-1 min-w-0"><p class="text-xs font-bold text-text-dark">' + m.title + '</p><p class="text-[10px] text-text-light">0 / ' + m.threshold + '</p></div><span class="material-symbols-outlined text-text-light text-[20px] flex-shrink-0">lock</span>'
     }
-    container.appendChild(el)
-  })
+
+// ── Render Badges ──
+var badges = profile ? (profile.badges || []) : []
+
+var badgeInfo = {
+  'foundation_member': {
+    name: 'Foundation Member',
+    icon: 'shield',
+    desc: 'Joined during the first wave',
+    color: 'gold'
+  }
+}
+
+badges.forEach(function(badgeId) {
+  var info = badgeInfo[badgeId]
+  if (!info) return
+
+  var colorClass = info.color === 'gold' ? 'text-gold-dim' : 'text-primary'
+  var bgClass = info.color === 'gold' ? 'bg-gold/10' : 'bg-primary/10'
+
+  var el = document.createElement('div')
+  el.className = 'flex items-center gap-4 bg-card-bg p-4 rounded-2xl border border-gold/30 shadow-card'
+  el.innerHTML =
+    '<div class="w-10 h-10 rounded-xl ' + bgClass + ' flex items-center justify-center flex-shrink-0">'
+      + '<span class="material-symbols-outlined ' + colorClass + ' text-[20px] filled">' + info.icon + '</span>'
+    + '</div>'
+    + '<div class="flex-1 min-w-0">'
+      + '<p class="text-xs font-bold text-text-dark">' + info.name + '</p>'
+      + '<p class="text-[10px] text-text-light">' + info.desc + '</p>'
+    + '</div>'
+    + '<span class="material-symbols-outlined text-gold text-[20px] filled flex-shrink-0">verified</span>'
+
+  container.appendChild(el)
+})
 }
 
 function renderWeekChart(dailyCounts, weekTotal) {
