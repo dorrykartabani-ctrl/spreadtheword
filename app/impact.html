@@ -333,16 +333,14 @@
 </div>
 <script>
 
- var supabaseClient = supabase.createClient(
+var supabaseClient = supabase.createClient(
   'https://nhymadutuhpjgkiurify.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
 )
 
 var currentUser = null
+var userBadges = []
 
-// ════════════════════════════════════════════
-// WARRIOR LEVELS — Recruit renamed to Private
-// ════════════════════════════════════════════
 var warriorLevels = [
   { level: 1, title: 'Private',   min: 0,   max: 9 },
   { level: 2, title: 'Soldier',   min: 10,  max: 49 },
@@ -351,9 +349,6 @@ var warriorLevels = [
   { level: 5, title: 'General',   min: 200, max: 99999 }
 ]
 
-// ════════════════════════════════════════════
-// MILESTONES — Shares + Streaks + Recruits
-// ════════════════════════════════════════════
 var milestones = [
   { id: 'first_share',   type: 'shares',   threshold: 1,   title: 'First Word Shared',    icon: 'stars',              color: 'gold' },
   { id: 'shares_10',     type: 'shares',   threshold: 10,  title: '10 Words Shared',      icon: 'shield',             color: 'primary' },
@@ -369,6 +364,15 @@ var milestones = [
   { id: 'recruit_25',    type: 'recruits', threshold: 25,  title: 'Battalion Chief',      icon: 'workspace_premium',  color: 'gold' },
   { id: 'recruit_50',    type: 'recruits', threshold: 50,  title: 'Army Builder',         icon: 'emoji_events',       color: 'action' }
 ]
+
+var badgeInfo = {
+  'foundation_member': {
+    name: 'Foundation Member',
+    icon: 'shield',
+    desc: 'Joined during the first wave',
+    color: 'gold'
+  }
+}
 
 function getWarriorLevel(shares) {
   for (var i = warriorLevels.length - 1; i >= 0; i--) {
@@ -394,20 +398,20 @@ async function checkAuth() {
 
 async function loadImpactData(userId) {
   var profileResult = await supabaseClient.from('profiles').select('*').eq('id', userId).single()
-  var profile = profileResult.data || { total_shares: 0, current_streak: 0, nickname: '', full_name: '', recruit_count: 0 }
-  window._impactProfile = profile
+  var profile = profileResult.data || { total_shares: 0, current_streak: 0, nickname: '', full_name: '', recruit_count: 0, badges: [] }
   var currentStreak = profile.current_streak || 0
-  var recruitCount  = profile.recruit_count || 0
+  var recruitCount = profile.recruit_count || 0
+  userBadges = profile.badges || []
 
-  // Greeting with nickname
+  // Greeting
   var displayName = profile.nickname || (profile.full_name ? profile.full_name.split(' ')[0] : 'Warrior')
   var greetEl = document.getElementById('greetingName')
   if (greetEl) greetEl.textContent = 'Hi ' + displayName + ' — here is your impact'
 
-  // Header streak
   var headerStreak = document.getElementById('headerStreak')
   if (headerStreak) headerStreak.textContent = currentStreak
 
+  // Load shares
   var sharesResult = await supabaseClient.from('shares').select('platform, shared_at, quote_id').eq('user_id', userId).order('shared_at', { ascending: false })
   var shares = sharesResult.data || []
   var actualTotalShares = shares.length
@@ -444,7 +448,7 @@ async function loadImpactData(userId) {
   renderHeroStats(actualTotalShares, weekShares.length, currentStreak, uniquePlatforms)
   renderLevelProgress(actualTotalShares, level, nextLevel)
   renderPlatformBars(platformCounts, shares.length)
-  renderMilestones(actualTotalShares, currentStreak, recruitCount, profile)
+  renderMilestones(actualTotalShares, currentStreak, recruitCount)
   renderWeekChart(dailyCounts, weekShares.length)
   renderCommunityStats(communityResults[0].count || 0, communityResults[1].count || 0, userRank)
   checkNewMilestones(actualTotalShares, currentStreak, recruitCount)
@@ -481,10 +485,13 @@ function renderLevelProgress(total, level, nextLevel) {
 function renderPlatformBars(counts, total) {
   var container = document.getElementById('platformBars')
   container.innerHTML = ''
-  if (total === 0) { container.innerHTML = '<p class="text-center text-text-light text-sm py-4">Share to see platform stats</p>'; return }
+  if (total === 0) {
+    container.innerHTML = '<p class="text-center text-text-light text-sm py-4">Share to see platform stats</p>'
+    return
+  }
 
   var sorted = Object.keys(counts).sort(function(a, b) { return counts[b] - counts[a] })
-  sorted.forEach(function(platform, i) {
+  sorted.forEach(function(platform) {
     var count = counts[platform]
     var pct = Math.round((count / total) * 100)
     var el = document.createElement('div')
@@ -500,13 +507,11 @@ function renderPlatformBars(counts, total) {
   }, 300)
 }
 
-// ════════════════════════════════════════════
-// RENDER MILESTONES — Supports 3 types: shares, streak, recruits
-// ════════════════════════════════════════════
 function renderMilestones(totalShares, currentStreak, recruitCount) {
   var container = document.getElementById('milestonesList')
   container.innerHTML = ''
 
+  // Render milestones
   milestones.forEach(function(m) {
     var currentVal = 0
     if (m.type === 'shares')   currentVal = totalShares
@@ -524,33 +529,52 @@ function renderMilestones(totalShares, currentStreak, recruitCount) {
 
     if (isComplete) {
       el.className = 'flex items-center gap-4 bg-card-bg p-4 rounded-2xl border border-border-soft shadow-card'
-      el.innerHTML = '<div class="w-10 h-10 rounded-xl ' + bgClass + ' flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined ' + colorClass + ' text-[20px] filled">' + m.icon + '</span></div><div class="flex-1 min-w-0"><p class="text-xs font-bold text-text-dark">' + m.title + '</p><p class="text-[10px] text-text-light">Achieved ✓</p></div><span class="material-symbols-outlined text-primary text-[20px] filled flex-shrink-0">check_circle</span>'
+      el.innerHTML =
+        '<div class="w-10 h-10 rounded-xl ' + bgClass + ' flex items-center justify-center flex-shrink-0">'
+          + '<span class="material-symbols-outlined ' + colorClass + ' text-[20px] filled">' + m.icon + '</span>'
+        + '</div>'
+        + '<div class="flex-1 min-w-0">'
+          + '<p class="text-xs font-bold text-text-dark">' + m.title + '</p>'
+          + '<p class="text-[10px] text-text-light">Achieved ✓</p>'
+        + '</div>'
+        + '<span class="material-symbols-outlined text-primary text-[20px] filled flex-shrink-0">check_circle</span>'
     } else if (isInProgress) {
       var circumference = 2 * Math.PI * 16
       var offset = circumference - (progress / 100) * circumference
       el.className = 'flex items-center gap-4 bg-card-bg p-4 rounded-2xl border-l-4 border-gold shadow-card'
-      el.innerHTML = '<div class="w-10 h-10 rounded-xl ' + bgClass + ' flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined ' + colorClass + ' text-[20px]">' + m.icon + '</span></div><div class="flex-1 min-w-0"><p class="text-xs font-bold text-text-dark">' + m.title + '</p><p class="text-[10px] text-text-muted">In Progress · ' + currentVal + ' / ' + m.threshold + '</p></div><div class="w-10 h-10 flex-shrink-0 relative"><svg class="milestone-ring w-full h-full" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="#F0EDE6" stroke-width="3"/><circle cx="20" cy="20" r="16" fill="none" stroke="#D4A24C" stroke-width="3" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '" stroke-linecap="round"/></svg><span class="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-gold-dim">' + progress + '%</span></div>'
+      el.innerHTML =
+        '<div class="w-10 h-10 rounded-xl ' + bgClass + ' flex items-center justify-center flex-shrink-0">'
+          + '<span class="material-symbols-outlined ' + colorClass + ' text-[20px]">' + m.icon + '</span>'
+        + '</div>'
+        + '<div class="flex-1 min-w-0">'
+          + '<p class="text-xs font-bold text-text-dark">' + m.title + '</p>'
+          + '<p class="text-[10px] text-text-muted">In Progress · ' + currentVal + ' / ' + m.threshold + '</p>'
+        + '</div>'
+        + '<div class="w-10 h-10 flex-shrink-0 relative">'
+          + '<svg class="milestone-ring w-full h-full" viewBox="0 0 40 40">'
+            + '<circle cx="20" cy="20" r="16" fill="none" stroke="#F0EDE6" stroke-width="3"/>'
+            + '<circle cx="20" cy="20" r="16" fill="none" stroke="#D4A24C" stroke-width="3" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '" stroke-linecap="round"/>'
+          + '</svg>'
+          + '<span class="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-gold-dim">' + progress + '%</span>'
+        + '</div>'
     } else {
       el.className = 'flex items-center gap-4 bg-card-bg p-4 rounded-2xl border border-border-soft shadow-card opacity-40'
-      el.innerHTML = '<div class="w-10 h-10 rounded-xl bg-surface flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-text-light text-[20px]">' + m.icon + '</span></div><div class="flex-1 min-w-0"><p class="text-xs font-bold text-text-dark">' + m.title + '</p><p class="text-[10px] text-text-light">0 / ' + m.threshold + '</p></div><span class="material-symbols-outlined text-text-light text-[20px] flex-shrink-0">lock</span>'
+      el.innerHTML =
+        '<div class="w-10 h-10 rounded-xl bg-surface flex items-center justify-center flex-shrink-0">'
+          + '<span class="material-symbols-outlined text-text-light text-[20px]">' + m.icon + '</span>'
+        + '</div>'
+        + '<div class="flex-1 min-w-0">'
+          + '<p class="text-xs font-bold text-text-dark">' + m.title + '</p>'
+          + '<p class="text-[10px] text-text-light">0 / ' + m.threshold + '</p>'
+        + '</div>'
+        + '<span class="material-symbols-outlined text-text-light text-[20px] flex-shrink-0">lock</span>'
     }
+
     container.appendChild(el)
   })
 
-  // ── Render Badges ──
-  var profile = window._impactProfile || {}
-  var badges = profile.badges || []
-
-  var badgeInfo = {
-    'foundation_member': {
-      name: 'Foundation Member',
-      icon: 'shield',
-      desc: 'Joined during the first wave',
-      color: 'gold'
-    }
-  }
-
-  badges.forEach(function(badgeId) {
+  // Render badges
+  userBadges.forEach(function(badgeId) {
     var info = badgeInfo[badgeId]
     if (!info) return
 
@@ -569,6 +593,7 @@ function renderMilestones(totalShares, currentStreak, recruitCount) {
     container.appendChild(el)
   })
 }
+
 function renderWeekChart(dailyCounts, weekTotal) {
   var container = document.getElementById('weekChart')
   document.getElementById('weekTotal').textContent = weekTotal + ' share' + (weekTotal !== 1 ? 's' : '')
@@ -583,7 +608,8 @@ function renderWeekChart(dailyCounts, weekTotal) {
     var isToday = i === today
     var col = document.createElement('div')
     col.className = 'flex flex-col items-center gap-1.5 flex-1'
-    col.innerHTML = '<div class="chart-bar w-full ' + (isToday ? 'tactical-gradient' : 'bg-primary/20') + ' rounded-t-lg" style="height:0" data-h="' + pct + '%"></div>'
+    col.innerHTML =
+      '<div class="chart-bar w-full ' + (isToday ? 'tactical-gradient' : 'bg-primary/20') + ' rounded-t-lg" style="height:0" data-h="' + pct + '%"></div>'
       + '<span class="text-[9px] ' + (isToday ? 'font-extrabold text-primary' : 'font-bold text-text-light') + '">' + dayLabels[i] + '</span>'
     container.appendChild(col)
   })
@@ -601,9 +627,6 @@ function renderCommunityStats(warriors, globalShares, rank) {
   document.getElementById('communityRank').textContent = '#' + rank
 }
 
-// ════════════════════════════════════════════
-// CHECK NEW MILESTONES — Supports 3 types
-// ════════════════════════════════════════════
 function checkNewMilestones(totalShares, currentStreak, recruitCount) {
   var celebrated = JSON.parse(localStorage.getItem('gstw_celebrated') || '[]')
   for (var i = 0; i < milestones.length; i++) {
