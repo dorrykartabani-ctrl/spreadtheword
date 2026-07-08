@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Mission — GSTW Admin</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'primary':'#1E4060','primary-dim':'#152E45','primary-light':'#2B5780',
+            'action':'#E25B4D','action-dim':'#C84A3E',
+            'gold':'#D4A24C','gold-dim':'#B88A3D',
+            'cream':'#F7F4ED','dark':'#16202A',
+            'text-dark':'#1A1A1A','text-muted':'#5C6B7A','text-light':'#8E9AA8',
+            'border-soft':'rgba(92,107,122,0.15)',
+            'card-bg':'#FFFFFF','surface':'#F0EDE6',
+          },
+          fontFamily:{
+            'headline':['Plus Jakarta Sans','sans-serif'],
+            'body':['Manrope','sans-serif'],
+          },
+          boxShadow:{
+            'natural':'0 4px 16px rgba(26,32,42,0.06)',
+            'lifted':'0 8px 32px rgba(26,32,42,0.10)',
+            'tactical':'0 4px 20px rgba(30,64,96,0.25)',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    body{font-family:'Manrope',sans-serif;background-color:#F0EDE6}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle}
+    .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+    .tactical-gradient{background:linear-gradient(145deg,#152E45,#1E4060)}
+    .update-note{background:#fff;border-left:4px solid #D4A24C}
+    textarea{resize:none}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spin{animation:spin 1s linear infinite;display:inline-block}
+  </style>
+</head>
+
+<body class="text-text-dark min-h-screen">
+
+<div class="max-w-2xl mx-auto px-6 py-8">
+
+  <!-- HEADER -->
+  <div class="flex items-center justify-between mb-8">
+    <button onclick="goBack()" class="w-10 h-10 flex items-center justify-center text-text-muted active:scale-90 transition-all rounded-xl hover:bg-card-bg">
+      <span class="material-symbols-outlined text-[22px]">arrow_back</span>
+    </button>
+    <h1 class="font-headline font-bold text-xl text-text-dark">Edit Mission</h1>
+    <div class="w-10"></div>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loadingState" class="text-center py-20">
+    <span class="material-symbols-outlined text-primary text-[32px] spin">progress_activity</span>
+    <p class="text-sm text-text-muted mt-3">Loading mission...</p>
+  </div>
+
+  <!-- ERROR -->
+  <div id="errorState" class="hidden text-center py-20">
+    <div class="w-16 h-16 rounded-2xl bg-action/10 flex items-center justify-center mx-auto mb-4">
+      <span class="material-symbols-outlined text-action text-[32px]">error</span>
+    </div>
+    <h3 class="font-headline font-bold text-xl text-text-dark mb-2">Mission Not Found</h3>
+    <button onclick="goBack()" class="tactical-gradient text-white font-bold px-6 py-3 rounded-xl shadow-tactical mt-4">Back to Missions</button>
+  </div>
+
+  <!-- EDIT FORM -->
+  <div id="editForm" class="hidden space-y-6">
+
+    <!-- Mission ref + status -->
+    <div class="flex items-center justify-between">
+      <span id="missionRef" class="text-xs font-bold text-text-light bg-surface px-3 py-1 rounded-full border border-border-soft"></span>
+      <select id="editStatus" class="bg-surface border border-border-soft rounded-xl px-3 py-2 font-body text-sm focus:outline-none focus:ring-2 focus:ring-primary appearance-none">
+        <option value="active">Active</option>
+        <option value="paused">Paused</option>
+        <option value="completed">Completed</option>
+      </select>
+    </div>
+
+    <!-- Title -->
+    <div class="bg-card-bg rounded-2xl p-5 shadow-natural border border-border-soft space-y-2">
+      <label class="text-xs font-bold text-text-muted uppercase tracking-widest">Mission Name</label>
+      <input id="editTitle" type="text" class="w-full bg-surface border border-border-soft rounded-xl px-4 py-3 font-body text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+    </div>
+
+    <!-- Description -->
+    <div class="bg-card-bg rounded-2xl p-5 shadow-natural border border-border-soft space-y-2">
+      <label class="text-xs font-bold text-text-muted uppercase tracking-widest">Description</label>
+      <textarea id="editDesc" rows="4" class="w-full bg-surface border border-border-soft rounded-xl px-4 py-3 font-body text-sm focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+    </div>
+
+    <!-- Goal + Raised -->
+    <div class="bg-card-bg rounded-2xl p-5 shadow-natural border border-border-soft space-y-3">
+      <label class="text-xs font-bold text-text-muted uppercase tracking-widest">Progress</label>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label id="editGoalLabel" class="text-[10px] font-bold text-text-light block mb-1">Goal</label>
+          <input id="editGoal" type="number" class="w-full bg-surface border border-border-soft rounded-xl px-4 py-3 font-body text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-text-light block mb-1">Raised / Current</label>
+          <input id="editRaised" type="number" class="w-full bg-surface border border-border-soft rounded-xl px-4 py-3 font-body text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+        </div>
+      </div>
+      <div id="autoTrackNote" class="hidden bg-primary/8 border border-primary/20 rounded-xl p-3 flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary text-[16px] filled">auto_awesome</span>
+        <p class="text-[10px] text-text-muted"><span class="font-bold text-primary">Auto-tracked.</span> The "Raised" value updates automatically.</p>
+      </div>
+    </div>
+
+    <!-- Dates -->
+    <div class="bg-card-bg rounded-2xl p-5 shadow-natural border border-border-soft space-y-3">
+      <label class="text-xs font-bold text-text-muted uppercase tracking-widest">Schedule</label>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-[10px] font-bold text-text-light block mb-1">Start Date</label>
+          <input id="editStartDate" type="date" class="w-full bg-surface border border-border-soft rounded-xl px-4 py-3 font-body text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-text-light block mb-1">End Date</label>
+          <input id="editEndDate" type="date" class="w-full bg-surface border border-border-soft rounded-xl px-4 py-3 font-body text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+        </div>
+      </div>
+    </div>
+
+    <!-- Image -->
+    <div class="bg-card-bg rounded-2xl p-5 shadow-natural border border-border-soft space-y-2">
+      <label class="text-xs font-bold text-text-muted uppercase tracking-widest">Mission Image</label>
+      <p class="text-[10px] text-text-light">Recommended: 1200 x 630px (landscape). JPG or PNG.</p>
+      <div class="flex gap-3 items-start mt-2">
+        <div id="editImagePreview" class="w-24 h-16 rounded-xl bg-surface border border-border-soft overflow-hidden flex-shrink-0 flex items-center justify-center">
+          <span class="material-symbols-outlined text-text-light text-[20px]">image</span>
+        </div>
+        <div class="flex-1 space-y-2">
+          <input id="editImageUrl" type="text" placeholder="Paste image URL" oninput="previewEditImage(this.value)"
+            class="w-full bg-surface border border-border-soft rounded-xl px-3 py-2 font-body text-xs focus:outline-none focus:ring-2 focus:ring-primary">
+          <input id="editImageFile" type="file" accept="image/*" class="hidden" onchange="handleEditImageFile(this)">
+          <button type="button" onclick="document.getElementById('editImageFile').click()"
+            class="w-full py-2 bg-cream border border-border-soft rounded-xl text-xs font-bold text-text-muted hover:text-primary hover:border-primary transition-all flex items-center justify-center gap-1.5">
+            <span class="material-symbols-outlined text-[14px]">upload</span> Upload
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress Update -->
+    <div class="bg-card-bg rounded-2xl p-5 shadow-natural border border-border-soft space-y-3">
+      <label class="text-xs font-bold text-text-muted uppercase tracking-widest">Post Progress Update</label>
+      <div id="currentUpdate" class="hidden update-note p-3 rounded-r-xl">
+        <p class="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1">Current Update</p>
+        <p id="currentUpdateText" class="text-xs text-text-muted italic"></p>
+      </div>
+      <textarea id="editUpdate" rows="3" placeholder="Write a new progress update for this mission..."
+        class="w-full bg-surface border border-border-soft rounded-xl px-4 py-3 font-body text-sm focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+      <p class="text-[10px] text-text-light">Leave empty to keep the current update.</p>
+    </div>
+
+    <!-- Visibility -->
+    <div class="bg-card-bg rounded-2xl p-5 shadow-natural border border-border-soft flex items-center justify-between">
+      <span class="text-xs font-bold text-text-muted uppercase tracking-widest">Visible to Users</span>
+      <label class="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" id="editVisible" class="sr-only peer" checked>
+        <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+      </label>
+    </div>
+
+    <!-- Save -->
+    <div class="flex gap-3 pt-2 pb-8">
+      <button onclick="goBack()" class="flex-1 py-3.5 border-2 border-border-soft text-text-muted font-bold rounded-xl hover:bg-cream transition-all">Cancel</button>
+      <button onclick="saveMission()" id="saveBtn"
+        class="flex-1 py-3.5 tactical-gradient text-white font-headline font-bold rounded-xl shadow-tactical active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+        <span id="saveIcon" class="material-symbols-outlined text-gold text-[18px] filled">save</span>
+        <span id="saveLabel">Save Changes</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- SUCCESS -->
+  <div id="successState" class="hidden text-center py-20">
+    <div class="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+      <span class="material-symbols-outlined text-primary text-[32px] filled">check_circle</span>
+    </div>
+    <h3 class="font-headline font-bold text-xl text-text-dark mb-2">Mission Updated!</h3>
+    <p class="text-sm text-text-muted mb-6">Changes saved successfully.</p>
+    <button onclick="goBack()" class="tactical-gradient text-white font-bold px-8 py-3 rounded-xl shadow-tactical">Back to Missions</button>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="hidden fixed top-6 right-6 z-50 bg-primary text-white px-5 py-3.5 rounded-2xl shadow-lifted flex items-center gap-3 max-w-sm">
+  <span class="material-symbols-outlined text-gold text-[20px] filled">check_circle</span>
+  <p id="toastMsg" class="text-sm font-bold font-body"></p>
+</div>
+
+<script>
+
+  var supabaseClient = supabase.createClient(
+    'https://nhymadutuhpjgkiurify.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+  )
+
+  var missionId = null
+  var missionData = null
+
+  async function checkAdminAuth() {
+    try {
+      var result = await supabaseClient.auth.getSession()
+      if (!result.data.session) {
+        await new Promise(function(r) { setTimeout(r, 500) })
+        result = await supabaseClient.auth.getSession()
+      }
+      if (!result.data.session) {
+        var refreshed = await supabaseClient.auth.refreshSession()
+        if (!refreshed.data.session) { window.location.href = 'login.html'; return false }
+        result = refreshed
+      }
+      var profileResult = await supabaseClient.from('profiles').select('role').eq('id', result.data.session.user.id).single()
+      if (profileResult.error || !profileResult.data || profileResult.data.role !== 'admin') {
+        window.location.href = '../app/index.html'; return false
+      }
+      return true
+    } catch(e) { window.location.href = 'login.html'; return false }
+  }
+
+  async function loadMission() {
+    missionId = sessionStorage.getItem('gstw_admin_edit_mission')
+    sessionStorage.removeItem('gstw_admin_edit_mission')
+
+    if (!missionId) {
+      document.getElementById('loadingState').classList.add('hidden')
+      document.getElementById('errorState').classList.remove('hidden')
+      return
+    }
+
+    var result = await supabaseClient.from('projects').select('*').eq('id', missionId).single()
+
+    if (result.error || !result.data) {
+      document.getElementById('loadingState').classList.add('hidden')
+      document.getElementById('errorState').classList.remove('hidden')
+      return
+    }
+
+    missionData = result.data
+
+    // Fill form
+    document.getElementById('missionRef').textContent = missionData.mission_ref || 'No ref'
+    document.getElementById('editTitle').value = missionData.title || ''
+    document.getElementById('editDesc').value = missionData.description || ''
+    document.getElementById('editGoal').value = missionData.goal_amount || ''
+    document.getElementById('editRaised').value = missionData.raised_amount || ''
+    document.getElementById('editStatus').value = missionData.status || 'active'
+    document.getElementById('editStartDate').value = missionData.start_date || ''
+    document.getElementById('editEndDate').value = missionData.end_date || ''
+    document.getElementById('editImageUrl').value = missionData.image_url || ''
+    document.getElementById('editVisible').checked = missionData.is_visible !== false
+
+    // Goal label
+    var goalLabel = document.getElementById('editGoalLabel')
+    if (missionData.goal_type === 'users') goalLabel.textContent = 'Target Warriors'
+    else if (missionData.goal_type === 'shares') goalLabel.textContent = 'Target Shares'
+    else goalLabel.textContent = 'Goal ($)'
+
+    // Auto-track note
+    if (missionData.auto_track) {
+      document.getElementById('autoTrackNote').classList.remove('hidden')
+    }
+
+    // Current update
+    if (missionData.latest_update) {
+      document.getElementById('currentUpdate').classList.remove('hidden')
+      document.getElementById('currentUpdateText').textContent = missionData.latest_update
+    }
+
+    // Image preview
+    if (missionData.image_url) {
+      document.getElementById('editImagePreview').innerHTML = '<img src="' + missionData.image_url + '" class="w-full h-full object-cover">'
+    }
+
+    document.getElementById('loadingState').classList.add('hidden')
+    document.getElementById('editForm').classList.remove('hidden')
+  }
+
+  function previewEditImage(url) {
+    var preview = document.getElementById('editImagePreview')
+    if (url && url.trim()) {
+      preview.innerHTML = '<img src="' + url + '" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML=\'<span class=material-symbols-outlined text-text-light text-[20px]>broken_image</span>\'">'
+    } else {
+      preview.innerHTML = '<span class="material-symbols-outlined text-text-light text-[20px]">image</span>'
+    }
+  }
+
+  function handleEditImageFile(input) {
+    var file = input.files[0]
+    if (!file) return
+    var reader = new FileReader()
+    reader.onload = function(e) {
+      document.getElementById('editImageUrl').value = e.target.result
+      previewEditImage(e.target.result)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  async function saveMission() {
+    var title     = document.getElementById('editTitle').value.trim()
+    var desc      = document.getElementById('editDesc').value.trim()
+    var goal      = parseFloat(document.getElementById('editGoal').value)
+    var raised    = parseFloat(document.getElementById('editRaised').value) || 0
+    var status    = document.getElementById('editStatus').value
+    var startDate = document.getElementById('editStartDate').value
+    var endDate   = document.getElementById('editEndDate').value
+    var imageUrl  = document.getElementById('editImageUrl').value.trim()
+    var newUpdate = document.getElementById('editUpdate').value.trim()
+    var visible   = document.getElementById('editVisible').checked
+    var btn       = document.getElementById('saveBtn')
+    var icon      = document.getElementById('saveIcon')
+    var label     = document.getElementById('saveLabel')
+
+    if (!title) { showToast('Mission name is required'); return }
+
+    icon.textContent = 'progress_activity'
+    icon.classList.add('spin')
+    label.textContent = 'Saving...'
+    btn.disabled = true
+
+    var daysRemaining = null
+    if (endDate) {
+      var end = new Date(endDate)
+      var now = new Date()
+      daysRemaining = Math.max(0, Math.ceil((end - now) / (1000 * 60 * 60 * 24)))
+    }
+
+    var updateData = {
+      title: title,
+      description: desc,
+      goal_amount: goal,
+      raised_amount: raised,
+      status: status,
+      start_date: startDate || null,
+      end_date: endDate || null,
+      days_remaining: daysRemaining,
+      image_url: imageUrl || null,
+      is_visible: visible
+    }
+
+    // Only update latest_update if admin wrote something new
+    if (newUpdate) {
+      updateData.latest_update = newUpdate
+    }
+
+    if (status === 'live') {
+      updateData.published_at = missionData.published_at || new Date().toISOString()
+    }
+
+    var result = await supabaseClient.from('projects').update(updateData).eq('id', missionId)
+
+    icon.classList.remove('spin')
+    btn.disabled = false
+
+    if (result.error) {
+      icon.textContent = 'save'
+      label.textContent = 'Save Changes'
+      showToast('Error: ' + result.error.message)
+      return
+    }
+
+    document.getElementById('editForm').classList.add('hidden')
+    document.getElementById('successState').classList.remove('hidden')
+  }
+
+  function goBack() { window.location.href = 'projects.html' }
+
+  var toastTimer
+  function showToast(msg) {
+    var toast = document.getElementById('toast')
+    var toastMsg = document.getElementById('toastMsg')
+    if (!toast || !toastMsg) return
+    toastMsg.textContent = msg
+    toast.classList.remove('hidden'); toast.classList.add('flex')
+    clearTimeout(toastTimer)
+    toastTimer = setTimeout(function() { toast.classList.add('hidden'); toast.classList.remove('flex') }, 3000)
+  }
+
+  async function init() {
+    var isAdmin = await checkAdminAuth()
+    if (!isAdmin) return
+    await loadMission()
+  }
+
+  init()
+
+</script>
+</body>
+</html>
