@@ -477,130 +477,181 @@
   // ════════════════════════════════════════════
   // RENDER ALL PROJECTS
   // ════════════════════════════════════════════
-  function renderProjects(projects) {
-    var activeContainer    = document.getElementById('activeProjects')
-    var completedContainer = document.getElementById('completedProjects')
-    if (!activeContainer || !completedContainer) return
+ function renderProjects(projects) {
+  var activeContainer    = document.getElementById('activeProjects')
+  var completedContainer = document.getElementById('completedProjects')
+  if (!activeContainer || !completedContainer) return
 
-    var active    = projects.filter(function(p) { return p.status === 'active' })
-    var completed = projects.filter(function(p) { return p.status === 'completed' })
+  var active    = projects.filter(function(p) { return p.status === 'active' })
+  var completed = projects.filter(function(p) { return p.status === 'completed' })
 
-    // ── RENDER ACTIVE ──
-    activeContainer.innerHTML = ''
+  // ── RENDER ACTIVE ──
+  activeContainer.innerHTML = ''
 
-    if (active.length === 0) {
-      activeContainer.innerHTML =
-        '<div class="text-center py-8">'
-        + '<span class="material-symbols-outlined text-text-light text-[40px] mb-2">folder_open</span>'
-        + '<p class="text-text-muted text-sm font-bold">No active projects right now</p>'
-        + '</div>'
+  if (active.length === 0) {
+    activeContainer.innerHTML =
+      '<div class="text-center py-8">'
+        + '<span class="material-symbols-outlined text-text-light text-[40px] mb-2 block">folder_open</span>'
+        + '<p class="text-text-muted text-sm font-bold">No active missions right now</p>'
+      + '</div>'
+  }
+
+  active.forEach(function(project, index) {
+    var percent = project.goal_amount > 0
+      ? Math.round((project.raised_amount / project.goal_amount) * 100) : 0
+    var imageUrl   = project.image_url || fallbackImages[index % fallbackImages.length]
+    var warriors   = project.warrior_count || 0
+    var projectId  = project.id
+    var goalType   = project.goal_type || 'monetary'
+    var isAutoTrack = project.auto_track
+
+    // Days remaining
+    var daysText = ''
+    var isClosing = false
+    if (project.end_date) {
+      var end = new Date(project.end_date)
+      var now = new Date()
+      var diff = Math.ceil((end - now) / (1000 * 60 * 60 * 24))
+      daysText = diff > 0 ? diff + ' days remaining' : 'Ended'
+      isClosing = diff > 0 && diff <= 5
+    } else if (project.days_remaining) {
+      daysText = project.days_remaining + ' days remaining'
+      isClosing = project.days_remaining <= 5
+    } else {
+      daysText = 'Ongoing'
     }
 
-    active.forEach(function(project, index) {
-      var percent    = project.goal_amount > 0
-        ? Math.round((project.raised_amount / project.goal_amount) * 100)
-        : 0
-      var isClosing  = project.days_remaining && project.days_remaining <= 5
-      var imageUrl   = project.image_url || fallbackImages[index % fallbackImages.length]
-      var category   = project.category || 'Mission'
-      var warriors   = project.warrior_count || 0
-      var daysText   = project.days_remaining ? (project.days_remaining + ' days remaining') : 'Ongoing'
-      var updateText = project.latest_update || 'Update coming soon.'
-      var projectId  = project.id
+    // Type-specific display
+    var prefix = ''
+    var suffix = ''
+    var badgeText = ''
+    var badgeClass = 'bg-primary'
+    var progressText = ''
+    var ctaText = ''
+    var ctaAction = ''
+    var updateBorderClass = 'border-gold'
 
-      // Check user priority for this project
-      var userPriority = userPriorities[projectId] || 0
-
-      var card = document.createElement('div')
-      card.className = 'fade-up project-card bg-card-bg rounded-2xl overflow-hidden shadow-card border border-border-soft'
-     card.onclick = function() { openProjectPopup(projectId) }
-card.style.cursor = 'pointer'
-
-      card.innerHTML =
-        '<div class="relative h-44 overflow-hidden">'
-          + '<img src="' + imageUrl + '" alt="' + project.title + '" class="w-full h-full object-cover">'
-          + '<div class="absolute inset-0 bg-gradient-to-t from-dark/40 to-transparent"></div>'
-          + '<span class="absolute top-3 left-3 '
-            + (isClosing ? 'bg-action' : 'bg-primary')
-            + ' text-white text-[9px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">'
-            + (isClosing ? 'Closing Soon' : category)
-          + '</span>'
-        + '</div>'
-        + '<div class="p-5 space-y-3">'
-          + '<h3 class="font-headline font-bold text-lg text-text-dark">' + project.title + '</h3>'
-          + '<div class="space-y-1.5">'
-            + '<div class="flex justify-between text-[11px] font-bold">'
-              + '<span class="' + (isClosing ? 'text-action' : 'text-text-muted') + '">' + percent + '% funded</span>'
-              + '<span class="text-primary">$' + Number(project.raised_amount).toLocaleString()
-                + ' / $' + Number(project.goal_amount).toLocaleString() + '</span>'
-            + '</div>'
-            + '<div class="h-2 w-full bg-surface rounded-full overflow-hidden">'
-              + '<div class="h-full ' + (isClosing ? 'bg-action' : 'tactical-gradient')
-                + ' rounded-full transition-all duration-1000" style="width:0%" data-w="' + Math.min(percent, 100) + '%"></div>'
-            + '</div>'
-            + '<div class="flex justify-between text-[10px] ' + (isClosing ? 'text-action font-bold' : 'text-text-light') + '">'
-              + '<span>' + (isClosing ? '⚡ Only ' + daysText + '!' : daysText) + '</span>'
-              + '<span>' + warriors + ' warriors</span>'
-            + '</div>'
-          + '</div>'
-          + '<div class="bg-cream rounded-xl p-3 border-l-4 ' + (isClosing ? 'border-action' : 'border-gold') + '">'
-            + '<p class="text-[11px] text-text-muted leading-relaxed">'
-              + '<span class="font-bold text-text-dark">Latest:</span> "' + updateText + '"'
-            + '</p>'
-          + '</div>'
-          + '<div class="flex items-center justify-between pt-1">'
-            + '<span class="text-[10px] text-text-light font-bold uppercase tracking-widest">Your priority rank</span>'
-            + '<div class="flex gap-1 priority-group" data-project="' + projectId + '">'
-              + buildPriorityButton(projectId, 1, userPriority)
-              + buildPriorityButton(projectId, 2, userPriority)
-              + buildPriorityButton(projectId, 3, userPriority)
-            + '</div>'
-          + '</div>'
-        + '</div>'
-
-      activeContainer.appendChild(card)
-    })
-
-    // ── RENDER COMPLETED ──
-    completedContainer.innerHTML = ''
-
-    if (completed.length === 0) {
-      completedContainer.innerHTML =
-        '<p class="text-center text-text-light text-sm py-4">No completed missions yet</p>'
+    if (goalType === 'users') {
+      suffix = ' warriors'
+      badgeText = '👥 Community Goal'
+      badgeClass = 'bg-primary-light'
+      progressText = Number(project.raised_amount).toLocaleString() + ' / ' + Number(project.goal_amount).toLocaleString() + ' warriors joined'
+      ctaText = 'Join the Mission'
+      ctaAction = 'shareInviteFromMission()'
+    } else if (goalType === 'shares') {
+      suffix = ' shared'
+      badgeText = '📢 Sharing Challenge'
+      badgeClass = 'bg-gold'
+      progressText = Number(project.raised_amount).toLocaleString() + ' / ' + Number(project.goal_amount).toLocaleString() + ' words shared'
+      ctaText = 'Share to Contribute'
+      ctaAction = 'window.location.href="index.html"'
+    } else {
+      prefix = '$'
+      badgeText = ''
+      progressText = '$' + Number(project.raised_amount).toLocaleString() + ' / $' + Number(project.goal_amount).toLocaleString()
+      ctaText = 'Support This Mission'
+      ctaAction = ''
     }
 
-    completed.forEach(function(project) {
-      var el = document.createElement('div')
-      el.className = 'fade-up bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft space-y-4'
+    var updateText = project.latest_update || 'Update coming soon.'
 
-      el.innerHTML =
-        '<div class="flex justify-between items-start">'
-          + '<div>'
-            + '<span class="inline-block px-2.5 py-1 rounded-full bg-green-500/10 text-green-600 text-[9px] font-bold tracking-wider mb-2">✓ COMPLETED</span>'
-            + '<h3 class="font-headline font-bold text-base text-text-dark">' + project.title + '</h3>'
+    var card = document.createElement('div')
+    card.className = 'fade-up project-card bg-card-bg rounded-2xl overflow-hidden shadow-card border border-border-soft'
+    card.style.cursor = 'pointer'
+    card.onclick = function() { openProjectPopup(projectId) }
+
+    card.innerHTML =
+      '<div class="relative h-44 overflow-hidden">'
+        + '<img src="' + imageUrl + '" alt="' + project.title + '" class="w-full h-full object-cover">'
+        + '<div class="absolute inset-0 bg-gradient-to-t from-dark/40 to-transparent"></div>'
+        + (badgeText ? '<span class="absolute top-3 left-3 ' + badgeClass + ' text-white text-[9px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">' + badgeText + '</span>' : '')
+        + (isClosing ? '<span class="absolute top-3 right-3 bg-action text-white text-[9px] font-bold px-2.5 py-1 rounded-full">Closing Soon</span>' : '')
+        + (project.mission_ref ? '<span class="absolute bottom-3 right-3 bg-dark/60 text-white/80 text-[8px] font-bold px-2 py-0.5 rounded-full">' + project.mission_ref + '</span>' : '')
+      + '</div>'
+      + '<div class="p-5 space-y-3">'
+        + '<h3 class="font-headline font-bold text-lg text-text-dark">' + project.title + '</h3>'
+        + (project.description ? '<p class="text-xs text-text-muted leading-relaxed" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + project.description + '</p>' : '')
+        + (isAutoTrack ? '<div class="flex items-center gap-1.5 text-[10px] text-primary font-bold"><span class="material-symbols-outlined text-[14px] filled">auto_awesome</span> Live tracking</div>' : '')
+        + '<div class="space-y-1.5">'
+          + '<div class="flex justify-between text-[11px] font-bold">'
+            + '<span class="' + (isClosing ? 'text-action' : 'text-text-muted') + '">' + percent + '% ' + (goalType === 'monetary' ? 'funded' : 'achieved') + '</span>'
+            + '<span class="text-primary">' + progressText + '</span>'
           + '</div>'
-          + '<span class="font-headline font-bold text-sm text-primary">$' + Number(project.raised_amount || 0).toLocaleString() + '</span>'
+          + '<div class="h-2 w-full bg-surface rounded-full overflow-hidden">'
+            + '<div class="h-full ' + (isClosing ? 'bg-action' : 'tactical-gradient') + ' rounded-full transition-all duration-1000" style="width:0%" data-w="' + Math.min(percent, 100) + '%"></div>'
+          + '</div>'
+          + '<div class="flex justify-between text-[10px] ' + (isClosing ? 'text-action font-bold' : 'text-text-light') + '">'
+            + '<span>' + (isClosing ? '⚡ ' : '') + daysText + '</span>'
+            + '<span>' + warriors + ' warriors</span>'
+          + '</div>'
         + '</div>'
-        + '<div class="h-2 w-full bg-surface rounded-full overflow-hidden">'
-          + '<div class="h-full bg-green-500 rounded-full" style="width:100%"></div>'
-        + '</div>'
-        + '<div class="reflection-plate bg-cream p-4 rounded-r-xl">'
-          + '<p class="text-[12px] text-text-muted leading-relaxed font-body italic">'
-            + '<span class="font-bold text-text-dark not-italic">Impact:</span> "'
-            + (project.latest_update || 'Mission accomplished.') + '"'
+        + '<div class="bg-cream rounded-xl p-3 ' + updateBorderClass + ' border-l-4">'
+          + '<p class="text-[11px] text-text-muted leading-relaxed">'
+            + '<span class="font-bold text-text-dark">Latest:</span> "' + updateText + '"'
           + '</p>'
         + '</div>'
+        + (ctaText && goalType !== 'monetary'
+          ? '<button onclick="event.stopPropagation();' + ctaAction + '"'
+            + ' class="w-full py-2.5 tactical-gradient text-white text-xs font-bold rounded-xl'
+            + ' flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform shadow-tactical">'
+            + '<span class="material-symbols-outlined text-[16px] text-gold">'
+              + (goalType === 'users' ? 'group_add' : 'share') + '</span>'
+            + ctaText
+          + '</button>'
+          : '')
+        + '<div class="flex items-center justify-between pt-1">'
+          + '<span class="text-[10px] text-text-light font-bold uppercase tracking-widest">Your priority rank</span>'
+          + '<div class="flex gap-1 priority-group" data-project="' + projectId + '">'
+            + buildPriorityButton(projectId, 1, userPriorities[projectId] || 0)
+            + buildPriorityButton(projectId, 2, userPriorities[projectId] || 0)
+            + buildPriorityButton(projectId, 3, userPriorities[projectId] || 0)
+          + '</div>'
+        + '</div>'
+      + '</div>'
 
-      completedContainer.appendChild(el)
-    })
+    activeContainer.appendChild(card)
+  })
 
-    // ── Trigger scroll animations ──
-    setTimeout(function() {
-      document.querySelectorAll('.fade-up').forEach(function(el) {
-        observer.observe(el)
-      })
-    }, 100)
+  // ── RENDER COMPLETED ──
+  completedContainer.innerHTML = ''
+
+  if (completed.length === 0) {
+    completedContainer.innerHTML = '<p class="text-center text-text-light text-sm py-4">No completed missions yet</p>'
   }
+
+  completed.forEach(function(project) {
+    var prefix = (project.goal_type === 'monetary' || !project.goal_type) ? '$' : ''
+    var suffix = project.goal_type === 'users' ? ' warriors' : project.goal_type === 'shares' ? ' shares' : ''
+
+    var el = document.createElement('div')
+    el.className = 'fade-up bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft space-y-4'
+
+    el.innerHTML =
+      '<div class="flex justify-between items-start">'
+        + '<div>'
+          + '<span class="inline-block px-2.5 py-1 rounded-full bg-green-500/10 text-green-600 text-[9px] font-bold tracking-wider mb-2">✓ COMPLETED</span>'
+          + '<h3 class="font-headline font-bold text-base text-text-dark">' + project.title + '</h3>'
+        + '</div>'
+        + '<span class="font-headline font-bold text-sm text-primary">' + prefix + Number(project.raised_amount || 0).toLocaleString() + suffix + '</span>'
+      + '</div>'
+      + '<div class="h-2 w-full bg-surface rounded-full overflow-hidden">'
+        + '<div class="h-full bg-green-500 rounded-full" style="width:100%"></div>'
+      + '</div>'
+      + '<div class="reflection-plate bg-cream p-4 rounded-r-xl">'
+        + '<p class="text-[12px] text-text-muted leading-relaxed font-body italic">'
+          + '<span class="font-bold text-text-dark not-italic">Impact:</span> "'
+          + (project.latest_update || 'Mission accomplished.') + '"'
+        + '</p>'
+      + '</div>'
+
+    completedContainer.appendChild(el)
+  })
+
+  // Animate progress bars
+  setTimeout(function() {
+    document.querySelectorAll('.fade-up').forEach(function(el) { observer.observe(el) })
+  }, 100)
+}
 
   // ════════════════════════════════════════════
   // BUILD PRIORITY BUTTON HTML
@@ -615,6 +666,26 @@ card.style.cursor = 'pointer'
       + ' text-[11px] font-bold flex items-center justify-center">'
       + rank + '</button>'
   }
+
+function shareInviteFromMission() {
+  // Get user's invite link and share it
+  if (navigator.share) {
+    supabaseClient.from('profiles').select('invite_code')
+      .eq('id', currentUser.id).single()
+      .then(function(result) {
+        if (result.data && result.data.invite_code) {
+          var link = window.location.origin + '/app/signup.html?ref=' + result.data.invite_code
+          navigator.share({
+            title: 'Join Go Spread The Word',
+            text: 'Join me in spreading the Word every day.',
+            url: link
+          }).catch(function() {})
+        }
+      })
+  } else {
+    window.location.href = 'profile.html'
+  }
+}
 
   // ════════════════════════════════════════════
   // SET PRIORITY — handles deduplication properly
