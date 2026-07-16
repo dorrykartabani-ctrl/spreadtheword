@@ -196,37 +196,47 @@
 
   </section>
 
-    <!-- ─────────────────────────────────────── -->
-  <!-- SUBSCRIPTION CARD -->
   <!-- ─────────────────────────────────────── -->
-  <section class="bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft space-y-4">
-    <div class="flex justify-between items-start">
-      <div>
-        <div class="flex items-center gap-2 mb-1">
-          <h3 class="font-headline font-bold text-base text-text-dark">Warrior Plan</h3>
-          <span class="bg-primary/10 text-primary text-[9px] font-bold px-2.5 py-0.5
-            rounded-full uppercase tracking-wider">Active</span>
-        </div>
-        <p class="text-sm text-text-muted font-body">$3.99 / month</p>
+<!-- SUBSCRIPTION -->
+<!-- ─────────────────────────────────────── -->
+<section id="subscriptionCard" class="bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft space-y-4">
+  <div class="flex justify-between items-start">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <h3 class="font-headline font-bold text-base text-text-dark">Warrior Plan</h3>
+        <span id="subBadge" class="bg-primary/10 text-primary text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Loading...</span>
       </div>
-      <div class="text-right">
-        <p class="text-[10px] text-text-light italic">Subscription active</p>
-        <p class="text-[10px] text-green-600 font-bold mt-0.5">✓ Current</p>
-      </div>
+      <p class="text-sm text-text-muted font-body">$3.99 / month</p>
     </div>
-    <div class="flex gap-3">
-      <button onclick="window.location.href='subscription.html'"
-        class="flex-1 px-4 py-2.5 rounded-xl border-2 border-primary text-primary
-        font-bold text-sm active:scale-95 transition-transform">
-        Manage Plan
-      </button>
-      <button onclick="window.location.href='subscription.html'"
-        class="flex-1 px-4 py-2.5 rounded-xl border-2 border-border-soft text-text-muted
-        font-bold text-sm active:scale-95 transition-all">
-        Billing
+    <div class="text-right">
+      <p id="subStatusText" class="text-[10px] text-text-light italic">Checking...</p>
+    </div>
+  </div>
+
+  <!-- Suspended warning -->
+  <div id="suspendedWarning" class="hidden bg-action/10 border border-action/20 rounded-xl p-4 flex items-start gap-3">
+    <span class="material-symbols-outlined text-action text-[18px] flex-shrink-0 mt-0.5">warning</span>
+    <div>
+      <p class="text-[12px] font-bold text-action">Account Paused</p>
+      <p class="text-[11px] text-text-muted leading-relaxed">Your payment could not be processed. Please update your payment method to continue spreading the Word.</p>
+      <button id="renewBtn" onclick="renewSubscription()"
+        class="mt-2 text-xs font-bold text-primary underline">
+        Renew Now →
       </button>
     </div>
-  </section>
+  </div>
+
+  <div class="flex gap-3">
+    <button id="manageBillingBtn" onclick="openBillingPortal()"
+      class="flex-1 px-4 py-2.5 rounded-xl border-2 border-primary text-primary font-bold text-sm active:scale-95 transition-transform">
+      Manage Billing
+    </button>
+    <a href="subscription.html"
+      class="flex-1 px-4 py-2.5 rounded-xl border-2 border-border-soft text-text-muted font-bold text-sm active:scale-95 transition-all text-center">
+      Details
+    </a>
+  </div>
+</section>
 
   <!-- ─────────────────────────────────────── -->
   <!-- RECRUIT WARRIORS -->
@@ -576,6 +586,73 @@
     { name: 'LinkedIn',  icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/LinkedIn_logo_initials.png/120px-LinkedIn_logo_initials.png' }
   ]
 
+// ════════════════════════════════════════════
+// STRIPE SUBSCRIPTION
+// ════════════════════════════════════════════
+var stripePaymentLink = ''
+var stripePortalLink = ''
+
+async function loadSubscriptionStatus() {
+  // Load Stripe links from settings
+  var settingsResult = await supabaseClient
+    .from('site_settings')
+    .select('id, value')
+    .in('id', ['stripe_payment_link', 'stripe_portal_link'])
+
+  if (settingsResult.data) {
+    settingsResult.data.forEach(function(s) {
+      if (s.id === 'stripe_payment_link') stripePaymentLink = s.value || ''
+      if (s.id === 'stripe_portal_link') stripePortalLink = s.value || ''
+    })
+  }
+
+  // Check URL for payment status callback
+  var params = new URLSearchParams(window.location.search)
+  var status = params.get('status')
+  if (status === 'success') {
+    showToast('Payment successful! Welcome to the Warrior Plan.')
+    window.history.replaceState({}, document.title, window.location.pathname)
+  } else if (status === 'cancelled') {
+    showToast('Payment was cancelled.')
+    window.history.replaceState({}, document.title, window.location.pathname)
+  }
+
+  // Check user suspension status
+  var subBadge = document.getElementById('subBadge')
+  var subStatus = document.getElementById('subStatusText')
+  var suspendedWarning = document.getElementById('suspendedWarning')
+
+  if (userProfile && userProfile.is_suspended) {
+    subBadge.textContent = 'Paused'
+    subBadge.className = 'bg-action/10 text-action text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider'
+    subStatus.textContent = 'Payment required'
+    subStatus.className = 'text-[10px] text-action font-bold'
+    suspendedWarning.classList.remove('hidden')
+  } else {
+    subBadge.textContent = 'Active'
+    subBadge.className = 'bg-primary/10 text-primary text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider'
+    subStatus.textContent = '✓ Subscription current'
+    subStatus.className = 'text-[10px] text-green-600 font-bold'
+    suspendedWarning.classList.add('hidden')
+  }
+}
+
+function openBillingPortal() {
+  if (stripePortalLink) {
+    window.open(stripePortalLink, '_blank')
+  } else {
+    showToast('Billing portal not configured. Contact support.')
+  }
+}
+
+function renewSubscription() {
+  if (stripePaymentLink) {
+    window.open(stripePaymentLink, '_blank')
+  } else {
+    showToast('Payment link not configured. Contact support.')
+  }
+}
+
   // ════════════════════════════════════════════
   // LOAD PROFILE
   // ════════════════════════════════════════════
@@ -813,6 +890,9 @@ if (nameEl) {
   // Render platform picker
   renderPlatformOptions(defaultPlatform)
 }
+
+// Load subscription status
+await loadSubscriptionStatus()
 
 // ════════════════════════════════════════════
 // RECRUITMENT — Copy invite link
