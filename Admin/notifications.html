@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifications — GSTW Admin</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'primary':'#1E4060','primary-dim':'#152E45','primary-light':'#2B5780',
+            'action':'#E25B4D','action-dim':'#C84A3E',
+            'gold':'#D4A24C','gold-dim':'#B88A3D',
+            'cream':'#F7F4ED','dark':'#16202A','dark-soft':'#1F2A35',
+            'text-dark':'#1A1A1A','text-muted':'#5C6B7A','text-light':'#8E9AA8',
+            'border-soft':'rgba(92,107,122,0.15)',
+            'sidebar-bg':'#0F1E2E','sidebar-hover':'#1A2D40',
+            'card-bg':'#FFFFFF','surface':'#F0EDE6',
+          },
+          fontFamily:{
+            'headline':['Plus Jakarta Sans','sans-serif'],
+            'body':['Manrope','sans-serif'],
+          },
+          boxShadow:{
+            'natural':'0 4px 16px rgba(26,32,42,0.06)',
+            'lifted':'0 8px 32px rgba(26,32,42,0.10)',
+            'tactical':'0 4px 20px rgba(30,64,96,0.25)',
+            'card':'0 32px 64px -15px rgba(30,64,96,0.06)',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    body{font-family:'Manrope',sans-serif}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle}
+    .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+    .tactical-gradient{background:linear-gradient(145deg,#152E45,#1E4060)}
+    ::-webkit-scrollbar{width:5px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:rgba(30,64,96,0.15);border-radius:3px}
+    .no-scrollbar::-webkit-scrollbar{display:none}
+    .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+    .notif-card{transition:all 0.2s ease}
+    .notif-card:hover{transform:translateY(-1px);box-shadow:0 8px 32px rgba(26,32,42,0.10)}
+    textarea{resize:none}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spin{animation:spin 1s linear infinite;display:inline-block}
+  </style>
+</head>
+
+<body class="bg-surface text-text-dark min-h-screen flex">
+
+<!-- SIDEBAR -->
+<aside id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-sidebar-bg flex flex-col p-4 gap-2 z-40 hidden md:flex">
+  <div class="mb-8 px-4 pt-2">
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-lg border-2 border-primary-light flex items-center justify-center">
+        <span class="font-headline font-extrabold text-gold text-[10px]">GSTW</span>
+      </div>
+      <div>
+        <h1 class="text-base font-headline font-extrabold tracking-tight text-white">STW Admin</h1>
+        <p class="text-[9px] uppercase tracking-[0.2em] text-text-light font-bold">Command Center</p>
+      </div>
+    </div>
+  </div>
+  <nav class="flex flex-col gap-1 grow overflow-y-auto">
+    <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">dashboard</span><span class="font-body text-sm">Dashboard</span>
+    </a>
+    <a href="manage-quotes.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">format_quote</span><span class="font-body text-sm">Quotes</span>
+    </a>
+    <a href="schedule.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">calendar_today</span><span class="font-body text-sm">Schedule</span>
+    </a>
+    <a href="projects.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">folder_shared</span><span class="font-body text-sm">Missions</span>
+    </a>
+    <a href="analytics.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">analytics</span><span class="font-body text-sm">Analytics</span>
+    </a>
+    <a href="warriors.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[20px]">group</span><span class="font-body text-sm">Warriors</span>
+    </a>
+    <a href="notifications.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-lg font-bold text-sm">
+      <span class="material-symbols-outlined text-[20px] filled">notifications</span><span class="font-body text-sm">Notifications</span>
+    </a>
+  </nav>
+  <div class="mt-auto pt-4 flex flex-col gap-3">
+    <a href="quotes.html" class="text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform" style="background:linear-gradient(145deg,#E25B4D,#C84A3E);box-shadow:0 4px 20px rgba(226,91,77,0.35)">
+      <span class="material-symbols-outlined text-sm">add_circle</span>
+      <span class="text-xs uppercase tracking-widest">Create Quote</span>
+    </a>
+    <a href="settings.html" class="flex items-center gap-3 px-4 py-2 text-white/40 hover:text-white/70 rounded-lg transition-all">
+      <span class="material-symbols-outlined text-[18px]">settings</span>
+      <span class="font-body text-xs">Settings</span>
+    </a>
+    <div class="flex items-center gap-3 px-2 py-3 border-t border-white/10">
+      <div class="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center text-white font-headline font-bold text-sm admin-initials">AD</div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-bold text-white leading-none admin-name truncate">Admin</p>
+        <p class="text-[10px] text-text-light">Super Admin</p>
+      </div>
+      <button onclick="handleLogout()" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-all flex-shrink-0" title="Logout">
+        <span class="material-symbols-outlined text-[16px]">logout</span>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<div id="sidebarOverlay" class="fixed inset-0 bg-dark/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<!-- MAIN -->
+<div class="flex-1 md:ml-64 flex flex-col min-h-screen">
+
+  <!-- HEADER -->
+  <header class="flex justify-between items-center w-full px-6 lg:px-8 py-4 sticky top-0 z-20 bg-surface/80 backdrop-blur-xl border-b border-border-soft">
+    <div class="flex items-center gap-4">
+      <button onclick="toggleSidebar()" class="md:hidden text-text-dark"><span class="material-symbols-outlined">menu</span></button>
+      <nav class="flex items-center gap-2 text-sm font-body">
+        <a href="index.html" class="text-text-muted hover:text-primary transition-colors">Dashboard</a>
+        <span class="material-symbols-outlined text-text-light text-sm">chevron_right</span>
+        <span class="text-primary font-bold border-b-2 border-primary pb-0.5">Notifications</span>
+      </nav>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="text-right hidden sm:block">
+        <p class="text-sm font-bold text-text-dark admin-name">Admin</p>
+        <button onclick="handleLogout()" class="text-[10px] font-bold text-action uppercase tracking-widest flex items-center gap-1 hover:opacity-80 ml-auto">
+          Logout <span class="material-symbols-outlined text-[12px]">logout</span>
+        </button>
+      </div>
+      <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white font-headline font-bold text-sm admin-initials">AD</div>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <main class="p-6 lg:p-8 flex-1">
+    <div class="max-w-4xl mx-auto space-y-8">
+
+      <!-- PAGE HEADER -->
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h2 class="font-headline font-extrabold text-3xl text-text-dark tracking-tight">Notifications</h2>
+          <p class="text-text-muted font-body mt-1">Send messages to warriors</p>
+        </div>
+        <button onclick="openComposeModal()"
+          class="tactical-gradient text-white font-bold text-sm px-5 py-3 rounded-xl shadow-tactical hover:scale-[1.02] transition-transform flex items-center gap-2">
+          <span class="material-symbols-outlined text-[18px]">edit_note</span>
+          Compose Message
+        </button>
+      </div>
+
+      <!-- STATS -->
+      <div class="grid grid-cols-3 gap-4">
+        <div class="bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft text-center">
+          <p id="statTotal" class="font-headline font-extrabold text-2xl text-text-dark">—</p>
+          <p class="text-[9px] font-bold text-text-light uppercase tracking-widest mt-1">Total Sent</p>
+        </div>
+        <div class="bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft text-center">
+          <p id="statBroadcast" class="font-headline font-extrabold text-2xl text-text-dark">—</p>
+          <p class="text-[9px] font-bold text-text-light uppercase tracking-widest mt-1">Broadcasts</p>
+        </div>
+        <div class="bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft text-center">
+          <p id="statDirect" class="font-headline font-extrabold text-2xl text-text-dark">—</p>
+          <p class="text-[9px] font-bold text-text-light uppercase tracking-widest mt-1">Direct</p>
+        </div>
+      </div>
+
+      <!-- NOTIFICATION LIST -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="font-headline font-bold text-lg text-text-dark">Sent Notifications</h3>
+          <span id="notifCount" class="text-xs text-text-light font-bold"></span>
+        </div>
+
+        <div id="notifList" class="space-y-3">
+          <div class="text-center py-12 text-text-light">
+            <span class="material-symbols-outlined text-primary text-[32px] spin">progress_activity</span>
+            <p class="mt-3 text-sm">Loading notifications...</p>
+          </div>
+        </div>
+
+        <div id="emptyState" class="hidden text-center py-16">
+          <div class="w-16 h-16 rounded-2xl bg-cream flex items-center justify-center mx-auto mb-4">
+            <span class="material-symbols-outlined text-text-light text-[32px]">notifications_off</span>
+          </div>
+          <h3 class="font-headline font-bold text-xl text-text-dark mb-2">No notifications sent yet</h3>
+          <p class="text-sm text-text-muted mb-6">Send your first message to your warriors.</p>
+          <button onclick="openComposeModal()"
+            class="tactical-gradient text-white font-bold px-6 py-3 rounded-xl shadow-tactical inline-block">
+            Compose Message
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- COMPOSE MODAL -->
+<div id="composeModal" class="hidden fixed inset-0 bg-dark/60 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+  <div class="bg-card-bg rounded-2xl p-7 max-w-lg w-full shadow-lifted max-h-[90vh] overflow-y-auto no-scrollbar">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-headline font-bold text-xl text-text-dark">Compose Notification</h3>
+      <button onclick="closeComposeModal()" class="text-text-light hover:text-text-muted">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="space-y-4">
+
+      <!-- Recipient -->
+      <div>
+        <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-1.5">
+          Send To <span class="text-action">*</span>
+        </label>
+        <div class="grid grid-cols-2 gap-2 mb-2">
+          <button type="button" onclick="setRecipient('broadcast',this)"
+            class="recipient-btn active flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-primary bg-primary/8 text-primary font-bold text-xs">
+            <span class="material-symbols-outlined text-[16px]">campaign</span>
+            All Warriors
+          </button>
+          <button type="button" onclick="setRecipient('direct',this)"
+            class="recipient-btn flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-border-soft text-text-muted font-bold text-xs">
+            <span class="material-symbols-outlined text-[16px]">person</span>
+            Specific User
+          </button>
+        </div>
+
+        <!-- User search (for direct messages) -->
+        <div id="userSearchSection" class="hidden space-y-2">
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-light text-[16px]">search</span>
+            <input id="userSearchInput" type="text" placeholder="Search by name or email..."
+              oninput="searchUsers(this.value)"
+              class="w-full bg-surface border border-border-soft rounded-xl pl-9 pr-4 py-2.5 text-xs font-body text-text-dark focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-text-light">
+          </div>
+          <div id="userSearchResults" class="max-h-[150px] overflow-y-auto no-scrollbar space-y-1"></div>
+          <div id="selectedUserDisplay" class="hidden flex items-center gap-2 bg-primary/8 border border-primary/20 rounded-xl px-3 py-2">
+            <span class="material-symbols-outlined text-primary text-[16px]">person</span>
+            <span id="selectedUserName" class="text-xs font-bold text-primary flex-1"></span>
+            <button onclick="clearSelectedUser()" class="text-text-light hover:text-text-muted">
+              <span class="material-symbols-outlined text-[14px]">close</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Title -->
+      <div>
+        <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-1.5">
+          Title <span class="text-action">*</span>
+        </label>
+        <input id="notifTitle" type="text" placeholder="e.g. New mission launched!"
+          class="compose-field w-full bg-surface border-2 border-border-soft rounded-xl px-4 py-3 font-body text-sm text-text-dark focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-text-light transition-all">
+      </div>
+
+      <!-- Message -->
+      <div>
+        <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-1.5">
+          Message <span class="text-action">*</span>
+        </label>
+        <textarea id="notifMessage" rows="4" placeholder="Write your message to the warriors..."
+          class="compose-field w-full bg-surface border-2 border-border-soft rounded-xl px-4 py-3 font-body text-sm text-text-dark focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-text-light transition-all"></textarea>
+        <p class="text-[10px] text-text-light mt-1">
+          <span id="messageType" class="font-bold text-primary">Broadcast</span> — will be sent to all warriors
+        </p>
+      </div>
+
+      <!-- Error -->
+      <div id="composeError" class="hidden bg-action/10 border border-action/20 rounded-xl p-3 flex items-center gap-2">
+        <span class="material-symbols-outlined text-action text-[16px]">error</span>
+        <p id="composeErrorMsg" class="text-xs text-action font-bold"></p>
+      </div>
+
+    </div>
+
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeComposeModal()"
+        class="flex-1 py-3 border-2 border-border-soft text-text-muted font-bold rounded-xl hover:bg-cream transition-all">
+        Cancel
+      </button>
+      <button onclick="sendNotification()" id="sendBtn"
+        class="flex-1 py-3 tactical-gradient text-white font-bold rounded-xl shadow-tactical hover:scale-[1.02] transition-transform flex items-center justify-center gap-2">
+        <span id="sendIcon" class="material-symbols-outlined text-gold text-[18px] filled">send</span>
+        <span id="sendLabel">Send Notification</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW MODAL -->
+<div id="viewModal" class="hidden fixed inset-0 bg-dark/60 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+  <div class="bg-card-bg rounded-2xl p-7 max-w-md w-full shadow-lifted">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-headline font-bold text-lg text-text-dark">Notification Details</h3>
+      <button onclick="closeViewModal()" class="text-text-light hover:text-text-muted">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="space-y-4">
+      <div>
+        <p class="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1">Title</p>
+        <p id="viewTitle" class="font-headline font-bold text-base text-text-dark"></p>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold text-text-light uppercase tracking-widest mb-1">Message</p>
+        <p id="viewMessage" class="text-sm text-text-muted leading-relaxed"></p>
+      </div>
+      <div class="flex justify-between text-sm">
+        <span class="text-text-muted">Type</span>
+        <span id="viewType" class="font-bold text-text-dark"></span>
+      </div>
+      <div class="flex justify-between text-sm">
+        <span class="text-text-muted">Sent</span>
+        <span id="viewDate" class="font-bold text-text-dark"></span>
+      </div>
+      <div id="viewRecipientRow" class="hidden flex justify-between text-sm">
+        <span class="text-text-muted">Recipient</span>
+        <span id="viewRecipient" class="font-bold text-text-dark"></span>
+      </div>
+    </div>
+
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeViewModal()"
+        class="flex-1 py-3 border-2 border-border-soft text-text-muted font-bold rounded-xl hover:bg-cream">
+        Close
+      </button>
+      <button onclick="deleteNotification()" id="deleteNotifBtn"
+        class="flex-1 py-3 bg-action/10 text-action font-bold rounded-xl flex items-center justify-center gap-1.5">
+        <span class="material-symbols-outlined text-[16px]">delete</span>
+        Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="hidden fixed top-6 right-6 z-[70] bg-primary text-white px-5 py-3.5 rounded-2xl shadow-lifted flex items-center gap-3 max-w-sm">
+  <span class="material-symbols-outlined text-gold text-[20px] filled">check_circle</span>
+  <p id="toastMsg" class="text-sm font-bold font-body"></p>
+</div>
+<script>
+
+  var supabaseClient = supabase.createClient(
+    'https://nhymadutuhpjgkiurify.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+  )
+
+  var allNotifications = []
+  var allUsers = []
+  var recipientType = 'broadcast'
+  var selectedTargetUserId = null
+  var viewingNotifId = null
+  var currentAdminId = null
+
+  async function checkAdminAuth() {
+    try {
+      var result = await supabaseClient.auth.getSession()
+      if (!result.data.session) {
+        await new Promise(function(r) { setTimeout(r, 500) })
+        result = await supabaseClient.auth.getSession()
+      }
+      if (!result.data.session) {
+        var refreshed = await supabaseClient.auth.refreshSession()
+        if (!refreshed.data.session) { window.location.href = 'login.html'; return false }
+        result = refreshed
+      }
+      var userId = result.data.session.user.id
+      var email = result.data.session.user.email || ''
+      currentAdminId = userId
+      var profileResult = await supabaseClient.from('profiles').select('role, full_name').eq('id', userId).single()
+      if (profileResult.error || !profileResult.data || profileResult.data.role !== 'admin') {
+        window.location.href = '../app/index.html'; return false
+      }
+      document.querySelectorAll('.admin-initials').forEach(function(el) { el.textContent = email.substring(0, 2).toUpperCase() })
+      document.querySelectorAll('.admin-name').forEach(function(el) { el.textContent = profileResult.data.full_name || email })
+      return true
+    } catch(e) { window.location.href = 'login.html'; return false }
+  }
+
+  function toggleSidebar() {
+    var s = document.getElementById('sidebar'), o = document.getElementById('sidebarOverlay')
+    s.classList.toggle('hidden'); s.classList.toggle('flex'); o.classList.toggle('hidden')
+  }
+
+  // ════════════════════════════════════════════
+  // LOAD DATA
+  // ════════════════════════════════════════════
+  async function loadNotifications() {
+    var result = await supabaseClient
+      .from('notifications')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    allNotifications = result.data || []
+
+    // Load users for display
+    var usersResult = await supabaseClient
+      .from('profiles')
+      .select('id, full_name, email, nickname')
+      .order('full_name', { ascending: true })
+
+    allUsers = usersResult.data || []
+
+    updateStats()
+    renderNotifications()
+  }
+
+  function updateStats() {
+    var broadcasts = allNotifications.filter(function(n) { return n.type === 'broadcast' })
+    var directs = allNotifications.filter(function(n) { return n.type === 'direct' })
+
+    document.getElementById('statTotal').textContent = allNotifications.length
+    document.getElementById('statBroadcast').textContent = broadcasts.length
+    document.getElementById('statDirect').textContent = directs.length
+  }
+
+  function renderNotifications() {
+    var container = document.getElementById('notifList')
+    container.innerHTML = ''
+
+    if (allNotifications.length === 0) {
+      document.getElementById('emptyState').classList.remove('hidden')
+      document.getElementById('notifCount').textContent = ''
+      return
+    }
+
+    document.getElementById('emptyState').classList.add('hidden')
+    document.getElementById('notifCount').textContent = allNotifications.length + ' total'
+
+    allNotifications.forEach(function(n) {
+      var isBroadcast = n.type === 'broadcast'
+      var timeStr = timeAgo(n.created_at)
+
+      var recipientName = 'All Warriors'
+      if (!isBroadcast && n.target_user_id) {
+        var user = allUsers.find(function(u) { return u.id === n.target_user_id })
+        recipientName = user ? (user.full_name || user.email) : 'Unknown user'
+      }
+
+      var card = document.createElement('div')
+      card.className = 'notif-card bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft cursor-pointer'
+      card.onclick = function() { viewNotification(n.id) }
+
+      card.innerHTML =
+        '<div class="flex items-start gap-4">'
+          + '<div class="w-10 h-10 rounded-xl ' + (isBroadcast ? 'bg-primary/10' : 'bg-gold/10') + ' flex items-center justify-center flex-shrink-0">'
+            + '<span class="material-symbols-outlined ' + (isBroadcast ? 'text-primary' : 'text-gold-dim') + ' text-[20px]">'
+              + (isBroadcast ? 'campaign' : 'person') + '</span>'
+          + '</div>'
+          + '<div class="flex-1 min-w-0">'
+            + '<div class="flex items-center justify-between gap-2 mb-1">'
+              + '<h4 class="font-headline font-bold text-sm text-text-dark truncate">' + n.title + '</h4>'
+              + '<span class="text-[10px] text-text-light flex-shrink-0">' + timeStr + '</span>'
+            + '</div>'
+            + '<p class="text-xs text-text-muted leading-relaxed truncate">' + n.message + '</p>'
+            + '<div class="flex items-center gap-2 mt-2">'
+              + '<span class="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full '
+                + (isBroadcast ? 'bg-primary/10 text-primary' : 'bg-gold/10 text-gold-dim') + '">'
+                + (isBroadcast ? 'Broadcast' : 'Direct') + '</span>'
+              + '<span class="text-[10px] text-text-light">→ ' + recipientName + '</span>'
+            + '</div>'
+          + '</div>'
+        + '</div>'
+
+      container.appendChild(card)
+    })
+  }
+
+  // ════════════════════════════════════════════
+  // COMPOSE
+  // ════════════════════════════════════════════
+  function openComposeModal() {
+    recipientType = 'broadcast'
+    selectedTargetUserId = null
+
+    document.querySelectorAll('.recipient-btn').forEach(function(b, i) {
+      if (i === 0) {
+        b.classList.add('active','border-primary','bg-primary/8','text-primary')
+        b.classList.remove('border-border-soft','text-text-muted')
+      } else {
+        b.classList.remove('active','border-primary','bg-primary/8','text-primary')
+        b.classList.add('border-border-soft','text-text-muted')
+      }
+    })
+
+    document.getElementById('userSearchSection').classList.add('hidden')
+    document.getElementById('selectedUserDisplay').classList.add('hidden')
+    document.getElementById('notifTitle').value = ''
+    document.getElementById('notifMessage').value = ''
+    document.getElementById('composeError').classList.add('hidden')
+    document.getElementById('messageType').textContent = 'Broadcast'
+    document.querySelectorAll('.compose-field').forEach(function(f) { f.style.borderColor = '' })
+
+    document.getElementById('composeModal').classList.remove('hidden')
+  }
+
+  function closeComposeModal() {
+    document.getElementById('composeModal').classList.add('hidden')
+  }
+
+  function setRecipient(type, btn) {
+    recipientType = type
+    selectedTargetUserId = null
+
+    document.querySelectorAll('.recipient-btn').forEach(function(b) {
+      b.classList.remove('active','border-primary','bg-primary/8','text-primary')
+      b.classList.add('border-border-soft','text-text-muted')
+    })
+    btn.classList.add('active','border-primary','bg-primary/8','text-primary')
+    btn.classList.remove('border-border-soft','text-text-muted')
+
+    var userSearch = document.getElementById('userSearchSection')
+    var typeLabel = document.getElementById('messageType')
+
+    if (type === 'direct') {
+      userSearch.classList.remove('hidden')
+      typeLabel.textContent = 'Direct message'
+    } else {
+      userSearch.classList.add('hidden')
+      typeLabel.textContent = 'Broadcast'
+      document.getElementById('selectedUserDisplay').classList.add('hidden')
+    }
+  }
+
+  function searchUsers(query) {
+    var container = document.getElementById('userSearchResults')
+    container.innerHTML = ''
+    if (!query || query.length < 2) return
+
+    var q = query.toLowerCase()
+    var filtered = allUsers.filter(function(u) {
+      return (u.full_name && u.full_name.toLowerCase().includes(q))
+        || (u.email && u.email.toLowerCase().includes(q))
+        || (u.nickname && u.nickname.toLowerCase().includes(q))
+    }).slice(0, 5)
+
+    filtered.forEach(function(u) {
+      var btn = document.createElement('button')
+      btn.className = 'w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-surface text-left transition-all'
+      btn.onclick = function() { selectUser(u) }
+      btn.innerHTML =
+        '<span class="material-symbols-outlined text-text-light text-[16px]">person</span>'
+        + '<div class="flex-1 min-w-0">'
+          + '<p class="text-xs font-bold text-text-dark truncate">' + (u.full_name || 'No name') + '</p>'
+          + '<p class="text-[10px] text-text-light truncate">' + (u.email || '') + '</p>'
+        + '</div>'
+      container.appendChild(btn)
+    })
+  }
+
+  function selectUser(user) {
+    selectedTargetUserId = user.id
+    document.getElementById('selectedUserName').textContent = (user.full_name || user.email) + (user.nickname ? ' (@' + user.nickname + ')' : '')
+    document.getElementById('selectedUserDisplay').classList.remove('hidden')
+    document.getElementById('userSearchResults').innerHTML = ''
+    document.getElementById('userSearchInput').value = ''
+  }
+
+  function clearSelectedUser() {
+    selectedTargetUserId = null
+    document.getElementById('selectedUserDisplay').classList.add('hidden')
+  }
+
+  async function sendNotification() {
+    var title   = document.getElementById('notifTitle').value.trim()
+    var message = document.getElementById('notifMessage').value.trim()
+    var errorEl = document.getElementById('composeError')
+    var errorMsg = document.getElementById('composeErrorMsg')
+    var btn     = document.getElementById('sendBtn')
+    var icon    = document.getElementById('sendIcon')
+    var label   = document.getElementById('sendLabel')
+
+    errorEl.classList.add('hidden')
+    document.querySelectorAll('.compose-field').forEach(function(f) { f.style.borderColor = '' })
+
+    var hasError = false
+    if (!title) { document.getElementById('notifTitle').style.borderColor = '#E25B4D'; hasError = true }
+    if (!message) { document.getElementById('notifMessage').style.borderColor = '#E25B4D'; hasError = true }
+    if (recipientType === 'direct' && !selectedTargetUserId) {
+      errorMsg.textContent = 'Please select a user for direct message'
+      errorEl.classList.remove('hidden')
+      return
+    }
+
+    if (hasError) {
+      errorMsg.textContent = 'Please fill in all required fields'
+      errorEl.classList.remove('hidden')
+      return
+    }
+
+    icon.textContent = 'progress_activity'
+    icon.classList.add('spin')
+    label.textContent = 'Sending...'
+    btn.disabled = true
+
+    var result = await supabaseClient.from('notifications').insert({
+      title: title,
+      message: message,
+      type: recipientType,
+      target_user_id: recipientType === 'direct' ? selectedTargetUserId : null,
+      sent_by: currentAdminId
+    })
+
+    icon.classList.remove('spin')
+    icon.textContent = 'send'
+    label.textContent = 'Send Notification'
+    btn.disabled = false
+
+    if (result.error) {
+      errorMsg.textContent = 'Error: ' + result.error.message
+      errorEl.classList.remove('hidden')
+      return
+    }
+
+    showToast(recipientType === 'broadcast' ? 'Broadcast sent to all warriors!' : 'Direct message sent!')
+    closeComposeModal()
+    await loadNotifications()
+  }
+
+  // ════════════════════════════════════════════
+  // VIEW / DELETE
+  // ════════════════════════════════════════════
+  function viewNotification(id) {
+    var notif = allNotifications.find(function(n) { return n.id === id })
+    if (!notif) return
+    viewingNotifId = id
+
+    document.getElementById('viewTitle').textContent = notif.title
+    document.getElementById('viewMessage').textContent = notif.message
+    document.getElementById('viewType').textContent = notif.type === 'broadcast' ? 'Broadcast' : 'Direct Message'
+    document.getElementById('viewDate').textContent = new Date(notif.created_at).toLocaleDateString('en-US', {
+      month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
+    })
+
+    var recipientRow = document.getElementById('viewRecipientRow')
+    if (notif.type === 'direct' && notif.target_user_id) {
+      var user = allUsers.find(function(u) { return u.id === notif.target_user_id })
+      document.getElementById('viewRecipient').textContent = user ? (user.full_name || user.email) : 'Unknown'
+      recipientRow.classList.remove('hidden')
+    } else {
+      recipientRow.classList.add('hidden')
+    }
+
+    document.getElementById('viewModal').classList.remove('hidden')
+  }
+
+  function closeViewModal() {
+    document.getElementById('viewModal').classList.add('hidden')
+    viewingNotifId = null
+  }
+
+  async function deleteNotification() {
+    if (!viewingNotifId) return
+    if (!confirm('Delete this notification?')) return
+
+    await supabaseClient.from('notifications').delete().eq('id', viewingNotifId)
+    showToast('Notification deleted')
+    closeViewModal()
+    await loadNotifications()
+  }
+
+  // ════════════════════════════════════════════
+  // HELPERS
+  // ════════════════════════════════════════════
+  function timeAgo(dateStr) {
+    var now = new Date()
+    var then = new Date(dateStr)
+    var mins = Math.floor((now - then) / 60000)
+    var hrs = Math.floor(mins / 60)
+    var days = Math.floor(hrs / 24)
+    if (mins < 1) return 'Just now'
+    if (mins < 60) return mins + 'm ago'
+    if (hrs < 24) return hrs + 'h ago'
+    if (days < 7) return days + 'd ago'
+    return then.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
+  async function handleLogout() {
+    await supabaseClient.auth.signOut()
+    window.location.href = 'login.html'
+  }
+
+  var toastTimer
+  function showToast(msg) {
+    var toast = document.getElementById('toast')
+    var toastMsg = document.getElementById('toastMsg')
+    if (!toast || !toastMsg) return
+    toastMsg.textContent = msg
+    toast.classList.remove('hidden'); toast.classList.add('flex')
+    clearTimeout(toastTimer)
+    toastTimer = setTimeout(function() { toast.classList.add('hidden'); toast.classList.remove('flex') }, 3000)
+  }
+
+  async function init() {
+    var isAdmin = await checkAdminAuth()
+    if (!isAdmin) return
+    await loadNotifications()
+  }
+
+  init()
+
+</script>
+</body>
+</html>
