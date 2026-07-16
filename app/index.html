@@ -454,6 +454,12 @@
       streak = 0
     }
 
+// Load payment link for subscription prompt
+var payLinkResult = await supabaseClient.from('site_settings').select('value').eq('id', 'stripe_payment_link').single()
+if (payLinkResult.data && payLinkResult.data.value) {
+  sessionStorage.setItem('gstw_payment_link', payLinkResult.data.value)
+}
+
     // ── Display name: nickname → first name → Warrior ──
     var displayName = profile.nickname || (profile.full_name ? profile.full_name.split(' ')[0] : 'Warrior')
     var nameEl = document.getElementById('greetingName')
@@ -487,7 +493,32 @@
       sessionStorage.setItem('gstw_default_platform', profile.default_platform)
     }
   }
+// Check if suspended
+if (profile.is_suspended) {
+  // Show a subscribe prompt instead of normal home content
+  var existingPrompt = document.getElementById('subscribePrompt')
+  if (!existingPrompt) {
+    var prompt = document.createElement('div')
+    prompt.id = 'subscribePrompt'
+    prompt.className = 'fixed inset-0 bg-black/80 z-[200] flex items-center justify-center px-6'
+    prompt.innerHTML =
+      '<div class="bg-card-bg rounded-2xl p-6 max-w-sm w-full text-center">'
+        + '<div class="w-16 h-16 rounded-2xl bg-gold/15 flex items-center justify-center mx-auto mb-4">'
+          + '<span class="material-symbols-outlined text-gold text-[32px] filled">lock</span>'
+        + '</div>'
+        + '<h2 class="font-headline font-bold text-xl text-text-dark mb-2">Subscription Required</h2>'
+        + '<p class="text-sm text-text-muted mb-5 leading-relaxed">Your account is paused. Subscribe to continue spreading the Word.</p>'
+        + '<a href="' + (sessionStorage.getItem('gstw_payment_link') || 'profile.html') + '" '
+          + 'class="block w-full py-3.5 bg-gold text-dark font-headline font-bold rounded-2xl mb-3 active:scale-[0.98] transition-transform">'
+          + 'Subscribe — $3.99/month'
+        + '</a>'
+        + '<button onclick="document.getElementById(\'subscribePrompt\').remove()" '
+          + 'class="text-text-muted font-bold text-sm">Maybe Later</button>'
+      + '</div>'
 
+    document.body.appendChild(prompt)
+  }
+}
   // ════════════════════════════════════════════
   // COMMUNITY STATS
   // ════════════════════════════════════════════
