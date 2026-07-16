@@ -132,24 +132,15 @@
   <!-- ═══════════════════════════════════════════ -->
   <!-- TOP BAR — Minimal, dark -->
   <!-- ═══════════════════════════════════════════ -->
-  <header class="fixed top-0 left-0 right-0 z-50 pt-safe">
-    <div class="flex justify-between items-center px-6 py-3 max-w-[430px] mx-auto">
-      <span class="font-headline font-extrabold text-gold text-lg tracking-tight">GSTW</span>
-      <div class="flex items-center gap-3">
-        <button class="w-10 h-10 flex items-center justify-center text-white/40 relative
-          active:scale-90 transition-transform">
-          <span class="material-symbols-outlined text-[22px]">notifications</span>
-          <span class="absolute top-2 right-2 w-2 h-2 bg-action rounded-full"></span>
-        </button>
-        <div id="avatarBtn"
-          class="w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center
-          justify-center overflow-hidden active:scale-95 transition-transform cursor-pointer"
-          onclick="window.location.href='profile.html'">
-          <span id="avatarInitials" class="font-headline font-bold text-white/80 text-sm">?</span>
-        </div>
-      </div>
-    </div>
-  </header>
+<header class="fixed top-0 left-0 right-0 z-50 pt-safe">
+  <div class="flex items-center px-6 py-3 max-w-[430px] mx-auto">
+    <img
+      src="/images/logo.png"
+      alt="Go Spread The Word"
+      class="w-10 h-10 object-contain"
+    >
+  </div>
+</header>
 
   <!-- ═══════════════════════════════════════════ -->
   <!-- MAIN -->
@@ -283,10 +274,21 @@
         <span class="material-symbols-outlined text-white/30 text-[22px]">bar_chart</span>
         <span class="text-[10px] font-medium text-white/30">Impact</span>
       </a>
-      <a href="profile.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
-        <span class="material-symbols-outlined text-white/30 text-[22px]">person</span>
-        <span class="text-[10px] font-medium text-white/30">Profile</span>
-      </a>
+     <a href="profile.html"
+  class="flex flex-col items-center gap-0.5 px-4 py-1.5 relative"
+  aria-label="Profile and notifications">
+
+  <span class="material-symbols-outlined text-white/30 text-[22px]">
+    person
+  </span>
+
+  <span id="homeNotifDot"
+    class="hidden absolute top-0 right-2 w-2.5 h-2.5 bg-action rounded-full
+    border-2 border-dark">
+  </span>
+
+  <span class="text-[10px] font-medium text-white/30">Profile</span>
+</a>
     </div>
   </nav>
 
@@ -624,6 +626,35 @@ if (profile.is_suspended) {
       loadUserProfile(user.id),
       loadCommunityStats()
     ])
+async function updateHomeNotificationDot(userId) {
+  var result = await supabaseClient
+    .from('notifications')
+    .select('id, type, target_user_id')
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  var dot = document.getElementById('homeNotifDot')
+  if (!dot) return
+
+  if (result.error || !result.data) {
+    dot.classList.add('hidden')
+    return
+  }
+
+  var visibleNotifications = result.data.filter(function(n) {
+    return n.type === 'broadcast' || n.target_user_id === userId
+  })
+
+  var readIds = JSON.parse(
+    localStorage.getItem('gstw_read_notifs') || '[]'
+  )
+
+  var unread = visibleNotifications.some(function(n) {
+    return readIds.indexOf(n.id) === -1
+  })
+
+  dot.classList.toggle('hidden', !unread)
+}
   })
 
 </script>
