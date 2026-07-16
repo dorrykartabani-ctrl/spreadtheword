@@ -138,6 +138,17 @@
         </p>
       </div>
 
+<div class="flex gap-3">
+  <button onclick="openBillingPortal()"
+    class="flex-1 px-4 py-2.5 rounded-xl border-2 border-primary text-primary font-bold text-sm active:scale-95 transition-transform">
+    Manage Billing
+  </button>
+  <button onclick="openPaymentLink()"
+    class="flex-1 px-4 py-2.5 rounded-xl border-2 border-border-soft text-text-muted font-bold text-sm active:scale-95 transition-all">
+    Update Payment
+  </button>
+</div>
+
       <span class="material-symbols-outlined filled absolute -bottom-6 -right-6 text-[130px] opacity-[0.05] select-none">
         shield
       </span>
@@ -253,6 +264,38 @@
 
   var currentUser = null
   var userSubscription = null
+  var stripePortalLink = ''
+  var stripePaymentLink = ''
+
+async function loadStripeLinks() {
+  var result = await supabaseClient
+    .from('site_settings')
+    .select('id, value')
+    .in('id', ['stripe_portal_link', 'stripe_payment_link'])
+
+  if (result.data) {
+    result.data.forEach(function(s) {
+      if (s.id === 'stripe_portal_link') stripePortalLink = s.value || ''
+      if (s.id === 'stripe_payment_link') stripePaymentLink = s.value || ''
+    })
+  }
+}
+
+function openBillingPortal() {
+  if (stripePortalLink) {
+    window.open(stripePortalLink, '_blank')
+  } else {
+    showToast('Billing portal not available. Contact support.')
+  }
+}
+
+function openPaymentLink() {
+  if (stripePaymentLink) {
+    window.open(stripePaymentLink, '_blank')
+  } else {
+    showToast('Payment link not available. Contact support.')
+  }
+}
 
   // ════════════════════════════════════════════
   // AUTH GUARD & LOAD DATA
@@ -430,10 +473,9 @@ async function loadSubscriptionData() {
     toastTimer = setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
   }
 
-  // ════════════════════════════════════════════
-  // START
-  // ════════════════════════════════════════════
-  init()
+await loadStripeLinks()  
+
+init()
 
 </script>
 </body>
