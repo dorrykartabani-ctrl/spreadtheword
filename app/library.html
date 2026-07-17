@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <title>GSTW — Library</title>
+  <title>GSTW</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -48,48 +48,26 @@
       background-color:#F0EDE6;
       -webkit-tap-highlight-color:transparent;
       min-height:100dvh;
-      color:#1A1A1A;
     }
     .font-headline{font-family:'Plus Jakarta Sans',sans-serif}
+    .material-symbols-outlined{
+      font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+      display:inline-block;line-height:1;
+    }
+    .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+    .tactical-gradient{background:linear-gradient(145deg,#152E45,#1E4060)}
+    .reflection-plate{border-left:4px solid #D4A24C}
 
     ::-webkit-scrollbar{display:none}
     body{-ms-overflow-style:none;scrollbar-width:none}
 
-    .quote-card{
-      transition:all 0.25s ease;
-      cursor:pointer;
-    }
+    .quote-card{transition:all 0.2s ease;cursor:pointer}
     .quote-card:active{transform:scale(0.98)}
 
-    .quote-card.animating-to-shared{
-      animation:slideToShared 0.45s cubic-bezier(0.32,0,0.67,0) forwards;
-      pointer-events:none;
-    }
-    @keyframes slideToShared{
-      0%{opacity:1;transform:translateX(0) scale(1)}
-      100%{opacity:0;transform:translateX(40px) scale(0.96)}
-    }
-
-    .segment-btn{transition:all 0.15s ease}
-    .segment-btn.active{background:#1E4060;color:#fff;box-shadow:0 2px 8px rgba(30,64,96,0.25)}
-
-    .filter-chip{transition:all 0.15s ease}
-    .filter-chip.active{background:#1E4060;color:#fff;box-shadow:0 1px 6px rgba(30,64,96,0.2)}
-
-    .search-wrap{transition:transform 0.2s ease}
-    .search-wrap:focus-within{transform:scale(1.01)}
-
-    /* Entry animation for shared tab quotes */
-    @keyframes fadeInUp{
-      from{opacity:0;transform:translateY(12px)}
-      to{opacity:1;transform:translateY(0)}
-    }
-    .entry-anim{
-      animation:fadeInUp 0.5s ease-out both;
-    }
+    .tab-btn{transition:all 0.15s ease}
+    .tab-btn.active{background:#1E4060;color:white}
 
     .pb-safe{padding-bottom:env(safe-area-inset-bottom,16px)}
-    .pt-safe{padding-top:env(safe-area-inset-top,0px)}
 
     .skeleton{
       background:linear-gradient(90deg,#e8e5de 25%,#f0ede6 50%,#e8e5de 75%);
@@ -101,112 +79,138 @@
       0%{background-position:200% 0}
       100%{background-position:-200% 0}
     }
+
+    /* Horizontal scroll fade edges */
+    .chip-scroll{
+      -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 24px), transparent 100%);
+      mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 24px), transparent 100%);
+    }
+
+    /* Header shadow appears when scrolled */
+    .header-scrolled{
+      box-shadow:0 4px 12px rgba(0,0,0,0.04);
+    }
+
+    /* Shared tab pulse animation */
+    @keyframes tabPulse{
+      0%,100%{transform:scale(1)}
+      50%{transform:scale(1.05)}
+    }
+    .tab-pulse{
+      animation:tabPulse 0.4s ease-out;
+    }
   </style>
 </head>
 
-<body class="pb-28">
+<body class="text-text-dark pb-28">
 
 <!-- ═══════════════════════════════════════════ -->
 <!-- HEADER -->
 <!-- ═══════════════════════════════════════════ -->
-<header id="pageHeader" class="fixed top-0 left-0 right-0 z-50 bg-surface/95 backdrop-blur-xl border-b border-border-soft pt-safe">
-  <div class="max-w-[430px] mx-auto px-5 pt-3 pb-3">
+<header id="pageHeader" class="fixed top-0 w-full z-50 bg-surface/95 backdrop-blur-xl border-b border-border-soft transition-shadow">
+  <div class="max-w-[430px] mx-auto px-5 pt-10 pb-3">
 
-    <!-- Logo + Search -->
+    <!-- Logo + Search (same row) -->
     <div class="flex items-center gap-3 mb-3">
-      <a href="index.html" aria-label="Home">
-        <img src="/images/logo.png" alt="GSTW" class="w-9 h-9 object-contain flex-shrink-0">
-      </a>
-      <div class="search-wrap relative flex-1">
+      <img src="/images/logo.png" alt="GSTW" class="w-8 h-8 object-contain flex-shrink-0">
+      <div class="relative flex-1">
         <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-light text-[18px]">search</span>
-        <input id="searchInput" type="text" oninput="searchQuotes(this.value)"
-          placeholder="Search words, references, topics..."
-          class="w-full bg-card-bg border border-border-soft rounded-2xl py-2.5 pl-9 pr-3 text-sm font-body
+        <input id="searchInput" type="text"
+          placeholder="Search quotes..."
+          class="w-full bg-card-bg border border-border-soft rounded-xl py-2.5 pl-9 pr-3 text-sm font-body
           text-text-dark focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-text-light">
       </div>
     </div>
 
-    <!-- Scope: ALL / SHARED -->
-    <div class="flex gap-2 mb-2.5">
-      <button onclick="setSegment('all')" id="tabAll"
-        class="segment-btn active flex-1 py-2 rounded-xl text-xs font-bold uppercase tracking-wider">
+    <!-- Tabs: All / Shared -->
+    <div class="flex gap-1.5 mb-3">
+      <button id="tabAll" onclick="setTab('all')"
+        class="tab-btn active flex-1 py-2 rounded-xl text-xs font-bold bg-primary text-white">
         All
       </button>
-      <button onclick="setSegment('shared')" id="tabShared"
-        class="segment-btn flex-1 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-text-muted">
-        Shared
+      <button id="tabShared" onclick="setTab('shared')"
+        class="tab-btn flex-1 py-2 rounded-xl text-xs font-bold bg-cream text-text-muted border border-border-soft">
+        Shared <span id="sharedCount" class="font-normal opacity-70"></span>
       </button>
     </div>
 
     <!-- Category chips -->
-    <div id="categoryChips" class="flex gap-1.5 overflow-x-auto" style="-ms-overflow-style:none;scrollbar-width:none">
+    <div id="categoryChips" class="chip-scroll flex gap-2 overflow-x-auto pb-1" style="-ms-overflow-style:none;scrollbar-width:none">
       <button onclick="setCategory('all',this)"
-        class="filter-chip active flex-shrink-0 px-3.5 py-1 rounded-full text-[11px] font-bold border border-border-soft">
+        class="tab-btn active flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold bg-primary text-white">
         All
       </button>
     </div>
-
   </div>
 </header>
 
 <!-- ═══════════════════════════════════════════ -->
 <!-- MAIN -->
 <!-- ═══════════════════════════════════════════ -->
-<main class="pt-[168px] px-5 space-y-4 max-w-[430px] mx-auto">
+<main class="pt-[180px] px-5 space-y-4 max-w-[430px] mx-auto">
 
-  <div id="quoteList" class="space-y-3.5">
+  <!-- Quote Cards -->
+  <div id="quoteList" class="space-y-4">
+    <div class="skeleton h-40 w-full"></div>
     <div class="skeleton h-36 w-full"></div>
-    <div class="skeleton h-32 w-full"></div>
-    <div class="skeleton h-32 w-full"></div>
+    <div class="skeleton h-36 w-full"></div>
   </div>
 
+  <!-- Empty State -->
   <div id="emptyState" class="hidden text-center py-16">
-    <span class="material-symbols-outlined text-text-light text-[40px] block mb-3">search_off</span>
-    <h3 class="font-headline font-bold text-base text-text-dark mb-1">No quotes found</h3>
+    <div class="w-16 h-16 rounded-2xl bg-cream flex items-center justify-center mx-auto mb-4">
+      <span class="material-symbols-outlined text-text-light text-[32px]">search_off</span>
+    </div>
+    <h3 class="font-headline font-bold text-lg text-text-dark mb-1">No quotes found</h3>
     <p id="emptyMsg" class="text-sm text-text-muted font-body">Try a different search or filter</p>
   </div>
 
-  <div id="loadingMore" class="hidden text-center py-4">
+  <!-- Loading more indicator -->
+  <div id="loadingMore" class="hidden text-center py-6">
     <div class="inline-block w-5 h-5 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
   </div>
 
-  <div id="endOfList" class="hidden text-center py-4">
-    <span class="text-[10px] text-text-light font-body uppercase tracking-widest">End of word</span>
+  <!-- End of list -->
+  <div id="endOfList" class="hidden text-center py-6">
+    <p class="text-xs text-text-light font-body uppercase tracking-widest">You've reached the end</p>
   </div>
 
+  <!-- Infinite scroll sentinel -->
   <div id="scrollSentinel" class="h-1"></div>
+
 </main>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════ -->
 <!-- BOTTOM NAV -->
 <!-- ═══════════════════════════════════════════ -->
 <nav class="fixed bottom-0 left-0 w-full bg-card-bg/90 backdrop-blur-xl border-t border-border-soft z-50"
   style="padding-bottom:max(16px,env(safe-area-inset-bottom))">
   <div class="flex justify-around items-center px-2 pt-2 pb-1 max-w-[430px] mx-auto">
-    <a href="index.html" class="flex flex-col items-center gap-0.5 px-4 py-1">
+    <a href="index.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
       <span class="material-symbols-outlined text-text-light text-[22px]">home</span>
       <span class="text-[10px] font-medium text-text-light">Home</span>
     </a>
-    <a href="library.html" class="flex flex-col items-center gap-0.5 px-4 py-1">
+    <a href="library.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
       <span class="material-symbols-outlined text-primary text-[22px] filled">auto_stories</span>
       <span class="text-[10px] font-bold text-primary">Library</span>
     </a>
-    <a href="cause.html" class="flex flex-col items-center gap-0.5 px-4 py-1">
+    <a href="cause.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
       <span class="material-symbols-outlined text-text-light text-[22px]">volunteer_activism</span>
       <span class="text-[10px] font-medium text-text-light">Missions</span>
     </a>
-    <a href="impact.html" class="flex flex-col items-center gap-0.5 px-4 py-1">
+    <a href="impact.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
       <span class="material-symbols-outlined text-text-light text-[22px]">bar_chart</span>
       <span class="text-[10px] font-medium text-text-light">Impact</span>
     </a>
-    <a href="profile.html" class="flex flex-col items-center gap-0.5 px-4 py-1">
+    <a href="profile.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
       <span class="material-symbols-outlined text-text-light text-[22px]">person</span>
       <span class="text-[10px] font-medium text-text-light">Profile</span>
     </a>
+    </div>
   </div>
 </nav>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════ -->
 <!-- SCRIPT -->
 <!-- ═══════════════════════════════════════════ -->
 <script>
@@ -224,8 +228,8 @@ var userSharedQuoteIds = []
 var loadedQuoteIds = new Set()
 
 var state = {
-  segment: 'all',
-  category: 'all',
+  tab: 'all',          // 'all' | 'shared'
+  category: 'all',     // 'all' | category name
   search: '',
   offset: 0,
   pageSize: 20,
@@ -246,41 +250,48 @@ async function init() {
   }
   currentUser = sessionResult.data.session.user
 
-  // Clear previous editing state
-  sessionStorage.removeItem('gstw_final_image')
-  sessionStorage.removeItem('gstw_personal_msg')
-  sessionStorage.removeItem('gstw_hashtags')
-  sessionStorage.removeItem('gstw_full_caption')
-  sessionStorage.removeItem('gstw_overlay_x')
-  sessionStorage.removeItem('gstw_overlay_y')
-  sessionStorage.removeItem('gstw_bg_type')
-  sessionStorage.removeItem('gstw_bg_value')
+  // Clear previous sharing state
+  sessionStorage.removeItem('gstw_selected_quote_id')
+  sessionStorage.removeItem('gstw_selected_quote_text')
+  sessionStorage.removeItem('gstw_selected_quote_source')
+  sessionStorage.removeItem('gstw_selected_quote_category')
 
+  // Load user's shared quote IDs
   await loadUserSharedQuotes()
+
+  // Load categories dynamically
   await loadCategories()
+
+  // Check if user just shared something (from editor)
+  checkJustShared()
+
+  // Initial quote load
   await resetAndLoad()
 
-  // Check if user just shared (returning from editor)
-  if (sessionStorage.getItem('gstw_just_shared') === 'true') {
-    sessionStorage.removeItem('gstw_just_shared')
-    state.segment = 'shared'
-    document.getElementById('tabAll').classList.remove('active')
-    document.getElementById('tabAll').classList.add('text-text-muted')
-    document.getElementById('tabShared').classList.add('active')
-    document.getElementById('tabShared').classList.remove('text-text-muted')
-    await resetAndLoad()
-    document.getElementById('tabShared').style.animation = 'none'
-    setTimeout(function() {
-      document.getElementById('tabShared').style.animation = ''
-      document.getElementById('tabShared').classList.add('entry-anim')
-    }, 100)
-  }
-
+  // Setup listeners
   setupListeners()
 }
 
 // ════════════════════════════════════════════
-// LOAD SHARED QUOTE IDs
+// CHECK IF USER JUST SHARED (from editor)
+// ════════════════════════════════════════════
+function checkJustShared() {
+  var justShared = sessionStorage.getItem('gstw_just_shared')
+  if (justShared === 'true') {
+    sessionStorage.removeItem('gstw_just_shared')
+    // Switch to Shared tab and pulse it
+    setTimeout(function() {
+      setTab('shared')
+      var tab = document.getElementById('tabShared')
+      tab.classList.add('tab-pulse')
+      setTimeout(function() { tab.classList.remove('tab-pulse') }, 400)
+      showToast('Quote added to your Shared collection')
+    }, 500)
+  }
+}
+
+// ════════════════════════════════════════════
+// LOAD USER'S SHARED QUOTES
 // ════════════════════════════════════════════
 async function loadUserSharedQuotes() {
   var result = await supabaseClient
@@ -288,11 +299,20 @@ async function loadUserSharedQuotes() {
     .select('quote_id')
     .eq('user_id', currentUser.id)
 
-  userSharedQuoteIds = (result.data || []).map(function(s) { return s.quote_id })
+  if (result.data) {
+    userSharedQuoteIds = result.data.map(function(s) { return s.quote_id })
+    updateSharedCount()
+  }
+}
+
+function updateSharedCount() {
+  var count = userSharedQuoteIds.length
+  var el = document.getElementById('sharedCount')
+  if (el) el.textContent = count > 0 ? '(' + count + ')' : ''
 }
 
 // ════════════════════════════════════════════
-// LOAD CATEGORIES DYNAMICALLY
+// LOAD CATEGORIES (dynamic from live quotes)
 // ════════════════════════════════════════════
 async function loadCategories() {
   var result = await supabaseClient
@@ -301,22 +321,22 @@ async function loadCategories() {
     .eq('status', 'live')
     .not('category', 'is', null)
 
+  if (result.error || !result.data) return
+
   var unique = {}
-  if (result.data) {
-    result.data.forEach(function(row) {
-      if (row.category) {
-        var c = row.category.toLowerCase().trim()
-        if (c) unique[c] = true
-      }
-    })
-  }
+  result.data.forEach(function(row) {
+    if (row.category) {
+      var c = row.category.toLowerCase().trim()
+      if (c) unique[c] = true
+    }
+  })
 
   var categories = Object.keys(unique).sort()
-  var container = document.getElementById('categoryChips')
 
+  var container = document.getElementById('categoryChips')
   categories.forEach(function(cat) {
     var btn = document.createElement('button')
-    btn.className = 'filter-chip flex-shrink-0 px-3.5 py-1 rounded-full text-[11px] font-bold border border-border-soft text-text-muted capitalize'
+    btn.className = 'tab-btn flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold bg-cream text-text-muted border border-border-soft capitalize'
     btn.textContent = cat
     btn.onclick = function() { setCategory(cat, btn) }
     container.appendChild(btn)
@@ -324,35 +344,40 @@ async function loadCategories() {
 }
 
 // ════════════════════════════════════════════
-// RESET & LOAD
+// RESET AND LOAD (called when filters change)
 // ════════════════════════════════════════════
 async function resetAndLoad() {
   state.offset = 0
   state.reachedEnd = false
   loadedQuoteIds.clear()
   document.getElementById('quoteList').innerHTML =
+    '<div class="skeleton h-40 w-full"></div>' +
     '<div class="skeleton h-36 w-full"></div>' +
-    '<div class="skeleton h-32 w-full"></div>'
+    '<div class="skeleton h-36 w-full"></div>'
   document.getElementById('emptyState').classList.add('hidden')
   document.getElementById('endOfList').classList.add('hidden')
   await loadPage(true)
 }
 
-// ════════════════════════════════════════════
-// LOAD PAGE (fixed empty array bug)
+// ═══════════════════════════════════════════
+// LOAD PAGE (paginated fetch)
 // ════════════════════════════════════════════
 async function loadPage(isFirstPage) {
   if (state.loading || state.reachedEnd) return
   state.loading = true
 
-  if (!isFirstPage) document.getElementById('loadingMore').classList.remove('hidden')
+  if (!isFirstPage) {
+    document.getElementById('loadingMore').classList.remove('hidden')
+  }
 
-  var query = supabaseClient.from('quotes').select('*').eq('status', 'live')
+  var query = supabaseClient
+    .from('quotes')
+    .select('*')
+    .eq('status', 'live')
 
-  // Segment filter — FIX: don't build broken 'in' / 'not' with empty arrays
-  if (state.segment === 'shared') {
+  // Tab filter (all / shared)
+  if (state.tab === 'shared') {
     if (userSharedQuoteIds.length === 0) {
-      // Nothing shared yet — render empty immediately
       renderPage([], isFirstPage)
       state.reachedEnd = true
       state.loading = false
@@ -360,13 +385,6 @@ async function loadPage(isFirstPage) {
       return
     }
     query = query.in('id', userSharedQuoteIds)
-  } else {
-    // 'all' — exclude shared only if user actually has shared items
-    if (userSharedQuoteIds.length > 0) {
-      query = query.not('id', 'in', '(' + userSharedQuoteIds.map(function(id) {
-        return '"' + id.replace(/"/g, '\\"') + '"'
-      }).join(',') + ')')
-    }
   }
 
   // Category filter
@@ -374,28 +392,22 @@ async function loadPage(isFirstPage) {
     query = query.eq('category', state.category)
   }
 
-  // Search (text, source, category)
+  // Search filter (text, source, category)
   if (state.search) {
     var s = state.search.replace(/'/g, "''")
-    query = query.or('text.ilike.%' + s + '%,source.ilike.%' + s + '%,category.ilike.%' + s + '%')
+    query = query.or(
+      'text.ilike.%' + s + '%,' +
+      'source.ilike.%' + s + '%,' +
+      'category.ilike.%' + s + '%'
+    )
   }
 
-  query = query.order('published_at', { ascending: false }).range(state.offset, state.offset + state.pageSize - 1)
+  // Ordering + pagination
+  query = query
+    .order('published_at', { ascending: false })
+    .range(state.offset, state.offset + state.pageSize - 1)
 
   var result = await query
-
-  // Tag search enhancement (separate query, merged in JS)
-  var tagResults = []
-  if (state.search) {
-    var tagQuery = supabaseClient.from('quotes').select('*').eq('status', 'live')
-    // Note: supabase-js array search syntax via contains
-    try {
-      var tagRes = await tagQuery.contains('tags', [state.search.toLowerCase()])
-      if (tagRes.data) tagResults = tagRes.data
-    } catch (e) {
-      // tags column missing or other issue — ignore
-    }
-  }
 
   document.getElementById('loadingMore').classList.add('hidden')
 
@@ -407,22 +419,22 @@ async function loadPage(isFirstPage) {
 
   var quotes = result.data || []
 
-  // Merge tag results that match search but weren't in text query
-  if (tagResults.length > 0) {
-    tagResults.forEach(function(tq) {
-      if (!quotes.find(function(q) { return q.id === tq.id })) {
-        if (!state.search || quotes.some(function(q) { return q.id === tq.id })) {
-          // Only add if not already included
+  // Also search tags if user is searching
+  if (state.search && isFirstPage) {
+    var tagResult = await supabaseClient
+      .from('quotes')
+      .select('*')
+      .eq('status', 'live')
+      .contains('tags', [state.search.toLowerCase()])
+      .range(0, state.pageSize - 1)
+
+    if (tagResult.data) {
+      tagResult.data.forEach(function(q) {
+        if (!quotes.find(function(existing) { return existing.id === q.id })) {
+          quotes.push(q)
         }
-        if (!loadedQuoteIds.has(tq.id) && !quotes.find(function(q) { return q.id === tq.id })) {
-          // Apply segment/category filters to tag results too
-          var passesSegment = (state.segment === 'shared' ? userSharedQuoteIds.indexOf(tq.id) !== -1 : true)
-          if (passesSegment && (state.category === 'all' || (tq.category || '').toLowerCase() === state.category)) {
-            quotes.push(tq)
-          }
-        }
-      }
-    })
+      })
+    }
   }
 
   renderPage(quotes, isFirstPage)
@@ -430,12 +442,7 @@ async function loadPage(isFirstPage) {
   state.offset += state.pageSize
   if (quotes.length < state.pageSize) {
     state.reachedEnd = true
-    if (isFirstPage && quotes.length === 0) {
-      document.getElementById('emptyState').classList.remove('hidden')
-      document.getElementById('emptyMsg').textContent = state.segment === 'shared'
-        ? "You haven't shared any quotes yet"
-        : "No quotes match this filter"
-    } else if (quotes.length > 0 && state.reachedEnd) {
+    if (loadedQuoteIds.size > 0) {
       document.getElementById('endOfList').classList.remove('hidden')
     }
   }
@@ -451,185 +458,179 @@ function renderPage(quotes, isFirstPage) {
 
   if (isFirstPage) {
     container.innerHTML = ''
-    loadedQuoteIds.clear()
-  }
-
-  if (isFirstPage && quotes.length === 0) {
-    document.getElementById('emptyState').classList.remove('hidden')
-    return
+    if (quotes.length === 0) {
+      document.getElementById('emptyState').classList.remove('hidden')
+      var msg = state.search
+        ? 'No quotes match "' + state.search + '"'
+        : state.tab === 'shared'
+          ? "You haven't shared any quotes yet"
+          : 'No quotes match this filter'
+      document.getElementById('emptyMsg').textContent = msg
+      return
+    }
   }
 
   document.getElementById('emptyState').classList.add('hidden')
 
-  quotes.forEach(function(quote, i) {
+  quotes.forEach(function(quote) {
     if (loadedQuoteIds.has(quote.id)) return
     loadedQuoteIds.add(quote.id)
 
     var isInspiration = quote.source && !quote.source.includes(':')
     var dateStr = quote.published_at
-      ? new Date(quote.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      ? new Date(quote.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       : ''
-    var category = quote.category ? quote.category.toLowerCase() : ''
+    var category   = quote.category ? quote.category.toLowerCase() : ''
     var shareCount = quote.share_count || 0
-    var isShared = userSharedQuoteIds.indexOf(quote.id) !== -1
 
     var card = document.createElement('article')
-    card.className = 'quote-card bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft entry-anim'
-    card.style.animationDelay = (i * 0.06) + 's'
-    card.dataset.id = quote.id
+    card.className = 'quote-card bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft'
+      + (isInspiration ? ' reflection-plate' : '')
 
-    var sharedTag = isShared
-      ? '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">Shared</span>'
+    var sharedBadge = state.tab === 'shared'
+      ? '<span class="flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">'
+        + '<span class="material-symbols-outlined text-[12px] filled">check_circle</span>Shared</span>'
       : ''
 
     card.innerHTML =
       '<div class="flex items-center justify-between mb-3">'
         + '<span class="text-[10px] font-bold text-text-light uppercase tracking-widest">' + dateStr + '</span>'
         + '<div class="flex items-center gap-2">'
-          + sharedTag
-          + (shareCount > 0 ? '<span class="text-[10px] text-text-light">' + shareCount + ' shares</span>' : '')
+          + sharedBadge
+          + '<span class="text-[10px] text-text-light font-body">' + shareCount + ' shares</span>'
         + '</div>'
       + '</div>'
       + '<blockquote class="font-headline font-bold text-[16px] text-text-dark leading-relaxed mb-2">'
         + '\u201C' + escapeHtml(quote.text) + '\u201D</blockquote>'
-      + '<cite class="block not-italic font-body font-bold text-sm text-primary mb-3 tracking-wider">'
-        + '\u2014 ' + escapeHtml((quote.source || '').toUpperCase()) + '</cite>'
-      + (category ? '<span class="inline-block bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold capitalize mb-3">' + escapeHtml(category) + '</span>' : '')
-      + '<div class="flex justify-end">'
-        + '<span class="text-[10px] text-text-light font-body">Tap to share</span>'
-      + '</div>'
+      + '<cite class="block not-italic font-body font-bold text-sm '
+        + (isInspiration ? 'text-gold-dim' : 'text-primary')
+        + ' mb-3 tracking-wider">\u2014 ' + escapeHtml((quote.source || '').toUpperCase()) + '</cite>'
+      + (category && state.tab !== 'shared'
+        ? '<span class="inline-block bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold capitalize">' + escapeHtml(category) + '</span>'
+        : '')
 
     card.addEventListener('click', function() {
-      selectQuoteAndShare(card, quote.id, quote.text, quote.source, category)
+      selectQuoteAndShare(quote.id, quote.text, quote.source, category)
     })
 
     container.appendChild(card)
   })
 }
 
+// ═══════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════
 function escapeHtml(str) {
   if (!str) return ''
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
 }
 
 // ════════════════════════════════════════════
-// SELECT QUOTE — SAVE TO DB + ANIMATE
+// SELECT QUOTE → EDITOR
 // ════════════════════════════════════════════
-async function selectQuoteAndShare(cardEl, id, text, source, category) {
-  // Prevent double-tap
-  if (cardEl.classList.contains('animating-to-shared')) return
+function selectQuoteAndShare(id, text, source, category) {
+  sessionStorage.removeItem('gstw_final_image')
+  sessionStorage.removeItem('gstw_personal_msg')
+  sessionStorage.removeItem('gstw_hashtags')
+  sessionStorage.removeItem('gstw_full_caption')
+  sessionStorage.removeItem('gstw_overlay_x')
+  sessionStorage.removeItem('gstw_overlay_y')
+  sessionStorage.removeItem('gstw_bg_type')
+  sessionStorage.removeItem('gstw_bg_value')
 
-  try {
-    // Save to shares table
-    var insertRes = await supabaseClient.from('shares').insert({
-      user_id: currentUser.id,
-      quote_id: id,
-      shared_at: new Date().toISOString()
-    })
+  sessionStorage.setItem('gstw_selected_quote_id', id)
+  sessionStorage.setItem('gstw_selected_quote_text', text)
+  sessionStorage.setItem('gstw_selected_quote_source', source)
+  sessionStorage.setItem('gstw_selected_quote_category', category)
 
-    // If already shared, ignore conflict
-    if (insertRes.error && !insertRes.error.message.includes('duplicate')) {
-      console.error('Share insert error:', insertRes.error)
-    }
-
-    // Update local state
-    if (userSharedQuoteIds.indexOf(id) === -1) {
-      userSharedQuoteIds.push(id)
-    }
-
-    // Animate card out
-    cardEl.classList.add('animating-to-shared')
-
-    // Save session for editor
-    sessionStorage.removeItem('gstw_final_image')
-    sessionStorage.removeItem('gstw_personal_msg')
-    sessionStorage.removeItem('gstw_hashtags')
-    sessionStorage.removeItem('gstw_full_caption')
-    sessionStorage.removeItem('gstw_overlay_x')
-    sessionStorage.removeItem('gstw_overlay_y')
-    sessionStorage.removeItem('gstw_bg_type')
-    sessionStorage.removeItem('gstw_bg_value')
-
-    sessionStorage.setItem('gstw_selected_quote_id', id)
-    sessionStorage.setItem('gstw_selected_quote_text', text)
-    sessionStorage.setItem('gstw_selected_quote_source', source || '')
-    sessionStorage.setItem('gstw_selected_quote_category', category || 'faith')
-
-    // Flag for library to open SHARED on return
-    sessionStorage.setItem('gstw_just_shared', 'true')
-
-    // Navigate to editor after animation completes
-    setTimeout(function() {
-      window.location.href = 'editor.html'
-    }, 420)
-
-  } catch (err) {
-    console.error('Share error:', err)
-  }
+  window.location.href = 'editor.html'
 }
 
 // ════════════════════════════════════════════
-// FILTER HANDLERS
+// TAB HANDLERS
 // ════════════════════════════════════════════
-function setSegment(segment) {
-  if (state.segment === segment) return
-  state.segment = segment
-
-  if (segment === 'all') {
-    document.getElementById('tabAll').classList.add('active')
-    document.getElementById('tabAll').classList.remove('text-text-muted')
-    document.getElementById('tabShared').classList.remove('active')
-    document.getElementById('tabShared').classList.add('text-text-muted')
+function setTab(tab) {
+  if (state.tab === tab) return
+  state.tab = tab
+  
+  // Update tab styles
+  var allBtn = document.getElementById('tabAll')
+  var sharedBtn = document.getElementById('tabShared')
+  
+  if (tab === 'all') {
+    allBtn.classList.add('active', 'bg-primary', 'text-white')
+    allBtn.classList.remove('bg-cream', 'text-text-muted', 'border', 'border-border-soft')
+    sharedBtn.classList.remove('active', 'bg-primary', 'text-white')
+    sharedBtn.classList.add('bg-cream', 'text-text-muted', 'border', 'border-border-soft')
   } else {
-    document.getElementById('tabShared').classList.add('active')
-    document.getElementById('tabShared').classList.remove('text-text-muted')
-    document.getElementById('tabAll').classList.remove('active')
-    document.getElementById('tabAll').classList.add('text-text-muted')
+    sharedBtn.classList.add('active', 'bg-primary', 'text-white')
+    sharedBtn.classList.remove('bg-cream', 'text-text-muted', 'border', 'border-border-soft')
+    allBtn.classList.remove('active', 'bg-primary', 'text-white')
+    allBtn.classList.add('bg-cream', 'text-text-muted', 'border', 'border-border-soft')
   }
-
+  
   resetAndLoad()
 }
 
 function setCategory(cat, btn) {
   if (state.category === cat) return
   state.category = cat
-
-  document.querySelectorAll('.filter-chip').forEach(function(t) {
-    t.classList.remove('active')
+  
+  document.querySelectorAll('#categoryChips .tab-btn').forEach(function(t) {
+    t.classList.remove('active', 'bg-primary', 'text-white')
+    t.classList.add('bg-cream', 'text-text-muted', 'border', 'border-border-soft')
   })
-  btn.classList.add('active')
-
+  btn.classList.remove('bg-cream', 'text-text-muted', 'border', 'border-border-soft')
+  btn.classList.add('active', 'bg-primary', 'text-white')
+  
   resetAndLoad()
 }
 
 // ════════════════════════════════════════════
-// SEARCH (DEBOUNCED)
-// ════════════════════════════════════════════
-function searchQuotes(query) {
-  clearTimeout(searchDebounce)
-  searchDebounce = setTimeout(function() {
-    state.search = query.trim()
-    resetAndLoad()
-  }, 300)
-}
-
-// ════════════════════════════════════════════
-// LISTENERS
+// SEARCH (debounced)
 // ════════════════════════════════════════════
 function setupListeners() {
+  var input = document.getElementById('searchInput')
+  input.addEventListener('input', function() {
+    clearTimeout(searchDebounce)
+    searchDebounce = setTimeout(function() {
+      state.search = input.value.trim()
+      resetAndLoad()
+    }, 300)
+  })
+
+  // Header shadow on scroll
+  var header = document.getElementById('pageHeader')
+  window.addEventListener('scroll', function() {
+    header.classList.toggle('header-scrolled', window.scrollY > 8)
+  })
+
   // Infinite scroll
   var observer = new IntersectionObserver(function(entries) {
     if (entries[0].isIntersecting && !state.loading && !state.reachedEnd) {
       loadPage(false)
     }
-  }, { rootMargin: '300px' })
+  }, { rootMargin: '400px' })
   observer.observe(document.getElementById('scrollSentinel'))
+}
 
-  // Header shadow on scroll
-  var header = document.getElementById('pageHeader')
-  window.addEventListener('scroll', function() {
-    header.classList.toggle('header-scrolled', window.scrollY > 6)
-  }, { passive: true })
+// ════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════
+function showToast(msg) {
+  var existing = document.getElementById('libToast')
+  if (existing) existing.remove()
+  var t = document.createElement('div')
+  t.id = 'libToast'
+  t.className = 'fixed top-24 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2'
+  t.innerHTML = '<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:\'FILL\' 1">check_circle</span> ' + msg
+  document.body.appendChild(t)
+  setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
 }
 
 init()
