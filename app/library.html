@@ -11,7 +11,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+ <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
 
   <script>
@@ -255,6 +255,38 @@
     }
     .sort-btn:active{
       transform:scale(0.9);
+    }
+    /* Quote text — Lora serif for distinction */
+    .font-quote{font-family:'Lora',serif}
+
+    /* Card hover — quote-only focus mode */
+    .quote-card .card-meta{
+      transition:opacity 0.25s ease;
+    }
+    .quote-card:hover .card-meta{
+      opacity:0.3;
+    }
+    .quote-card:hover .card-quote{
+      transform:scale(1.01);
+    }
+    .card-quote{
+      transition:transform 0.25s ease;
+    }
+
+    /* On mobile (no hover), use active state instead */
+    @media (hover:none){
+      .quote-card:hover .card-meta{
+        opacity:1;
+      }
+      .quote-card:hover .card-quote{
+        transform:none;
+      }
+      .quote-card:active .card-meta{
+        opacity:0.2;
+      }
+      .quote-card:active .card-quote{
+        transform:scale(1.01);
+      }
     }
   </style>
 </head>
@@ -698,20 +730,28 @@ function renderPage(quotes, isFirstPage) {
       topRightHtml = '<span class="share-marker">' + shareCount + ' shares</span>'
     }
 
-    card.innerHTML =
-      '<div class="flex items-center justify-between mb-3">'
-        + '<span class="text-[10px] font-bold text-text-light tracking-[0.15em]">' + publishDate + '</span>'
+      card.innerHTML =
+      '<div class="card-meta flex items-center justify-between mb-2">'
+        + '<span class="text-[10px] font-medium text-text-light tracking-[0.12em]">' + publishDate + '</span>'
         + topRightHtml
       + '</div>'
-      + '<blockquote class="font-headline font-bold text-[17px] text-text-dark leading-[1.45] mb-3">'
+      + '<blockquote class="card-quote font-quote text-[19px] text-text-dark leading-[1.5] my-4">'
         + '\u201C' + escapeHtml(quote.text) + '\u201D</blockquote>'
-      + '<cite class="block not-italic font-body font-bold text-[13px] '
+      + '<cite class="card-meta block not-italic font-body font-semibold text-[11px] '
         + (isInspiration ? 'text-gold-dim' : 'text-primary')
-        + ' mb-4 tracking-[0.08em]">\u2014 ' + escapeHtml((quote.source || '').toUpperCase()) + '</cite>'
-      + '<div class="flex items-center justify-between flex-wrap gap-y-2">'
+        + ' mb-4 tracking-[0.1em] uppercase">\u2014 ' + escapeHtml((quote.source || '').toUpperCase()) + '</cite>'
+      + '<div class="card-meta flex items-center justify-between flex-wrap gap-y-2">'
         + '<div class="flex flex-wrap items-center">'
           + hashtagHtml
         + '</div>'
+        + (state.tab === 'all' && isShared
+          ? '<span class="shared-marker">'
+            + '<span class="material-symbols-outlined text-[13px] filled">check_circle</span>Shared</span>'
+          : state.tab === 'all'
+            ? '<span class="text-[11px] font-bold text-text-light uppercase tracking-widest opacity-60">Share</span>'
+            : ''
+          )
+      + '</div>'
         + (state.tab === 'all' && isShared
           ? '<span class="shared-marker">'
             + '<span class="material-symbols-outlined text-[13px] filled">check_circle</span>Shared</span>'
