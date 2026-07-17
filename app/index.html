@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="GSTW">
   <meta name="theme-color" content="#16202A">
-  <title>Go Spread The Word</title>
+  <title>GSTW</title>
 
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
@@ -50,12 +50,15 @@
   </script>
 
   <style>
+    html, body {
+      background-color: #16202A;
+    }
     body{
       font-family:'Manrope',sans-serif;
-      background-color:#16202A;
       -webkit-tap-highlight-color:transparent;
       -webkit-font-smoothing:antialiased;
       min-height:100dvh;
+      color:#fff;
     }
     .font-headline{font-family:'Plus Jakarta Sans',sans-serif}
     .font-quote{font-family:'Lora',serif}
@@ -63,45 +66,67 @@
       font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
     }
     .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
-    .tactical-gradient{background:linear-gradient(145deg,#152E45,#1E4060)}
 
     ::-webkit-scrollbar{display:none}
     body{-ms-overflow-style:none;scrollbar-width:none}
 
+    /* ─── Background image layer ─── */
+    .hero-bg{
+      position:fixed;
+      inset:0;
+      background-size:cover;
+      background-position:center;
+      background-repeat:no-repeat;
+      z-index:0;
+      opacity:0;
+      transition:opacity 0.8s ease;
+    }
+    .hero-bg.loaded{opacity:1}
+
+    /* ─── Dark gradient overlay for text readability ─── */
+    .hero-overlay{
+      position:fixed;
+      inset:0;
+      background:
+        linear-gradient(180deg,
+          rgba(22,32,42,0.55) 0%,
+          rgba(22,32,42,0.35) 30%,
+          rgba(22,32,42,0.75) 75%,
+          rgba(22,32,42,0.95) 100%
+        );
+      z-index:1;
+      pointer-events:none;
+    }
+
+    /* Content sits above overlay */
+    .content-layer{
+      position:relative;
+      z-index:2;
+    }
+
     /* CTA pulse */
     @keyframes tactical-pulse{
-      0%,100%{box-shadow:0 4px 20px rgba(212,162,76,0.25)}
-      50%{box-shadow:0 8px 40px rgba(212,162,76,0.45)}
+      0%,100%{box-shadow:0 4px 20px rgba(212,162,76,0.30)}
+      50%{box-shadow:0 8px 40px rgba(212,162,76,0.55)}
     }
     .cta-pulse{animation:tactical-pulse 2.5s ease-in-out infinite}
-
-    /* Streak fire glow */
-    @keyframes fireGlow{
-      0%,100%{text-shadow:0 0 4px rgba(234,88,12,0.3)}
-      50%{text-shadow:0 0 12px rgba(234,88,12,0.6)}
-    }
-    .fire-glow{animation:fireGlow 2s ease-in-out infinite}
 
     /* Fade in */
     @keyframes fadeUp{
       from{opacity:0;transform:translateY(16px)}
       to{opacity:1;transform:translateY(0)}
     }
-    .fade-in{animation:fadeUp 0.6s ease-out both}
-    .fade-in-2{animation:fadeUp 0.6s ease-out 0.15s both}
-    .fade-in-3{animation:fadeUp 0.6s ease-out 0.3s both}
+    .fade-in{animation:fadeUp 0.8s ease-out both}
+    .fade-in-2{animation:fadeUp 0.8s ease-out 0.2s both}
+    .fade-in-3{animation:fadeUp 0.8s ease-out 0.4s both}
 
-    /* Quote card subtle glow */
-    .quote-glow{
-      box-shadow:0 0 60px rgba(212,162,76,0.08), 0 4px 32px rgba(0,0,0,0.3);
+    /* Text shadows for readability over images */
+    .text-shadow-soft{
+      text-shadow:0 2px 12px rgba(0,0,0,0.6);
     }
-
-    /* Community pulse */
-    @keyframes communityPulse{
-      0%,100%{opacity:0.4;transform:scale(1)}
-      50%{opacity:1;transform:scale(1.3)}
+    .text-shadow-strong{
+      text-shadow:0 4px 20px rgba(0,0,0,0.8), 0 2px 6px rgba(0,0,0,0.5);
     }
-    .community-pulse{animation:communityPulse 2s ease-in-out infinite}
 
     /* Context modal */
     .modal-inner{
@@ -121,129 +146,99 @@
       min-height:100dvh;
       display:flex;
       flex-direction:column;
+      position:relative;
     }
   </style>
 </head>
 
-<body class="text-white">
+<body>
 
-<div class="app-container">
+<!-- ═══════════════════════════════════════════ -->
+<!-- BACKGROUND LAYERS -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="heroBg" class="hero-bg"></div>
+<div class="hero-overlay"></div>
+
+<div class="app-container content-layer">
 
   <!-- ═══════════════════════════════════════════ -->
-  <!-- TOP BAR — Minimal, dark -->
+  <!-- TOP BAR -->
   <!-- ═══════════════════════════════════════════ -->
-<header class="fixed top-0 left-0 right-0 z-50 pt-safe">
-  <div class="flex items-center px-6 py-3 max-w-[430px] mx-auto">
-    <img
-      src="/images/logo.png"
-      alt="Go Spread The Word"
-      class="w-10 h-10 object-contain"
-    >
-  </div>
-</header>
+  <header class="fixed top-0 left-0 right-0 z-40 pt-safe">
+    <div class="flex items-center px-6 py-3 max-w-[430px] mx-auto">
+      <img
+        src="/images/logo.png"
+        alt="GSTW"
+        class="w-10 h-10 object-contain drop-shadow-lg"
+      >
+    </div>
+  </header>
 
   <!-- ═══════════════════════════════════════════ -->
   <!-- MAIN -->
   <!-- ═══════════════════════════════════════════ -->
-  <main class="flex-1 px-6 pt-20 pb-28 flex flex-col">
+  <main class="flex-1 px-8 pt-20 pb-32 flex flex-col justify-center">
 
     <!-- ─────────────────────────────────────── -->
-    <!-- GREETING — Minimal, one line -->
+    <!-- TODAY'S WORD -->
     <!-- ─────────────────────────────────────── -->
-    <section class="mt-4 mb-2 fade-in">
-      <div class="flex items-center justify-between">
-        <div>
-          <p id="greetingTime" class="font-body text-xs text-white/40 uppercase tracking-widest"></p>
-          <h2 id="greetingName" class="font-headline font-bold text-lg text-white/90 mt-0.5">
-            Hi there
-          </h2>
-        </div>
-        <!-- Streak -->
-        <div id="streakBadge"
-          class="flex items-center gap-1.5 bg-white/8 rounded-full px-3 py-1.5 border border-white/10">
-          <span class="text-base fire-glow">🔥</span>
-          <span id="streakNumber"
-            class="font-headline font-extrabold text-base text-white/90 leading-none">0</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- ─────────────────────────────────────── -->
-    <!-- TODAY'S WORD — The Hero -->
-    <!-- ─────────────────────────────────────── -->
-    <section class="flex-1 flex flex-col justify-center fade-in-2">
+    <section class="flex-1 flex flex-col justify-center fade-in">
 
       <!-- Label -->
-      <div class="flex items-center gap-3 mb-5">
+      <div class="flex items-center gap-3 mb-8">
         <div class="w-1.5 h-1.5 bg-gold rounded-full"></div>
-        <span class="font-body text-[10px] text-white/30 tracking-widest uppercase font-bold">
+        <span class="font-body text-[10px] text-white/60 tracking-[0.2em] uppercase font-bold text-shadow-soft">
           Today's Word
         </span>
-        <div class="flex-1 h-px bg-white/8"></div>
+        <div class="flex-1 h-px bg-white/15"></div>
       </div>
 
-      <!-- Quote Card -->
-      <div id="quoteCard" class="quote-glow rounded-2xl p-7 bg-white/[0.04] border border-white/10
-        backdrop-blur-sm opacity-0" style="transition:opacity 0.5s ease">
+      <!-- Quote — no box, floats on background -->
+      <div id="quoteBlock" class="opacity-0" style="transition:opacity 0.8s ease">
 
         <!-- Decorative mark -->
-        <span class="font-quote text-gold/30 text-[64px] leading-none block -mb-6 -ml-1">"</span>
+        <span class="font-quote text-gold/60 text-[72px] leading-none block -mb-4 -ml-1 text-shadow-soft">"</span>
 
-        <!-- Quote Text — Lora, large -->
+        <!-- Quote text -->
         <p id="quoteText"
-          class="font-quote text-[22px] text-white/95 leading-[1.4] mb-5">
+          class="font-quote text-[26px] text-white leading-[1.4] mb-6 text-shadow-strong font-medium">
         </p>
 
         <!-- Source -->
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-px bg-gold/30"></div>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-px bg-gold/60"></div>
           <p id="quoteRef"
-            class="font-headline font-bold text-xs text-gold/80 tracking-wider uppercase"></p>
+            class="font-headline font-bold text-xs text-gold tracking-[0.15em] uppercase text-shadow-soft"></p>
         </div>
 
       </div>
 
-    </section>
-
-    <!-- ─────────────────────────────────────── -->
-    <!-- COMMUNITY PULSE -->
-    <!-- ─────────────────────────────────────── -->
-    <section class="mt-6 mb-4 fade-in-3">
-      <div class="flex items-center justify-center gap-4">
-        <div class="flex items-center gap-2">
-          <div class="w-2 h-2 rounded-full bg-gold community-pulse"></div>
-          <span id="communityToday" class="text-[11px] text-white/40 font-body">
-            <span class="font-bold text-white/60">—</span> warriors shared today
-          </span>
-        </div>
-      </div>
     </section>
 
     <!-- ─────────────────────────────────────── -->
     <!-- CTA -->
     <!-- ─────────────────────────────────────── -->
-    <section class="mt-2 mb-2 flex flex-col items-center gap-3 fade-in-3">
+    <section class="mt-8 flex flex-col items-center gap-4 fade-in-3">
 
       <button onclick="goToShare()"
         class="cta-pulse w-full h-14 rounded-2xl bg-gold text-dark font-headline
-        font-bold text-base shadow-tactical active:scale-[0.97] transition-transform
-        flex items-center justify-center gap-3">
-        <span class="material-symbols-outlined text-[22px]">campaign</span>
+        font-bold text-base active:scale-[0.97] transition-transform
+        flex items-center justify-center">
         Spread The Word
       </button>
 
       <div class="flex items-center gap-4">
         <button onclick="notToday()"
-          class="text-white/30 font-body font-medium text-xs active:opacity-60 transition-opacity">
+          class="text-white/60 font-body font-medium text-xs active:opacity-60 transition-opacity text-shadow-soft">
           Just reflecting today
         </button>
 
-        <span class="text-white/10">·</span>
+        <span class="text-white/25">·</span>
 
         <button id="contextBtn" onclick="openContext()"
-          class="hidden text-gold/60 font-body font-medium text-xs active:opacity-60
-          transition-opacity flex items-center gap-1">
-          <span class="material-symbols-outlined text-[14px]">menu_book</span>
+          class="hidden text-gold font-body font-medium text-xs active:opacity-60
+          transition-opacity items-center gap-1 text-shadow-soft">
+          <span class="material-symbols-outlined text-[14px] align-middle">menu_book</span>
           Read the context
         </button>
       </div>
@@ -255,7 +250,7 @@
   <!-- ═══════════════════════════════════════════ -->
   <!-- BOTTOM NAVIGATION -->
   <!-- ═══════════════════════════════════════════ -->
-  <nav class="fixed bottom-0 left-0 w-full bg-dark/95 backdrop-blur-xl border-t border-white/8 z-50"
+  <nav class="fixed bottom-0 left-0 w-full bg-dark/95 backdrop-blur-xl border-t border-white/8 z-40"
     style="padding-bottom:max(16px,env(safe-area-inset-bottom))">
     <div class="flex justify-around items-center px-2 pt-2 pb-1 max-w-[430px] mx-auto">
       <a href="index.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
@@ -263,32 +258,27 @@
         <span class="text-[10px] font-bold text-gold">Home</span>
       </a>
       <a href="library.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
-        <span class="material-symbols-outlined text-white/30 text-[22px]">auto_stories</span>
-        <span class="text-[10px] font-medium text-white/30">Library</span>
+        <span class="material-symbols-outlined text-white/40 text-[22px]">auto_stories</span>
+        <span class="text-[10px] font-medium text-white/40">Library</span>
       </a>
       <a href="cause.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
-        <span class="material-symbols-outlined text-white/30 text-[22px]">volunteer_activism</span>
-        <span class="text-[10px] font-medium text-white/30">Missions</span>
+        <span class="material-symbols-outlined text-white/40 text-[22px]">volunteer_activism</span>
+        <span class="text-[10px] font-medium text-white/40">Missions</span>
       </a>
       <a href="impact.html" class="flex flex-col items-center gap-0.5 px-4 py-1.5">
-        <span class="material-symbols-outlined text-white/30 text-[22px]">bar_chart</span>
-        <span class="text-[10px] font-medium text-white/30">Impact</span>
+        <span class="material-symbols-outlined text-white/40 text-[22px]">bar_chart</span>
+        <span class="text-[10px] font-medium text-white/40">Impact</span>
       </a>
-     <a href="profile.html"
-  class="flex flex-col items-center gap-0.5 px-4 py-1.5 relative"
-  aria-label="Profile and notifications">
-
-  <span class="material-symbols-outlined text-white/30 text-[22px]">
-    person
-  </span>
-
-  <span id="homeNotifDot"
-    class="hidden absolute top-0 right-2 w-2.5 h-2.5 bg-action rounded-full
-    border-2 border-dark">
-  </span>
-
-  <span class="text-[10px] font-medium text-white/30">Profile</span>
-</a>
+      <a href="profile.html"
+        class="flex flex-col items-center gap-0.5 px-4 py-1.5 relative"
+        aria-label="Profile and notifications">
+        <span class="material-symbols-outlined text-white/40 text-[22px]">person</span>
+        <span id="homeNotifDot"
+          class="hidden absolute top-0 right-2 w-2.5 h-2.5 bg-action rounded-full
+          border-2 border-dark">
+        </span>
+        <span class="text-[10px] font-medium text-white/40">Profile</span>
+      </a>
     </div>
   </nav>
 
@@ -303,11 +293,7 @@
   <div class="w-full max-w-[430px] bg-dark-soft rounded-t-3xl modal-inner"
     onclick="event.stopPropagation()">
     <div class="p-6 space-y-5">
-
-      <!-- Handle -->
       <div class="w-10 h-1 bg-white/15 rounded-full mx-auto"></div>
-
-      <!-- Header -->
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-gold/15 flex items-center justify-center flex-shrink-0">
           <span class="material-symbols-outlined text-gold text-[20px] filled">menu_book</span>
@@ -317,28 +303,22 @@
           <p id="contextRef" class="text-xs text-white/40 font-body"></p>
         </div>
       </div>
-
-      <!-- Quote reminder -->
       <div class="bg-white/5 rounded-xl p-4 border border-white/8">
         <p id="contextQuote" class="font-quote text-sm text-white/80 italic leading-relaxed"></p>
       </div>
-
-      <!-- Context text -->
       <div>
         <p class="text-[10px] font-bold text-gold/60 uppercase tracking-widest mb-2">Context</p>
         <p id="contextText" class="font-body text-sm text-white/70 leading-relaxed"></p>
       </div>
-
-      <!-- Close -->
       <button onclick="closeContext()"
         class="w-full py-3 bg-white/8 text-white/60 font-bold text-sm rounded-xl
         border border-white/10 active:scale-[0.98] transition-transform">
         Close
       </button>
-
     </div>
   </div>
 </div>
+
 <!-- ═══════════════════════════════════════════ -->
 <!-- SCRIPT -->
 <!-- ═══════════════════════════════════════════ -->
@@ -348,6 +328,11 @@
     'https://nhymadutuhpjgkiurify.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
   )
+
+  // ════════════════════════════════════════════
+  // CONSTANTS
+  // ════════════════════════════════════════════
+  var DEFAULT_HERO = '/images/default-hero.jpg'
 
   // ════════════════════════════════════════════
   // STATE
@@ -367,178 +352,182 @@
   }
 
   // ════════════════════════════════════════════
-  // SET GREETING
+  // BACKGROUND LOADER
   // ════════════════════════════════════════════
-  function setGreeting() {
-    var hour = new Date().getHours()
-    var greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening'
-    var el = document.getElementById('greetingTime')
-    if (el) el.textContent = greeting
+  function setHeroBackground(url) {
+    var bg = document.getElementById('heroBg')
+    if (!bg) return
+    var img = new Image()
+    img.onload = function() {
+      bg.style.backgroundImage = 'url("' + url + '")'
+      bg.classList.add('loaded')
+    }
+    img.onerror = function() {
+      // Fall back to default
+      bg.style.backgroundImage = 'url("' + DEFAULT_HERO + '")'
+      bg.classList.add('loaded')
+    }
+    img.src = url
   }
 
   // ════════════════════════════════════════════
   // LOAD TODAY'S QUOTE
   // ════════════════════════════════════════════
   async function loadTodaysQuote() {
-    var result = await supabaseClient
-      .from('quotes')
-      .select('*')
-      .eq('status', 'live')
-      .order('published_at', { ascending: false })
-      .limit(1)
+    try {
+      var result = await supabaseClient
+        .from('quotes')
+        .select('*')
+        .eq('status', 'live')
+        .order('published_at', { ascending: false })
+        .limit(1)
 
-    var quoteEl = document.getElementById('quoteText')
-    var refEl   = document.getElementById('quoteRef')
-    var cardEl  = document.getElementById('quoteCard')
-    var ctxBtn  = document.getElementById('contextBtn')
+      var quoteEl = document.getElementById('quoteText')
+      var refEl   = document.getElementById('quoteRef')
+      var block   = document.getElementById('quoteBlock')
+      var ctxBtn  = document.getElementById('contextBtn')
 
-    if (result.error || !result.data || result.data.length === 0) {
-      quoteEl.textContent = 'The Word is with you today.'
-      refEl.textContent   = 'GSTW'
-    } else {
-      var quote = result.data[0]
-      quoteEl.textContent     = quote.text
-      refEl.textContent       = quote.source.toUpperCase()
-      window.currentQuoteId   = quote.id
+      if (result.error || !result.data || result.data.length === 0) {
+        quoteEl.textContent = 'The Word is with you today.'
+        refEl.textContent   = 'GSTW'
+        setHeroBackground(DEFAULT_HERO)
+      } else {
+        var quote = result.data[0]
+        quoteEl.textContent   = quote.text
+        refEl.textContent     = (quote.source || 'GSTW').toUpperCase()
+        window.currentQuoteId = quote.id
 
-      // Context
-      if (quote.context && quote.context.trim()) {
-        currentQuoteContext = {
-          text: quote.text,
-          source: quote.source,
-          context: quote.context
+        // Background image
+        var bgUrl = quote.background_url && quote.background_url.trim()
+          ? quote.background_url
+          : DEFAULT_HERO
+        setHeroBackground(bgUrl)
+
+        // Context
+        if (quote.context && quote.context.trim()) {
+          currentQuoteContext = {
+            text: quote.text,
+            source: quote.source,
+            context: quote.context
+          }
+          if (ctxBtn) {
+            ctxBtn.classList.remove('hidden')
+            ctxBtn.classList.add('flex')
+          }
         }
-        if (ctxBtn) ctxBtn.classList.remove('hidden')
       }
-    }
 
-    if (cardEl) {
-      cardEl.style.opacity = '1'
+      if (block) block.style.opacity = '1'
+
+    } catch (err) {
+      console.error('loadTodaysQuote failed:', err)
+      document.getElementById('quoteText').textContent = 'The Word is with you today.'
+      document.getElementById('quoteRef').textContent = 'GSTW'
+      document.getElementById('quoteBlock').style.opacity = '1'
+      setHeroBackground(DEFAULT_HERO)
     }
   }
 
   // ════════════════════════════════════════════
-  // LOAD USER PROFILE
+  // LOAD USER PROFILE (for suspension check + session data)
   // ════════════════════════════════════════════
   async function loadUserProfile(userId) {
-    var result = await supabaseClient
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
+    try {
+      var result = await supabaseClient
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
 
-    if (result.error || !result.data) return
+      if (result.error || !result.data) return
 
-    var profile = result.data
-    var streak = profile.current_streak || 0
+      var profile = result.data
 
-    // ── Streak reset check ──
-    var lastShareResult = await supabaseClient
-      .from('shares')
-      .select('shared_at')
-      .eq('user_id', userId)
-      .order('shared_at', { ascending: false })
-      .limit(1)
+      // Load payment link for suspension prompt
+      var payLinkResult = await supabaseClient
+        .from('site_settings')
+        .select('value')
+        .eq('id', 'stripe_payment_link')
+        .single()
 
-    if (lastShareResult.data && lastShareResult.data.length > 0) {
-      var lastShareDate = new Date(lastShareResult.data[0].shared_at)
-      var today = new Date()
-      var lastDay = new Date(lastShareDate.getFullYear(), lastShareDate.getMonth(), lastShareDate.getDate())
-      var todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-      var diffDays = Math.floor((todayDay - lastDay) / (1000 * 60 * 60 * 24))
-
-      if (diffDays > 1 && streak > 0) {
-        await supabaseClient.from('profiles').update({ current_streak: 0 }).eq('id', userId)
-        streak = 0
+      if (payLinkResult.data && payLinkResult.data.value) {
+        sessionStorage.setItem('gstw_payment_link', payLinkResult.data.value)
       }
-    } else if (streak > 0) {
-      await supabaseClient.from('profiles').update({ current_streak: 0 }).eq('id', userId)
-      streak = 0
-    }
 
-// Load payment link for subscription prompt
-var payLinkResult = await supabaseClient.from('site_settings').select('value').eq('id', 'stripe_payment_link').single()
-if (payLinkResult.data && payLinkResult.data.value) {
-  sessionStorage.setItem('gstw_payment_link', payLinkResult.data.value)
-}
-
-    // ── Display name: nickname → first name → Warrior ──
-    var displayName = profile.nickname || (profile.full_name ? profile.full_name.split(' ')[0] : 'Warrior')
-    var nameEl = document.getElementById('greetingName')
-    if (nameEl) nameEl.textContent = 'Hi ' + displayName
-
-    // ── Avatar ──
-    var initials = '?'
-    if (profile.full_name && profile.full_name.length >= 2) {
-      var parts = profile.full_name.trim().split(' ')
-      if (parts.length >= 2) {
-        initials = (parts[0][0] + parts[1][0]).toUpperCase()
-      } else {
-        initials = parts[0].substring(0, 2).toUpperCase()
+      // Store default platform for later use
+      if (profile.default_platform) {
+        sessionStorage.setItem('gstw_default_platform', profile.default_platform)
       }
-    }
-    var avatarEl = document.getElementById('avatarInitials')
-    if (avatarEl) avatarEl.textContent = initials
 
-    // ── Streak ──
-    var streakNum = document.getElementById('streakNumber')
-    if (streakNum) streakNum.textContent = streak
+      // Suspension check
+      if (profile.is_suspended) {
+        showSubscribePrompt()
+      }
 
-    var streakBadge = document.getElementById('streakBadge')
-    if (streakBadge && streak === 0) {
-      var fireEl = streakBadge.querySelector('.fire-glow')
-      if (fireEl) fireEl.style.animation = 'none'
-    }
-
-    // ── Store default platform for later use ──
-    if (profile.default_platform) {
-      sessionStorage.setItem('gstw_default_platform', profile.default_platform)
+    } catch (err) {
+      console.error('loadUserProfile failed:', err)
     }
   }
-// Check if suspended
-if (profile.is_suspended) {
-  // Show a subscribe prompt instead of normal home content
-  var existingPrompt = document.getElementById('subscribePrompt')
-  if (!existingPrompt) {
+
+  // ════════════════════════════════════════════
+  // SUBSCRIPTION PROMPT (for suspended users)
+  // ════════════════════════════════════════════
+  function showSubscribePrompt() {
+    if (document.getElementById('subscribePrompt')) return
+
+    var payLink = sessionStorage.getItem('gstw_payment_link') || 'profile.html'
     var prompt = document.createElement('div')
     prompt.id = 'subscribePrompt'
     prompt.className = 'fixed inset-0 bg-black/80 z-[200] flex items-center justify-center px-6'
     prompt.innerHTML =
       '<div class="bg-card-bg rounded-2xl p-6 max-w-sm w-full text-center">'
-        + '<div class="w-16 h-16 rounded-2xl bg-gold/15 flex items-center justify-center mx-auto mb-4">'
-          + '<span class="material-symbols-outlined text-gold text-[32px] filled">lock</span>'
-        + '</div>'
-        + '<h2 class="font-headline font-bold text-xl text-text-dark mb-2">Subscription Required</h2>'
-        + '<p class="text-sm text-text-muted mb-5 leading-relaxed">Your account is paused. Subscribe to continue spreading the Word.</p>'
-        + '<a href="' + (sessionStorage.getItem('gstw_payment_link') || 'profile.html') + '" '
-          + 'class="block w-full py-3.5 bg-gold text-dark font-headline font-bold rounded-2xl mb-3 active:scale-[0.98] transition-transform">'
-          + 'Subscribe — $3.99/month'
-        + '</a>'
-        + '<button onclick="document.getElementById(\'subscribePrompt\').remove()" '
-          + 'class="text-text-muted font-bold text-sm">Maybe Later</button>'
+      + '<div class="w-16 h-16 rounded-2xl bg-gold/15 flex items-center justify-center mx-auto mb-4">'
+      +   '<span class="material-symbols-outlined text-gold text-[32px] filled">lock</span>'
       + '</div>'
-
+      + '<h2 class="font-headline font-bold text-xl text-text-dark mb-2">Subscription Required</h2>'
+      + '<p class="text-sm text-text-muted mb-5 leading-relaxed">Your account is paused. Subscribe to continue spreading the Word.</p>'
+      + '<a href="' + payLink + '" '
+      +   'class="block w-full py-3.5 bg-gold text-dark font-headline font-bold rounded-2xl mb-3 active:scale-[0.98] transition-transform">'
+      +   'Subscribe — $3.99/month'
+      + '</a>'
+      + '<button onclick="document.getElementById(\'subscribePrompt\').remove()" '
+      +   'class="text-text-muted font-bold text-sm">Maybe Later</button>'
+      + '</div>'
     document.body.appendChild(prompt)
   }
-}
+
   // ════════════════════════════════════════════
-  // COMMUNITY STATS
+  // NOTIFICATION DOT (on profile icon)
   // ════════════════════════════════════════════
-  async function loadCommunityStats() {
-    var today = new Date()
-    var startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString()
+  async function updateHomeNotificationDot(userId) {
+    try {
+      var result = await supabaseClient
+        .from('notifications')
+        .select('id, type, target_user_id')
+        .order('created_at', { ascending: false })
+        .limit(50)
 
-    var todayResult = await supabaseClient
-      .from('shares')
-      .select('id', { count: 'exact', head: true })
-      .gte('shared_at', startOfDay)
+      var dot = document.getElementById('homeNotifDot')
+      if (!dot) return
 
-    var todayCount = todayResult.count || 0
+      if (result.error || !result.data) {
+        dot.classList.add('hidden')
+        return
+      }
 
-    var el = document.getElementById('communityToday')
-    if (el) {
-      el.innerHTML = '<span class="font-bold text-white/60">'
-        + todayCount + '</span> warrior' + (todayCount !== 1 ? 's' : '') + ' shared today'
+      var visible = result.data.filter(function(n) {
+        return n.type === 'broadcast' || n.target_user_id === userId
+      })
+
+      var readIds = JSON.parse(localStorage.getItem('gstw_read_notifs') || '[]')
+
+      var unread = visible.some(function(n) {
+        return readIds.indexOf(n.id) === -1
+      })
+
+      dot.classList.toggle('hidden', !unread)
+    } catch (err) {
+      console.error('updateHomeNotificationDot failed:', err)
     }
   }
 
@@ -547,11 +536,9 @@ if (profile.is_suspended) {
   // ════════════════════════════════════════════
   function openContext() {
     if (!currentQuoteContext) return
-
     document.getElementById('contextQuote').textContent = currentQuoteContext.text
-    document.getElementById('contextRef').textContent = currentQuoteContext.source.toUpperCase()
+    document.getElementById('contextRef').textContent = (currentQuoteContext.source || '').toUpperCase()
     document.getElementById('contextText').textContent = currentQuoteContext.context
-
     document.getElementById('contextModal').classList.remove('hidden')
     document.body.style.overflow = 'hidden'
   }
@@ -562,7 +549,7 @@ if (profile.is_suspended) {
   }
 
   // ════════════════════════════════════════════
-  // GO TO SHARE — clears all previous state
+  // GO TO SHARE
   // ════════════════════════════════════════════
   function goToShare() {
     sessionStorage.removeItem('gstw_selected_quote_id')
@@ -575,7 +562,6 @@ if (profile.is_suspended) {
     sessionStorage.removeItem('gstw_full_caption')
     sessionStorage.removeItem('gstw_overlay_x')
     sessionStorage.removeItem('gstw_overlay_y')
-
     window.location.href = 'editor.html'
   }
 
@@ -594,7 +580,7 @@ if (profile.is_suspended) {
     if (existing) existing.remove()
     var t = document.createElement('div')
     t.id = 'homeToast'
-    t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-white/10 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2 max-w-[90%] border border-white/10'
+    t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-black/60 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2 max-w-[90%] border border-white/15'
     t.innerHTML = '<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:\'FILL\' 1">check_circle</span> ' + msg
     document.body.appendChild(t)
     setTimeout(function() { if (t.parentNode) t.remove() }, 2500)
@@ -604,12 +590,14 @@ if (profile.is_suspended) {
   // INIT
   // ════════════════════════════════════════════
   window.addEventListener('DOMContentLoaded', async function() {
-    setGreeting()
+
+    // Start with default background immediately (before auth check)
+    setHeroBackground(DEFAULT_HERO)
 
     var user = await checkAuth()
     if (!user) return
 
-    // Check onboarding
+    // Onboarding check
     var profileCheck = await supabaseClient
       .from('profiles')
       .select('onboarding_complete')
@@ -621,40 +609,12 @@ if (profile.is_suspended) {
       return
     }
 
+    // Run all data loads in parallel
     await Promise.all([
       loadTodaysQuote(),
       loadUserProfile(user.id),
-      loadCommunityStats()
+      updateHomeNotificationDot(user.id)
     ])
-async function updateHomeNotificationDot(userId) {
-  var result = await supabaseClient
-    .from('notifications')
-    .select('id, type, target_user_id')
-    .order('created_at', { ascending: false })
-    .limit(50)
-
-  var dot = document.getElementById('homeNotifDot')
-  if (!dot) return
-
-  if (result.error || !result.data) {
-    dot.classList.add('hidden')
-    return
-  }
-
-  var visibleNotifications = result.data.filter(function(n) {
-    return n.type === 'broadcast' || n.target_user_id === userId
-  })
-
-  var readIds = JSON.parse(
-    localStorage.getItem('gstw_read_notifs') || '[]'
-  )
-
-  var unread = visibleNotifications.some(function(n) {
-    return readIds.indexOf(n.id) === -1
-  })
-
-  dot.classList.toggle('hidden', !unread)
-}
   })
 
 </script>
