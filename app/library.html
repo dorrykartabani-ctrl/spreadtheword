@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <title>Library — GSTW</title>
+  <title>GSTW</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -64,11 +64,8 @@
     .quote-card{transition:all 0.2s ease;cursor:pointer}
     .quote-card:active{transform:scale(0.98)}
 
-    .filter-tab{transition:all 0.15s ease}
-    .filter-tab.active{background:#1E4060;color:white}
-
-    .segment-btn{transition:all 0.15s ease}
-    .segment-btn.active{background:#1E4060;color:white}
+    .tab-btn{transition:all 0.15s ease}
+    .tab-btn.active{background:#1E4060;color:white}
 
     .pb-safe{padding-bottom:env(safe-area-inset-bottom,16px)}
 
@@ -93,6 +90,15 @@
     .header-scrolled{
       box-shadow:0 4px 12px rgba(0,0,0,0.04);
     }
+
+    /* Shared tab pulse animation */
+    @keyframes tabPulse{
+      0%,100%{transform:scale(1)}
+      50%{transform:scale(1.05)}
+    }
+    .tab-pulse{
+      animation:tabPulse 0.4s ease-out;
+    }
   </style>
 </head>
 
@@ -102,41 +108,36 @@
 <!-- HEADER -->
 <!-- ═══════════════════════════════════════════ -->
 <header id="pageHeader" class="fixed top-0 w-full z-50 bg-surface/95 backdrop-blur-xl border-b border-border-soft transition-shadow">
-  <div class="max-w-[430px] mx-auto px-5 pt-8 pb-3">
+  <div class="max-w-[430px] mx-auto px-5 pt-10 pb-3">
 
-    <!-- Logo -->
-    <div class="flex items-center justify-between mb-3">
-      <img src="/images/logo.png" alt="GSTW" class="w-8 h-8 object-contain">
+    <!-- Logo + Search (same row) -->
+    <div class="flex items-center gap-3 mb-3">
+      <img src="/images/logo.png" alt="GSTW" class="w-8 h-8 object-contain flex-shrink-0">
+      <div class="relative flex-1">
+        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-light text-[18px]">search</span>
+        <input id="searchInput" type="text"
+          placeholder="Search quotes..."
+          class="w-full bg-card-bg border border-border-soft rounded-xl py-2.5 pl-9 pr-3 text-sm font-body
+          text-text-dark focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-text-light">
+      </div>
     </div>
 
-    <!-- Title -->
-    <h1 class="font-headline font-extrabold text-2xl text-text-dark mb-3">Library</h1>
-
-    <!-- Search bar (always visible) -->
-    <div class="relative mb-3">
-      <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-text-light text-[18px]">search</span>
-      <input id="searchInput" type="text"
-        placeholder="Search the Word, references, topics..."
-        class="w-full bg-card-bg border border-border-soft rounded-2xl py-3 pl-10 pr-4 text-sm font-body
-        text-text-dark focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-text-light">
-    </div>
-
-    <!-- Segmented control: Unshared / My Shared -->
-    <div class="flex gap-1.5 bg-cream rounded-xl p-1 mb-3">
-      <button id="segUnshared" onclick="setSegment('unshared')"
-        class="segment-btn active flex-1 py-2 rounded-lg text-xs font-bold text-text-muted">
-        Unshared
+    <!-- Tabs: All / Shared -->
+    <div class="flex gap-1.5 mb-3">
+      <button id="tabAll" onclick="setTab('all')"
+        class="tab-btn active flex-1 py-2 rounded-xl text-xs font-bold bg-primary text-white">
+        All
       </button>
-      <button id="segShared" onclick="setSegment('shared')"
-        class="segment-btn flex-1 py-2 rounded-lg text-xs font-bold text-text-muted">
-        My Shared
+      <button id="tabShared" onclick="setTab('shared')"
+        class="tab-btn flex-1 py-2 rounded-xl text-xs font-bold bg-cream text-text-muted border border-border-soft">
+        Shared <span id="sharedCount" class="font-normal opacity-70"></span>
       </button>
     </div>
 
-    <!-- Category chips (dynamically loaded) -->
+    <!-- Category chips -->
     <div id="categoryChips" class="chip-scroll flex gap-2 overflow-x-auto pb-1" style="-ms-overflow-style:none;scrollbar-width:none">
       <button onclick="setCategory('all',this)"
-        class="filter-tab active flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold border border-border-soft">
+        class="tab-btn active flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold bg-primary text-white">
         All
       </button>
     </div>
@@ -146,7 +147,7 @@
 <!-- ═══════════════════════════════════════════ -->
 <!-- MAIN -->
 <!-- ═══════════════════════════════════════════ -->
-<main class="pt-[240px] px-5 space-y-4 max-w-[430px] mx-auto">
+<main class="pt-[180px] px-5 space-y-4 max-w-[430px] mx-auto">
 
   <!-- Quote Cards -->
   <div id="quoteList" class="space-y-4">
@@ -166,7 +167,7 @@
 
   <!-- Loading more indicator -->
   <div id="loadingMore" class="hidden text-center py-6">
-    <div class="inline-block w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+    <div class="inline-block w-5 h-5 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
   </div>
 
   <!-- End of list -->
@@ -179,7 +180,7 @@
 
 </main>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════ -->
 <!-- BOTTOM NAV -->
 <!-- ═══════════════════════════════════════════ -->
 <nav class="fixed bottom-0 left-0 w-full bg-card-bg/90 backdrop-blur-xl border-t border-border-soft z-50"
@@ -205,10 +206,11 @@
       <span class="material-symbols-outlined text-text-light text-[22px]">person</span>
       <span class="text-[10px] font-medium text-text-light">Profile</span>
     </a>
+    </div>
   </div>
 </nav>
 
-<!-- ═══════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════ -->
 <!-- SCRIPT -->
 <!-- ═══════════════════════════════════════════ -->
 <script>
@@ -226,8 +228,8 @@ var userSharedQuoteIds = []
 var loadedQuoteIds = new Set()
 
 var state = {
-  segment: 'unshared',   // 'unshared' | 'shared'
-  category: 'all',       // 'all' | category name
+  tab: 'all',          // 'all' | 'shared'
+  category: 'all',     // 'all' | category name
   search: '',
   offset: 0,
   pageSize: 20,
@@ -254,17 +256,38 @@ async function init() {
   sessionStorage.removeItem('gstw_selected_quote_source')
   sessionStorage.removeItem('gstw_selected_quote_category')
 
-  // Load user's shared quote IDs (used to filter unshared/shared segments)
+  // Load user's shared quote IDs
   await loadUserSharedQuotes()
 
   // Load categories dynamically
   await loadCategories()
+
+  // Check if user just shared something (from editor)
+  checkJustShared()
 
   // Initial quote load
   await resetAndLoad()
 
   // Setup listeners
   setupListeners()
+}
+
+// ════════════════════════════════════════════
+// CHECK IF USER JUST SHARED (from editor)
+// ════════════════════════════════════════════
+function checkJustShared() {
+  var justShared = sessionStorage.getItem('gstw_just_shared')
+  if (justShared === 'true') {
+    sessionStorage.removeItem('gstw_just_shared')
+    // Switch to Shared tab and pulse it
+    setTimeout(function() {
+      setTab('shared')
+      var tab = document.getElementById('tabShared')
+      tab.classList.add('tab-pulse')
+      setTimeout(function() { tab.classList.remove('tab-pulse') }, 400)
+      showToast('Quote added to your Shared collection')
+    }, 500)
+  }
 }
 
 // ════════════════════════════════════════════
@@ -278,7 +301,14 @@ async function loadUserSharedQuotes() {
 
   if (result.data) {
     userSharedQuoteIds = result.data.map(function(s) { return s.quote_id })
+    updateSharedCount()
   }
+}
+
+function updateSharedCount() {
+  var count = userSharedQuoteIds.length
+  var el = document.getElementById('sharedCount')
+  if (el) el.textContent = count > 0 ? '(' + count + ')' : ''
 }
 
 // ════════════════════════════════════════════
@@ -306,7 +336,7 @@ async function loadCategories() {
   var container = document.getElementById('categoryChips')
   categories.forEach(function(cat) {
     var btn = document.createElement('button')
-    btn.className = 'filter-tab flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold border border-border-soft text-text-muted capitalize'
+    btn.className = 'tab-btn flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold bg-cream text-text-muted border border-border-soft capitalize'
     btn.textContent = cat
     btn.onclick = function() { setCategory(cat, btn) }
     container.appendChild(btn)
@@ -329,7 +359,7 @@ async function resetAndLoad() {
   await loadPage(true)
 }
 
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 // LOAD PAGE (paginated fetch)
 // ════════════════════════════════════════════
 async function loadPage(isFirstPage) {
@@ -345,12 +375,9 @@ async function loadPage(isFirstPage) {
     .select('*')
     .eq('status', 'live')
 
-  // Segment filter (shared / unshared)
-  if (state.segment === 'unshared' && userSharedQuoteIds.length > 0) {
-    query = query.not('id', 'in', '(' + userSharedQuoteIds.map(function(id) { return '"' + id + '"' }).join(',') + ')')
-  } else if (state.segment === 'shared') {
+  // Tab filter (all / shared)
+  if (state.tab === 'shared') {
     if (userSharedQuoteIds.length === 0) {
-      // No shared quotes — render empty
       renderPage([], isFirstPage)
       state.reachedEnd = true
       state.loading = false
@@ -365,7 +392,7 @@ async function loadPage(isFirstPage) {
     query = query.eq('category', state.category)
   }
 
-  // Search filter (text, source, category, tags)
+  // Search filter (text, source, category)
   if (state.search) {
     var s = state.search.replace(/'/g, "''")
     query = query.or(
@@ -373,8 +400,6 @@ async function loadPage(isFirstPage) {
       'source.ilike.%' + s + '%,' +
       'category.ilike.%' + s + '%'
     )
-    // Note: tag search requires a separate query approach with array overlap.
-    // For MVP we search text/source/category. Tag search enhancement below.
   }
 
   // Ordering + pagination
@@ -394,7 +419,7 @@ async function loadPage(isFirstPage) {
 
   var quotes = result.data || []
 
-  // Also do a tag search if user is searching (separate query, then merge)
+  // Also search tags if user is searching
   if (state.search && isFirstPage) {
     var tagResult = await supabaseClient
       .from('quotes')
@@ -437,7 +462,7 @@ function renderPage(quotes, isFirstPage) {
       document.getElementById('emptyState').classList.remove('hidden')
       var msg = state.search
         ? 'No quotes match "' + state.search + '"'
-        : state.segment === 'shared'
+        : state.tab === 'shared'
           ? "You haven't shared any quotes yet"
           : 'No quotes match this filter'
       document.getElementById('emptyMsg').textContent = msg
@@ -453,17 +478,16 @@ function renderPage(quotes, isFirstPage) {
 
     var isInspiration = quote.source && !quote.source.includes(':')
     var dateStr = quote.published_at
-      ? new Date(quote.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      ? new Date(quote.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       : ''
     var category   = quote.category ? quote.category.toLowerCase() : ''
     var shareCount = quote.share_count || 0
-    var isShared   = userSharedQuoteIds.indexOf(quote.id) !== -1
 
     var card = document.createElement('article')
     card.className = 'quote-card bg-card-bg rounded-2xl p-5 shadow-card border border-border-soft'
       + (isInspiration ? ' reflection-plate' : '')
 
-    var sharedBadge = isShared
+    var sharedBadge = state.tab === 'shared'
       ? '<span class="flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">'
         + '<span class="material-symbols-outlined text-[12px] filled">check_circle</span>Shared</span>'
       : ''
@@ -481,7 +505,7 @@ function renderPage(quotes, isFirstPage) {
       + '<cite class="block not-italic font-body font-bold text-sm '
         + (isInspiration ? 'text-gold-dim' : 'text-primary')
         + ' mb-3 tracking-wider">\u2014 ' + escapeHtml((quote.source || '').toUpperCase()) + '</cite>'
-      + (category
+      + (category && state.tab !== 'shared'
         ? '<span class="inline-block bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-bold capitalize">' + escapeHtml(category) + '</span>'
         : '')
 
@@ -493,7 +517,7 @@ function renderPage(quotes, isFirstPage) {
   })
 }
 
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 // HELPERS
 // ════════════════════════════════════════════
 function escapeHtml(str) {
@@ -528,23 +552,42 @@ function selectQuoteAndShare(id, text, source, category) {
 }
 
 // ════════════════════════════════════════════
-// FILTER HANDLERS
+// TAB HANDLERS
 // ════════════════════════════════════════════
-function setSegment(segment) {
-  if (state.segment === segment) return
-  state.segment = segment
-  document.getElementById('segUnshared').classList.toggle('active', segment === 'unshared')
-  document.getElementById('segShared').classList.toggle('active', segment === 'shared')
+function setTab(tab) {
+  if (state.tab === tab) return
+  state.tab = tab
+  
+  // Update tab styles
+  var allBtn = document.getElementById('tabAll')
+  var sharedBtn = document.getElementById('tabShared')
+  
+  if (tab === 'all') {
+    allBtn.classList.add('active', 'bg-primary', 'text-white')
+    allBtn.classList.remove('bg-cream', 'text-text-muted', 'border', 'border-border-soft')
+    sharedBtn.classList.remove('active', 'bg-primary', 'text-white')
+    sharedBtn.classList.add('bg-cream', 'text-text-muted', 'border', 'border-border-soft')
+  } else {
+    sharedBtn.classList.add('active', 'bg-primary', 'text-white')
+    sharedBtn.classList.remove('bg-cream', 'text-text-muted', 'border', 'border-border-soft')
+    allBtn.classList.remove('active', 'bg-primary', 'text-white')
+    allBtn.classList.add('bg-cream', 'text-text-muted', 'border', 'border-border-soft')
+  }
+  
   resetAndLoad()
 }
 
 function setCategory(cat, btn) {
   if (state.category === cat) return
   state.category = cat
-  document.querySelectorAll('.filter-tab').forEach(function(t) {
-    t.classList.remove('active')
+  
+  document.querySelectorAll('#categoryChips .tab-btn').forEach(function(t) {
+    t.classList.remove('active', 'bg-primary', 'text-white')
+    t.classList.add('bg-cream', 'text-text-muted', 'border', 'border-border-soft')
   })
-  btn.classList.add('active')
+  btn.classList.remove('bg-cream', 'text-text-muted', 'border', 'border-border-soft')
+  btn.classList.add('active', 'bg-primary', 'text-white')
+  
   resetAndLoad()
 }
 
@@ -574,6 +617,20 @@ function setupListeners() {
     }
   }, { rootMargin: '400px' })
   observer.observe(document.getElementById('scrollSentinel'))
+}
+
+// ════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════
+function showToast(msg) {
+  var existing = document.getElementById('libToast')
+  if (existing) existing.remove()
+  var t = document.createElement('div')
+  t.id = 'libToast'
+  t.className = 'fixed top-24 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2'
+  t.innerHTML = '<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:\'FILL\' 1">check_circle</span> ' + msg
+  document.body.appendChild(t)
+  setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
 }
 
 init()
