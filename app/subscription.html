@@ -4,14 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <title>Manage Subscription — GSTW</title>
+  <title>Subscription — Go Spread The Word</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2 family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
 
   <script>
@@ -19,22 +18,37 @@
       theme: {
         extend: {
           colors: {
-            'primary':'#1E4060','primary-dim':'#152E45','primary-light':'#2B5780',
-            'action':'#E25B4D','action-dim':'#C84A3E',
-            'gold':'#D4A24C','gold-dim':'#B88A3D',
-            'cream':'#F7F4ED','dark':'#16202A',
-            'text-dark':'#1A1A1A','text-muted':'#5C6B7A','text-light':'#8E9AA8',
-            'border-soft':'rgba(92, 107, 122, 0.15)',
-            'card-bg':'#FFFFFF','surface':'#F0EDE6',
+            'surface':'#fbf9f4','surface-dim':'#dadad2',
+            'surface-cl':'#ffffff','surface-clow':'#f5f4ed',
+            'surface-c':'#efeee7','surface-chigh':'#e9e8e1',
+            'surface-chighest':'#e3e3db',
+            'on-surface':'#31332e','on-surface-variant':'#5e6059',
+            'inverse-surface':'#0e0e0c','inverse-on-surface':'#9e9d99',
+            'outline':'#7a7b75','outline-variant':'#b2b2ab',
+            'primary':'#3d6285','on-primary':'#f7f9ff',
+            'primary-container':'#b0d5fe','on-primary-container':'#234a6c',
+            'inverse-primary':'#b0d5fe',
+            'secondary':'#41637c','on-secondary':'#f6f9ff',
+            'secondary-container':'#cae6ff','on-secondary-container':'#33556e',
+            'tertiary':'#ad332b','on-tertiary':'#fff7f6',
+            'tertiary-container':'#fe6d60',
+            'error':'#a83836','on-error':'#fff7f6',
+            'primary-dim':'#305678','secondary-dim':'#355670',
+            'tertiary-dim':'#9d2621',
+            'background':'#fbf9f4','on-background':'#31332e',
           },
           fontFamily:{
             'headline':['Plus Jakarta Sans','sans-serif'],
             'body':['Manrope','sans-serif'],
           },
           boxShadow:{
-            'natural':'0 4px 16px rgba(26,32,42,0.06)',
-            'lifted':'0 8px 32px rgba(26,32,42,0.10)',
-            'tactical':'0 4px 20px rgba(30,64,96,0.25)',
+            'ambient':'0 20px 40px rgba(49,51,46,0.05)',
+            'ambient-sm':'0 8px 24px rgba(49,51,46,0.04)',
+            'float':'0 20px 40px rgba(49,51,46,0.08)',
+          },
+          borderRadius:{
+            'sm':'0.25rem','DEFAULT':'0.5rem','md':'0.75rem',
+            'lg':'1rem','xl':'1.5rem','2xl':'1.5rem','full':'9999px',
           },
         },
       },
@@ -42,441 +56,587 @@
   </script>
 
   <style>
-    body{
-      font-family:'Manrope',sans-serif;
-      background-color:#F0EDE6;
-      -webkit-tap-highlight-color:transparent;
-      min-height:100dvh;
-    }
-    .font-headline{font-family:'Plus Jakarta Sans',sans-serif}
-    .material-symbols-outlined{
-      font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
-      vertical-align:middle;
-    }
+    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;-webkit-tap-highlight-color:transparent;min-height:100dvh;letter-spacing:-0.005em}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
     .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
-    .tactical-gradient{background:linear-gradient(145deg,#152E45,#1E4060)}
-
     ::-webkit-scrollbar{display:none}
     body{-ms-overflow-style:none;scrollbar-width:none}
 
-    .pb-safe{padding-bottom:env(safe-area-inset-bottom,16px)}
-    .pt-safe{padding-top:env(safe-area-inset-top,0px)}
+    .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
+    .glass-header{background:rgba(251,249,244,0.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);transition:box-shadow 0.2s ease}
+    .header-scrolled{box-shadow:0 8px 24px rgba(49,51,46,0.04)}
 
-    .app-container{
-      max-width:430px;
-      margin:0 auto;
-      min-height:100dvh;
-      display:flex;
-      flex-direction:column;
-    }
+    /* Hero card */
+    .hero-card{background:linear-gradient(135deg,#3d6285,#6b9bc3);border-radius:20px;color:#f7f9ff;overflow:hidden;position:relative;padding:28px}
+    .hero-card::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;background:radial-gradient(circle,rgba(176,213,254,0.15) 0%,transparent 70%);border-radius:50%}
 
-    .shimmer {
-      background: linear-gradient(90deg, #F0EDE6 25%, #E6E2D8 50%, #F0EDE6 75%);
-      background-size: 200% 100%;
-      animation: loading-shimmer 1.5s infinite;
-    }
-    @keyframes loading-shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
+    /* Tier cards */
+    .tier-card{border-radius:16px;padding:20px;position:relative;transition:all 0.2s ease}
+    .tier-card.current{background:#ffffff;box-shadow:0 0 0 2px #3d6285}
+    .tier-card.available{background:#f5f4ed}
+    .tier-card.locked{background:#f5f4ed;opacity:0.7}
+
+    /* Allocation bar segment */
+    .alloc-segment{height:100%;transition:width 0.8s cubic-bezier(0.22,1,0.36,1);first:rounded-l-full;last:rounded-r-full}
+
+    /* Skeleton */
+    .skeleton{background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:12px}
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+    /* Fade */
+    .fade-up{opacity:0;transform:translateY(16px);transition:opacity 0.5s ease,transform 0.5s ease}
+    .fade-up.visible{opacity:1;transform:translateY(0)}
+
+    /* Feature row check */
+    .feature-yes{color:#3d6285}
+    .feature-no{color:#b2b2ab}
+    .feature-soon{color:#41637c;font-size:9px;font-weight:700;background:#cae6ff;padding:2px 6px;border-radius:99px}
   </style>
 </head>
 
-<body class="text-text-dark">
+<body>
 
-<div class="app-container">
+<!-- HEADER -->
+<header id="pageHeader" class="fixed top-0 w-full z-50 glass-header">
+  <div class="max-w-[430px] mx-auto px-5 pt-10 pb-3 flex items-center justify-between">
+    <button onclick="goBack()" class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-clow active:scale-90 transition-all rounded-full">
+      <span class="material-symbols-outlined text-[22px]">arrow_back</span>
+    </button>
+    <h1 class="font-headline font-semibold text-on-surface" style="font-size:18px;line-height:28px;">Subscription</h1>
+    <div class="w-10"></div>
+  </div>
+</header>
 
-  <!-- ═══════════════════════════════════════════ -->
-  <!-- TOP APP BAR -->
-  <!-- ═══════════════════════════════════════════ -->
-  <header class="fixed top-0 left-0 right-0 z-50 bg-surface/85 backdrop-blur-xl border-b border-border-soft pt-safe">
-    <div class="flex justify-between items-center px-6 py-3 max-w-[430px] mx-auto">
-      <button onclick="goBack()"
-        class="w-10 h-10 flex items-center justify-center text-text-muted active:scale-90 transition-all">
-        <span class="material-symbols-outlined text-[22px]">arrow_back</span>
-      </button>
-      <span class="font-headline font-bold text-primary text-base tracking-tight">Warrior Plan</span>
-      <div class="w-10"></div>
-    </div>
-  </header>
+<!-- MAIN -->
+<main class="pt-28 pb-16 px-5 max-w-[430px] mx-auto space-y-5">
 
-  <!-- ═══════════════════════════════════════════ -->
-  <!-- MAIN CONTENT -->
-  <!-- ═══════════════════════════════════════════ -->
-  <main class="flex-1 px-5 pt-20 pb-28 flex flex-col gap-5">
-
-    <!-- ─────────────────────────────────────── -->
-    <!-- SUBSCRIPTION SUMMARY CARD -->
-    <!-- ─────────────────────────────────────── -->
-    <section id="subHeroCard" class="tactical-gradient p-6 rounded-2xl shadow-tactical text-white relative overflow-hidden">
-      <div class="relative z-10 space-y-4">
+  <!-- PLAN HERO -->
+  <section class="hero-card fade-up">
+    <div class="relative z-10">
+      <div class="flex items-start justify-between mb-5">
         <div>
-          <span class="text-[10px] uppercase tracking-widest text-white/60 font-bold">Current Deployment</span>
-          <h2 class="font-headline font-extrabold text-2xl text-white mt-1">Warrior Plan</h2>
+          <p class="font-body text-on-primary/60 mb-1" style="font-size:11px;font-weight:500;letter-spacing:0.1em;">CURRENT PLAN</p>
+          <h2 id="planTitle" class="font-headline font-bold text-on-primary" style="font-size:24px;line-height:32px;">Loading...</h2>
         </div>
-
-        <div class="flex justify-between items-end">
-          <div>
-            <span class="text-[10px] uppercase tracking-widest text-white/50 font-bold block">Contribution</span>
-            <div class="flex items-baseline gap-1 mt-1">
-              <span class="text-3xl font-headline font-extrabold text-gold">$3.99</span>
-              <span class="text-xs text-white/60 font-body">/ month</span>
-            </div>
-          </div>
-          <div class="text-right">
-            <span id="subStatusBadge" class="inline-flex items-center gap-1 bg-white/10 text-gold text-xs font-bold px-3 py-1.5 rounded-full">
-              <span class="material-symbols-outlined text-[14px] filled">check_circle</span>
-              Active
-            </span>
-          </div>
-        </div>
-
-        <div class="h-px bg-white/15"></div>
-
-        <p id="subNextRenewal" class="text-xs text-white/70 italic font-body">
-          Loading billing schedule...
-        </p>
+        <span id="planBadge" class="inline-flex items-center gap-1.5 bg-on-primary/10 text-primary-container px-3 py-1.5 rounded-full font-body font-bold" style="font-size:11px;">
+          <span class="material-symbols-outlined text-[14px] filled">check_circle</span>
+          Active
+        </span>
       </div>
 
-<div class="flex gap-3">
-  <button onclick="openBillingPortal()"
-    class="flex-1 px-4 py-2.5 rounded-xl border-2 border-primary text-primary font-bold text-sm active:scale-95 transition-transform">
-    Manage Billing
-  </button>
-  <button onclick="openPaymentLink()"
-    class="flex-1 px-4 py-2.5 rounded-xl border-2 border-border-soft text-text-muted font-bold text-sm active:scale-95 transition-all">
-    Update Payment
-  </button>
-</div>
-
-      <span class="material-symbols-outlined filled absolute -bottom-6 -right-6 text-[130px] opacity-[0.05] select-none">
-        shield
-      </span>
-    </section>
-
-    <!-- ─────────────────────────────────────── -->
-    <!-- MISSION TRANSPARENCY & DETAILS -->
-    <!-- ─────────────────────────────────────── -->
-    <section class="bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft space-y-4">
-      <h3 class="font-headline font-bold text-sm text-text-dark flex items-center gap-2">
-        <span class="material-symbols-outlined text-primary text-[18px]">verified_user</span>
-        What Your Plan Funds
-      </h3>
-
-      <div class="space-y-3">
-        <div class="flex items-start gap-3">
-          <span class="text-primary font-bold">✓</span>
-          <p class="text-xs text-text-muted leading-snug">
-            <span class="font-bold text-text-dark">42% Direct Mission Funding</span> — Plants real scripture, delivers clean water wells, and supports ground evangelism.
-          </p>
-        </div>
-        <div class="flex items-start gap-3">
-          <span class="text-primary font-bold">✓</span>
-          <p class="text-xs text-text-muted leading-snug">
-            <span class="font-bold text-text-dark">30% Platform Support</span> — Powers the global PWA delivery network with zero app store commissions.
-          </p>
-        </div>
-        <div class="flex items-start gap-3">
-          <span class="text-primary font-bold">✓</span>
-          <p class="text-xs text-text-muted leading-snug">
-            <span class="font-bold text-text-dark">28% Growth Reserve</span> — Scaled and secured specifically to claim more ground for the Great Commission.
-          </p>
-        </div>
+      <div class="flex items-baseline gap-1 mb-5">
+        <span id="planPrice" class="font-headline font-bold text-on-primary" style="font-size:40px;line-height:1;letter-spacing:-0.02em;">—</span>
+        <span id="planPricePer" class="font-body text-on-primary/60" style="font-size:14px;">/month</span>
       </div>
-    </section>
 
-    <!-- ─────────────────────────────────────── -->
-    <!-- BILLING HISTORY -->
-    <!-- ─────────────────────────────────────── -->
-    <section class="bg-card-bg p-5 rounded-2xl shadow-card border border-border-soft space-y-4">
-      <h3 class="font-headline font-bold text-sm text-text-dark flex items-center gap-2">
-        <span class="material-symbols-outlined text-primary text-[18px]">receipt_long</span>
-        Billing History
-      </h3>
+      <p id="planRenewal" class="font-body text-on-primary/70 mb-5" style="font-size:13px;">Loading billing schedule...</p>
 
-      <div id="billingHistoryList" class="space-y-3">
-        <!-- Shimmer state -->
-        <div class="shimmer h-12 w-full rounded-xl"></div>
-        <div class="shimmer h-12 w-full rounded-xl"></div>
-      </div>
-    </section>
-
-    <!-- ─────────────────────────────────────── -->
-    <!-- DANGER ZONE -->
-    <!-- ─────────────────────────────────────── -->
-    <section class="space-y-1.5 px-1">
-      <button onclick="confirmCancel()"
-        class="w-full py-4 bg-white hover:bg-action/5 border border-border-soft text-action font-headline font-bold text-sm rounded-xl active:scale-[0.98] transition-transform">
-        Cancel Deployment Support
-      </button>
-      <p class="text-center text-[10px] text-text-light font-body">
-        Deactivating standing order returns your warrior profile to Recruit
-      </p>
-    </section>
-
-  </main>
-
-  <!-- ═══════════════════════════════════════════ -->
-  <!-- CONFIRM CANCEL MODAL -->
-  <!-- ═══════════════════════════════════════════ -->
-  <div id="cancelModal"
-    class="hidden fixed inset-0 bg-dark/60 backdrop-blur-sm z-[100] flex items-center justify-center px-5">
-    <div class="bg-card-bg rounded-2xl p-7 w-full max-w-sm shadow-lifted text-center">
-      <div class="w-14 h-14 rounded-full bg-action/10 flex items-center justify-center mx-auto mb-4">
-        <span class="material-symbols-outlined text-action text-[28px]">heart_broken</span>
-      </div>
-      <h3 class="font-headline font-bold text-xl text-text-dark mb-2">Are you sure?</h3>
-      <p class="text-sm text-text-muted font-body mb-6 leading-relaxed">
-        Cancelling standing orders directly impacts your currently selected ground mission and stops your daily briefing deployment.
-      </p>
-      <div class="flex flex-col gap-2.5">
-        <button onclick="contactSupportCancel()"
-          class="w-full py-3.5 bg-primary text-white font-headline font-bold rounded-xl text-sm active:scale-[0.98] transition-transform shadow-tactical">
-          Contact Support to Cancel
+      <div class="flex gap-3">
+        <button onclick="openBillingPortal()"
+          class="flex-1 py-3 bg-on-primary/10 hover:bg-on-primary/20 text-on-primary font-headline font-semibold rounded-xl active:scale-[0.98] transition-all"
+          style="font-size:13px;">
+          Manage Billing
         </button>
-        <button onclick="closeModal()"
-          class="w-full py-3 border-2 border-border-soft text-text-muted font-bold rounded-xl text-sm hover:bg-cream">
-          Keep My Plan Active
+        <button onclick="openPaymentLink()"
+          class="flex-1 py-3 bg-on-primary/10 hover:bg-on-primary/20 text-on-primary font-headline font-semibold rounded-xl active:scale-[0.98] transition-all"
+          style="font-size:13px;">
+          Update Payment
         </button>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- TOAST -->
-  <div id="toast" class="hidden fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2">
-    <span class="material-symbols-outlined text-gold text-[14px] filled">check_circle</span>
-    <span id="toastMsg">Done</span>
-  </div>
+  <!-- TIER COMPARISON -->
+  <section class="fade-up">
+    <p class="font-body text-on-surface-variant mb-3" style="font-size:12px;font-weight:500;">Available Plans</p>
+    <div class="space-y-3" id="tierCards"></div>
+  </section>
 
+  <!-- WHAT YOUR PLAN FUNDS -->
+  <section class="bg-surface-cl rounded-xl p-5 fade-up">
+    <div class="flex items-center gap-2 mb-4">
+      <span class="material-symbols-outlined text-primary text-[20px] filled">verified_user</span>
+      <p class="font-headline font-semibold text-on-surface" style="font-size:15px;">What Your Plan Funds</p>
+    </div>
+
+    <!-- Stacked bar -->
+    <div id="allocBar" class="h-3 w-full flex rounded-full overflow-hidden mb-4 bg-surface-chigh"></div>
+
+    <!-- Segments -->
+    <div id="allocLegend" class="space-y-3 mb-4"></div>
+
+    <!-- Admin note -->
+    <div class="bg-surface-clow rounded-xl p-3">
+      <p id="allocNote" class="font-body text-on-surface-variant text-center italic" style="font-size:12px;">Loading...</p>
+    </div>
+  </section>
+
+  <!-- BILLING HISTORY -->
+  <section class="bg-surface-cl rounded-xl p-5 fade-up">
+    <div class="flex items-center gap-2 mb-4">
+      <span class="material-symbols-outlined text-primary text-[20px]">receipt_long</span>
+      <p class="font-headline font-semibold text-on-surface" style="font-size:15px;">Billing History</p>
+    </div>
+    <div id="billingList" class="space-y-2">
+      <div class="skeleton h-14 w-full"></div>
+      <div class="skeleton h-14 w-full"></div>
+      <div class="skeleton h-14 w-full"></div>
+    </div>
+  </section>
+
+  <!-- CANCEL -->
+  <section class="fade-up pt-2 pb-8">
+    <button onclick="confirmCancel()"
+      class="w-full py-4 bg-surface-clow rounded-xl text-tertiary font-body font-semibold active:scale-[0.98] transition-transform active:bg-surface-chigh"
+      style="font-size:14px;">
+      Cancel Subscription
+    </button>
+    <p class="text-center font-body text-outline mt-2" style="font-size:11px;">
+      Cancelling returns your account to the Free plan
+    </p>
+  </section>
+
+</main>
+
+<!-- CANCEL CONFIRM MODAL -->
+<div id="cancelModal" class="hidden fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm z-[100] flex items-center justify-center px-5" onclick="if(event.target===this)closeModal()">
+  <div class="bg-surface-cl rounded-2xl p-7 w-full max-w-sm shadow-float text-center">
+    <div class="w-14 h-14 rounded-full bg-tertiary-container/15 flex items-center justify-center mx-auto mb-4">
+      <span class="material-symbols-outlined text-tertiary text-[28px]">heart_broken</span>
+    </div>
+    <h3 class="font-headline font-bold text-on-surface mb-2" style="font-size:20px;">Are you sure?</h3>
+    <p class="font-body text-on-surface-variant mb-6 leading-relaxed" style="font-size:14px;">
+      Cancelling your plan stops your mission contributions and limits access to the Free plan.
+    </p>
+    <div class="flex flex-col gap-2.5">
+      <button onclick="contactSupportCancel()"
+        class="w-full py-3.5 signature-gradient text-on-primary font-headline font-bold rounded-xl active:scale-[0.98] transition-transform"
+        style="font-size:14px;">
+        Contact Support to Cancel
+      </button>
+      <button onclick="closeModal()"
+        class="w-full py-3 bg-surface-clow text-on-surface-variant font-body font-semibold rounded-xl active:scale-95 transition-transform"
+        style="font-size:14px;">
+        Keep My Plan Active
+      </button>
+    </div>
+  </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- JAVASCRIPT -->
-<!-- ═══════════════════════════════════════════ -->
 <script>
-  // ════════════════════════════════════════════
-  // SUPABASE
-  // ════════════════════════════════════════════
-  var supabaseClient = supabase.createClient(
-    'https://nhymadutuhpjgkiurify.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
-  )
+var supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+)
 
-  var currentUser = null
-  var userSubscription = null
-  var stripePortalLink = ''
-  var stripePaymentLink = ''
+var currentUser = null
+var userProfile = null
+var userSubscription = null
+var stripePortalLink = ''
+var stripePaymentLink = ''
+var allocationConfig = null
+
+var tiers = [
+  {
+    id: 'free',
+    name: 'Free',
+    price: 0,
+    pricePer: null,
+    description: 'Begin your journey',
+    features: [
+      {label:'Daily quote',available:true},
+      {label:'Donate to missions',available:true},
+      {label:'View global impact',available:true},
+      {label:'Quote library & sharing',available:false},
+      {label:'Image editor',available:false},
+      {label:'Mission priorities',available:false},
+      {label:'Social media integration',available:false,soon:false}
+    ]
+  },
+  {
+    id: 'warrior',
+    name: 'Warrior',
+    price: 3.99,
+    pricePer: '/month',
+    description: 'Full mission access',
+    features: [
+      {label:'Daily quote',available:true},
+      {label:'Donate to missions',available:true},
+      {label:'View global impact',available:true},
+      {label:'Quote library & sharing',available:true},
+      {label:'Image editor',available:true},
+      {label:'Mission priorities',available:true},
+      {label:'Social media integration',available:false,soon:true}
+    ]
+  },
+  {
+    id: 'commander',
+    name: 'Commander',
+    price: 5.99,
+    pricePer: '/month',
+    description: 'Advanced tools — coming soon',
+    features: [
+      {label:'Everything in Warrior',available:true},
+      {label:'Social media integration',available:true},
+      {label:'Direct page posting',available:true},
+      {label:'Analytics dashboard',available:true},
+      {label:'Priority support',available:true}
+    ],
+    comingSoon: true
+  }
+]
+
+var segmentColors = {
+  primary:   { bar:'#3d6285', dot:'bg-primary',   text:'text-primary' },
+  secondary: { bar:'#6b9bc3', dot:'bg-secondary',  text:'text-secondary' },
+  outline:   { bar:'#b2b2ab', dot:'bg-outline',    text:'text-outline' }
+}
+
+var observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible') })
+}, {threshold:0.1})
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+async function init() {
+  var s = await supabaseClient.auth.getSession()
+  if (!s.data.session) { window.location.href = 'login.html'; return }
+  currentUser = s.data.session.user
+
+  await Promise.all([
+    loadProfile(),
+    loadSubscription(),
+    loadStripeLinks(),
+    loadAllocationConfig()
+  ])
+
+  renderHero()
+  renderTiers()
+  renderAllocation()
+  await renderBillingHistory()
+
+  document.querySelectorAll('.fade-up').forEach(function(el) { observer.observe(el) })
+  setupListeners()
+}
+
+// ════════════════════════════════════════════
+// LOAD DATA
+// ════════════════════════════════════════════
+async function loadProfile() {
+  var r = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single()
+  userProfile = r.data || {}
+}
+
+async function loadSubscription() {
+  var r = await supabaseClient.from('subscriptions').select('*').eq('user_id', currentUser.id).single()
+  userSubscription = r.data || null
+}
 
 async function loadStripeLinks() {
-  var result = await supabaseClient
-    .from('site_settings')
-    .select('id, value')
-    .in('id', ['stripe_portal_link', 'stripe_payment_link'])
-
-  if (result.data) {
-    result.data.forEach(function(s) {
+  var r = await supabaseClient.from('site_settings').select('id,value').in('id',['stripe_portal_link','stripe_payment_link'])
+  if (r.data) {
+    r.data.forEach(function(s) {
       if (s.id === 'stripe_portal_link') stripePortalLink = s.value || ''
       if (s.id === 'stripe_payment_link') stripePaymentLink = s.value || ''
     })
   }
 }
 
-function openBillingPortal() {
-  if (stripePortalLink) {
-    window.open(stripePortalLink, '_blank')
-  } else {
-    showToast('Billing portal not available. Contact support.')
+async function loadAllocationConfig() {
+  var r = await supabaseClient.from('site_settings').select('value').eq('id','subscription_allocation').single()
+  if (r.data && r.data.value) {
+    try {
+      allocationConfig = typeof r.data.value === 'string' ? JSON.parse(r.data.value) : r.data.value
+    } catch(e) { allocationConfig = null }
   }
 }
 
-function openPaymentLink() {
-  if (stripePaymentLink) {
-    window.open(stripePaymentLink, '_blank')
+// ════════════════════════════════════════════
+// HERO CARD
+// ════════════════════════════════════════════
+function renderHero() {
+  var tier = (userProfile && userProfile.subscription_tier) || 'free'
+  var status = (userProfile && userProfile.subscription_status) || 'inactive'
+  var tierDef = tiers.find(function(t) { return t.id === tier }) || tiers[0]
+
+  document.getElementById('planTitle').textContent = tierDef.name + ' Plan'
+
+  if (tier === 'free') {
+    document.getElementById('planPrice').textContent = 'Free'
+    document.getElementById('planPricePer').textContent = ''
   } else {
-    showToast('Payment link not available. Contact support.')
+    document.getElementById('planPrice').textContent = '$' + tierDef.price
+    document.getElementById('planPricePer').textContent = '/month'
+  }
+
+  var badge = document.getElementById('planBadge')
+  if (status === 'active') {
+    badge.className = 'inline-flex items-center gap-1.5 bg-on-primary/10 text-primary-container px-3 py-1.5 rounded-full font-body font-bold'
+    badge.style.fontSize = '11px'
+    badge.innerHTML = '<span class="material-symbols-outlined text-[14px] filled">check_circle</span>Active'
+  } else if (status === 'suspended') {
+    badge.className = 'inline-flex items-center gap-1.5 bg-tertiary/20 text-on-tertiary px-3 py-1.5 rounded-full font-body font-bold'
+    badge.style.fontSize = '11px'
+    badge.innerHTML = '<span class="material-symbols-outlined text-[14px]">warning</span>Suspended'
+  } else {
+    badge.className = 'inline-flex items-center gap-1.5 bg-on-primary/10 text-primary-container px-3 py-1.5 rounded-full font-body font-bold'
+    badge.style.fontSize = '11px'
+    badge.innerHTML = '<span class="material-symbols-outlined text-[14px]">info</span>Free'
+  }
+
+  var renewal = document.getElementById('planRenewal')
+  if (userSubscription && userSubscription.current_period_end) {
+    var d = new Date(userSubscription.current_period_end)
+    var mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+    renewal.textContent = 'Renews ' + mn[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear()
+  } else if (tier === 'free') {
+    renewal.textContent = 'Upgrade anytime to unlock full access'
+  } else {
+    renewal.textContent = 'Billing schedule loading...'
   }
 }
 
-  // ════════════════════════════════════════════
-  // AUTH GUARD & LOAD DATA
-  // ════════════════════════════════════════════
-  async function init() {
-    var sessionResult = await supabaseClient.auth.getSession()
-    if (!sessionResult.data.session) {
-      window.location.href = 'login.html'
-      return
+// ════════════════════════════════════════════
+// TIER COMPARISON CARDS
+// ════════════════════════════════════════════
+function renderTiers() {
+  var container = document.getElementById('tierCards')
+  container.innerHTML = ''
+  var currentTier = (userProfile && userProfile.subscription_tier) || 'free'
+
+  tiers.forEach(function(tier) {
+    var isCurrent = tier.id === currentTier
+    var card = document.createElement('div')
+    card.className = 'tier-card ' + (isCurrent ? 'current' : tier.comingSoon ? 'locked' : 'available')
+
+    var featuresHtml = tier.features.map(function(f) {
+      var iconHtml = f.available
+        ? '<span class="material-symbols-outlined feature-yes text-[18px] filled flex-shrink-0">check_circle</span>'
+        : '<span class="material-symbols-outlined feature-no text-[18px] flex-shrink-0">radio_button_unchecked</span>'
+      var soonHtml = f.soon ? ' <span class="feature-soon">Soon</span>' : ''
+      return '<div class="flex items-center gap-2.5">'
+        + iconHtml
+        + '<span class="font-body ' + (f.available ? 'text-on-surface' : 'text-outline') + '" style="font-size:13px;">' + f.label + '</span>'
+        + soonHtml
+      + '</div>'
+    }).join('')
+
+    var priceHtml = tier.price === 0
+      ? '<span class="font-headline font-bold text-on-surface" style="font-size:22px;">Free</span>'
+      : '<span class="font-headline font-bold text-primary" style="font-size:22px;">$' + tier.price + '</span><span class="font-body text-on-surface-variant" style="font-size:13px;">/mo</span>'
+
+    var ctaHtml = ''
+    if (isCurrent) {
+      ctaHtml = '<div class="mt-4 flex items-center gap-2 text-primary"><span class="material-symbols-outlined text-[16px] filled">check_circle</span><span class="font-body font-semibold" style="font-size:13px;">Current plan</span></div>'
+    } else if (tier.comingSoon) {
+      ctaHtml = '<div class="mt-4 inline-flex items-center gap-2 bg-secondary-container/30 text-secondary px-3 py-1.5 rounded-full"><span class="font-body font-semibold" style="font-size:11px;">Coming Soon</span></div>'
+    } else if (tier.id === 'free') {
+      ctaHtml = '' // Downgrade handled via cancel
+    } else {
+      ctaHtml = '<button onclick="openPaymentLink()" class="mt-4 w-full py-2.5 signature-gradient text-on-primary font-headline font-semibold rounded-xl active:scale-[0.98] transition-transform" style="font-size:13px;">Upgrade to ' + tier.name + '</button>'
     }
-    currentUser = sessionResult.data.session.user
 
-    await loadSubscriptionData()
+    card.innerHTML =
+      '<div class="flex items-start justify-between mb-1">'
+        + '<div>'
+          + '<h3 class="font-headline font-bold text-on-surface" style="font-size:16px;">' + tier.name + '</h3>'
+          + '<p class="font-body text-on-surface-variant" style="font-size:12px;">' + tier.description + '</p>'
+        + '</div>'
+        + '<div class="flex items-baseline gap-1">' + priceHtml + '</div>'
+      + '</div>'
+      + (isCurrent ? '<div class="mt-4 h-px bg-surface-chigh mb-4"></div>' : '<div class="mt-4 h-px bg-surface-chigh mb-4"></div>')
+      + '<div class="space-y-2.5">' + featuresHtml + '</div>'
+      + ctaHtml
+
+    container.appendChild(card)
+  })
+}
+
+// ════════════════════════════════════════════
+// ALLOCATION BAR (admin editable)
+// ════════════════════════════════════════════
+function renderAllocation() {
+  if (!allocationConfig || !allocationConfig.segments) {
+    // Fallback defaults
+    allocationConfig = {
+      segments: [
+        {label:'Direct Mission Funding',percent:42,color:'primary',description:'Plants real scripture, delivers clean water wells, and supports ground evangelism.'},
+        {label:'Platform Support',percent:30,color:'secondary',description:'Powers the global PWA delivery network with zero app store commissions.'},
+        {label:'Growth Reserve',percent:28,color:'outline',description:'Scaled and secured to claim more ground for the Great Commission.'}
+      ],
+      note:'Built as a PWA — no app store fees. More goes to the mission.'
+    }
   }
 
-  // ════════════════════════════════════════════
-  // LOAD REAL SUBSCRIPTION STATE
-  // ════════════════════════════════════════════
-async function loadSubscriptionData() {
-  if (!currentUser) return
+  // Stacked bar
+  var bar = document.getElementById('allocBar')
+  bar.innerHTML = ''
+  allocationConfig.segments.forEach(function(seg, i) {
+    var segEl = document.createElement('div')
+    var colors = segmentColors[seg.color] || segmentColors['primary']
+    var isFirst = i === 0
+    var isLast = i === allocationConfig.segments.length - 1
+    segEl.style.width = seg.percent + '%'
+    segEl.style.background = colors.bar
+    segEl.style.height = '100%'
+    segEl.style.borderRadius = isFirst ? '99px 0 0 99px' : isLast ? '0 99px 99px 0' : '0'
+    bar.appendChild(segEl)
+  })
 
-  var subResult = await supabaseClient
-    .from('subscriptions')
+  // Legend
+  var legend = document.getElementById('allocLegend')
+  legend.innerHTML = ''
+  allocationConfig.segments.forEach(function(seg) {
+    var colors = segmentColors[seg.color] || segmentColors['primary']
+    var row = document.createElement('div')
+    row.className = 'flex items-start gap-3'
+    row.innerHTML =
+      '<div class="flex items-center gap-2 w-24 flex-shrink-0 mt-0.5">'
+        + '<div class="w-2.5 h-2.5 rounded-full ' + colors.dot + ' flex-shrink-0"></div>'
+        + '<span class="font-headline font-bold ' + colors.text + '" style="font-size:13px;">' + seg.percent + '%</span>'
+      + '</div>'
+      + '<div>'
+        + '<p class="font-body font-semibold text-on-surface" style="font-size:13px;">' + seg.label + '</p>'
+        + '<p class="font-body text-on-surface-variant" style="font-size:12px;line-height:18px;">' + seg.description + '</p>'
+      + '</div>'
+    legend.appendChild(row)
+  })
+
+  // Note
+  document.getElementById('allocNote').textContent = allocationConfig.note || ''
+}
+
+// ════════════════════════════════════════════
+// BILLING HISTORY
+// ════════════════════════════════════════════
+async function renderBillingHistory() {
+  var container = document.getElementById('billingList')
+  if (!container) return
+
+  var r = await supabaseClient
+    .from('billing_history')
     .select('*')
     .eq('user_id', currentUser.id)
-    .single()
+    .order('billing_date', {ascending: false})
+    .limit(12)
 
-  userSubscription = subResult.data
-
-  if (!userSubscription) {
-    var fallbackEnd = new Date()
-    fallbackEnd.setMonth(fallbackEnd.getMonth() + 1)
-    userSubscription = {
-      tier: 'warrior',
-      status: 'active',
-      price: 3.99,
-      currency: 'USD',
-      created_at: new Date().toISOString(),
-      current_period_end: fallbackEnd.toISOString()
-    }
-  }
-
-  renderSubscriptionCard()
-  renderBillingHistory()
-}
-  // ════════════════════════════════════════════
-  // RENDER HERO CARD
-  // ════════════════════════════════════════════
-  function renderSubscriptionCard() {
-    var nextRenewalEl = document.getElementById('subNextRenewal')
-    var badgeEl       = document.getElementById('subStatusBadge')
-    if (!userSubscription) return
-
-    var date = new Date(userSubscription.current_period_end)
-    var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-    var dateString = monthNames[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear()
-
-    if (nextRenewalEl) {
-      nextRenewalEl.textContent = userSubscription.status === 'active'
-        ? 'Standing order renews ' + dateString
-        : 'Standing order expired'
-    }
-
-    if (badgeEl) {
-      if (userSubscription.status === 'active') {
-        badgeEl.className = 'inline-flex items-center gap-1 bg-white/10 text-gold text-xs font-bold px-3 py-1.5 rounded-full'
-        badgeEl.innerHTML = '<span class="material-symbols-outlined text-[14px] filled">check_circle</span> Active'
-      } else {
-        badgeEl.className = 'inline-flex items-center gap-1 bg-action/10 text-action text-xs font-bold px-3 py-1.5 rounded-full'
-        badgeEl.innerHTML = '<span class="material-symbols-outlined text-[14px]">cancel</span> Expired'
-      }
-    }
-  }
-
-  // ════════════════════════════════════════════
-  // RENDER BILLING HISTORY (Dynamic receipts list)
-  // ════════════════════════════════════════════
- function renderBillingHistory() {
-  var container = document.getElementById('billingHistoryList')
-  if (!container || !userSubscription) return
-
+  var records = r.data || []
   container.innerHTML = ''
 
-  var startDate = new Date(userSubscription.created_at)
-  var today     = new Date()
-  var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-
-  var tempDate = new Date(today.getFullYear(), today.getMonth(), 1)
-  var receipts = []
-
-  while (tempDate >= startDate) {
-    var dateStr = monthNames[tempDate.getMonth()] + ' ' + tempDate.getDate() + ', ' + tempDate.getFullYear()
-    var price = userSubscription.price || 3.99
-    receipts.push({
-      date: dateStr,
-      price: '$' + Number(price).toFixed(2),
-      invoice: 'INV-' + tempDate.getFullYear() + String(tempDate.getMonth()+1).padStart(2,'0') + String(tempDate.getDate()).padStart(2,'0')
-    })
-    tempDate.setMonth(tempDate.getMonth() - 1)
+  // If no real records, generate from subscription start (graceful fallback)
+  if (records.length === 0 && userSubscription && userSubscription.created_at) {
+    records = generateFallbackBilling(userSubscription)
   }
 
-  if (receipts.length === 0) {
-    container.innerHTML = '<p class="text-xs text-text-light text-center py-4">No payment history yet</p>'
+  if (records.length === 0) {
+    container.innerHTML = '<p class="text-center font-body text-outline py-6" style="font-size:13px;">No billing history yet</p>'
     return
   }
 
-  receipts.forEach(function(r) {
+  var mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+  records.forEach(function(rec) {
+    var d = new Date(rec.billing_date || rec.created_at)
+    var dateStr = mn[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear()
+    var amount = rec.amount || 3.99
+    var invoiceNum = rec.invoice_number || ('INV-' + d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0'))
+    var status = rec.status || 'paid'
+
     var row = document.createElement('div')
-    row.className = 'flex items-center justify-between p-3.5 bg-surface rounded-xl border border-border-soft'
+    row.className = 'flex items-center gap-3 p-3.5 bg-surface-clow rounded-xl'
     row.innerHTML =
-      '<div class="flex items-center gap-3">'
-        + '<div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">'
-          + '<span class="material-symbols-outlined text-[16px] filled">receipt</span>'
-        + '</div>'
-        + '<div>'
-          + '<span class="text-xs font-bold text-text-dark block">' + r.date + '</span>'
-          + '<span class="text-[10px] text-text-light font-body">' + r.invoice + '</span>'
-        + '</div>'
+      '<div class="w-10 h-10 rounded-xl bg-primary-container/20 flex items-center justify-center flex-shrink-0">'
+        + '<span class="material-symbols-outlined text-primary text-[18px] filled">receipt</span>'
       + '</div>'
-      + '<div class="text-right">'
-        + '<span class="text-xs font-bold text-primary block">' + r.price + '</span>'
-        + '<span class="text-[9px] text-green-600 font-bold">Paid ✓</span>'
+      + '<div class="flex-1 min-w-0">'
+        + '<p class="font-body font-semibold text-on-surface" style="font-size:13px;">' + dateStr + '</p>'
+        + '<p class="font-body text-outline" style="font-size:11px;">' + invoiceNum + '</p>'
+      + '</div>'
+      + '<div class="text-right flex-shrink-0">'
+        + '<p class="font-headline font-bold text-primary" style="font-size:14px;">$' + Number(amount).toFixed(2) + '</p>'
+        + '<p class="font-body font-semibold ' + (status === 'paid' ? 'text-primary' : 'text-tertiary') + '" style="font-size:10px;">' + (status === 'paid' ? 'Paid ✓' : status) + '</p>'
       + '</div>'
     container.appendChild(row)
   })
 }
 
-  // ════════════════════════════════════════════
-  // CANCEL MODAL ACTIONS
-  // ════════════════════════════════════════════
-  function confirmCancel() {
-    var modal = document.getElementById('cancelModal')
-    if (modal) {
-      modal.classList.remove('hidden')
-      document.body.style.overflow = 'hidden'
-    }
-  }
+function generateFallbackBilling(sub) {
+  var records = []
+  var start = new Date(sub.created_at)
+  var now = new Date()
+  var cur = new Date(now.getFullYear(), now.getMonth(), 1)
+  var mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
-  function closeModal() {
-    var modal = document.getElementById('cancelModal')
-    if (modal) {
-      modal.classList.add('hidden')
-      document.body.style.overflow = ''
-    }
+  while (cur >= start && records.length < 12) {
+    records.push({
+      billing_date: cur.toISOString(),
+      amount: sub.price || 3.99,
+      invoice_number: 'INV-' + cur.getFullYear() + String(cur.getMonth()+1).padStart(2,'0') + '01',
+      status: 'paid'
+    })
+    cur.setMonth(cur.getMonth() - 1)
   }
+  return records
+}
 
-  function contactSupportCancel() {
-    closeModal()
-    showToast('Redirecting to support dispatch...')
-    setTimeout(function() {
-      window.location.href = 'mailto:support@gospreadtheword.app?subject=Subscription Cancel request: ' + (currentUser ? currentUser.email : '')
-    }, 1000)
-  }
+// ════════════════════════════════════════════
+// ACTIONS
+// ════════════════════════════════════════════
+function openBillingPortal() {
+  if (stripePortalLink) window.open(stripePortalLink, '_blank')
+  else showToast('Billing portal not configured')
+}
 
-  // ════════════════════════════════════════════
-  // NAVIGATION
-  // ════════════════════════════════════════════
-  function goBack() {
-    window.location.href = 'profile.html'
-  }
+function openPaymentLink() {
+  if (stripePaymentLink) window.open(stripePaymentLink, '_blank')
+  else showToast('Payment link not configured')
+}
 
-  // ════════════════════════════════════════════
-  // TOAST
-  // ════════════════════════════════════════════
-  var toastTimer
-  function showToast(msg) {
-    var existing = document.getElementById('subToast')
-    if (existing) existing.remove()
-    var t = document.createElement('div')
-    t.id = 'subToast'
-    t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-dark/90 backdrop-blur-md text-white text-xs font-bold px-5 py-3 rounded-full shadow-lifted whitespace-nowrap flex items-center gap-2'
-    t.innerHTML = '<span class="material-symbols-outlined text-gold text-[14px]" style="font-variation-settings:\'FILL\' 1">check_circle</span> ' + msg
-    document.body.appendChild(t)
-    clearTimeout(toastTimer)
-    toastTimer = setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
-  }
+function confirmCancel() {
+  document.getElementById('cancelModal').classList.remove('hidden')
+  document.body.style.overflow = 'hidden'
+}
 
-await loadStripeLinks()  
+function closeModal() {
+  document.getElementById('cancelModal').classList.add('hidden')
+  document.body.style.overflow = ''
+}
+
+function contactSupportCancel() {
+  closeModal()
+  showToast('Opening support...')
+  setTimeout(function() {
+    window.location.href = 'mailto:support@gospreadtheword.app?subject=Cancel subscription: ' + (currentUser ? currentUser.email : '')
+  }, 800)
+}
+
+function goBack() {
+  if (window.history.length > 1) window.history.back()
+  else window.location.href = 'profile.html'
+}
+
+// ════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════
+function showToast(msg) {
+  var existing = document.getElementById('subToast'); if (existing) existing.remove()
+  var t = document.createElement('div'); t.id = 'subToast'
+  t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-2.5 rounded-full shadow-float whitespace-nowrap flex items-center gap-2'
+  t.style.fontSize = '13px'
+  t.innerHTML = '<span class="material-symbols-outlined text-primary-container text-[14px] filled">check_circle</span> ' + msg
+  document.body.appendChild(t)
+  setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
+}
+
+function setupListeners() {
+  window.addEventListener('scroll', function() {
+    document.getElementById('pageHeader').classList.toggle('header-scrolled', window.scrollY > 8)
+  })
+}
 
 init()
-
 </script>
 </body>
 </html>
