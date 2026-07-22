@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Settings — Go Spread The Word</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
+            'surface-c':'#efeee7','surface-chigh':'#e9e8e1','surface-chighest':'#e3e3db',
+            'on-surface':'#31332e','on-surface-variant':'#5e6059',
+            'inverse-surface':'#0e0e0c','inverse-on-surface':'#9e9d99',
+            'outline':'#7a7b75','outline-variant':'#b2b2ab',
+            'primary':'#3d6285','on-primary':'#f7f9ff',
+            'primary-container':'#b0d5fe','on-primary-container':'#234a6c',
+            'inverse-primary':'#b0d5fe',
+            'secondary':'#41637c','on-secondary':'#f6f9ff',
+            'secondary-container':'#cae6ff','on-secondary-container':'#33556e',
+            'tertiary':'#ad332b','on-tertiary':'#fff7f6',
+            'tertiary-container':'#fe6d60',
+            'primary-dim':'#305678','secondary-dim':'#355670','tertiary-dim':'#9d2621',
+            'background':'#fbf9f4','on-background':'#31332e','surface-variant':'#e3e3db',
+          },
+          fontFamily:{
+            'headline':['Plus Jakarta Sans','sans-serif'],
+            'body':['Manrope','sans-serif'],
+          },
+          boxShadow:{
+            'ambient':'0 20px 40px rgba(49,51,46,0.05)',
+            'ambient-sm':'0 8px 24px rgba(49,51,46,0.04)',
+            'float':'0 20px 40px rgba(49,51,46,0.08)',
+          },
+          borderRadius:{
+            'sm':'0.25rem','DEFAULT':'0.5rem','md':'0.75rem',
+            'lg':'1rem','xl':'1.5rem','2xl':'1.5rem','full':'9999px',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;-webkit-tap-highlight-color:transparent;min-height:100dvh;letter-spacing:-0.005em}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
+    .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+    ::-webkit-scrollbar{display:none}
+    body{-ms-overflow-style:none;scrollbar-width:none}
+
+    .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
+    .glass-header{background:rgba(251,249,244,0.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);transition:box-shadow 0.2s ease}
+    .header-scrolled{box-shadow:0 8px 24px rgba(49,51,46,0.04)}
+
+    /* Setting row */
+    .setting-row{
+      display:flex;align-items:center;gap:14px;
+      padding:14px 18px;
+      transition:background 0.15s ease;
+      cursor:pointer;
+    }
+    .setting-row:active{background:#efeee7}
+    .setting-row:not(:last-child){padding-bottom:14px}
+
+    /* Card container groups rows */
+    .setting-group{background:#ffffff;border-radius:16px;overflow:hidden}
+    .setting-group > .setting-row + .setting-row{position:relative}
+
+    /* Icon container */
+    .setting-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+    /* Toggle */
+    .toggle-pill{
+      width:44px;height:24px;background:#b2b2ab;border-radius:12px;
+      position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;
+    }
+    .toggle-pill.on{background:#3d6285}
+    .toggle-pill .toggle-dot{
+      width:18px;height:18px;background:white;border-radius:50%;
+      position:absolute;top:3px;left:3px;transition:left 0.2s;
+      box-shadow:0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle-pill.on .toggle-dot{left:23px}
+    .toggle-pill.disabled{opacity:0.5;cursor:not-allowed}
+
+    /* Section label */
+    .section-label{
+      font-size:11px;font-weight:600;
+      color:#7a7b75;padding:0 6px;
+      margin-bottom:8px;margin-top:4px;
+      letter-spacing:0.02em;text-transform:uppercase;
+    }
+
+    /* Avatar upload */
+    .avatar-container{position:relative;width:96px;height:96px;margin:0 auto}
+    .avatar-circle{
+      width:96px;height:96px;border-radius:50%;
+      overflow:hidden;background:linear-gradient(135deg,#3d6285,#6b9bc3);
+      display:flex;align-items:center;justify-content:center;
+      color:#f7f9ff;font-family:'Plus Jakarta Sans',sans-serif;
+      font-weight:700;font-size:32px;
+    }
+    .avatar-circle img{width:100%;height:100%;object-fit:cover}
+    .avatar-edit-btn{
+      position:absolute;bottom:0;right:0;
+      width:32px;height:32px;border-radius:50%;
+      background:#3d6285;color:#f7f9ff;
+      display:flex;align-items:center;justify-content:center;
+      cursor:pointer;box-shadow:0 4px 12px rgba(49,51,46,0.15);
+      border:3px solid #fbf9f4;transition:transform 0.15s ease;
+    }
+    .avatar-edit-btn:active{transform:scale(0.9)}
+
+    /* Fade */
+    .fade-up{opacity:0;transform:translateY(12px);transition:opacity 0.5s ease,transform 0.5s ease}
+    .fade-up.visible{opacity:1;transform:translateY(0)}
+
+    /* Picker sheet */
+    .picker-sheet{transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1)}
+    .picker-sheet.open{transform:translateY(0)}
+
+    /* Translation option */
+    .trans-opt{
+      padding:14px 16px;border-radius:14px;
+      transition:background 0.15s ease;cursor:pointer;
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .trans-opt:hover{background:#f5f4ed}
+    .trans-opt.selected{background:#f5f4ed}
+    .trans-opt.selected .trans-check{opacity:1}
+    .trans-check{opacity:0;color:#3d6285;transition:opacity 0.15s ease}
+
+    /* Locked state */
+    .locked-badge{
+      display:inline-flex;align-items:center;gap:4px;
+      background:#e9e8e1;color:#5e6059;
+      padding:3px 8px;border-radius:99px;
+      font-size:10px;font-weight:700;letter-spacing:0.02em;
+    }
+
+    /* Upload progress */
+    .upload-progress{
+      position:absolute;inset:0;
+      background:rgba(14,14,12,0.6);
+      border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      color:#fff;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spin{animation:spin 1s linear infinite;display:inline-block}
+  </style>
+</head>
+
+<body>
+
+<!-- Hidden file input -->
+<input type="file" id="avatarInput" accept="image/*" class="hidden" onchange="handleAvatarSelect(this)">
+
+<!-- HEADER -->
+<header id="pageHeader" class="fixed top-0 w-full z-50 glass-header">
+  <div class="max-w-[430px] mx-auto px-5 pt-10 pb-3 flex items-center justify-between">
+    <button onclick="goBack()" class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-clow active:scale-90 transition-all rounded-full">
+      <span class="material-symbols-outlined text-[22px]">arrow_back</span>
+    </button>
+    <h1 class="font-headline font-semibold text-on-surface" style="font-size:18px;line-height:28px;">Settings</h1>
+    <div class="w-10"></div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="pt-28 pb-16 px-5 max-w-[430px] mx-auto space-y-6">
+
+  <!-- ═════ PROFILE ═════ -->
+  <section class="fade-up">
+    <div class="setting-group py-6">
+      <!-- Avatar -->
+      <div class="avatar-container mb-4">
+        <div id="avatarCircle" class="avatar-circle">
+          <span id="avatarInitials">?</span>
+        </div>
+        <div class="avatar-edit-btn" onclick="triggerAvatarUpload()">
+          <span class="material-symbols-outlined text-[18px]">edit</span>
+        </div>
+        <div id="uploadProgress" class="upload-progress hidden">
+          <span class="material-symbols-outlined spin text-[24px]">progress_activity</span>
+        </div>
+      </div>
+
+      <!-- Name/Email -->
+      <div class="text-center mb-4 px-4">
+        <p id="userName" class="font-headline font-bold text-on-surface" style="font-size:18px;line-height:26px;">Loading...</p>
+        <p id="userEmail" class="font-body text-on-surface-variant mt-0.5" style="font-size:13px;"></p>
+      </div>
+    </div>
+
+    <p class="section-label font-body">Account</p>
+    <div class="setting-group">
+      <a href="edit-profile.html" class="setting-row no-underline">
+        <div class="setting-icon bg-primary-container/20">
+          <span class="material-symbols-outlined text-primary text-[20px]">person</span>
+        </div>
+        <div class="flex-1">
+          <p class="font-body font-semibold text-on-surface" style="font-size:14px;">Edit Profile</p>
+        </div>
+        <span class="material-symbols-outlined text-outline text-[18px]">chevron_right</span>
+      </a>
+      <a href="change-password.html" class="setting-row no-underline">
+        <div class="setting-icon bg-surface-chigh">
+          <span class="material-symbols-outlined text-on-surface-variant text-[20px]">lock</span>
+        </div>
+        <div class="flex-1">
+          <p class="font-body font-semibold text-on-surface" style="font-size:14px;">Change Password</p>
+        </div>
+        <span class="material-symbols-outlined text-outline text-[18px]">chevron_right</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ═════ PREFERENCES ═════ -->
+  <section class="fade-up">
+    <p class="section-label font-body">Preferences</p>
+    <div class="setting-group">
+      <div class="setting-row" onclick="openTranslationPicker()">
+        <div class="setting-icon bg-secondary-container/20">
+          <span class="material-symbols-outlined text-secondary text-[20px]">translate</span>
+        </div>
+        <div class="flex-1">
+          <p class="font-body font-semibold text-on-surface" style="font-size:14px;">Bible Translation</p>
+          <p id="translationHint" class="font-body text-on-surface-variant" style="font-size:11px;">Loading...</p>
+        </div>
+        <span class="material-symbols-outlined text-outline text-[18px]">chevron_right</span>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-icon bg-primary-container/20">
+          <span class="material-symbols-outlined text-primary text-[20px]">volume_up</span>
+        </div>
+        <div class="flex-1">
+          <p class="font-body font-semibold text-on-surface" style="font-size:14px;">Sound Effects</p>
+          <p class="font-body text-on-surface-variant" style="font-size:11px;">Chimes for milestones and actions</p>
+        </div>
+        <div id="soundToggle" class="toggle-pill" onclick="togglePref('sound_enabled', this)">
+          <div class="toggle-dot"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════ PERMISSIONS ═════ -->
+  <section class="fade-up">
+    <p class="section-label font-body">Permissions</p>
+    <div class="setting-group">
+      <div class="setting-row">
+        <div class="setting-icon bg-primary-container/20">
+          <span class="material-symbols-outlined text-primary text-[20px]">photo_camera</span>
+        </div>
+        <div class="flex-1">
+          <p class="font-body font-semibold text-on-surface" style="font-size:14px;">Camera Access</p>
+          <p class="font-body text-on-surface-variant" style="font-size:11px;">To take selfies for your posts</p>
+        </div>
+        <div id="cameraToggle" class="toggle-pill" onclick="requestCameraPermission(this)">
+          <div class="toggle-dot"></div>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-icon bg-secondary-container/20">
+          <span class="material-symbols-outlined text-secondary text-[20px]">location_on</span>
+        </div>
+        <div class="flex-1">
+          <p class="font-body font-semibold text-on-surface" style="font-size:14px;">Location Access</p>
+          <p class="font-body text-on-surface-variant" style="font-size:11px;">To show where warriors are sharing from</p>
+        </div>
+        <div id="locationToggle" class="toggle-pill" onclick="requestLocationPermission(this)">
+          <div class="toggle-dot"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════ NOTIFICATIONS ═════ -->
+  <section class="fade-up">
+    <p class="section-label font-body">Notifications</p>
+    <div class="setting-group">
+      <div class="setting-row">
+        <div class="setting-icon bg-primary-container/20">
+          <span class="material-symbols-outlined text-primary text-[20px]">campaign</span>
+        </div>
+        <div class="flex-1">
+          <p class="font-body font-semibold text-on-surface" style="font-size:14px;">Announcements</p>
+          <p class="font-body text-on-surface-variant" style="font-size:11px;">Admin updates and news</p>
+        </div>
+        <div id="broadcastsToggle" class="toggle-pill" onclick="togglePref('notif_broadcasts', this)">
+          <div class="toggle-dot"></div>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-icon bg-secondary-container/20">
+          <span class="material-symbols-outlined text-secondary text-[20px]">emoji_events</span>
+        </div>
+        <div class="flex-1">
+          <p class="font-body font-semibold text-on-surface" style="font-size:14px;">Milestones</p>
+          <p class="font-body text-on-surface-variant" style="font-size:11px;">When you earn trophies</p>
+        </div>
+        <div id="milestonesToggle" class="toggle-pill" onclick="togglePref('notif_milestones', this)">
+          <div class="toggle-dot"></div>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-icon bg-primary-container/20">
+          <span class="material-symbols-outlined text-primary text-[20px]">group_add</span>
+        </div>
+        <div class="flex-1">
+          <p class="font-body font-semibold text-on-surface" style="font-size:14px;">Recruits</p>
+          <p class="font-body text-on-surface-variant" style="font-size:11px;">When someone joins via your link</p>
+        </div>
+        <div id="recruitsToggle" class="toggle-pill" onclick="togglePref('notif_recruits', this)">
+          <div class="toggle-dot"></div>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-icon bg-secondary-container/20">
+          <span class="material-symbols-outlined text-secondary text-[20px]">volunteer_activism</span>
+        </div>
+        <div class="flex-1">
+          <p class="font-body font-semibold text-on-surface" style="font-size:14px;">Missions</p>
+          <p class="font-body text-on-surface-variant" style="font-size:11px;">Mission updates and progress</p>
+        </div>
+        <div id="missionsToggle" class="toggle-pill" onclick="togglePref('notif_missions', this)">
+          <div class="toggle-dot"></div>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-icon bg-surface-chigh">
+          <span class="material-symbols-outlined text-on-surface-variant text-[20px]">settings</span>
+        </div>
+        <div class="flex-1">
+          <p class="font-body font-semibold text-on-surface" style="font-size:14px;">System</p>
+          <p class="font-body text-on-surface-variant" style="font-size:11px;">Subscription and account alerts</p>
+        </div>
+        <div id="systemToggle" class="toggle-pill" onclick="togglePref('notif_system', this)">
+          <div class="toggle-dot"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════ PAYMENT ═════ -->
+  <section class="fade-up">
+    <p class="section-label font-body">Payment</p>
+    <div class="setting-group">
+      <div class="setting-row" onclick="openBillingPortal()">
+        <div class="setting-icon bg-primary-container/20">
+          <span class="material-symbols-outlined text-primary text-[20px]">credit_card</span>
+        </div>
+        <div class="flex-1">
+          <p class="font-body font-semibold text-on-surface" style="font-size:14px;">Manage Payment Method</p>
+          <p class="font-body text-on-surface-variant" style="font-size:11px;">Update card, view invoices</p>
+        </div>
+        <span class="material-symbols-outlined text-outline text-[18px]">open_in_new</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════ SOCIAL INTEGRATION (LOCKED) ═════ -->
+  <section class="fade-up">
+    <div class="flex items-center justify-between mb-2 px-1.5">
+      <p class="section-label font-body" style="margin:0;padding:0;">Social Integration</p>
+      <span class="locked-badge font-body">
+        <span class="material-symbols-outlined text-[10px]">lock</span>
+        Coming Soon
+      </span>
+    </div>
+    <div class="setting-group" style="opacity:0.55">
+      <div class="setting-row" style="cursor:not-allowed">
+        <div class="setting-icon bg-surface-chigh">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/132px-Instagram_logo_2016.svg.png" class="w-5 h-5" alt="Instagram">
+        </div>
+        <div class="flex-1">
+          <p class="font-body font-semibold text-on-surface" style="font-size:14px;">Instagram</p>
+          <p class="font-body text-on-surface-variant" style="font-size:11px;">Direct posting to your account</p>
+        </div>
+        <span class="material-symbols-outlined text-outline text-[18px]">lock</span>
+      </div>
+      <div class="setting-row" style="cursor:not-allowed">
+        <div class="setting-icon bg-surface-chigh">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/2023_Facebook_icon.svg/120px-2023_Facebook_icon.svg.png" class="w-5 h-5" alt="Facebook">
+        </div>
+        <div class="flex-1">
+          <p class="font-body font-semibold text-on-surface" style="font-size:14px;">Facebook</p>
+          <p class="font-body text-on-surface-variant" style="font-size:11px;">Post to your Page directly</p>
+        </div>
+        <span class="material-symbols-outlined text-outline text-[18px]">lock</span>
+      </div>
+      <div class="setting-row" style="cursor:not-allowed">
+        <div class="setting-icon bg-surface-chigh">
+          <div class="w-5 h-5 rounded bg-black flex items-center justify-center">
+            <span class="text-white font-bold" style="font-size:10px;">𝕏</span>
+          </div>
+        </div>
+        <div class="flex-1">
+          <p class="font-body font-semibold text-on-surface" style="font-size:14px;">X (Twitter)</p>
+          <p class="font-body text-on-surface-variant" style="font-size:11px;">One-tap tweet publishing</p>
+        </div>
+        <span class="material-symbols-outlined text-outline text-[18px]">lock</span>
+      </div>
+    </div>
+    <p class="text-center font-body text-outline mt-3 px-6 italic" style="font-size:11px;">
+      Available on the Commander plan when we launch integrations
+    </p>
+  </section>
+
+  <!-- Footer -->
+  <footer class="text-center pt-4 pb-2 fade-up">
+    <p class="font-body text-outline" style="font-size:11px;">Go Spread The Word v1.0</p>
+    <a href="mailto:support@gospreadtheword.app" class="font-body text-primary mt-1 inline-block" style="font-size:12px;font-weight:600;">Contact Support</a>
+  </footer>
+
+</main>
+
+<!-- ═════ TRANSLATION PICKER SHEET ═════ -->
+<div id="pickerOverlay" class="hidden fixed inset-0 bg-inverse-surface/40 backdrop-blur-sm z-[100]" onclick="closePicker()"></div>
+<div id="pickerSheet" class="picker-sheet fixed bottom-0 left-0 right-0 z-[101] bg-surface-cl rounded-t-3xl shadow-float max-w-[430px] mx-auto">
+  <div class="p-6 pb-8" style="padding-bottom:max(32px,env(safe-area-inset-bottom));max-height:80vh;overflow-y:auto">
+    <div class="w-10 h-1 bg-outline-variant/30 rounded-full mx-auto mb-5"></div>
+    <h3 class="font-headline font-bold text-on-surface mb-1" style="font-size:20px;">Bible Translation</h3>
+    <p class="font-body text-on-surface-variant mb-5" style="font-size:13px;">Choose your preferred translation</p>
+    <div id="translationList" class="space-y-1"></div>
+  </div>
+</div>
+
+<script>
+var supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+)
+
+var currentUser = null
+var userProfile = null
+var stripePortalLink = ''
+
+var translationList = [
+  { code:'web',  name:'World English Bible',        language:'English' },
+  { code:'kjv',  name:'King James Version',         language:'English' },
+  { code:'bbe',  name:'Bible in Basic English',     language:'English' },
+  { code:'asv',  name:'American Standard Version',  language:'English' }
+]
+
+var observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible') })
+}, {threshold:0.05})
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+async function init() {
+  try {
+    var s = await supabaseClient.auth.getSession()
+    if (!s.data || !s.data.session) { window.location.href = 'login.html'; return }
+    currentUser = s.data.session.user
+
+    var results = await Promise.allSettled([
+      supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single(),
+      supabaseClient.from('site_settings').select('id,value').eq('id','stripe_portal_link').single()
+    ])
+
+    userProfile = (results[0].status === 'fulfilled' && results[0].value.data) ? results[0].value.data : {}
+    if (results[1].status === 'fulfilled' && results[1].value.data) {
+      stripePortalLink = results[1].value.data.value || ''
+    }
+
+    renderProfile()
+    renderTranslation()
+    renderToggles()
+
+    setTimeout(function() {
+      document.querySelectorAll('.fade-up').forEach(function(el) { observer.observe(el) })
+    }, 50)
+
+    setupListeners()
+
+  } catch(e) {
+    console.error('[Settings] Init error:', e)
+    showToast('Error loading settings')
+  }
+}
+
+// ════════════════════════════════════════════
+// PROFILE
+// ════════════════════════════════════════════
+function renderProfile() {
+  var fullName = userProfile.full_name || ''
+  var displayName = userProfile.nickname || fullName || 'Complete your profile'
+  var email = userProfile.email || currentUser.email || ''
+  var avatarUrl = userProfile.avatar_url
+
+  document.getElementById('userName').textContent = displayName
+  document.getElementById('userEmail').textContent = email
+
+  var initials = '?'
+  if (fullName && fullName.trim().length > 0) {
+    var parts = fullName.trim().split(' ')
+    initials = parts.length >= 2
+      ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
+      : parts[0].substring(0,2).toUpperCase()
+  } else if (email) {
+    initials = email.substring(0,2).toUpperCase()
+  }
+
+  var avatarCircle = document.getElementById('avatarCircle')
+  if (avatarUrl) {
+    avatarCircle.innerHTML = '<img src="' + avatarUrl + '?t=' + Date.now() + '" alt="Avatar">'
+  } else {
+    avatarCircle.innerHTML = '<span id="avatarInitials">' + initials + '</span>'
+  }
+}
+
+// ════════════════════════════════════════════
+// AVATAR UPLOAD
+// ════════════════════════════════════════════
+function triggerAvatarUpload() {
+  document.getElementById('avatarInput').click()
+}
+
+async function handleAvatarSelect(input) {
+  var file = input.files[0]
+  if (!file) return
+
+  // Validate
+  if (!file.type.startsWith('image/')) {
+    showToast('Please select an image')
+    return
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('Image must be under 5MB')
+    return
+  }
+
+  var progressEl = document.getElementById('uploadProgress')
+  if (progressEl) progressEl.classList.remove('hidden')
+
+  try {
+    // Resize to 256x256
+    var resized = await resizeImage(file, 256)
+
+    // Upload to Supabase Storage
+    var filePath = currentUser.id + '/avatar.png'
+    var uploadResult = await supabaseClient.storage
+      .from('avatars')
+      .upload(filePath, resized, { upsert: true, contentType: 'image/png' })
+
+    if (uploadResult.error) throw uploadResult.error
+
+    // Get public URL
+    var urlResult = supabaseClient.storage.from('avatars').getPublicUrl(filePath)
+    var publicUrl = urlResult.data.publicUrl
+
+    // Save to profile
+    await supabaseClient.from('profiles').update({ avatar_url: publicUrl }).eq('id', currentUser.id)
+    userProfile.avatar_url = publicUrl
+
+    renderProfile()
+    showToast('Profile photo updated')
+  } catch(e) {
+    console.error('Avatar upload error:', e)
+    showToast('Upload failed. Try again.')
+  } finally {
+    if (progressEl) progressEl.classList.add('hidden')
+    input.value = ''
+  }
+}
+
+function resizeImage(file, maxSize) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader()
+    reader.onload = function(e) {
+      var img = new Image()
+      img.onload = function() {
+        var canvas = document.createElement('canvas')
+        var size = Math.min(img.width, img.height)
+        canvas.width = maxSize
+        canvas.height = maxSize
+        var ctx = canvas.getContext('2d')
+        // Crop to square from center
+        var sx = (img.width - size) / 2
+        var sy = (img.height - size) / 2
+        ctx.drawImage(img, sx, sy, size, size, 0, 0, maxSize, maxSize)
+        canvas.toBlob(function(blob) {
+          if (blob) resolve(blob)
+          else reject(new Error('Canvas toBlob failed'))
+        }, 'image/png')
+      }
+      img.onerror = reject
+      img.src = e.target.result
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+// ════════════════════════════════════════════
+// TRANSLATION
+// ════════════════════════════════════════════
+function renderTranslation() {
+  var code = userProfile.bible_translation || 'web'
+  var t = translationList.find(function(x) { return x.code === code }) || translationList[0]
+  var hint = document.getElementById('translationHint')
+  if (hint) hint.textContent = t.name + ' · ' + t.language
+}
+
+function openTranslationPicker() {
+  var container = document.getElementById('translationList')
+  var currentCode = userProfile.bible_translation || 'web'
+  container.innerHTML = ''
+
+  translationList.forEach(function(t) {
+    var isSelected = t.code === currentCode
+    var opt = document.createElement('div')
+    opt.className = 'trans-opt ' + (isSelected ? 'selected' : '')
+    opt.onclick = function() { selectTranslation(t.code) }
+    opt.innerHTML =
+      '<div>'
+        + '<p class="font-body font-semibold text-on-surface" style="font-size:14px;">' + t.name + '</p>'
+        + '<p class="font-body text-on-surface-variant" style="font-size:12px;">' + t.language + '</p>'
+      + '</div>'
+      + '<span class="trans-check material-symbols-outlined text-[22px] filled">check_circle</span>'
+    container.appendChild(opt)
+  })
+
+  document.getElementById('pickerOverlay').classList.remove('hidden')
+  requestAnimationFrame(function() { document.getElementById('pickerSheet').classList.add('open') })
+}
+
+function closePicker() {
+  document.getElementById('pickerSheet').classList.remove('open')
+  setTimeout(function() { document.getElementById('pickerOverlay').classList.add('hidden') }, 300)
+}
+
+async function selectTranslation(code) {
+  userProfile.bible_translation = code
+  renderTranslation()
+  closePicker()
+  showToast('Translation updated')
+  try {
+    await supabaseClient.from('profiles').update({ bible_translation: code }).eq('id', currentUser.id)
+  } catch(e) { console.error('Translation save error:', e) }
+}
+
+// ════════════════════════════════════════════
+// TOGGLES
+// ════════════════════════════════════════════
+function renderToggles() {
+  setToggle('soundToggle', userProfile.sound_enabled !== false)
+  setToggle('cameraToggle', userProfile.camera_granted === true)
+  setToggle('locationToggle', userProfile.location_granted === true)
+  setToggle('broadcastsToggle', userProfile.notif_broadcasts !== false)
+  setToggle('milestonesToggle', userProfile.notif_milestones !== false)
+  setToggle('recruitsToggle', userProfile.notif_recruits !== false)
+  setToggle('missionsToggle', userProfile.notif_missions !== false)
+  setToggle('systemToggle', userProfile.notif_system !== false)
+}
+
+function setToggle(id, on) {
+  var el = document.getElementById(id)
+  if (!el) return
+  if (on) el.classList.add('on')
+  else el.classList.remove('on')
+}
+
+async function togglePref(key, el) {
+  var currentOn = el.classList.contains('on')
+  var newValue = !currentOn
+  if (newValue) el.classList.add('on')
+  else el.classList.remove('on')
+
+  userProfile[key] = newValue
+
+  try {
+    var update = {}
+    update[key] = newValue
+    await supabaseClient.from('profiles').update(update).eq('id', currentUser.id)
+  } catch(e) {
+    console.error('Toggle save error:', e)
+    // Revert on error
+    if (newValue) el.classList.remove('on')
+    else el.classList.add('on')
+    userProfile[key] = currentOn
+    showToast('Could not save. Try again.')
+  }
+}
+
+// ════════════════════════════════════════════
+// CAMERA PERMISSION
+// ════════════════════════════════════════════
+async function requestCameraPermission(el) {
+  var currentOn = el.classList.contains('on')
+
+  if (currentOn) {
+    // Can't revoke via browser — instruct user
+    showToast('Manage in your browser settings')
+    return
+  }
+
+  try {
+    var stream = await navigator.mediaDevices.getUserMedia({ video: true })
+    stream.getTracks().forEach(function(t) { t.stop() })
+    el.classList.add('on')
+    userProfile.camera_granted = true
+    await supabaseClient.from('profiles').update({ camera_granted: true }).eq('id', currentUser.id)
+    showToast('Camera access granted')
+  } catch(e) {
+    console.error('Camera permission denied:', e)
+    showToast('Camera access denied')
+  }
+}
+
+// ════════════════════════════════════════════
+// LOCATION PERMISSION
+// ════════════════════════════════════════════
+async function requestLocationPermission(el) {
+  var currentOn = el.classList.contains('on')
+
+  if (currentOn) {
+    showToast('Manage in your browser settings')
+    return
+  }
+
+  if (!navigator.geolocation) {
+    showToast('Location not supported')
+    return
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async function(position) {
+      el.classList.add('on')
+      userProfile.location_granted = true
+      try {
+        await supabaseClient.from('profiles').update({ location_granted: true }).eq('id', currentUser.id)
+      } catch(e) { console.error('Location save error:', e) }
+      showToast('Location access granted')
+    },
+    function(err) {
+      console.error('Location denied:', err)
+      showToast('Location access denied')
+    },
+    { timeout: 10000 }
+  )
+}
+
+// ════════════════════════════════════════════
+// PAYMENT
+// ════════════════════════════════════════════
+function openBillingPortal() {
+  if (stripePortalLink) window.open(stripePortalLink, '_blank')
+  else showToast('Billing portal not configured')
+}
+
+// ════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════
+function goBack() {
+  if (window.history.length > 1) window.history.back()
+  else window.location.href = 'profile.html'
+}
+
+function showToast(msg) {
+  var existing = document.getElementById('settingsToast')
+  if (existing) existing.remove()
+  var t = document.createElement('div')
+  t.id = 'settingsToast'
+  t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-2.5 rounded-full shadow-float whitespace-nowrap flex items-center gap-2'
+  t.style.fontSize = '13px'
+  t.innerHTML = '<span class="material-symbols-outlined text-primary-container text-[14px] filled">check_circle</span> ' + msg
+  document.body.appendChild(t)
+  setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
+}
+
+function setupListeners() {
+  window.addEventListener('scroll', function() {
+    var header = document.getElementById('pageHeader')
+    if (header) header.classList.toggle('header-scrolled', window.scrollY > 8)
+  })
+}
+
+init()
+</script>
+</body>
+</html>
