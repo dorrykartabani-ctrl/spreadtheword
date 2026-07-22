@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Recruit Warriors — Go Spread The Word</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
+            'surface-c':'#efeee7','surface-chigh':'#e9e8e1','surface-chighest':'#e3e3db',
+            'on-surface':'#31332e','on-surface-variant':'#5e6059',
+            'inverse-surface':'#0e0e0c','inverse-on-surface':'#9e9d99',
+            'outline':'#7a7b75','outline-variant':'#b2b2ab',
+            'primary':'#3d6285','on-primary':'#f7f9ff',
+            'primary-container':'#b0d5fe','on-primary-container':'#234a6c',
+            'inverse-primary':'#b0d5fe',
+            'secondary':'#41637c','on-secondary':'#f6f9ff',
+            'secondary-container':'#cae6ff','on-secondary-container':'#33556e',
+            'tertiary':'#ad332b','on-tertiary':'#fff7f6',
+            'tertiary-container':'#fe6d60',
+            'primary-dim':'#305678','secondary-dim':'#355670','tertiary-dim':'#9d2621',
+            'background':'#fbf9f4','on-background':'#31332e','surface-variant':'#e3e3db',
+          },
+          fontFamily:{
+            'headline':['Plus Jakarta Sans','sans-serif'],
+            'body':['Manrope','sans-serif'],
+          },
+          boxShadow:{
+            'ambient':'0 20px 40px rgba(49,51,46,0.05)',
+            'ambient-sm':'0 8px 24px rgba(49,51,46,0.04)',
+            'float':'0 20px 40px rgba(49,51,46,0.08)',
+          },
+          borderRadius:{
+            'sm':'0.25rem','DEFAULT':'0.5rem','md':'0.75rem',
+            'lg':'1rem','xl':'1.5rem','2xl':'1.5rem','full':'9999px',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;-webkit-tap-highlight-color:transparent;min-height:100dvh;letter-spacing:-0.005em}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
+    .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+    ::-webkit-scrollbar{display:none}
+    body{-ms-overflow-style:none;scrollbar-width:none}
+
+    .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
+    .glass-header{background:rgba(251,249,244,0.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);transition:box-shadow 0.2s ease}
+    .header-scrolled{box-shadow:0 8px 24px rgba(49,51,46,0.04)}
+
+    /* Hero card */
+    .hero-card{background:linear-gradient(135deg,#3d6285,#6b9bc3);border-radius:20px;color:#f7f9ff;overflow:hidden;position:relative;padding:28px}
+    .hero-card::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;background:radial-gradient(circle,rgba(176,213,254,0.15) 0%,transparent 70%);border-radius:50%}
+
+    /* Progress */
+    .progress-track{height:8px;background:#f5f4ed;border-radius:99px;overflow:hidden}
+    .progress-fill{height:100%;border-radius:99px;transition:width 1.2s cubic-bezier(0.22,1,0.36,1)}
+    .progress-primary{background:linear-gradient(90deg,#305678,#3d6285,#6b9bc3)}
+
+    /* Milestone dots */
+    .milestone-track{display:flex;align-items:center;position:relative;margin-top:16px}
+    .milestone-line{position:absolute;top:50%;left:0;right:0;height:3px;background:#f5f4ed;z-index:0;transform:translateY(-50%)}
+    .milestone-line-fill{position:absolute;top:50%;left:0;height:3px;background:linear-gradient(90deg,#3d6285,#6b9bc3);z-index:1;transform:translateY(-50%);transition:width 1s cubic-bezier(0.22,1,0.36,1)}
+    .milestone-dot{
+      position:relative;z-index:2;width:36px;height:36px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      font-headline;font-weight:700;font-size:12px;
+      transition:all 0.3s ease;
+    }
+    .milestone-dot.earned{background:#3d6285;color:#f7f9ff;box-shadow:0 4px 12px rgba(61,98,133,0.3)}
+    .milestone-dot.current{background:#b0d5fe;color:#234a6c;box-shadow:0 4px 12px rgba(176,213,254,0.4)}
+    .milestone-dot.locked{background:#e9e8e1;color:#7a7b75}
+
+    /* QR container */
+    .qr-container{background:#ffffff;border-radius:16px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:12px}
+    .qr-code{width:180px;height:180px;border-radius:12px;overflow:hidden}
+
+    /* Recruit card */
+    .recruit-card{display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:#ffffff;transition:all 0.15s ease}
+
+    /* Step card */
+    .step-card{display:flex;align-items:start;gap:14px}
+    .step-num{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+
+    /* Fade */
+    .fade-up{opacity:0;transform:translateY(16px);transition:opacity 0.6s ease,transform 0.6s ease}
+    .fade-up.visible{opacity:1;transform:translateY(0)}
+
+    /* Skeleton */
+    .skeleton{background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:12px}
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  </style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header id="pageHeader" class="fixed top-0 w-full z-50 glass-header">
+  <div class="max-w-[430px] mx-auto px-5 pt-10 pb-3 flex items-center justify-between">
+    <button onclick="goBack()" class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-clow active:scale-90 transition-all rounded-full">
+      <span class="material-symbols-outlined text-[22px]">arrow_back</span>
+    </button>
+    <h1 class="font-headline font-semibold text-on-surface" style="font-size:18px;line-height:28px;">Recruit Warriors</h1>
+    <div class="w-10"></div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="pt-28 pb-16 px-5 max-w-[430px] mx-auto space-y-5">
+
+  <!-- HERO STAT -->
+  <section class="hero-card fade-up">
+    <div class="relative z-10">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="material-symbols-outlined text-primary-container text-[24px] filled">group_add</span>
+        <p class="font-body text-on-primary/70" style="font-size:12px;font-weight:500;">Your Recruits</p>
+      </div>
+      <div class="flex items-baseline gap-2 mb-2">
+        <span id="heroCount" class="font-headline font-bold" style="font-size:48px;line-height:1;letter-spacing:-0.02em;">0</span>
+        <span class="font-body text-on-primary/70" style="font-size:14px;">warriors</span>
+      </div>
+      <div id="heroBreakdown" class="flex items-center gap-3">
+        <span class="font-body text-on-primary/60" style="font-size:12px;">
+          <span id="subscribedCount" class="font-semibold text-primary-container">0</span> subscribed
+        </span>
+        <span class="text-on-primary/30">·</span>
+        <span class="font-body text-on-primary/60" style="font-size:12px;">
+          <span id="signedUpCount" class="font-semibold text-primary-container">0</span> signed up
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- MILESTONE PROGRESS -->
+  <section class="bg-surface-cl rounded-xl p-5 fade-up">
+    <div class="flex items-center justify-between mb-3">
+      <p class="font-body text-on-surface-variant" style="font-size:12px;font-weight:500;">Recruit Milestones</p>
+      <span id="milestoneLabel" class="font-body font-semibold text-primary" style="font-size:12px;"></span>
+    </div>
+    <div class="progress-track mb-1">
+      <div id="milestoneBar" class="progress-fill progress-primary" style="width:0%"></div>
+    </div>
+    <p id="milestoneHint" class="font-body text-on-surface-variant" style="font-size:11px;"></p>
+
+    <!-- Visual milestone dots -->
+    <div class="milestone-track" id="milestoneDots">
+      <div class="milestone-line"></div>
+      <div id="milestoneLineFill" class="milestone-line-fill" style="width:0%"></div>
+    </div>
+  </section>
+
+  <!-- INVITE LINK -->
+  <section class="bg-surface-cl rounded-xl p-5 fade-up">
+    <p class="font-body text-on-surface-variant mb-3" style="font-size:12px;font-weight:500;">Your Invite Link</p>
+
+    <div class="flex items-center gap-2 bg-surface-clow rounded-xl px-4 py-3 mb-4">
+      <span class="material-symbols-outlined text-outline text-[18px]">link</span>
+      <p id="inviteLinkDisplay" class="flex-1 font-body text-on-surface truncate" style="font-size:13px;">Generating...</p>
+    </div>
+
+    <div class="flex gap-3 mb-5">
+      <button onclick="copyInviteLink()"
+        class="flex-1 py-3 signature-gradient text-on-primary font-headline font-semibold rounded-xl
+        flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+        style="font-size:14px;">
+        <span class="material-symbols-outlined text-[18px]">content_copy</span> Copy Link
+      </button>
+      <button onclick="shareInviteLink()"
+        class="flex-1 py-3 bg-surface-clow text-on-surface font-headline font-semibold rounded-xl
+        flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+        style="font-size:14px;">
+        <span class="material-symbols-outlined text-[18px]">share</span> Share
+      </button>
+    </div>
+
+    <!-- QR Code -->
+    <div class="qr-container">
+      <p class="font-body text-on-surface-variant" style="font-size:11px;font-weight:500;">Or scan to join</p>
+      <div class="qr-code" id="qrCode">
+        <div class="skeleton w-full h-full"></div>
+      </div>
+      <p class="font-body text-outline" style="font-size:10px;">Screenshot and share in person</p>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="bg-surface-cl rounded-xl p-5 fade-up">
+    <p class="font-body text-on-surface-variant mb-4" style="font-size:12px;font-weight:500;">How It Works</p>
+
+    <div class="space-y-4">
+      <div class="step-card">
+        <div class="step-num signature-gradient text-on-primary">1</div>
+        <div>
+          <p class="font-headline font-semibold text-on-surface" style="font-size:14px;">Share your unique link</p>
+          <p class="font-body text-on-surface-variant" style="font-size:12px;line-height:18px;">Send it to friends, family, or your community</p>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num signature-gradient text-on-primary">2</div>
+        <div>
+          <p class="font-headline font-semibold text-on-surface" style="font-size:14px;">They sign up & join</p>
+          <p class="font-body text-on-surface-variant" style="font-size:12px;line-height:18px;">They create an account using your invite link</p>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num signature-gradient text-on-primary">3</div>
+        <div>
+          <p class="font-headline font-semibold text-on-surface" style="font-size:14px;">They subscribe → you level up</p>
+          <p class="font-body text-on-surface-variant" style="font-size:12px;line-height:18px;">When they become a paying warrior, your recruit milestone advances</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- YOUR RECRUITS -->
+  <section class="fade-up">
+    <div class="flex items-center justify-between mb-3">
+      <p class="font-body text-on-surface-variant" style="font-size:12px;font-weight:500;">Your Recruits</p>
+      <span id="recruitTotal" class="font-body text-outline" style="font-size:12px;font-weight:500;"></span>
+    </div>
+    <div id="recruitList" class="space-y-2">
+      <div class="skeleton h-16 w-full"></div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+var supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+)
+
+var currentUser = null
+var userProfile = null
+var inviteLink = ''
+var referrals = []
+
+var recruitMilestones = [1, 5, 10, 25, 50]
+
+var observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible') })
+}, {threshold:0.1})
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+async function init() {
+  try {
+    var s = await supabaseClient.auth.getSession()
+    if (!s.data || !s.data.session) { window.location.href = 'login.html'; return }
+    currentUser = s.data.session.user
+
+    var results = await Promise.allSettled([
+      supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single(),
+      supabaseClient.from('referrals').select('*').eq('referrer_id', currentUser.id).order('created_at', {ascending:false})
+    ])
+
+    userProfile = (results[0].status === 'fulfilled' && results[0].value.data) ? results[0].value.data : {}
+    referrals = (results[1].status === 'fulfilled' && results[1].value.data) ? results[1].value.data : []
+
+    // Ensure invite code exists
+    await ensureInviteCode()
+
+    // Build invite link
+    inviteLink = window.location.origin + '/app/signup.html?ref=' + userProfile.invite_code
+
+    renderHero()
+    renderMilestones()
+    renderInviteLink()
+    renderQRCode()
+    renderRecruitList()
+
+    setTimeout(function() {
+      document.querySelectorAll('.fade-up').forEach(function(el) { observer.observe(el) })
+    }, 50)
+
+    setupListeners()
+
+  } catch(e) {
+    console.error('[Recruit] Init error:', e)
+    showToast('Error loading. Please refresh.')
+  }
+}
+
+// ════════════════════════════════════════════
+// ENSURE INVITE CODE
+// ════════════════════════════════════════════
+async function ensureInviteCode() {
+  if (userProfile.invite_code) return
+
+  // Generate a unique code: first 4 chars of name + random 4 digits
+  var name = (userProfile.nickname || userProfile.full_name || 'gstw').toLowerCase().replace(/[^a-z]/g, '')
+  var prefix = name.substring(0, 4)
+  var suffix = Math.floor(1000 + Math.random() * 9000)
+  var code = prefix + suffix
+
+  // Check uniqueness
+  var check = await supabaseClient.from('profiles').select('id').eq('invite_code', code).single()
+  if (check.data) {
+    // Collision — add more random
+    code = prefix + Math.floor(10000 + Math.random() * 90000)
+  }
+
+  await supabaseClient.from('profiles').update({ invite_code: code }).eq('id', currentUser.id)
+  userProfile.invite_code = code
+}
+
+// ════════════════════════════════════════════
+// HERO
+// ════════════════════════════════════════════
+function renderHero() {
+  var total = referrals.length
+  var subscribed = referrals.filter(function(r) { return r.status === 'subscribed' }).length
+  var signedUp = total - subscribed
+
+  animateNumber(document.getElementById('heroCount'), 0, total, 800)
+
+  var subEl = document.getElementById('subscribedCount')
+  var sigEl = document.getElementById('signedUpCount')
+  if (subEl) subEl.textContent = subscribed
+  if (sigEl) sigEl.textContent = signedUp
+}
+
+// ════════════════════════════════════════════
+// MILESTONES
+// ════════════════════════════════════════════
+function renderMilestones() {
+  // Only count subscribed referrals for milestones
+  var subscribed = referrals.filter(function(r) { return r.status === 'subscribed' }).length
+  var total = subscribed
+
+  // Find current and next milestone
+  var currentMilestone = null
+  var nextMilestone = null
+  var prevMilestone = 0
+
+  for (var i = 0; i < recruitMilestones.length; i++) {
+    if (total < recruitMilestones[i]) {
+      nextMilestone = recruitMilestones[i]
+      prevMilestone = i > 0 ? recruitMilestones[i-1] : 0
+      break
+    }
+    currentMilestone = recruitMilestones[i]
+  }
+
+  // Progress bar
+  var barEl = document.getElementById('milestoneBar')
+  var labelEl = document.getElementById('milestoneLabel')
+  var hintEl = document.getElementById('milestoneHint')
+
+  if (nextMilestone) {
+    var range = nextMilestone - prevMilestone
+    var progress = range > 0 ? ((total - prevMilestone) / range) * 100 : 0
+    if (barEl) setTimeout(function() { barEl.style.width = Math.min(Math.max(progress, 0), 100) + '%' }, 300)
+    if (labelEl) labelEl.textContent = total + ' / ' + nextMilestone + ' subscribed'
+    if (hintEl) hintEl.textContent = (nextMilestone - total) + ' more subscribed recruits to next milestone'
+  } else {
+    if (barEl) setTimeout(function() { barEl.style.width = '100%' }, 300)
+    if (labelEl) labelEl.textContent = 'All milestones reached!'
+    if (hintEl) hintEl.textContent = 'You are a true recruiting champion'
+  }
+
+  // Visual milestone dots
+  renderMilestoneDots(total)
+}
+
+function renderMilestoneDots(count) {
+  var container = document.getElementById('milestoneDots')
+  if (!container) return
+
+  // Keep the line elements
+  var lineEl = container.querySelector('.milestone-line')
+  var fillEl = document.getElementById('milestoneLineFill')
+
+  // Clear existing dots
+  var existing = container.querySelectorAll('.milestone-dot-wrap')
+  existing.forEach(function(e) { e.remove() })
+
+  var maxMilestone = recruitMilestones[recruitMilestones.length - 1]
+
+  // Calculate fill width
+  var fillPct = 0
+  for (var i = 0; i < recruitMilestones.length; i++) {
+    if (count >= recruitMilestones[i]) {
+      fillPct = ((i + 1) / recruitMilestones.length) * 100
+    }
+  }
+  // Partial fill toward next
+  if (count < maxMilestone) {
+    var nextIdx = recruitMilestones.findIndex(function(m) { return m > count })
+    if (nextIdx >= 0) {
+      var prev = nextIdx > 0 ? recruitMilestones[nextIdx - 1] : 0
+      var segmentWidth = 100 / recruitMilestones.length
+      var segmentProgress = prev < recruitMilestones[nextIdx] ? (count - prev) / (recruitMilestones[nextIdx] - prev) : 0
+      fillPct = (nextIdx * segmentWidth) + (segmentProgress * segmentWidth)
+    }
+  }
+
+  if (fillEl) setTimeout(function() { fillEl.style.width = Math.min(fillPct, 100) + '%' }, 400)
+
+  // Create dots
+  recruitMilestones.forEach(function(milestone, idx) {
+    var earned = count >= milestone
+    var isCurrent = !earned && (idx === 0 ? count > 0 : count >= recruitMilestones[idx - 1])
+    var dotWrap = document.createElement('div')
+    dotWrap.className = 'milestone-dot-wrap'
+    dotWrap.style.cssText = 'position:absolute;z-index:2;left:' + (((idx + 0.5) / recruitMilestones.length) * 100) + '%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px'
+
+    var dot = document.createElement('div')
+    dot.className = 'milestone-dot font-headline ' + (earned ? 'earned' : isCurrent ? 'current' : 'locked')
+
+    if (earned) {
+      dot.innerHTML = '<span class="material-symbols-outlined text-[16px] filled" style="color:#f7f9ff">check</span>'
+    } else {
+      dot.textContent = milestone
+    }
+
+    var label = document.createElement('span')
+    label.className = 'font-body ' + (earned ? 'text-primary font-semibold' : 'text-outline')
+    label.style.cssText = 'font-size:9px;white-space:nowrap;margin-top:4px'
+    label.textContent = milestone === 1 ? 'First' : milestone === 5 ? 'Squad' : milestone === 10 ? 'Captain' : milestone === 25 ? 'Battalion' : 'Legend'
+
+    dotWrap.appendChild(dot)
+    dotWrap.appendChild(label)
+    container.appendChild(dotWrap)
+  })
+
+  // Add padding for dots
+  container.style.height = '80px'
+  container.style.paddingTop = '16px'
+}
+
+// ════════════════════════════════════════════
+// INVITE LINK
+// ════════════════════════════════════════════
+function renderInviteLink() {
+  var el = document.getElementById('inviteLinkDisplay')
+  if (el) el.textContent = inviteLink
+}
+
+function copyInviteLink() {
+  if (!inviteLink) return
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(inviteLink).then(function() {
+      showToast('Invite link copied!')
+    })
+  } else {
+    var ta = document.createElement('textarea')
+    ta.value = inviteLink
+    document.body.appendChild(ta)
+    ta.select()
+    document.execCommand('copy')
+    document.body.removeChild(ta)
+    showToast('Copied!')
+  }
+}
+
+async function shareInviteLink() {
+  if (!inviteLink) return
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: 'Join Go Spread The Word',
+        text: 'Join me in spreading the Word every day. Sign up here:',
+        url: inviteLink
+      })
+    } catch(e) {
+      if (e.name !== 'AbortError') copyInviteLink()
+    }
+  } else {
+    copyInviteLink()
+  }
+}
+
+// ════════════════════════════════════════════
+// QR CODE — Inline SVG generator (no library)
+// ════════════════════════════════════════════
+function renderQRCode() {
+  var container = document.getElementById('qrCode')
+  if (!container || !inviteLink) return
+
+  // Use a QR code API for simplicity and reliability
+  var qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=360x360&color=3d6285&bgcolor=ffffff&data=' + encodeURIComponent(inviteLink)
+
+  var img = new Image()
+  img.onload = function() {
+    container.innerHTML = ''
+    img.style.width = '100%'
+    img.style.height = '100%'
+    img.style.objectFit = 'contain'
+    img.alt = 'QR Code for invite link'
+    container.appendChild(img)
+  }
+  img.onerror = function() {
+    container.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-surface-clow rounded-xl"><p class="font-body text-outline" style="font-size:12px;">QR unavailable</p></div>'
+  }
+  img.src = qrUrl
+}
+
+// ════════════════════════════════════════════
+// RECRUIT LIST
+// ════════════════════════════════════════════
+function renderRecruitList() {
+  var container = document.getElementById('recruitList')
+  var totalEl = document.getElementById('recruitTotal')
+  if (!container) return
+
+  if (totalEl) totalEl.textContent = referrals.length > 0 ? referrals.length + ' total' : ''
+
+  if (referrals.length === 0) {
+    container.innerHTML =
+      '<div class="bg-surface-cl rounded-xl text-center py-8 px-4">'
+        + '<span class="material-symbols-outlined text-outline text-[36px] block mb-2">group_add</span>'
+        + '<p class="font-body text-on-surface-variant mb-1" style="font-size:14px;">No recruits yet</p>'
+        + '<p class="font-body text-outline" style="font-size:12px;">Share your link to start recruiting warriors</p>'
+      + '</div>'
+    return
+  }
+
+  container.innerHTML = ''
+
+  referrals.forEach(function(ref) {
+    var isSubscribed = ref.status === 'subscribed'
+    var date = new Date(ref.signed_up_at || ref.created_at)
+    var dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+    var card = document.createElement('div')
+    card.className = 'recruit-card'
+
+    card.innerHTML =
+      '<div class="w-10 h-10 rounded-xl ' + (isSubscribed ? 'signature-gradient' : 'bg-surface-clow') + ' flex items-center justify-center flex-shrink-0">'
+        + '<span class="material-symbols-outlined ' + (isSubscribed ? 'text-on-primary' : 'text-on-surface-variant') + ' text-[20px] ' + (isSubscribed ? 'filled' : '') + '">'
+          + (isSubscribed ? 'verified' : 'person')
+        + '</span>'
+      + '</div>'
+      + '<div class="flex-1 min-w-0">'
+        + '<p class="font-body font-semibold text-on-surface" style="font-size:13px;">Warrior Recruit</p>'
+        + '<p class="font-body text-outline" style="font-size:11px;">Joined ' + dateStr + '</p>'
+      + '</div>'
+      + '<div class="flex-shrink-0">'
+        + (isSubscribed
+          ? '<span class="inline-flex items-center gap-1 bg-primary-container/20 text-primary px-2.5 py-1 rounded-full font-body font-semibold" style="font-size:10px;"><span class="material-symbols-outlined text-[12px] filled">check_circle</span>Subscribed</span>'
+          : '<span class="inline-flex items-center gap-1 bg-surface-clow text-on-surface-variant px-2.5 py-1 rounded-full font-body font-semibold" style="font-size:10px;">Signed up</span>')
+      + '</div>'
+
+    container.appendChild(card)
+  })
+}
+
+// ════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════
+function animateNumber(el, from, to, duration) {
+  if (!el) return
+  var start = performance.now()
+  function step(now) {
+    var p = Math.min((now - start) / duration, 1)
+    var eased = 1 - Math.pow(1 - p, 3)
+    el.textContent = Math.floor(from + (to - from) * eased)
+    if (p < 1) requestAnimationFrame(step)
+    else el.textContent = to
+  }
+  requestAnimationFrame(step)
+}
+
+function goBack() {
+  if (window.history.length > 1) window.history.back()
+  else window.location.href = 'profile.html'
+}
+
+function showToast(msg) {
+  var existing = document.getElementById('recruitToast')
+  if (existing) existing.remove()
+  var t = document.createElement('div')
+  t.id = 'recruitToast'
+  t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-2.5 rounded-full shadow-float whitespace-nowrap flex items-center gap-2'
+  t.style.fontSize = '13px'
+  t.innerHTML = '<span class="material-symbols-outlined text-primary-container text-[14px] filled">check_circle</span> ' + msg
+  document.body.appendChild(t)
+  setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
+}
+
+function setupListeners() {
+  window.addEventListener('scroll', function() {
+    var header = document.getElementById('pageHeader')
+    if (header) header.classList.toggle('header-scrolled', window.scrollY > 8)
+  })
+}
+
+init()
+</script>
+</body>
+</html>
