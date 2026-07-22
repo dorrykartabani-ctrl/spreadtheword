@@ -311,10 +311,37 @@
     .no-scrollbar::-webkit-scrollbar{display:none}
     .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
 
-    /* Chip scroll fade */
+       /* Chip scroll fade */
     .chip-scroll{
       -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 12px,#000 calc(100% - 24px),transparent 100%);
       mask-image:linear-gradient(90deg,transparent 0,#000 12px,#000 calc(100% - 24px),transparent 100%);
+    }
+
+    /* Enable horizontal scroll on desktop via wheel */
+    .desktop-scroll{
+      overflow-x:auto;
+      overflow-y:hidden;
+      scroll-behavior:smooth;
+    }
+    .desktop-scroll::-webkit-scrollbar{
+      height:6px;
+    }
+    .desktop-scroll::-webkit-scrollbar-track{
+      background:transparent;
+    }
+    .desktop-scroll::-webkit-scrollbar-thumb{
+      background:rgba(94,96,89,0.2);
+      border-radius:3px;
+    }
+    .desktop-scroll::-webkit-scrollbar-thumb:hover{
+      background:rgba(94,96,89,0.4);
+    }
+    @media (hover:hover){
+      .desktop-scroll{
+        overflow-x:auto;
+        -ms-overflow-style:auto;
+        scrollbar-width:thin;
+      }
     }
 
     @keyframes spin{to{transform:rotate(360deg)}}
@@ -372,9 +399,8 @@
         <!-- Darkness overlay -->
         <div id="darkLayer" class="absolute inset-0" style="background:rgba(0,0,0,0.3)"></div>
 
-        <!-- Quote overlay (draggable) -->
+              <!-- Quote overlay (draggable) -->
         <div id="quoteOverlay" class="absolute left-[10%] top-[25%] w-[80%] p-4 flex flex-col text-center">
-          <span id="quoteMark" class="text-[36px] leading-none text-gold/60 mb-1" style="font-family:Georgia,serif">"</span>
           <p id="quoteText" class="font-quote font-semibold text-[18px] text-white leading-snug" style="opacity:0;transition:opacity 0.3s"></p>
           <p id="quoteRef" class="mt-3 font-body font-bold text-[11px] text-white/90 tracking-wider" style="opacity:0;transition:opacity 0.3s"></p>
         </div>
@@ -434,7 +460,7 @@
     <!-- BACKGROUND PANEL -->
     <div id="panelBackground" class="tool-panel">
       <p class="text-[10px] font-bold text-text-light uppercase tracking-widest mb-3">Choose a background</p>
-      <div class="chip-scroll flex gap-2 overflow-x-auto no-scrollbar pb-1">
+           <div class="chip-scroll desktop-scroll flex gap-2 overflow-x-auto pb-1" onwheel="if(event.deltaY!==0){event.preventDefault();this.scrollLeft+=event.deltaY}">
         <button onclick="openGallery()" class="bg-thumb bg-cream flex items-center justify-center border-2 border-border-soft" style="border-style:dashed">
           <span class="material-symbols-outlined text-text-muted text-[24px]">add_photo_alternate</span>
         </button>
@@ -478,7 +504,7 @@
 
       <!-- Font -->
       <div id="textFont" class="text-sub">
-        <div class="flex gap-2 overflow-x-auto no-scrollbar">
+        <div class="desktop-scroll flex gap-2 overflow-x-auto" onwheel="if(event.deltaY!==0){event.preventDefault();this.scrollLeft+=event.deltaY}"">
           <button onclick="setFont('font-lora',this)" class="font-opt selected" style="font-family:'Lora',serif">Lora</button>
           <button onclick="setFont('font-jakarta',this)" class="font-opt font-bold" style="font-family:'Plus Jakarta Sans'">Jakarta</button>
           <button onclick="setFont('font-playfair',this)" class="font-opt font-bold" style="font-family:'Playfair Display',serif">Playfair</button>
@@ -499,7 +525,7 @@
 
       <!-- Color -->
       <div id="textColor" class="text-sub hidden">
-        <div class="flex gap-2 overflow-x-auto no-scrollbar">
+        <div class="desktop-scroll flex gap-2 overflow-x-auto" onwheel="if(event.deltaY!==0){event.preventDefault();this.scrollLeft+=event.deltaY}"">
           <div class="color-swatch selected" style="background:#FFFFFF" onclick="setColor('#FFFFFF',this)"></div>
           <div class="color-swatch" style="background:#FDE047" onclick="setColor('#FDE047',this)"></div>
           <div class="color-swatch" style="background:#D4A24C" onclick="setColor('#D4A24C',this)"></div>
@@ -1151,24 +1177,18 @@
       else ctx.textAlign = 'left'
       ctx.textBaseline = 'top'
 
-      // Quote mark (decorative)
-      ctx.font = "400 100px Georgia, serif"
-      ctx.fillStyle = 'rgba(212,162,76,0.5)'
-      var markX = align === 'center' ? textX + textW / 2 : align === 'right' ? textX + textW - innerPadding : contentX
-      ctx.fillText('"', markX, contentY - 20)
-
-      // Quote text
+         // Quote text (no decorative mark)
       var scaledFontSize = Math.round(fontSize * 3.2)
       ctx.font = '600 ' + scaledFontSize + 'px ' + fontFam
       var quoteText = qt ? qt.textContent : ''
       var lines = wrapText(ctx, quoteText, contentW)
       var lineHeight = scaledFontSize * 1.4
-      var quoteStartY = contentY + 70
+      var quoteStartY = contentY + 20
 
       // Draw pill background BEFORE text if selected
       if (textStyle === 'pill') {
         // Calculate total content height
-        var totalTextHeight = 70 + (lines.length * lineHeight) + 60 + (fontSize * 1.4) + 30
+        var totalTextHeight = 20 + (lines.length * lineHeight) + 60 + (fontSize * 1.4) + 30
         ctx.fillStyle = 'rgba(0,0,0,0.4)'
         ctx.beginPath()
         if (ctx.roundRect) {
