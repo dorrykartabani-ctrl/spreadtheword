@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Notifications — Go Spread The Word</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
+            'surface-c':'#efeee7','surface-chigh':'#e9e8e1','surface-chighest':'#e3e3db',
+            'on-surface':'#31332e','on-surface-variant':'#5e6059',
+            'inverse-surface':'#0e0e0c','inverse-on-surface':'#9e9d99',
+            'outline':'#7a7b75','outline-variant':'#b2b2ab',
+            'primary':'#3d6285','on-primary':'#f7f9ff',
+            'primary-container':'#b0d5fe','on-primary-container':'#234a6c',
+            'inverse-primary':'#b0d5fe',
+            'secondary':'#41637c','on-secondary':'#f6f9ff',
+            'secondary-container':'#cae6ff','on-secondary-container':'#33556e',
+            'tertiary':'#ad332b','on-tertiary':'#fff7f6',
+            'tertiary-container':'#fe6d60',
+            'primary-dim':'#305678','secondary-dim':'#355670','tertiary-dim':'#9d2621',
+            'background':'#fbf9f4','on-background':'#31332e','surface-variant':'#e3e3db',
+          },
+          fontFamily:{
+            'headline':['Plus Jakarta Sans','sans-serif'],
+            'body':['Manrope','sans-serif'],
+          },
+          boxShadow:{
+            'ambient':'0 20px 40px rgba(49,51,46,0.05)',
+            'ambient-sm':'0 8px 24px rgba(49,51,46,0.04)',
+            'float':'0 20px 40px rgba(49,51,46,0.08)',
+          },
+          borderRadius:{
+            'sm':'0.25rem','DEFAULT':'0.5rem','md':'0.75rem',
+            'lg':'1rem','xl':'1.5rem','2xl':'1.5rem','full':'9999px',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;-webkit-tap-highlight-color:transparent;min-height:100dvh;letter-spacing:-0.005em}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
+    .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+    ::-webkit-scrollbar{display:none}
+    body{-ms-overflow-style:none;scrollbar-width:none}
+
+    .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
+    .glass-header{background:rgba(251,249,244,0.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);transition:box-shadow 0.2s ease}
+    .header-scrolled{box-shadow:0 8px 24px rgba(49,51,46,0.04)}
+
+    /* Filter tabs */
+    .filter-tab{
+      padding:7px 14px;border-radius:99px;font-size:12px;font-weight:700;
+      color:#5e6059;background:#f5f4ed;transition:all 0.15s ease;
+      white-space:nowrap;flex-shrink:0;-webkit-tap-highlight-color:transparent;
+    }
+    .filter-tab.active{background:#3d6285;color:#f7f9ff}
+
+    /* Notification card */
+    .notif-card{
+      position:relative;overflow:hidden;border-radius:16px;
+      background:#ffffff;transition:transform 0.15s ease;
+    }
+    .notif-card.unread{background:#ffffff}
+    .notif-card.read{background:#f5f4ed}
+
+    /* Swipe layer */
+    .notif-swipe-container{position:relative;overflow:hidden;border-radius:16px}
+    .notif-dismiss-bg{
+      position:absolute;top:0;right:0;bottom:0;width:100px;
+      background:#ad332b;display:flex;align-items:center;justify-content:center;
+      border-radius:0 16px 16px 0;
+    }
+    .notif-content{
+      position:relative;z-index:1;background:inherit;border-radius:16px;
+      transition:transform 0.2s ease;touch-action:pan-y;
+    }
+    .notif-content.swiping{transition:none}
+    .notif-content.dismissed{transform:translateX(-120%)!important;opacity:0;transition:transform 0.3s ease,opacity 0.3s ease}
+
+    /* Unread dot */
+    .unread-dot{width:8px;height:8px;border-radius:50%;background:#3d6285;flex-shrink:0}
+
+    /* Category icons */
+    .notif-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+    /* Section label */
+    .section-label{font-size:11px;font-weight:500;color:#7a7b75;padding:0 4px;margin-bottom:8px}
+
+    /* Fade */
+    .fade-up{opacity:0;transform:translateY(12px);transition:opacity 0.5s ease,transform 0.5s ease}
+    .fade-up.visible{opacity:1;transform:translateY(0)}
+
+    /* Skeleton */
+    .skeleton{background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:16px}
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  </style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header id="pageHeader" class="fixed top-0 w-full z-50 glass-header">
+  <div class="max-w-[430px] mx-auto px-5 pt-10 pb-3 flex items-center justify-between">
+    <button onclick="goBack()" class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-clow active:scale-90 transition-all rounded-full">
+      <span class="material-symbols-outlined text-[22px]">arrow_back</span>
+    </button>
+    <h1 class="font-headline font-semibold text-on-surface" style="font-size:18px;line-height:28px;">Notifications</h1>
+    <button id="markAllBtn" onclick="markAllRead()" class="hidden w-10 h-10 flex items-center justify-center text-primary hover:bg-surface-clow active:scale-90 transition-all rounded-full" title="Mark all read">
+      <span class="material-symbols-outlined text-[20px]">done_all</span>
+    </button>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="pt-28 pb-16 px-5 max-w-[430px] mx-auto">
+
+  <!-- FILTER TABS -->
+  <section class="mb-5 fade-up" id="filterSection">
+    <div class="flex gap-2 overflow-x-auto pb-1" style="-ms-overflow-style:none;scrollbar-width:none">
+      <button onclick="setFilter('all',this)" class="filter-tab active">All</button>
+      <button onclick="setFilter('unread',this)" class="filter-tab">
+        Unread <span id="unreadBadge" class="hidden ml-1 bg-on-primary/20 text-on-primary px-1.5 py-0.5 rounded-full" style="font-size:10px;">0</span>
+      </button>
+      <button onclick="setFilter('broadcast',this)" class="filter-tab">Announcements</button>
+      <button onclick="setFilter('mission',this)" class="filter-tab">Missions</button>
+      <button onclick="setFilter('milestone',this)" class="filter-tab">Milestones</button>
+      <button onclick="setFilter('recruit',this)" class="filter-tab">Recruits</button>
+      <button onclick="setFilter('system',this)" class="filter-tab">System</button>
+    </div>
+  </section>
+
+  <!-- NOTIFICATION LIST -->
+  <div id="notifContainer" class="space-y-2">
+    <div class="skeleton h-20 w-full"></div>
+    <div class="skeleton h-20 w-full"></div>
+    <div class="skeleton h-20 w-full"></div>
+  </div>
+
+  <!-- EMPTY STATE -->
+  <div id="emptyState" class="hidden text-center py-16">
+    <div class="w-16 h-16 rounded-2xl bg-surface-clow flex items-center justify-center mx-auto mb-4">
+      <span id="emptyIcon" class="material-symbols-outlined text-outline text-[32px]">notifications_off</span>
+    </div>
+    <h3 id="emptyTitle" class="font-headline font-bold text-on-surface mb-1" style="font-size:18px;">You're all caught up</h3>
+    <p id="emptyMsg" class="font-body text-on-surface-variant" style="font-size:14px;">No notifications to show</p>
+  </div>
+
+</main>
+
+<script>
+var supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+)
+
+var currentUser = null
+var userProfile = null
+var allNotifications = []
+var readMap = {}       // { notification_id: { read_at, dismissed_at } }
+var currentFilter = 'all'
+
+// Category config
+var categoryConfig = {
+  broadcast: { icon:'campaign',        iconClass:'filled', bg:'bg-primary-container/20', color:'text-primary',   label:'Announcement' },
+  milestone: { icon:'emoji_events',    iconClass:'filled', bg:'bg-secondary-container/20',color:'text-secondary', label:'Milestone' },
+  recruit:   { icon:'group_add',       iconClass:'filled', bg:'bg-primary-container/20', color:'text-primary',   label:'Recruit' },
+  mission:   { icon:'volunteer_activism',iconClass:'filled',bg:'bg-secondary-container/20',color:'text-secondary',label:'Mission' },
+  system:    { icon:'settings',        iconClass:'',       bg:'bg-surface-chigh',        color:'text-on-surface-variant', label:'System' },
+}
+
+// Preference keys map to categories
+var prefMap = {
+  broadcast: 'notif_broadcasts',
+  milestone: 'notif_milestones',
+  recruit:   'notif_recruits',
+  mission:   'notif_missions',
+  system:    'notif_system'
+}
+
+var observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible') })
+}, {threshold:0.1})
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+async function init() {
+  try {
+    var s = await supabaseClient.auth.getSession()
+    if (!s.data || !s.data.session) { window.location.href = 'login.html'; return }
+    currentUser = s.data.session.user
+
+    var results = await Promise.allSettled([
+      supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single(),
+      supabaseClient.from('notifications').select('*').order('created_at', {ascending:false}).limit(100),
+      supabaseClient.from('notification_reads').select('*').eq('user_id', currentUser.id)
+    ])
+
+    userProfile = (results[0].status === 'fulfilled' && results[0].value.data) ? results[0].value.data : {}
+    var rawNotifs = (results[1].status === 'fulfilled' && results[1].value.data) ? results[1].value.data : []
+    var reads = (results[2].status === 'fulfilled' && results[2].value.data) ? results[2].value.data : []
+
+    // Build read map
+    reads.forEach(function(r) {
+      readMap[r.notification_id] = { read_at: r.read_at, dismissed_at: r.dismissed_at }
+    })
+
+    // Filter to relevant notifications
+    allNotifications = rawNotifs.filter(function(n) {
+      // Must be for this user or a broadcast
+      if (n.type !== 'broadcast' && n.target_user_id !== currentUser.id) return false
+
+      // Check expiry
+      if (n.expires_at && new Date(n.expires_at) < new Date()) return false
+
+      // Check dismissed
+      var readState = readMap[n.id]
+      if (readState && readState.dismissed_at) return false
+
+      // Check user preferences
+      var category = n.category || n.type || 'broadcast'
+      var prefKey = prefMap[category]
+      if (prefKey && userProfile[prefKey] === false) return false
+
+      return true
+    })
+
+    // Migrate old localStorage reads to DB (one-time)
+    await migrateLocalStorageReads()
+
+    renderNotifications()
+    updateMarkAllButton()
+
+    setTimeout(function() {
+      document.querySelectorAll('.fade-up').forEach(function(el) { observer.observe(el) })
+    }, 50)
+
+    setupListeners()
+
+  } catch(e) {
+    console.error('[Notifications] Init error:', e)
+    showToast('Error loading notifications')
+  }
+}
+
+// ════════════════════════════════════════════
+// MIGRATE OLD LOCALSTORAGE READS
+// ════════════════════════════════════════════
+async function migrateLocalStorageReads() {
+  try {
+    var oldReads = JSON.parse(localStorage.getItem('gstw_read_notifs') || '[]')
+    if (oldReads.length === 0) return
+
+    var toInsert = []
+    oldReads.forEach(function(notifId) {
+      if (!readMap[notifId]) {
+        toInsert.push({
+          user_id: currentUser.id,
+          notification_id: notifId,
+          read_at: new Date().toISOString()
+        })
+        readMap[notifId] = { read_at: new Date().toISOString(), dismissed_at: null }
+      }
+    })
+
+    if (toInsert.length > 0) {
+      await supabaseClient.from('notification_reads').upsert(toInsert, { onConflict: 'user_id,notification_id' })
+    }
+
+    // Clear old localStorage
+    localStorage.removeItem('gstw_read_notifs')
+  } catch(e) {
+    console.error('Migration error:', e)
+  }
+}
+
+// ════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════
+function renderNotifications() {
+  var container = document.getElementById('notifContainer')
+  var emptyState = document.getElementById('emptyState')
+  if (!container) return
+
+  // Filter
+  var filtered = allNotifications
+  if (currentFilter === 'unread') {
+    filtered = allNotifications.filter(function(n) { return !readMap[n.id] || !readMap[n.id].read_at })
+  } else if (currentFilter !== 'all') {
+    filtered = allNotifications.filter(function(n) {
+      var cat = n.category || n.type || 'broadcast'
+      return cat === currentFilter
+    })
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = ''
+    if (emptyState) {
+      emptyState.classList.remove('hidden')
+      var icon = document.getElementById('emptyIcon')
+      var title = document.getElementById('emptyTitle')
+      var msg = document.getElementById('emptyMsg')
+
+      if (currentFilter === 'unread') {
+        if (icon) icon.textContent = 'done_all'
+        if (title) title.textContent = "You're all caught up"
+        if (msg) msg.textContent = 'No unread notifications'
+      } else if (currentFilter !== 'all') {
+        if (icon) icon.textContent = 'filter_list_off'
+        if (title) title.textContent = 'Nothing here'
+        if (msg) msg.textContent = 'No ' + currentFilter + ' notifications'
+      } else {
+        if (icon) icon.textContent = 'notifications_off'
+        if (title) title.textContent = "You're all caught up"
+        if (msg) msg.textContent = 'No notifications to show'
+      }
+    }
+    return
+  }
+
+  if (emptyState) emptyState.classList.add('hidden')
+
+  // Group by time
+  var groups = groupByTime(filtered)
+  container.innerHTML = ''
+
+  Object.keys(groups).forEach(function(label) {
+    if (groups[label].length === 0) return
+
+    var sectionLabel = document.createElement('p')
+    sectionLabel.className = 'section-label font-body mt-4 first:mt-0'
+    sectionLabel.textContent = label
+    container.appendChild(sectionLabel)
+
+    groups[label].forEach(function(notif) {
+      container.appendChild(buildNotifCard(notif))
+    })
+  })
+
+  // Update unread badge
+  updateUnreadBadge()
+}
+
+function groupByTime(notifs) {
+  var now = new Date()
+  var today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  var weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate() - 7)
+  var monthAgo = new Date(today); monthAgo.setDate(monthAgo.getDate() - 30)
+
+  var groups = { 'Today': [], 'This Week': [], 'This Month': [], 'Earlier': [] }
+
+  notifs.forEach(function(n) {
+    var d = new Date(n.created_at)
+    if (d >= today) groups['Today'].push(n)
+    else if (d >= weekAgo) groups['This Week'].push(n)
+    else if (d >= monthAgo) groups['This Month'].push(n)
+    else groups['Earlier'].push(n)
+  })
+
+  return groups
+}
+
+// ════════════════════════════════════════════
+// BUILD CARD
+// ════════════════════════════════════════════
+function buildNotifCard(notif) {
+  var isRead = readMap[notif.id] && readMap[notif.id].read_at
+  var category = notif.category || notif.type || 'broadcast'
+  var config = categoryConfig[category] || categoryConfig['broadcast']
+  var timeStr = timeAgo(notif.created_at)
+
+  // Swipe container
+  var swipeContainer = document.createElement('div')
+  swipeContainer.className = 'notif-swipe-container fade-up'
+  swipeContainer.setAttribute('data-notif-id', notif.id)
+
+  // Dismiss background
+  var dismissBg = document.createElement('div')
+  dismissBg.className = 'notif-dismiss-bg'
+  dismissBg.innerHTML = '<span class="material-symbols-outlined text-on-tertiary text-[22px]">delete</span>'
+
+  // Content
+  var content = document.createElement('div')
+  content.className = 'notif-content notif-card ' + (isRead ? 'read' : 'unread')
+  content.setAttribute('data-notif-id', notif.id)
+
+  content.innerHTML =
+    '<div class="p-4 flex items-start gap-3">'
+      + '<div class="notif-icon ' + config.bg + '">'
+        + '<span class="material-symbols-outlined ' + config.color + ' text-[20px] ' + config.iconClass + '">' + config.icon + '</span>'
+      + '</div>'
+      + '<div class="flex-1 min-w-0">'
+        + '<div class="flex items-start justify-between gap-2">'
+          + '<p class="font-headline font-semibold text-on-surface leading-tight" style="font-size:13px;">' + escapeHtml(notif.title) + '</p>'
+          + '<div class="flex items-center gap-2 flex-shrink-0">'
+            + '<span class="font-body text-outline" style="font-size:10px;">' + timeStr + '</span>'
+            + (!isRead ? '<div class="unread-dot"></div>' : '')
+          + '</div>'
+        + '</div>'
+        + '<p class="font-body text-on-surface-variant mt-1 leading-relaxed" style="font-size:12px;">' + escapeHtml(notif.message) + '</p>'
+        + '<span class="font-body text-outline mt-1.5 inline-block" style="font-size:10px;font-weight:500;">' + config.label + '</span>'
+      + '</div>'
+    + '</div>'
+
+  // Mark as read on view
+  if (!isRead) {
+    var observerRead = new IntersectionObserver(function(entries) {
+      if (entries[0].isIntersecting) {
+        markAsRead(notif.id)
+        observerRead.disconnect()
+      }
+    }, { threshold: 0.5 })
+    setTimeout(function() { observerRead.observe(swipeContainer) }, 1000)
+  }
+
+  swipeContainer.appendChild(dismissBg)
+  swipeContainer.appendChild(content)
+
+  // Setup swipe
+  setupSwipe(content, notif.id)
+
+  return swipeContainer
+}
+
+// ════════════════════════════════════════════
+// SWIPE TO DISMISS
+// ════════════════════════════════════════════
+function setupSwipe(el, notifId) {
+  var startX = 0, currentX = 0, isSwiping = false
+
+  el.addEventListener('touchstart', function(e) {
+    startX = e.touches[0].clientX
+    currentX = 0
+    isSwiping = true
+    el.classList.add('swiping')
+  }, { passive: true })
+
+  el.addEventListener('touchmove', function(e) {
+    if (!isSwiping) return
+    currentX = e.touches[0].clientX - startX
+    // Only allow left swipe
+    if (currentX > 0) currentX = 0
+    if (currentX < -120) currentX = -120
+    el.style.transform = 'translateX(' + currentX + 'px)'
+  }, { passive: true })
+
+  el.addEventListener('touchend', function() {
+    isSwiping = false
+    el.classList.remove('swiping')
+
+    if (currentX < -80) {
+      // Dismiss
+      el.classList.add('dismissed')
+      setTimeout(function() {
+        dismissNotification(notifId)
+      }, 300)
+    } else {
+      // Snap back
+      el.style.transform = 'translateX(0)'
+    }
+  })
+
+  // Mouse support for desktop
+  el.addEventListener('mousedown', function(e) {
+    startX = e.clientX; currentX = 0; isSwiping = true
+    el.classList.add('swiping')
+    e.preventDefault()
+  })
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isSwiping || !el.classList.contains('swiping')) return
+    currentX = e.clientX - startX
+    if (currentX > 0) currentX = 0
+    if (currentX < -120) currentX = -120
+    el.style.transform = 'translateX(' + currentX + 'px)'
+  })
+
+  document.addEventListener('mouseup', function() {
+    if (!isSwiping || !el.classList.contains('swiping')) return
+    isSwiping = false
+    el.classList.remove('swiping')
+    if (currentX < -80) {
+      el.classList.add('dismissed')
+      setTimeout(function() { dismissNotification(notifId) }, 300)
+    } else {
+      el.style.transform = 'translateX(0)'
+    }
+  })
+}
+
+// ════════════════════════════════════════════
+// READ / DISMISS ACTIONS
+// ════════════════════════════════════════════
+async function markAsRead(notifId) {
+  if (readMap[notifId] && readMap[notifId].read_at) return
+
+  readMap[notifId] = readMap[notifId] || {}
+  readMap[notifId].read_at = new Date().toISOString()
+
+  // Update UI immediately
+  var card = document.querySelector('.notif-content[data-notif-id="' + notifId + '"]')
+  if (card) {
+    card.classList.remove('unread')
+    card.classList.add('read')
+    var dot = card.querySelector('.unread-dot')
+    if (dot) dot.remove()
+  }
+
+  updateUnreadBadge()
+  updateMarkAllButton()
+
+  // Save to DB
+  try {
+    await supabaseClient.from('notification_reads').upsert({
+      user_id: currentUser.id,
+      notification_id: notifId,
+      read_at: readMap[notifId].read_at
+    }, { onConflict: 'user_id,notification_id' })
+  } catch(e) { console.error('markAsRead error:', e) }
+}
+
+async function dismissNotification(notifId) {
+  readMap[notifId] = readMap[notifId] || {}
+  readMap[notifId].dismissed_at = new Date().toISOString()
+  if (!readMap[notifId].read_at) readMap[notifId].read_at = readMap[notifId].dismissed_at
+
+  // Remove from allNotifications
+  allNotifications = allNotifications.filter(function(n) { return n.id !== notifId })
+
+  // Remove from DOM
+  var container = document.querySelector('.notif-swipe-container[data-notif-id="' + notifId + '"]')
+  if (container) {
+    container.style.maxHeight = container.offsetHeight + 'px'
+    container.style.transition = 'max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease'
+    requestAnimationFrame(function() {
+      container.style.maxHeight = '0'
+      container.style.opacity = '0'
+      container.style.marginBottom = '0'
+      container.style.overflow = 'hidden'
+    })
+    setTimeout(function() {
+      if (container.parentNode) container.remove()
+      // Check if group label is now orphaned
+      cleanupEmptyGroups()
+    }, 350)
+  }
+
+  updateUnreadBadge()
+  updateMarkAllButton()
+
+  // Save to DB
+  try {
+    await supabaseClient.from('notification_reads').upsert({
+      user_id: currentUser.id,
+      notification_id: notifId,
+      read_at: readMap[notifId].read_at,
+      dismissed_at: readMap[notifId].dismissed_at
+    }, { onConflict: 'user_id,notification_id' })
+  } catch(e) { console.error('dismissNotification error:', e) }
+
+  showToast('Notification dismissed')
+}
+
+async function markAllRead() {
+  var unread = allNotifications.filter(function(n) { return !readMap[n.id] || !readMap[n.id].read_at })
+  if (unread.length === 0) return
+
+  var now = new Date().toISOString()
+  var toUpsert = []
+
+  unread.forEach(function(n) {
+    readMap[n.id] = readMap[n.id] || {}
+    readMap[n.id].read_at = now
+    toUpsert.push({
+      user_id: currentUser.id,
+      notification_id: n.id,
+      read_at: now
+    })
+  })
+
+  // Update UI
+  document.querySelectorAll('.notif-card.unread').forEach(function(card) {
+    card.classList.remove('unread')
+    card.classList.add('read')
+    var dot = card.querySelector('.unread-dot')
+    if (dot) dot.remove()
+  })
+
+  updateUnreadBadge()
+  updateMarkAllButton()
+  showToast('All marked as read')
+
+  // Save to DB
+  try {
+    await supabaseClient.from('notification_reads').upsert(toUpsert, { onConflict: 'user_id,notification_id' })
+  } catch(e) { console.error('markAllRead error:', e) }
+}
+
+// ════════════════════════════════════════════
+// CLEANUP
+// ════════════════════════════════════════════
+function cleanupEmptyGroups() {
+  var container = document.getElementById('notifContainer')
+  if (!container) return
+
+  var labels = container.querySelectorAll('.section-label')
+  labels.forEach(function(label) {
+    var next = label.nextElementSibling
+    // If next element is another label or doesn't exist, remove this label
+    if (!next || next.classList.contains('section-label')) {
+      label.remove()
+    }
+  })
+
+  // Check if completely empty
+  if (container.children.length === 0) {
+    document.getElementById('emptyState').classList.remove('hidden')
+  }
+}
+
+// ════════════════════════════════════════════
+// FILTER
+// ════════════════════════════════════════════
+function setFilter(filter, btn) {
+  currentFilter = filter
+  document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active') })
+  if (btn) btn.classList.add('active')
+  renderNotifications()
+}
+
+// ════════════════════════════════════════════
+// UI UPDATES
+// ════════════════════════════════════════════
+function updateUnreadBadge() {
+  var unreadCount = allNotifications.filter(function(n) { return !readMap[n.id] || !readMap[n.id].read_at }).length
+  var badge = document.getElementById('unreadBadge')
+  if (badge) {
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount
+      badge.classList.remove('hidden')
+    } else {
+      badge.classList.add('hidden')
+    }
+  }
+}
+
+function updateMarkAllButton() {
+  var unreadCount = allNotifications.filter(function(n) { return !readMap[n.id] || !readMap[n.id].read_at }).length
+  var btn = document.getElementById('markAllBtn')
+  if (btn) btn.classList.toggle('hidden', unreadCount === 0)
+}
+
+// ════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════
+function timeAgo(dateStr) {
+  var now = new Date(), then = new Date(dateStr)
+  var mins = Math.floor((now - then) / 60000)
+  var hrs = Math.floor(mins / 60)
+  var days = Math.floor(hrs / 24)
+  if (mins < 1) return 'Just now'
+  if (mins < 60) return mins + 'm ago'
+  if (hrs < 24) return hrs + 'h ago'
+  if (days < 7) return days + 'd ago'
+  return then.toLocaleDateString('en-US', { month:'short', day:'numeric' })
+}
+
+function escapeHtml(str) {
+  if (!str) return ''
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')
+}
+
+function goBack() {
+  if (window.history.length > 1) window.history.back()
+  else window.location.href = 'profile.html'
+}
+
+function showToast(msg) {
+  var existing = document.getElementById('notifToast')
+  if (existing) existing.remove()
+  var t = document.createElement('div')
+  t.id = 'notifToast'
+  t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-2.5 rounded-full shadow-float whitespace-nowrap flex items-center gap-2'
+  t.style.fontSize = '13px'
+  t.innerHTML = '<span class="material-symbols-outlined text-primary-container text-[14px] filled">check_circle</span> ' + msg
+  document.body.appendChild(t)
+  setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
+}
+
+function setupListeners() {
+  window.addEventListener('scroll', function() {
+    var header = document.getElementById('pageHeader')
+    if (header) header.classList.toggle('header-scrolled', window.scrollY > 8)
+  })
+}
+
+init()
+</script>
+</body>
+</html>
