@@ -455,31 +455,69 @@ var RUNWAY_DAYS = 42
 // ════════════════════════════════════════════
 async function checkAdminAuth() {
   try {
-    var result = await supabaseClient.auth.getSession()
-    if (!result.data.session) {
-      await new Promise(function(r) { setTimeout(r, 500) })
+    // Try to get session with retries
+    var result = null
+    for (var attempt = 0; attempt < 3; attempt++) {
       result = await supabaseClient.auth.getSession()
+      if (result.data && result.data.session) break
+      await new Promise(function(r) { setTimeout(r, 300) })
     }
-    if (!result.data.session) {
+
+    // If still no session, try refresh
+    if (!result.data || !result.data.session) {
       try {
         var refreshed = await supabaseClient.auth.refreshSession()
-        if (!refreshed.data.session) { window.location.href = 'login.html'; return false }
-        result = refreshed
-      } catch(e) { window.location.href = 'login.html'; return false }
+        if (refreshed.data && refreshed.data.session) {
+          result = refreshed
+        }
+      } catch(e) {
+        console.warn('Session refresh failed:', e)
+      }
+    }
+
+    // Final check — only redirect if truly no session
+    if (!result.data || !result.data.session) {
+      console.warn('No session found after retries')
+      window.location.href = 'login.html'
+      return false
     }
 
     currentUser = result.data.session.user
-    var p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single()
 
-    if (p.error || !p.data) { window.location.href = 'login.html'; return false }
-    if (p.data.role !== 'admin') { window.location.href = '../app/index.html'; return false }
+    var p = await supabaseClient
+      .from('profiles')
+      .select('role, full_name')
+      .eq('id', currentUser.id)
+      .single()
+
+    if (p.error) {
+      console.error('Profile query error:', p.error)
+      // Don't redirect on network errors — show error state
+      showToast('Connection error. Refreshing...')
+      setTimeout(function() { window.location.reload() }, 1500)
+      return false
+    }
+
+    if (!p.data) {
+      window.location.href = 'login.html'
+      return false
+    }
+
+    if (p.data.role !== 'admin') {
+      window.location.href = '../app/index.html'
+      return false
+    }
 
     var email = currentUser.email || ''
     var initials = '?'
     if (p.data.full_name) {
       var parts = p.data.full_name.trim().split(' ')
-      initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : parts[0].substring(0,2).toUpperCase()
-    } else if (email) { initials = email.substring(0,2).toUpperCase() }
+      initials = parts.length >= 2
+        ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
+        : parts[0].substring(0,2).toUpperCase()
+    } else if (email) {
+      initials = email.substring(0,2).toUpperCase()
+    }
 
     document.querySelectorAll('.admin-initials').forEach(function(el) { el.textContent = initials })
     document.querySelectorAll('.admin-name').forEach(function(el) { el.textContent = p.data.full_name || email })
@@ -487,11 +525,12 @@ async function checkAdminAuth() {
     return true
   } catch(e) {
     console.error('checkAdminAuth error:', e)
-    window.location.href = 'login.html'
+    // Don't blind-redirect on unknown errors — show retry
+    showToast('Error loading. Refreshing...')
+    setTimeout(function() { window.location.reload() }, 1500)
     return false
   }
 }
-
 function toggleSidebar() {
   var s = document.getElementById('sidebar')
   var o = document.getElementById('sidebarOverlay')
