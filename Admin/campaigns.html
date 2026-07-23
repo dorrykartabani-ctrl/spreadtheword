@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campaigns — GSTW Admin</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
+            'surface-c':'#efeee7','surface-chigh':'#e9e8e1','surface-chighest':'#e3e3db',
+            'on-surface':'#31332e','on-surface-variant':'#5e6059',
+            'inverse-surface':'#0e0e0c','inverse-on-surface':'#9e9d99',
+            'outline':'#7a7b75','outline-variant':'#b2b2ab',
+            'primary':'#3d6285','on-primary':'#f7f9ff',
+            'primary-container':'#b0d5fe','on-primary-container':'#234a6c',
+            'secondary':'#41637c','on-secondary':'#f6f9ff',
+            'secondary-container':'#cae6ff',
+            'tertiary':'#ad332b','on-tertiary':'#fff7f6',
+            'primary-dim':'#305678','secondary-dim':'#355670','tertiary-dim':'#9d2621',
+            'sidebar-bg':'#0e0e0c','sidebar-hover':'#1a1a18',
+          },
+          fontFamily:{
+            'headline':['Plus Jakarta Sans','sans-serif'],
+            'body':['Manrope','sans-serif'],
+          },
+          boxShadow:{
+            'ambient':'0 20px 40px rgba(49,51,46,0.05)',
+            'ambient-sm':'0 8px 24px rgba(49,51,46,0.04)',
+            'float':'0 20px 40px rgba(49,51,46,0.08)',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;letter-spacing:-0.005em}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
+    .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+    .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
+
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:3px}
+    .no-scrollbar::-webkit-scrollbar{display:none}
+    .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+
+    /* Sidebar */
+    .sidebar{background:#0e0e0c;color:#f7f9ff}
+    .sidebar-item{
+      display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;
+      color:rgba(247,249,255,0.6);font-size:13px;font-weight:600;
+      transition:all 0.15s ease;text-decoration:none;
+    }
+    .sidebar-item:hover{background:#1a1a18;color:#f7f9ff}
+    .sidebar-item.active{background:#3d6285;color:#f7f9ff}
+    .sidebar-item .material-symbols-outlined{font-size:20px}
+    .sidebar-item .soon-tag{
+      margin-left:auto;font-size:9px;font-weight:700;
+      background:rgba(247,249,255,0.08);color:rgba(247,249,255,0.5);
+      padding:2px 6px;border-radius:99px;letter-spacing:0.05em;
+    }
+
+    /* Campaign card */
+    .campaign-card{
+      background:#ffffff;border-radius:20px;
+      transition:all 0.2s ease;cursor:pointer;
+      overflow:hidden;
+    }
+    .campaign-card:hover{box-shadow:0 20px 40px rgba(49,51,46,0.05)}
+
+    /* Filter tabs */
+    .filter-tab{
+      padding:7px 14px;border-radius:99px;font-size:12px;font-weight:700;
+      color:#5e6059;background:#f5f4ed;transition:all 0.15s ease;
+      white-space:nowrap;flex-shrink:0;
+    }
+    .filter-tab.active{background:#3d6285;color:#f7f9ff}
+
+    /* Form inputs */
+    .form-input{
+      background:#ffffff;border:1px solid transparent;
+      transition:all 0.2s ease;
+    }
+    .form-input:focus{border-color:rgba(61,98,133,0.3);outline:none}
+    .form-input.error{border-color:#ad332b;animation:shake 0.3s ease}
+    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+
+    /* Icon picker */
+    .icon-pick{
+      width:44px;height:44px;border-radius:12px;
+      background:#f5f4ed;color:#5e6059;
+      display:flex;align-items:center;justify-content:center;
+      cursor:pointer;transition:all 0.15s ease;
+    }
+    .icon-pick:hover{background:#efeee7}
+    .icon-pick.selected{background:#3d6285;color:#f7f9ff;box-shadow:0 4px 12px rgba(61,98,133,0.25)}
+
+    /* Color swatch */
+    .color-swatch{
+      width:36px;height:36px;border-radius:50%;
+      cursor:pointer;transition:all 0.15s ease;
+      border:3px solid transparent;flex-shrink:0;
+    }
+    .color-swatch:active{transform:scale(0.9)}
+    .color-swatch.selected{border-color:#ffffff;box-shadow:0 0 0 2px #3d6285;transform:scale(1.1)}
+
+    /* Status badges */
+    .badge{
+      display:inline-flex;align-items:center;gap:4px;
+      padding:3px 8px;border-radius:99px;
+      font-size:10px;font-weight:700;letter-spacing:0.04em;
+      text-transform:uppercase;
+    }
+    .badge-active{background:rgba(61,98,133,0.15);color:#3d6285}
+    .badge-draft{background:rgba(122,123,117,0.2);color:#5e6059}
+    .badge-ended{background:rgba(178,178,171,0.25);color:#7a7b75}
+
+    /* Skeleton */
+    .skeleton{
+      background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%);
+      background-size:200% 100%;
+      animation:shimmer 1.5s infinite;
+      border-radius:12px;
+    }
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spin{animation:spin 1s linear infinite;display:inline-block}
+
+    @keyframes fadeUp{
+      from{opacity:0;transform:translateY(8px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+    .fade-up{animation:fadeUp 0.3s ease-out both}
+
+    /* Toggle */
+    .toggle-pill{
+      width:44px;height:24px;background:#b2b2ab;border-radius:12px;
+      position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;
+    }
+    .toggle-pill.on{background:#3d6285}
+    .toggle-pill .toggle-dot{
+      width:18px;height:18px;background:white;border-radius:50%;
+      position:absolute;top:3px;left:3px;transition:left 0.2s;
+      box-shadow:0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle-pill.on .toggle-dot{left:23px}
+  </style>
+</head>
+
+<body class="min-h-screen flex">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SIDEBAR -->
+<!-- ═══════════════════════════════════════════ -->
+<aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 hidden md:flex">
+  <div class="mb-6 px-2 pt-2">
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center">
+        <span class="font-headline font-bold text-on-primary" style="font-size:10px;">GSTW</span>
+      </div>
+      <div>
+        <h1 class="font-headline font-bold text-white" style="font-size:15px;letter-spacing:-0.02em;">Command</h1>
+        <p class="text-white/40 font-body" style="font-size:9px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">Admin Panel</p>
+      </div>
+    </div>
+  </div>
+
+  <nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
+    <a href="index.html" class="sidebar-item"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
+    <a href="manage-quotes.html" class="sidebar-item"><span class="material-symbols-outlined">format_quote</span>Quotes</a>
+    <a href="schedule.html" class="sidebar-item"><span class="material-symbols-outlined">calendar_today</span>Schedule</a>
+    <a href="campaigns.html" class="sidebar-item active"><span class="material-symbols-outlined">campaign</span>Campaigns</a>
+    <a href="manage-backgrounds.html" class="sidebar-item"><span class="material-symbols-outlined">wallpaper</span>Backgrounds<span class="soon-tag">SOON</span></a>
+    <a href="projects.html" class="sidebar-item"><span class="material-symbols-outlined">volunteer_activism</span>Missions</a>
+    <a href="warriors.html" class="sidebar-item"><span class="material-symbols-outlined">group</span>Users</a>
+    <a href="notifications.html" class="sidebar-item"><span class="material-symbols-outlined">notifications</span>Notifications</a>
+    <a href="ai-generator.html" class="sidebar-item"><span class="material-symbols-outlined">auto_awesome</span>AI Generator</a>
+    <a href="analytics.html" class="sidebar-item"><span class="material-symbols-outlined">analytics</span>Analytics</a>
+  </nav>
+
+  <div class="mt-4 pt-4 border-t border-white/10 space-y-2">
+    <a href="settings.html" class="sidebar-item"><span class="material-symbols-outlined">settings</span>Settings</a>
+    <div class="flex items-center gap-3 px-2 py-2">
+      <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center text-on-primary font-headline font-bold flex-shrink-0 admin-initials" style="font-size:13px;">AD</div>
+      <div class="flex-1 min-w-0">
+        <p class="font-body font-semibold text-white truncate admin-name" style="font-size:12px;">Admin</p>
+        <p class="text-white/40 font-body" style="font-size:10px;">Super Admin</p>
+      </div>
+      <button onclick="handleLogout()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-all flex-shrink-0" title="Log out">
+        <span class="material-symbols-outlined" style="font-size:16px;">logout</span>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<div id="sidebarOverlay" class="fixed inset-0 bg-inverse-surface/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- MAIN -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="flex-1 md:ml-64 flex flex-col min-h-screen">
+
+  <!-- HEADER -->
+  <header class="sticky top-0 z-20 bg-surface/85 backdrop-blur-xl">
+    <div class="flex items-center justify-between gap-4 px-6 lg:px-8 py-4">
+      <div class="flex items-center gap-4">
+        <button onclick="toggleSidebar()" class="md:hidden text-on-surface">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+        <h2 class="font-headline font-bold text-on-surface" style="font-size:22px;line-height:28px;">Campaigns</h2>
+      </div>
+      <button onclick="openCreate()"
+        class="signature-gradient text-on-primary font-headline font-semibold rounded-xl px-4 py-2.5 flex items-center gap-2 active:scale-[0.98] transition-transform"
+        style="font-size:13px;">
+        <span class="material-symbols-outlined" style="font-size:18px;">add</span>
+        <span class="hidden sm:inline">Create Campaign</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- LIST VIEW -->
+  <!-- ═══════════════════════════════════════════ -->
+  <main id="listView" class="p-6 lg:p-8 flex-1">
+    <div class="max-w-6xl mx-auto space-y-6">
+
+      <!-- Intro -->
+      <div class="bg-surface-cl rounded-xl p-4 flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-primary-container/20 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-primary" style="font-size:20px;">info</span>
+        </div>
+        <div>
+          <p class="font-body font-semibold text-on-surface" style="font-size:13px;">What are campaigns?</p>
+          <p class="font-body text-on-surface-variant mt-1" style="font-size:12px;line-height:18px;">Group quotes into themed series (like Christmas, Recovery, New Believer). Campaigns are admin-only — users see the quotes but not the campaign name. Assign quotes to a campaign when creating or editing them.</p>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-surface-cl p-5 rounded-2xl">
+          <p class="font-body text-on-surface-variant mb-1" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Total</p>
+          <h3 id="statTotal" class="font-headline font-bold text-on-surface" style="font-size:24px;">—</h3>
+        </div>
+        <div class="bg-surface-cl p-5 rounded-2xl">
+          <p class="font-body text-on-surface-variant mb-1" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Active</p>
+          <h3 id="statActive" class="font-headline font-bold text-on-surface" style="font-size:24px;">—</h3>
+        </div>
+        <div class="bg-surface-cl p-5 rounded-2xl">
+          <p class="font-body text-on-surface-variant mb-1" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Draft</p>
+          <h3 id="statDraft" class="font-headline font-bold text-on-surface" style="font-size:24px;">—</h3>
+        </div>
+        <div class="bg-surface-cl p-5 rounded-2xl">
+          <p class="font-body text-on-surface-variant mb-1" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Ended</p>
+          <h3 id="statEnded" class="font-headline font-bold text-on-surface" style="font-size:24px;">—</h3>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+        <button onclick="filterCampaigns('all',this)" class="filter-tab active">All <span id="countAll" class="opacity-60 ml-0.5"></span></button>
+        <button onclick="filterCampaigns('active',this)" class="filter-tab">Active</button>
+        <button onclick="filterCampaigns('draft',this)" class="filter-tab">Draft</button>
+        <button onclick="filterCampaigns('ended',this)" class="filter-tab">Ended</button>
+      </div>
+
+      <!-- Grid -->
+      <div id="campaignGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div class="skeleton h-56"></div>
+        <div class="skeleton h-56"></div>
+        <div class="skeleton h-56"></div>
+      </div>
+
+      <!-- Empty state -->
+      <div id="emptyState" class="hidden text-center py-16">
+        <div class="w-16 h-16 rounded-2xl bg-surface-clow flex items-center justify-center mx-auto mb-4">
+          <span class="material-symbols-outlined text-outline" style="font-size:32px;">campaign</span>
+        </div>
+        <h3 class="font-headline font-bold text-on-surface mb-2" style="font-size:18px;">No campaigns yet</h3>
+        <p class="font-body text-on-surface-variant mb-4" style="font-size:14px;">Create a campaign to group and organise your quotes.</p>
+        <button onclick="openCreate()" class="signature-gradient text-on-primary font-headline font-semibold px-5 py-2.5 rounded-xl inline-flex items-center gap-2" style="font-size:13px;">
+          <span class="material-symbols-outlined" style="font-size:16px;">add</span>Create your first campaign
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- FORM VIEW (Create + Edit) -->
+  <!-- ═══════════════════════════════════════════ -->
+  <main id="formView" class="hidden p-6 lg:p-8 flex-1">
+    <div class="max-w-3xl mx-auto space-y-6">
+
+      <!-- Breadcrumb -->
+      <nav class="flex items-center gap-2 font-body" style="font-size:13px;">
+        <button onclick="showList()" class="text-on-surface-variant hover:text-primary transition-colors">Campaigns</button>
+        <span class="material-symbols-outlined text-outline" style="font-size:14px;">chevron_right</span>
+        <span id="formCrumb" class="text-primary font-semibold">Create Campaign</span>
+      </nav>
+
+      <!-- Title -->
+      <div>
+        <h2 id="formTitle" class="font-headline font-bold text-on-surface" style="font-size:28px;line-height:36px;">Create New Campaign</h2>
+        <p class="font-body text-on-surface-variant mt-1" style="font-size:14px;">Group quotes into a themed series or campaign</p>
+      </div>
+
+      <form id="campaignForm" onsubmit="handleSubmit(event)" class="space-y-5">
+
+        <!-- Name -->
+        <div class="bg-surface-cl rounded-2xl p-5 space-y-2">
+          <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Campaign Name <span class="text-tertiary">*</span></label>
+          <input id="campaignName" type="text" placeholder="e.g. Christmas Series 2024" class="form-input w-full rounded-xl px-4 py-3 font-body text-on-surface placeholder:text-outline-variant" style="font-size:14px;">
+        </div>
+
+        <!-- Description -->
+        <div class="bg-surface-cl rounded-2xl p-5 space-y-2">
+          <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Description <span class="text-outline font-normal normal-case ml-1" style="letter-spacing:0;">(optional)</span></label>
+          <textarea id="campaignDesc" rows="3" placeholder="Notes for admin — what this campaign is about..." class="form-input w-full rounded-xl px-4 py-3 font-body text-on-surface placeholder:text-outline-variant resize-none" style="font-size:14px;"></textarea>
+        </div>
+
+        <!-- Visual Identity -->
+        <div class="bg-surface-cl rounded-2xl p-5 space-y-4">
+          <div>
+            <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Visual Identity</label>
+            <p class="font-body text-outline mt-1" style="font-size:11px;">Icon and color help identify this campaign at a glance</p>
+          </div>
+
+          <!-- Icon picker -->
+          <div>
+            <label class="font-body text-on-surface-variant block mb-2" style="font-size:11px;font-weight:500;">Icon</label>
+            <div class="flex gap-2 flex-wrap">
+              <div class="icon-pick" onclick="selectIcon('campaign',this)" data-icon="campaign" title="Campaign">
+                <span class="material-symbols-outlined" style="font-size:20px;">campaign</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('celebration',this)" data-icon="celebration" title="Celebration">
+                <span class="material-symbols-outlined" style="font-size:20px;">celebration</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('auto_awesome',this)" data-icon="auto_awesome" title="Sparkle">
+                <span class="material-symbols-outlined" style="font-size:20px;">auto_awesome</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('healing',this)" data-icon="healing" title="Healing">
+                <span class="material-symbols-outlined" style="font-size:20px;">healing</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('favorite',this)" data-icon="favorite" title="Heart">
+                <span class="material-symbols-outlined" style="font-size:20px;">favorite</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('menu_book',this)" data-icon="menu_book" title="Book">
+                <span class="material-symbols-outlined" style="font-size:20px;">menu_book</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('groups',this)" data-icon="groups" title="Groups">
+                <span class="material-symbols-outlined" style="font-size:20px;">groups</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('lightbulb',this)" data-icon="lightbulb" title="Idea">
+                <span class="material-symbols-outlined" style="font-size:20px;">lightbulb</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('bolt',this)" data-icon="bolt" title="Energy">
+                <span class="material-symbols-outlined" style="font-size:20px;">bolt</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('church',this)" data-icon="church" title="Church">
+                <span class="material-symbols-outlined" style="font-size:20px;">church</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('local_florist',this)" data-icon="local_florist" title="Flower">
+                <span class="material-symbols-outlined" style="font-size:20px;">local_florist</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('wb_sunny',this)" data-icon="wb_sunny" title="Sun">
+                <span class="material-symbols-outlined" style="font-size:20px;">wb_sunny</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Color picker -->
+          <div>
+            <label class="font-body text-on-surface-variant block mb-2" style="font-size:11px;font-weight:500;">Color</label>
+            <div class="flex items-center gap-2">
+              <div class="flex gap-2 flex-wrap flex-1">
+                <div class="color-swatch selected" onclick="selectColor('#3d6285',this)" data-color="#3d6285" style="background:#3d6285;"></div>
+                <div class="color-swatch" onclick="selectColor('#41637c',this)" data-color="#41637c" style="background:#41637c;"></div>
+                <div class="color-swatch" onclick="selectColor('#6b9bc3',this)" data-color="#6b9bc3" style="background:#6b9bc3;"></div>
+                <div class="color-swatch" onclick="selectColor('#ad332b',this)" data-color="#ad332b" style="background:#ad332b;"></div>
+                <div class="color-swatch" onclick="selectColor('#7a7b75',this)" data-color="#7a7b75" style="background:#7a7b75;"></div>
+                <div class="color-swatch" onclick="selectColor('#31332e',this)" data-color="#31332e" style="background:#31332e;"></div>
+              </div>
+              <input type="color" id="colorPicker" value="#3d6285" oninput="selectColor(this.value,null)" class="w-9 h-9 rounded-lg cursor-pointer border-0 bg-transparent" style="padding:0;">
+            </div>
+          </div>
+
+          <!-- Preview -->
+          <div class="bg-surface-clow rounded-xl p-4 flex items-center gap-3">
+            <span class="font-body text-outline" style="font-size:10px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Preview:</span>
+            <span id="chipPreview" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-body font-semibold text-white" style="font-size:12px;background:#3d6285;">
+              <span class="material-symbols-outlined filled" style="font-size:14px;">campaign</span>
+              <span id="chipName">Campaign Name</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Dates -->
+        <div class="grid grid-cols-2 gap-5">
+          <div class="bg-surface-cl rounded-2xl p-5 space-y-2">
+            <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Start Date <span class="text-outline font-normal normal-case ml-1" style="letter-spacing:0;">(optional)</span></label>
+            <input id="campaignStartDate" type="date" class="form-input w-full rounded-xl px-4 py-3 font-body text-on-surface" style="font-size:14px;">
+          </div>
+          <div class="bg-surface-cl rounded-2xl p-5 space-y-2">
+            <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">End Date <span class="text-outline font-normal normal-case ml-1" style="letter-spacing:0;">(optional)</span></label>
+            <input id="campaignEndDate" type="date" class="form-input w-full rounded-xl px-4 py-3 font-body text-on-surface" style="font-size:14px;">
+            <p class="font-body text-outline" style="font-size:11px;">Campaign auto-ends when this date passes</p>
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div class="bg-surface-cl rounded-2xl p-5 space-y-2">
+          <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Status</label>
+          <div class="grid grid-cols-3 gap-3 mt-2">
+            <label class="cursor-pointer">
+              <input type="radio" name="campaign_status" value="draft" class="hidden status-radio">
+              <div class="status-card bg-surface-clow rounded-xl p-3 text-center transition-all" data-status="draft">
+                <span class="material-symbols-outlined block mx-auto mb-1" style="font-size:20px;">drafts</span>
+                <span class="font-body font-semibold" style="font-size:12px;">Draft</span>
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="campaign_status" value="active" class="hidden status-radio" checked>
+              <div class="status-card bg-surface-clow rounded-xl p-3 text-center transition-all active" data-status="active">
+                <span class="material-symbols-outlined block mx-auto mb-1" style="font-size:20px;">bolt</span>
+                <span class="font-body font-semibold" style="font-size:12px;">Active</span>
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="campaign_status" value="ended" class="hidden status-radio">
+              <div class="status-card bg-surface-clow rounded-xl p-3 text-center transition-all" data-status="ended">
+                <span class="material-symbols-outlined block mx-auto mb-1" style="font-size:20px;">event_busy</span>
+                <span class="font-body font-semibold" style="font-size:12px;">Ended</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Error -->
+        <div id="formError" class="hidden bg-tertiary/10 rounded-xl p-3 flex items-center gap-2">
+          <span class="material-symbols-outlined text-tertiary" style="font-size:18px;">error</span>
+          <p id="formErrorMsg" class="font-body font-semibold text-tertiary" style="font-size:12px;"></p>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-3 pt-2">
+          <button type="submit" id="submitBtn"
+            class="flex-1 signature-gradient text-on-primary font-headline font-bold py-4 rounded-xl active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+            style="font-size:15px;">
+            <span id="submitIcon" class="material-symbols-outlined" style="font-size:20px;">save</span>
+            <span id="submitLabel">Create Campaign</span>
+          </button>
+          <button type="button" onclick="showList()"
+            class="w-12 h-12 flex items-center justify-center text-on-surface-variant hover:text-on-surface bg-surface-cl rounded-xl active:scale-95 transition-all flex-shrink-0">
+            <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </main>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- DELETE CONFIRM MODAL -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="confirmModal" class="hidden fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm z-[100] flex items-center justify-center px-5" onclick="if(event.target===this)closeConfirm()">
+  <div class="bg-surface-cl rounded-2xl p-6 w-full max-w-sm shadow-float">
+    <div class="text-center">
+      <div class="w-14 h-14 rounded-full bg-tertiary/15 flex items-center justify-center mx-auto mb-4">
+        <span class="material-symbols-outlined text-tertiary" style="font-size:28px;">warning</span>
+      </div>
+      <h3 class="font-headline font-bold text-on-surface mb-2" style="font-size:18px;">Delete this campaign?</h3>
+      <p id="confirmMsg" class="font-body text-on-surface-variant mb-5 leading-relaxed" style="font-size:14px;">This campaign will be deleted.</p>
+      <div class="flex gap-3">
+        <button onclick="closeConfirm()" class="flex-1 py-3 bg-surface-clow text-on-surface-variant font-body font-semibold rounded-xl active:scale-95 transition-transform" style="font-size:14px;">Cancel</button>
+        <button onclick="executeConfirm()" class="flex-1 py-3 bg-tertiary text-on-tertiary font-headline font-bold rounded-xl active:scale-[0.98] transition-transform" style="font-size:14px;">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-3 rounded-full shadow-float items-center gap-2" style="font-size:13px;">
+  <span class="material-symbols-outlined text-primary-container" style="font-size:16px;">check_circle</span>
+  <span id="toastMsg"></span>
+</div>
+
+<style>
+  .status-card{color:#5e6059;border:1px solid transparent}
+  .status-card.active{background:#3d6285!important;color:#f7f9ff!important}
+</style>
+
+<script>
+var supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+)
+
+var currentUser = null
+var allCampaigns = []
+var quoteCounts = {}  // { campaign_id: { total, live, scheduled, archived } }
+var currentIcon = 'campaign'
+var currentColor = '#3d6285'
+var isEditMode = false
+var editCampaignId = null
+var confirmAction = null
+
+// ════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════
+async function checkAdminAuth() {
+  try {
+    var result = null
+    for (var attempt = 0; attempt < 3; attempt++) {
+      result = await supabaseClient.auth.getSession()
+      if (result.data && result.data.session) break
+      await new Promise(function(r) { setTimeout(r, 300) })
+    }
+    if (!result.data || !result.data.session) {
+      try {
+        var refreshed = await supabaseClient.auth.refreshSession()
+        if (refreshed.data && refreshed.data.session) result = refreshed
+      } catch(e) {}
+    }
+    if (!result.data || !result.data.session) { window.location.href = 'login.html'; return false }
+
+    currentUser = result.data.session.user
+    var p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single()
+    if (p.error) { showToast('Connection error'); setTimeout(function() { window.location.reload() }, 1500); return false }
+    if (!p.data) { window.location.href = 'login.html'; return false }
+    if (p.data.role !== 'admin') { window.location.href = '../app/index.html'; return false }
+
+    var email = currentUser.email || ''
+    var initials = '?'
+    if (p.data.full_name) {
+      var parts = p.data.full_name.trim().split(' ')
+      initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : parts[0].substring(0,2).toUpperCase()
+    } else if (email) { initials = email.substring(0,2).toUpperCase() }
+    document.querySelectorAll('.admin-initials').forEach(function(el) { el.textContent = initials })
+    document.querySelectorAll('.admin-name').forEach(function(el) { el.textContent = p.data.full_name || email })
+    return true
+  } catch(e) { console.error(e); showToast('Error'); setTimeout(function() { window.location.reload() }, 1500); return false }
+}
+
+function toggleSidebar() {
+  var s = document.getElementById('sidebar'), o = document.getElementById('sidebarOverlay')
+  s.classList.toggle('hidden'); s.classList.toggle('flex'); o.classList.toggle('hidden')
+}
+
+async function handleLogout() {
+  try { await supabaseClient.auth.signOut() } catch(e) {}
+  window.location.href = 'login.html'
+}
+
+// ════════════════════════════════════════════
+// AUTO-END EXPIRED CAMPAIGNS
+// ════════════════════════════════════════════
+async function autoEndExpiredCampaigns() {
+  var nowIso = new Date().toISOString().split('T')[0]
+  try {
+    await supabaseClient
+      .from('campaigns')
+      .update({ status: 'ended' })
+      .eq('status', 'active')
+      .lt('end_date', nowIso)
+  } catch(e) { console.warn('Auto-end failed:', e) }
+}
+
+// ════════════════════════════════════════════
+// LOAD CAMPAIGNS + QUOTE COUNTS
+// ════════════════════════════════════════════
+async function loadCampaigns() {
+  await autoEndExpiredCampaigns()
+
+  var result = await supabaseClient.from('campaigns').select('*').order('created_at', { ascending: false })
+  if (result.error) { showToast('Failed to load campaigns'); return }
+  allCampaigns = result.data || []
+
+  // Load quote counts per campaign
+  await loadQuoteCounts()
+
+  renderStats()
+  renderCampaigns(allCampaigns)
+}
+
+async function loadQuoteCounts() {
+  quoteCounts = {}
+
+  if (allCampaigns.length === 0) return
+
+  var campaignIds = allCampaigns.map(function(c) { return c.id })
+  var result = await supabaseClient
+    .from('quotes')
+    .select('campaign_id, status')
+    .in('campaign_id', campaignIds)
+
+  if (result.error) return
+
+  var quotes = result.data || []
+  quotes.forEach(function(q) {
+    if (!q.campaign_id) return
+    if (!quoteCounts[q.campaign_id]) {
+      quoteCounts[q.campaign_id] = { total: 0, live: 0, scheduled: 0, archived: 0 }
+    }
+    quoteCounts[q.campaign_id].total++
+    if (q.status === 'live') quoteCounts[q.campaign_id].live++
+    else if (q.status === 'scheduled') quoteCounts[q.campaign_id].scheduled++
+    else if (q.status === 'archived') quoteCounts[q.campaign_id].archived++
+  })
+}
+
+function renderStats() {
+  var active = allCampaigns.filter(function(c) { return c.status === 'active' })
+  var draft = allCampaigns.filter(function(c) { return c.status === 'draft' })
+  var ended = allCampaigns.filter(function(c) { return c.status === 'ended' })
+
+  document.getElementById('statTotal').textContent = allCampaigns.length
+  document.getElementById('statActive').textContent = active.length
+  document.getElementById('statDraft').textContent = draft.length
+  document.getElementById('statEnded').textContent = ended.length
+  document.getElementById('countAll').textContent = '(' + allCampaigns.length + ')'
+}
+
+function renderCampaigns(campaigns) {
+  var grid = document.getElementById('campaignGrid')
+  var empty = document.getElementById('emptyState')
+
+  if (!campaigns.length) {
+    grid.innerHTML = ''
+    empty.classList.remove('hidden')
+    return
+  }
+  empty.classList.add('hidden')
+  grid.innerHTML = ''
+
+  campaigns.forEach(function(c) {
+    grid.appendChild(buildCampaignCard(c))
+  })
+}
+
+function buildCampaignCard(c) {
+  var counts = quoteCounts[c.id] || { total: 0, live: 0, scheduled: 0, archived: 0 }
+  var color = c.color || '#3d6285'
+  var icon = c.icon || 'campaign'
+
+  var statusBadge = ''
+  if (c.status === 'active') {
+    statusBadge = '<span class="badge badge-active"><span class="material-symbols-outlined filled" style="font-size:10px;">radio_button_checked</span>Active</span>'
+  } else if (c.status === 'draft') {
+    statusBadge = '<span class="badge badge-draft"><span class="material-symbols-outlined" style="font-size:10px;">drafts</span>Draft</span>'
+  } else {
+    statusBadge = '<span class="badge badge-ended"><span class="material-symbols-outlined" style="font-size:10px;">event_busy</span>Ended</span>'
+  }
+
+  var dateRange = ''
+  if (c.start_date && c.end_date) {
+    var s = new Date(c.start_date).toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })
+    var e = new Date(c.end_date).toLocaleDateString('en-AU', { month: 'short', day: 'numeric', year: 'numeric' })
+    dateRange = s + ' → ' + e
+  } else if (c.end_date) {
+    dateRange = 'Ends ' + new Date(c.end_date).toLocaleDateString('en-AU', { month: 'short', day: 'numeric', year: 'numeric' })
+  } else if (c.start_date) {
+    dateRange = 'From ' + new Date(c.start_date).toLocaleDateString('en-AU', { month: 'short', day: 'numeric', year: 'numeric' })
+  } else {
+    dateRange = 'No date range'
+  }
+
+  var card = document.createElement('article')
+  card.className = 'campaign-card'
+
+  card.innerHTML =
+    '<div class="p-5 flex items-start gap-4">'
+      + '<div class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0" style="background:' + color + ';">'
+        + '<span class="material-symbols-outlined text-white filled" style="font-size:26px;">' + icon + '</span>'
+      + '</div>'
+      + '<div class="flex-1 min-w-0">'
+        + '<div class="flex items-start justify-between gap-2 mb-1">'
+          + '<h4 class="font-headline font-bold text-on-surface" style="font-size:16px;line-height:22px;">' + escapeHtml(c.name || 'Untitled') + '</h4>'
+          + statusBadge
+        + '</div>'
+        + (c.description ? '<p class="font-body text-on-surface-variant" style="font-size:12px;line-height:18px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">' + escapeHtml(c.description) + '</p>' : '')
+      + '</div>'
+    + '</div>'
+
+    + '<div class="px-5 pb-4">'
+      + '<div class="grid grid-cols-4 gap-2 bg-surface-clow rounded-xl p-3 mb-3">'
+        + '<div class="text-center">'
+          + '<p class="font-headline font-bold text-on-surface" style="font-size:16px;">' + counts.total + '</p>'
+          + '<p class="font-body text-outline" style="font-size:9px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">Total</p>'
+        + '</div>'
+        + '<div class="text-center">'
+          + '<p class="font-headline font-bold text-primary" style="font-size:16px;">' + counts.live + '</p>'
+          + '<p class="font-body text-outline" style="font-size:9px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">Live</p>'
+        + '</div>'
+        + '<div class="text-center">'
+          + '<p class="font-headline font-bold text-secondary" style="font-size:16px;">' + counts.scheduled + '</p>'
+          + '<p class="font-body text-outline" style="font-size:9px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">Scheduled</p>'
+        + '</div>'
+        + '<div class="text-center">'
+          + '<p class="font-headline font-bold text-outline" style="font-size:16px;">' + counts.archived + '</p>'
+          + '<p class="font-body text-outline" style="font-size:9px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">Archived</p>'
+        + '</div>'
+      + '</div>'
+      + '<p class="font-body text-outline" style="font-size:11px;font-weight:500;">' + dateRange + '</p>'
+    + '</div>'
+
+    + '<div class="px-5 py-3 border-t border-surface-clow flex items-center gap-2">'
+      + '<a href="manage-quotes.html?campaign=' + c.id + '" class="flex-1 text-center py-2 bg-surface-clow text-on-surface font-body font-semibold rounded-lg hover:bg-surface-chigh transition-colors" style="font-size:12px;">View Quotes (' + counts.total + ')</a>'
+      + '<button onclick="openEdit(\'' + c.id + '\')" class="px-3 py-2 text-primary font-body font-semibold hover:bg-surface-clow rounded-lg transition-colors" style="font-size:12px;">Edit</button>'
+      + '<button onclick="confirmDelete(\'' + c.id + '\')" class="px-3 py-2 text-tertiary font-body font-semibold hover:bg-tertiary/5 rounded-lg transition-colors" style="font-size:12px;">Delete</button>'
+    + '</div>'
+
+  return card
+}
+
+function filterCampaigns(status, btn) {
+  document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active') })
+  if (btn) btn.classList.add('active')
+  renderCampaigns(status === 'all' ? allCampaigns : allCampaigns.filter(function(c) { return c.status === status }))
+}
+
+// ════════════════════════════════════════════
+// FORM MODE
+// ════════════════════════════════════════════
+function openCreate() {
+  isEditMode = false
+  editCampaignId = null
+  showForm()
+  resetForm()
+  document.getElementById('formTitle').textContent = 'Create New Campaign'
+  document.getElementById('formCrumb').textContent = 'Create Campaign'
+  document.getElementById('submitLabel').textContent = 'Create Campaign'
+  document.getElementById('submitIcon').textContent = 'save'
+}
+
+async function openEdit(id) {
+  isEditMode = true
+  editCampaignId = id
+  showForm()
+  resetForm()
+
+  document.getElementById('formTitle').textContent = 'Edit Campaign'
+  document.getElementById('formCrumb').textContent = 'Edit Campaign'
+  document.getElementById('submitLabel').textContent = 'Save Changes'
+  document.getElementById('submitIcon').textContent = 'save'
+
+  var result = await supabaseClient.from('campaigns').select('*').eq('id', id).single()
+  if (result.error || !result.data) { showToast('Error loading campaign'); showList(); return }
+
+  var c = result.data
+  document.getElementById('campaignName').value = c.name || ''
+  document.getElementById('campaignDesc').value = c.description || ''
+  document.getElementById('campaignStartDate').value = c.start_date || ''
+  document.getElementById('campaignEndDate').value = c.end_date || ''
+
+  // Icon
+  var iconEl = document.querySelector('[data-icon="' + (c.icon || 'campaign') + '"]')
+  if (iconEl) selectIcon(c.icon || 'campaign', iconEl)
+  else selectIcon('campaign', document.querySelector('[data-icon="campaign"]'))
+
+  // Color
+  var colorEl = document.querySelector('[data-color="' + c.color + '"]')
+  if (colorEl) selectColor(c.color, colorEl)
+  else selectColor(c.color || '#3d6285', null)
+
+  // Status
+  var statusRadio = document.querySelector('input[value="' + (c.status || 'draft') + '"]')
+  if (statusRadio) {
+    statusRadio.checked = true
+    updateStatusCards()
+  }
+
+  updateChipPreview()
+}
+
+function showList() {
+  document.getElementById('listView').classList.remove('hidden')
+  document.getElementById('formView').classList.add('hidden')
+  isEditMode = false
+  editCampaignId = null
+}
+
+function showForm() {
+  document.getElementById('listView').classList.add('hidden')
+  document.getElementById('formView').classList.remove('hidden')
+  window.scrollTo({ top: 0 })
+}
+
+function resetForm() {
+  document.getElementById('campaignName').value = ''
+  document.getElementById('campaignDesc').value = ''
+  document.getElementById('campaignStartDate').value = ''
+  document.getElementById('campaignEndDate').value = ''
+  document.getElementById('formError').classList.add('hidden')
+  document.querySelectorAll('.form-input').forEach(function(f) { f.classList.remove('error') })
+
+  currentIcon = 'campaign'
+  currentColor = '#3d6285'
+
+  selectIcon('campaign', document.querySelector('[data-icon="campaign"]'))
+  selectColor('#3d6285', document.querySelector('[data-color="#3d6285"]'))
+
+  var activeRadio = document.querySelector('input[value="active"]')
+  if (activeRadio) { activeRadio.checked = true; updateStatusCards() }
+
+  updateChipPreview()
+}
+
+function selectIcon(icon, btn) {
+  currentIcon = icon
+  document.querySelectorAll('.icon-pick').forEach(function(b) { b.classList.remove('selected') })
+  if (btn) btn.classList.add('selected')
+  updateChipPreview()
+}
+
+function selectColor(color, swatch) {
+  currentColor = color
+  document.querySelectorAll('.color-swatch').forEach(function(s) { s.classList.remove('selected') })
+  if (swatch) swatch.classList.add('selected')
+  var picker = document.getElementById('colorPicker')
+  if (picker) picker.value = color
+  updateChipPreview()
+}
+
+function updateChipPreview() {
+  var chip = document.getElementById('chipPreview')
+  var name = document.getElementById('chipName')
+  var currentName = document.getElementById('campaignName').value.trim() || 'Campaign Name'
+  if (chip) chip.style.background = currentColor
+  if (chip) {
+    var iconSpan = chip.querySelector('.material-symbols-outlined')
+    if (iconSpan) iconSpan.textContent = currentIcon
+  }
+  if (name) name.textContent = currentName
+}
+
+// Live update chip on name typing
+document.addEventListener('input', function(e) {
+  if (e.target.id === 'campaignName') updateChipPreview()
+})
+
+// Status radio handling
+document.addEventListener('change', function(e) {
+  if (e.target.classList.contains('status-radio')) updateStatusCards()
+})
+
+function updateStatusCards() {
+  var checkedValue = document.querySelector('.status-radio:checked')
+  var value = checkedValue ? checkedValue.value : 'active'
+  document.querySelectorAll('.status-card').forEach(function(card) {
+    card.classList.toggle('active', card.dataset.status === value)
+  })
+}
+
+// ════════════════════════════════════════════
+// SUBMIT
+// ════════════════════════════════════════════
+async function handleSubmit(e) {
+  e.preventDefault()
+
+  var name = document.getElementById('campaignName').value.trim()
+  var desc = document.getElementById('campaignDesc').value.trim()
+  var startDate = document.getElementById('campaignStartDate').value
+  var endDate = document.getElementById('campaignEndDate').value
+  var status = document.querySelector('.status-radio:checked').value
+  var errorEl = document.getElementById('formError')
+  var errorMsg = document.getElementById('formErrorMsg')
+
+  errorEl.classList.add('hidden')
+  document.querySelectorAll('.form-input').forEach(function(f) { f.classList.remove('error') })
+
+  if (!name) {
+    document.getElementById('campaignName').classList.add('error')
+    errorMsg.textContent = 'Campaign name is required'
+    errorEl.classList.remove('hidden')
+    return
+  }
+
+  var btn = document.getElementById('submitBtn')
+  var icon = document.getElementById('submitIcon')
+  var label = document.getElementById('submitLabel')
+
+  icon.textContent = 'progress_activity'
+  icon.classList.add('spin')
+  label.textContent = isEditMode ? 'Saving...' : 'Creating...'
+  btn.disabled = true
+
+  var data = {
+    name: name,
+    description: desc || null,
+    icon: currentIcon,
+    color: currentColor,
+    status: status,
+    start_date: startDate || null,
+    end_date: endDate || null,
+    updated_at: new Date().toISOString()
+  }
+
+  var result = isEditMode
+    ? await supabaseClient.from('campaigns').update(data).eq('id', editCampaignId).select().single()
+    : await supabaseClient.from('campaigns').insert(data).select().single()
+
+  icon.classList.remove('spin')
+  btn.disabled = false
+
+  if (result.error) {
+    icon.textContent = 'save'
+    label.textContent = isEditMode ? 'Save Changes' : 'Create Campaign'
+    errorMsg.textContent = 'Error: ' + result.error.message
+    errorEl.classList.remove('hidden')
+    return
+  }
+
+  showToast(isEditMode ? 'Campaign updated' : 'Campaign created')
+  await loadCampaigns()
+  showList()
+}
+
+// ════════════════════════════════════════════
+// DELETE
+// ════════════════════════════════════════════
+function confirmDelete(id) {
+  var c = allCampaigns.find(function(x) { return x.id === id })
+  if (!c) return
+  var counts = quoteCounts[id] || { total: 0 }
+
+  confirmAction = { type: 'delete', id: id, quoteCount: counts.total }
+
+  var msg = document.getElementById('confirmMsg')
+  if (counts.total > 0) {
+    msg.textContent = 'This campaign has ' + counts.total + ' quote' + (counts.total !== 1 ? 's' : '') + ' assigned. The campaign will be deleted and quotes will be unassigned (not deleted).'
+  } else {
+    msg.textContent = 'This campaign will be permanently deleted. This cannot be undone.'
+  }
+
+  document.getElementById('confirmModal').classList.remove('hidden')
+  document.body.style.overflow = 'hidden'
+}
+
+function closeConfirm() {
+  document.getElementById('confirmModal').classList.add('hidden')
+  document.body.style.overflow = ''
+}
+
+async function executeConfirm() {
+  if (!confirmAction) return
+  closeConfirm()
+
+  if (confirmAction.type === 'delete') {
+    // First, unassign quotes (set campaign_id to null)
+    if (confirmAction.quoteCount > 0) {
+      var unassignResult = await supabaseClient
+        .from('quotes')
+        .update({ campaign_id: null })
+        .eq('campaign_id', confirmAction.id)
+
+      if (unassignResult.error) {
+        showToast('Error unassigning quotes: ' + unassignResult.error.message)
+        return
+      }
+    }
+
+    // Then delete the campaign
+    var deleteResult = await supabaseClient.from('campaigns').delete().eq('id', confirmAction.id)
+    if (deleteResult.error) { showToast('Error: ' + deleteResult.error.message); return }
+
+    showToast('Campaign deleted' + (confirmAction.quoteCount > 0 ? ' (' + confirmAction.quoteCount + ' quotes unassigned)' : ''))
+    await loadCampaigns()
+  }
+  confirmAction = null
+}
+
+// ════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════
+function escapeHtml(str) {
+  if (!str) return ''
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')
+}
+
+var toastTimer
+function showToast(msg) {
+  var toast = document.getElementById('toast')
+  var toastMsg = document.getElementById('toastMsg')
+  if (!toast || !toastMsg) return
+  toastMsg.textContent = msg
+  toast.classList.remove('hidden')
+  toast.classList.add('flex')
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(function() {
+    toast.classList.add('hidden')
+    toast.classList.remove('flex')
+  }, 2500)
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+async function init() {
+  var isAdmin = await checkAdminAuth()
+  if (!isAdmin) return
+  await loadCampaigns()
+
+  // Check for URL param to open edit directly
+  var editId = new URLSearchParams(window.location.search).get('edit')
+  if (editId) openEdit(editId)
+}
+
+init()
+</script>
+</body>
+</html>
