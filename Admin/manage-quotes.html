@@ -17,26 +17,28 @@
       theme: {
         extend: {
           colors: {
-            'primary':'#1E4060','primary-dim':'#152E45','primary-light':'#2B5780',
-            'action':'#E25B4D','action-dim':'#C84A3E',
-            'gold':'#D4A24C','gold-dim':'#B88A3D',
-            'cream':'#F7F4ED',
-            'dark':'#16202A','dark-soft':'#1F2A35',
-            'text-dark':'#1A1A1A','text-muted':'#5C6B7A','text-light':'#8E9AA8',
-            'border-soft':'rgba(92,107,122,0.15)',
-            'sidebar-bg':'#0F1E2E','sidebar-hover':'#1A2D40',
-            'card-bg':'#FFFFFF','surface':'#F0EDE6',
+            'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
+            'surface-c':'#efeee7','surface-chigh':'#e9e8e1','surface-chighest':'#e3e3db',
+            'on-surface':'#31332e','on-surface-variant':'#5e6059',
+            'inverse-surface':'#0e0e0c','inverse-on-surface':'#9e9d99',
+            'outline':'#7a7b75','outline-variant':'#b2b2ab',
+            'primary':'#3d6285','on-primary':'#f7f9ff',
+            'primary-container':'#b0d5fe','on-primary-container':'#234a6c',
+            'secondary':'#41637c','on-secondary':'#f6f9ff',
+            'secondary-container':'#cae6ff',
+            'tertiary':'#ad332b','on-tertiary':'#fff7f6',
+            'tertiary-container':'#fe6d60',
+            'primary-dim':'#305678','secondary-dim':'#355670','tertiary-dim':'#9d2621',
+            'sidebar-bg':'#0e0e0c','sidebar-hover':'#1a1a18','sidebar-active':'#3d6285',
           },
           fontFamily:{
             'headline':['Plus Jakarta Sans','sans-serif'],
             'body':['Manrope','sans-serif'],
           },
           boxShadow:{
-            'natural':'0 4px 16px rgba(26,32,42,0.06)',
-            'lifted':'0 8px 32px rgba(26,32,42,0.10)',
-            'tactical':'0 4px 20px rgba(30,64,96,0.25)',
-            'action-glow':'0 4px 20px rgba(226,91,77,0.35)',
-            'card':'0 32px 64px -15px rgba(30,64,96,0.06)',
+            'ambient':'0 20px 40px rgba(49,51,46,0.05)',
+            'ambient-sm':'0 8px 24px rgba(49,51,46,0.04)',
+            'float':'0 20px 40px rgba(49,51,46,0.08)',
           },
         },
       },
@@ -44,537 +46,927 @@
   </script>
 
   <style>
-    body{font-family:'Manrope',sans-serif}
-    .font-headline{font-family:'Plus Jakarta Sans',sans-serif}
-    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle}
+    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;letter-spacing:-0.005em}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
     .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
-    .tactical-gradient{background:linear-gradient(145deg,#152E45,#1E4060)}
-    .action-gradient{background:linear-gradient(145deg,#E25B4D,#C84A3E)}
-    ::-webkit-scrollbar{width:6px}
+    .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
+
+    ::-webkit-scrollbar{width:6px;height:6px}
     ::-webkit-scrollbar-track{background:transparent}
-    ::-webkit-scrollbar-thumb{background:rgba(30,64,96,0.2);border-radius:3px}
-    .filter-tab.active{background:white;color:#1E4060;font-weight:700;box-shadow:0 2px 8px rgba(30,64,96,0.10)}
-    .quote-card{transition:all 0.2s ease}
-    .quote-card:hover{transform:translateY(-1px)}
+    ::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:3px}
+
+    /* Sidebar */
+    .sidebar{background:#0e0e0c;color:#f7f9ff}
+    .sidebar-item{
+      display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;
+      color:rgba(247,249,255,0.6);font-size:13px;font-weight:600;
+      transition:all 0.15s ease;text-decoration:none;
+    }
+    .sidebar-item:hover{background:#1a1a18;color:#f7f9ff}
+    .sidebar-item.active{background:#3d6285;color:#f7f9ff}
+    .sidebar-item .material-symbols-outlined{font-size:20px}
+    .sidebar-item .soon-tag{
+      margin-left:auto;font-size:9px;font-weight:700;
+      background:rgba(247,249,255,0.08);color:rgba(247,249,255,0.5);
+      padding:2px 6px;border-radius:99px;letter-spacing:0.05em;
+    }
+
+    /* Quote card */
+    .quote-card{
+      background:#ffffff;border-radius:16px;padding:16px;
+      display:flex;gap:14px;
+      transition:all 0.2s ease;
+    }
+    .quote-card:hover{box-shadow:0 20px 40px rgba(49,51,46,0.05)}
+    .quote-card.is-live{
+      background:linear-gradient(135deg,#ffffff,#f5f4ed);
+      box-shadow:0 0 0 2px rgba(61,98,133,0.2);
+    }
+
+    .quote-thumb{
+      width:80px;height:80px;border-radius:12px;
+      background:#efeee7;flex-shrink:0;overflow:hidden;
+      display:flex;align-items:center;justify-content:center;
+    }
+    .quote-thumb img{width:100%;height:100%;object-fit:cover}
+
+    /* Quote text 2-line clamp */
+    .quote-text-clamp{
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+      line-height:1.4;
+    }
+
+    /* Status badges */
+    .badge{
+      display:inline-flex;align-items:center;gap:4px;
+      padding:3px 8px;border-radius:99px;
+      font-size:10px;font-weight:700;letter-spacing:0.04em;
+      text-transform:uppercase;
+    }
+    .badge-live{background:rgba(61,98,133,0.15);color:#3d6285}
+    .badge-scheduled{background:rgba(65,99,124,0.12);color:#41637c}
+
+    /* Meta chip */
+    .meta-chip{
+      display:inline-flex;align-items:center;gap:3px;
+      background:#f5f4ed;color:#5e6059;
+      padding:2px 7px;border-radius:99px;
+      font-size:10px;font-weight:600;
+    }
+
+    /* Action menu */
+    .action-menu{
+      position:absolute;top:100%;right:0;margin-top:6px;
+      background:#ffffff;border-radius:12px;
+      box-shadow:0 20px 40px rgba(49,51,46,0.15);
+      min-width:180px;padding:6px;z-index:30;
+    }
+    .action-item{
+      display:flex;align-items:center;gap:10px;
+      padding:9px 12px;border-radius:8px;
+      color:#31332e;font-size:13px;font-weight:500;
+      cursor:pointer;transition:background 0.15s ease;
+      text-decoration:none;
+    }
+    .action-item:hover{background:#f5f4ed}
+    .action-item.danger{color:#ad332b}
+    .action-item .material-symbols-outlined{font-size:18px}
+
+    /* Runway status */
+    .runway-good{background:linear-gradient(135deg,rgba(61,98,133,0.1),rgba(107,155,195,0.1));color:#3d6285}
+    .runway-warn{background:linear-gradient(135deg,rgba(173,51,43,0.1),rgba(254,109,96,0.1));color:#ad332b}
+
+    /* Skeleton */
+    .skeleton{
+      background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%);
+      background-size:200% 100%;
+      animation:shimmer 1.5s infinite;
+      border-radius:12px;
+    }
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spin{animation:spin 1s linear infinite;display:inline-block}
+
+    @keyframes fadeUp{
+      from{opacity:0;transform:translateY(8px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+    .fade-up{animation:fadeUp 0.3s ease-out both}
   </style>
 </head>
 
-<body class="bg-surface text-text-dark min-h-screen flex">
+<body class="min-h-screen flex">
 
+<!-- ═══════════════════════════════════════════ -->
 <!-- SIDEBAR -->
-<aside id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-sidebar-bg flex flex-col p-4 gap-2 z-40 hidden md:flex">
-  <div class="mb-8 px-4 pt-2">
+<!-- ═══════════════════════════════════════════ -->
+<aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 hidden md:flex">
+  <div class="mb-6 px-2 pt-2">
     <div class="flex items-center gap-2.5">
-      <div class="w-9 h-9 rounded-lg border-2 border-primary-light flex items-center justify-center">
-        <span class="font-headline font-extrabold text-gold text-[10px]">GSTW</span>
+      <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center">
+        <span class="font-headline font-bold text-on-primary" style="font-size:10px;">GSTW</span>
       </div>
       <div>
-        <h1 class="text-base font-headline font-extrabold tracking-tight text-white">STW Admin</h1>
-        <p class="text-[9px] uppercase tracking-[0.2em] text-text-light font-bold">Command Center</p>
+        <h1 class="font-headline font-bold text-white" style="font-size:15px;letter-spacing:-0.02em;">Command</h1>
+        <p class="text-white/40 font-body" style="font-size:9px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">Admin Panel</p>
       </div>
     </div>
   </div>
-  <nav class="flex flex-col gap-1 grow overflow-y-auto">
-    <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
-      <span class="material-symbols-outlined text-[20px]">dashboard</span><span class="font-body text-sm">Dashboard</span>
-    </a>
-    <a href="manage-quotes.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-lg font-bold text-sm">
-      <span class="material-symbols-outlined text-[20px]">format_quote</span><span class="font-body text-sm">Quotes</span>
-    </a>
-    <a href="schedule.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
-      <span class="material-symbols-outlined text-[20px]">calendar_today</span><span class="font-body text-sm">Schedule</span>
-    </a>
-    <a href="projects.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
-      <span class="material-symbols-outlined text-[20px]">folder_shared</span><span class="font-body text-sm">Missions</span>
-    </a>
-    <a href="analytics.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
-      <span class="material-symbols-outlined text-[20px]">analytics</span><span class="font-body text-sm">Analytics</span>
-      <span class="ml-auto text-[8px] font-bold text-white/30 uppercase">Soon</span>
-    </a>
-    <a href="warriors.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
-      <span class="material-symbols-outlined text-[20px]">group</span><span class="font-body text-sm">Warriors</span>
-      <span class="ml-auto text-[8px] font-bold text-white/30 uppercase">Soon</span>
-    </a>
-    <a href="settings.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
-      <span class="material-symbols-outlined text-[20px]">settings</span><span class="font-body text-sm">Settings</span>
-      <span class="ml-auto text-[8px] font-bold text-white/30 uppercase">Soon</span>
-    </a>
+
+  <nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
+    <a href="index.html" class="sidebar-item"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
+    <a href="manage-quotes.html" class="sidebar-item active"><span class="material-symbols-outlined">format_quote</span>Quotes</a>
+    <a href="schedule.html" class="sidebar-item"><span class="material-symbols-outlined">calendar_today</span>Schedule</a>
+    <a href="manage-backgrounds.html" class="sidebar-item"><span class="material-symbols-outlined">wallpaper</span>Backgrounds<span class="soon-tag">SOON</span></a>
+    <a href="projects.html" class="sidebar-item"><span class="material-symbols-outlined">volunteer_activism</span>Missions</a>
+    <a href="warriors.html" class="sidebar-item"><span class="material-symbols-outlined">group</span>Users</a>
+    <a href="notifications.html" class="sidebar-item"><span class="material-symbols-outlined">notifications</span>Notifications</a>
+    <a href="ai-generator.html" class="sidebar-item"><span class="material-symbols-outlined">auto_awesome</span>AI Generator</a>
+    <a href="analytics.html" class="sidebar-item"><span class="material-symbols-outlined">analytics</span>Analytics</a>
   </nav>
-  <div class="mt-auto pt-4 flex flex-col gap-4">
-    <a href="quotes.html" class="action-gradient text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 shadow-action-glow hover:scale-[1.02] transition-transform">
-      <span class="material-symbols-outlined text-sm">add_circle</span>
-      <span class="text-xs uppercase tracking-widest">Create New Quote</span>
-    </a>
-    <div class="flex items-center gap-3 px-2 py-3 border-t border-white/10">
-      <div class="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center text-white font-headline font-bold text-sm admin-initials">AD</div>
-      <div>
-        <p class="text-sm font-bold text-white leading-none admin-name">Admin</p>
-        <p class="text-[10px] text-text-light">Super Admin</p>
+
+  <div class="mt-4 pt-4 border-t border-white/10 space-y-2">
+    <a href="settings.html" class="sidebar-item"><span class="material-symbols-outlined">settings</span>Settings</a>
+    <div class="flex items-center gap-3 px-2 py-2">
+      <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center text-on-primary font-headline font-bold flex-shrink-0 admin-initials" style="font-size:13px;">AD</div>
+      <div class="flex-1 min-w-0">
+        <p class="font-body font-semibold text-white truncate admin-name" style="font-size:12px;">Admin</p>
+        <p class="text-white/40 font-body" style="font-size:10px;">Super Admin</p>
       </div>
+      <button onclick="handleLogout()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-all flex-shrink-0" title="Log out">
+        <span class="material-symbols-outlined" style="font-size:16px;">logout</span>
+      </button>
     </div>
   </div>
 </aside>
 
-<div id="sidebarOverlay" class="fixed inset-0 bg-dark/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+<div id="sidebarOverlay" class="fixed inset-0 bg-inverse-surface/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
 
+<!-- ═══════════════════════════════════════════ -->
 <!-- MAIN -->
+<!-- ═══════════════════════════════════════════ -->
 <div class="flex-1 md:ml-64 flex flex-col min-h-screen">
 
   <!-- HEADER -->
-  <header class="flex justify-between items-center w-full px-6 lg:px-8 py-4 sticky top-0 z-20 bg-surface/80 backdrop-blur-xl border-b border-border-soft">
-    <div class="flex items-center gap-4">
-      <button onclick="toggleSidebar()" class="md:hidden text-text-dark"><span class="material-symbols-outlined">menu</span></button>
-      <nav class="flex items-center gap-2 text-sm font-body">
-        <a href="index.html" class="text-text-muted hover:text-primary transition-colors">Dashboard</a>
-        <span class="material-symbols-outlined text-text-light text-sm">chevron_right</span>
-        <span class="text-primary font-bold border-b-2 border-primary pb-0.5">Manage Quotes</span>
-      </nav>
-    </div>
-    <div class="flex items-center gap-4">
-      <div class="flex items-center gap-3">
-        <div class="text-right hidden sm:block">
-          <p class="text-sm font-bold text-text-dark admin-name">Admin</p>
-          <button onclick="handleLogout()" class="text-[10px] font-bold text-action uppercase tracking-widest flex items-center gap-1 hover:opacity-80 ml-auto">
-            Logout <span class="material-symbols-outlined text-[12px]">logout</span>
-          </button>
-        </div>
-        <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white font-headline font-bold text-sm admin-initials">AD</div>
+  <header class="sticky top-0 z-20 bg-surface/85 backdrop-blur-xl">
+    <div class="flex items-center justify-between gap-4 px-6 lg:px-8 py-4">
+      <div class="flex items-center gap-4">
+        <button onclick="toggleSidebar()" class="md:hidden text-on-surface">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+        <h2 class="font-headline font-bold text-on-surface" style="font-size:22px;line-height:28px;">Manage Quotes</h2>
       </div>
+      <a href="quotes.html"
+        class="signature-gradient text-on-primary font-headline font-semibold rounded-xl px-4 py-2.5 flex items-center gap-2 active:scale-[0.98] transition-transform"
+        style="font-size:13px;">
+        <span class="material-symbols-outlined" style="font-size:18px;">add</span>
+        <span class="hidden sm:inline">Create Quote</span>
+      </a>
     </div>
   </header>
 
   <!-- CONTENT -->
   <main class="p-6 lg:p-8 flex-1">
-    <div class="max-w-6xl mx-auto space-y-8">
+    <div class="max-w-4xl mx-auto space-y-6">
 
-      <!-- PAGE HEADER -->
-      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h2 class="font-headline font-extrabold text-3xl lg:text-4xl text-text-dark tracking-tight">Manage Quotes</h2>
-          <p class="font-body text-text-muted mt-1">
-            <span id="totalCount" class="font-bold text-text-dark">—</span> total quotes in your arsenal
-          </p>
-        </div>
-        <a href="quotes.html" class="tactical-gradient text-white font-headline font-bold px-6 py-3 rounded-xl shadow-tactical hover:scale-[1.02] transition-transform flex items-center gap-2 self-start sm:self-auto">
-          <span class="material-symbols-outlined text-[18px]">add</span>
-          Create New Quote
-        </a>
-      </div>
+      <!-- RUNWAY STATUS -->
+      <section id="runwaySection">
+        <div class="skeleton h-24 w-full"></div>
+      </section>
 
-      <!-- TOOLBAR -->
-      <div class="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
-        <div class="flex items-center gap-1 bg-cream p-1.5 rounded-xl">
-          <button onclick="filterQuotes('all',this)" class="filter-tab active px-4 py-2 rounded-lg text-sm transition-all">
-            All <span id="countAll" class="ml-1.5 text-text-light font-normal text-xs"></span>
-          </button>
-          <button onclick="filterQuotes('live',this)" class="filter-tab px-4 py-2 rounded-lg text-sm text-text-muted hover:text-text-dark transition-all flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-primary inline-block"></span>
-            Live <span id="countLive" class="ml-1 text-text-light font-normal text-xs"></span>
-          </button>
-          <button onclick="filterQuotes('scheduled',this)" class="filter-tab px-4 py-2 rounded-lg text-sm text-text-muted hover:text-text-dark transition-all flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-gold inline-block"></span>
-            Scheduled <span id="countScheduled" class="ml-1 text-text-light font-normal text-xs"></span>
-          </button>
-          <button onclick="filterQuotes('draft',this)" class="filter-tab px-4 py-2 rounded-lg text-sm text-text-muted hover:text-text-dark transition-all flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-text-light inline-block"></span>
-            Drafts <span id="countDraft" class="ml-1 text-text-light font-normal text-xs"></span>
-          </button>
+      <!-- LIVE NOW -->
+      <section id="liveSection">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-headline font-bold text-on-surface" style="font-size:14px;">Live Now</h3>
         </div>
-        <div class="flex items-center gap-3 w-full xl:w-auto">
-          <div class="relative flex-1 xl:w-72">
-            <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-text-light text-[18px]">search</span>
-            <input id="searchInput" type="text" oninput="searchQuotes(this.value)"
-              class="w-full pl-10 pr-4 py-2.5 bg-card-bg border border-border-soft rounded-xl text-sm font-body text-text-dark placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-              placeholder="Search quotes...">
-          </div>
-          <div class="relative">
-            <select onchange="sortQuotes(this.value)"
-              class="appearance-none pl-4 pr-9 py-2.5 bg-card-bg border border-border-soft rounded-xl text-sm font-body text-text-dark focus:outline-none focus:ring-2 focus:ring-primary transition-all cursor-pointer">
-              <option value="newest">Newest</option>
-              <option value="oldest">Oldest</option>
-              <option value="shares">Most Shared</option>
-            </select>
-            <span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-text-light text-[16px] pointer-events-none">expand_more</span>
-          </div>
+        <div id="liveContainer">
+          <div class="skeleton h-24 w-full"></div>
         </div>
-      </div>
+      </section>
 
-      <!-- QUOTE CARDS -->
-      <div id="quotesList" class="space-y-4">
-        <div class="text-center py-12 text-text-light">
-          <span class="material-symbols-outlined text-primary text-[32px]" style="animation:spin 1s linear infinite;display:inline-block">progress_activity</span>
-          <p class="mt-3 text-sm">Loading quotes...</p>
+      <!-- SCHEDULED -->
+      <section id="scheduledSection">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-headline font-bold text-on-surface" style="font-size:14px;">Scheduled</h3>
+          <span id="scheduledCount" class="font-body text-on-surface-variant" style="font-size:12px;font-weight:500;"></span>
         </div>
-      </div>
+        <div id="scheduledContainer" class="space-y-3">
+          <div class="skeleton h-24 w-full"></div>
+          <div class="skeleton h-24 w-full"></div>
+          <div class="skeleton h-24 w-full"></div>
+        </div>
+      </section>
 
-      <!-- EMPTY STATE -->
-      <div id="emptyState" class="hidden text-center py-20">
-        <div class="w-16 h-16 rounded-2xl bg-cream flex items-center justify-center mx-auto mb-4">
-          <span class="material-symbols-outlined text-text-light text-[32px]">format_quote</span>
-        </div>
-        <h3 class="font-headline font-bold text-xl text-text-dark mb-2">No quotes found</h3>
-        <p class="font-body text-text-muted text-sm mb-6">Try adjusting your filters or search term.</p>
-        <a href="quotes.html" class="tactical-gradient text-white font-bold px-6 py-3 rounded-xl inline-block hover:scale-[1.02] transition-transform">
-          Create First Quote
-        </a>
-      </div>
+      <!-- ARCHIVED TOGGLE -->
+      <section class="pt-6 pb-2 text-center">
+        <button onclick="toggleArchived()" id="archivedToggleBtn"
+          class="inline-flex items-center gap-2 px-5 py-2.5 bg-surface-cl text-on-surface-variant font-body font-semibold rounded-xl hover:bg-surface-clow transition-colors"
+          style="font-size:13px;">
+          <span class="material-symbols-outlined" style="font-size:18px;">archive</span>
+          <span id="archivedToggleLabel">Show Archived Quotes</span>
+        </button>
+      </section>
 
-      <!-- REFLECTION -->
-      <div class="bg-card-bg rounded-2xl p-8 border-l-4 border-gold shadow-card relative overflow-hidden">
-        <div class="absolute top-0 right-0 p-4 opacity-[0.04] pointer-events-none select-none">
-          <span class="material-symbols-outlined text-[140px] text-text-dark" style="font-variation-settings:'FILL' 1">format_quote</span>
+      <!-- ARCHIVED (hidden by default) -->
+      <section id="archivedSection" class="hidden">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-headline font-bold text-on-surface-variant" style="font-size:14px;">Archived</h3>
+          <span id="archivedCount" class="font-body text-outline" style="font-size:12px;font-weight:500;"></span>
         </div>
-        <div class="relative max-w-2xl">
-          <p class="text-[10px] font-bold text-gold uppercase tracking-widest mb-3">Mission Focus</p>
-          <p id="reflectionText" class="font-headline text-xl lg:text-2xl font-bold text-text-dark italic leading-relaxed mb-4">
-            "The quality of your army is determined by the intentionality of each word you deploy."
-          </p>
-          <p id="reflectionRef" class="text-sm font-body text-text-muted font-bold">— GSTW Command Guide</p>
-        </div>
-      </div>
+        <div id="archivedContainer" class="space-y-3"></div>
+      </section>
 
     </div>
   </main>
 </div>
 
-<!-- DELETE MODAL -->
-<div id="deleteModal" class="hidden fixed inset-0 bg-dark/60 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-  <div class="bg-card-bg rounded-2xl p-8 max-w-sm w-full shadow-lifted">
-    <div class="w-12 h-12 rounded-full bg-action/10 flex items-center justify-center mx-auto mb-4">
-      <span class="material-symbols-outlined text-action">delete</span>
+<!-- ═══════════════════════════════════════════ -->
+<!-- PREVIEW MODAL -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="previewModal" class="hidden fixed inset-0 bg-inverse-surface/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onclick="if(event.target===this)closePreview()">
+  <div class="bg-surface-cl rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div class="p-5 flex items-center justify-between">
+      <h3 class="font-headline font-bold text-on-surface" style="font-size:16px;">Home Preview</h3>
+      <button onclick="closePreview()" class="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:bg-surface-clow rounded-lg transition-colors">
+        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+      </button>
     </div>
-    <h3 class="font-headline font-bold text-xl text-text-dark text-center mb-2">Delete Quote?</h3>
-    <p class="font-body text-sm text-text-muted text-center mb-6">This action cannot be undone.</p>
-    <div class="flex gap-3">
-      <button onclick="closeDeleteModal()" class="flex-1 py-3 border-2 border-border-soft text-text-muted font-bold rounded-xl hover:bg-cream transition-colors">Cancel</button>
-      <button onclick="confirmDeleteNow()" class="flex-1 py-3 action-gradient text-white font-bold rounded-xl shadow-action-glow hover:scale-[1.02] transition-transform">Delete</button>
+
+    <!-- Phone frame preview -->
+    <div class="px-5 pb-5">
+      <div id="previewFrame" class="relative w-full aspect-[9/16] rounded-2xl overflow-hidden bg-inverse-surface">
+        <div id="previewBg" class="absolute inset-0 bg-cover bg-center"></div>
+        <div class="absolute inset-0" style="background:linear-gradient(180deg,rgba(14,14,12,0.4) 0%,rgba(14,14,12,0.3) 50%,rgba(14,14,12,0.85) 100%);"></div>
+        <div id="previewContent" class="relative z-10 flex flex-col h-full text-white p-6">
+          <div class="flex-1"></div>
+          <div>
+            <span id="previewMark" class="block leading-none text-white/60" style="font-size:56px;font-family:Georgia,serif;margin-bottom:-8px;">"</span>
+            <p id="previewText" class="text-white leading-relaxed mb-4" style="font-family:Georgia,serif;font-size:22px;font-weight:500;text-align:left;"></p>
+            <div class="flex items-center gap-3">
+              <div class="h-px bg-primary-container/60" style="width:32px;"></div>
+              <p id="previewSource" class="font-headline font-bold text-primary-container tracking-widest uppercase" style="font-size:11px;"></p>
+            </div>
+          </div>
+          <div class="flex-1 max-h-16"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- CONFIRMATION MODAL -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="confirmModal" class="hidden fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm z-[100] flex items-center justify-center px-5" onclick="if(event.target===this)closeConfirm()">
+  <div class="bg-surface-cl rounded-2xl p-6 w-full max-w-sm shadow-float">
+    <div class="text-center">
+      <div id="confirmIcon" class="w-14 h-14 rounded-full bg-tertiary-container/15 flex items-center justify-center mx-auto mb-4">
+        <span class="material-symbols-outlined text-tertiary text-[28px]">warning</span>
+      </div>
+      <h3 id="confirmTitle" class="font-headline font-bold text-on-surface mb-2" style="font-size:18px;">Are you sure?</h3>
+      <p id="confirmMsg" class="font-body text-on-surface-variant mb-5 leading-relaxed" style="font-size:14px;">This action cannot be undone.</p>
+      <div class="flex gap-3">
+        <button onclick="closeConfirm()" class="flex-1 py-3 bg-surface-clow text-on-surface-variant font-body font-semibold rounded-xl active:scale-95 transition-transform" style="font-size:14px;">Cancel</button>
+        <button id="confirmBtn" onclick="executeConfirm()" class="flex-1 py-3 bg-tertiary text-on-tertiary font-headline font-bold rounded-xl active:scale-[0.98] transition-transform" style="font-size:14px;">Confirm</button>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- TOAST -->
-<div id="toast" class="hidden fixed top-6 right-6 z-50 bg-primary text-white px-5 py-3.5 rounded-2xl shadow-lifted flex items-center gap-3 max-w-sm">
-  <span class="material-symbols-outlined text-gold text-[20px] filled">check_circle</span>
-  <p id="toastMsg" class="text-sm font-bold font-body"></p>
+<div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-3 rounded-full shadow-float items-center gap-2" style="font-size:13px;">
+  <span class="material-symbols-outlined text-primary-container text-[16px] filled">check_circle</span>
+  <span id="toastMsg"></span>
 </div>
 
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-
 <script>
+var supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+)
 
-  var supabaseClient = supabase.createClient(
-    'https://nhymadutuhpjgkiurify.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
-  )
+var currentUser = null
+var liveQuote = null
+var scheduledQuotes = []
+var archivedQuotes = []
+var showArchived = false
+var openMenuId = null
+var confirmAction = null
 
-  var allQuotes = []
-  var quoteToDelete = null
-  var currentSort = 'newest'
+var RUNWAY_DAYS = 42
 
-  // ════════════════════════════════════════════
-  // ADMIN AUTH
-  // ════════════════════════════════════════════
+// ════════════════════════════════════════════
+// ADMIN AUTH
+// ════════════════════════════════════════════
 async function checkAdminAuth() {
   try {
     var result = await supabaseClient.auth.getSession()
-
     if (!result.data.session) {
       await new Promise(function(r) { setTimeout(r, 500) })
       result = await supabaseClient.auth.getSession()
     }
-
     if (!result.data.session) {
-      var refreshed = await supabaseClient.auth.refreshSession()
-      if (!refreshed.data.session) {
-        window.location.href = 'login.html'  // ← was ../app/login.html
-        return false
-      }
-      result = refreshed
+      try {
+        var refreshed = await supabaseClient.auth.refreshSession()
+        if (!refreshed.data.session) { window.location.href = 'login.html'; return false }
+        result = refreshed
+      } catch(e) { window.location.href = 'login.html'; return false }
     }
 
-    var userId = result.data.session.user.id
-    var email  = result.data.session.user.email || ''
+    currentUser = result.data.session.user
+    var p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single()
 
-    var profileResult = await supabaseClient
-      .from('profiles')
-      .select('role, full_name')
-      .eq('id', userId)
-      .single()
+    if (p.error || !p.data) { window.location.href = 'login.html'; return false }
+    if (p.data.role !== 'admin') { window.location.href = '../app/index.html'; return false }
 
-    if (profileResult.error || !profileResult.data) {
-      window.location.href = 'login.html'  // ← was ../app/login.html
-      return false
-    }
-
-    if (profileResult.data.role !== 'admin') {
-      window.location.href = '../app/index.html'  // ← this one stays the same
-      return false
-    }
-
-    var initials = email.substring(0, 2).toUpperCase()
-    var name = profileResult.data.full_name || email
+    var email = currentUser.email || ''
+    var initials = '?'
+    if (p.data.full_name) {
+      var parts = p.data.full_name.trim().split(' ')
+      initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : parts[0].substring(0,2).toUpperCase()
+    } else if (email) { initials = email.substring(0,2).toUpperCase() }
 
     document.querySelectorAll('.admin-initials').forEach(function(el) { el.textContent = initials })
-    document.querySelectorAll('.admin-name').forEach(function(el) { el.textContent = name })
+    document.querySelectorAll('.admin-name').forEach(function(el) { el.textContent = p.data.full_name || email })
 
-    document.body.classList.add('auth-ready')
     return true
-
   } catch(e) {
     console.error('checkAdminAuth error:', e)
-    window.location.href = 'login.html'  // ← was ../app/login.html
+    window.location.href = 'login.html'
     return false
   }
 }
-  // ════════════════════════════════════════════
-  // SIDEBAR
-  // ════════════════════════════════════════════
-  function toggleSidebar() {
-    var s = document.getElementById('sidebar')
-    var o = document.getElementById('sidebarOverlay')
-    s.classList.toggle('hidden')
-    s.classList.toggle('flex')
-    o.classList.toggle('hidden')
-  }
 
-  // ════════════════════════════════════════════
-  // LOAD QUOTES
-  // ════════════════════════════════════════════
-  async function loadQuotes() {
-    var result = await supabaseClient
-      .from('quotes')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (result.error) { console.error('Load quotes error:', result.error); return }
-
-    allQuotes = result.data || []
-
-    document.getElementById('totalCount').textContent = allQuotes.length
-    document.getElementById('countAll').textContent = allQuotes.length
-    document.getElementById('countLive').textContent = allQuotes.filter(function(q) { return q.status === 'live' }).length
-    document.getElementById('countScheduled').textContent = allQuotes.filter(function(q) { return q.status === 'scheduled' }).length
-    document.getElementById('countDraft').textContent = allQuotes.filter(function(q) { return q.status === 'draft' }).length
-
-    renderQuotes(allQuotes)
-
-    var liveQuotes = allQuotes.filter(function(q) { return q.status === 'live' })
-    if (liveQuotes.length > 0) {
-      var rand = liveQuotes[Math.floor(Math.random() * liveQuotes.length)]
-      document.getElementById('reflectionText').textContent = '"' + rand.text.substring(0, 100) + '..."'
-      document.getElementById('reflectionRef').textContent = '— ' + rand.source
-    }
-  }
-
-  // ════════════════════════════════════════════
-  // RENDER QUOTES
-  // ════════════════════════════════════════════
-  function renderQuotes(quotes) {
-    var container = document.getElementById('quotesList')
-    container.innerHTML = ''
-
-    if (quotes.length === 0) {
-      document.getElementById('emptyState').classList.remove('hidden')
-      return
-    }
-    document.getElementById('emptyState').classList.add('hidden')
-
-    quotes.forEach(function(q) {
-      var isLive      = q.status === 'live'
-      var isScheduled = q.status === 'scheduled'
-      var isDraft     = q.status === 'draft'
-      var quoteId     = q.id
-
-      var dateStr = q.published_at
-        ? 'Published: ' + new Date(q.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-        : q.scheduled_for
-          ? 'Scheduled: ' + new Date(q.scheduled_for).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-          : 'Draft'
-
-      var badge = isLive
-        ? '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary"><span class="w-1.5 h-1.5 rounded-full bg-primary inline-block animate-pulse"></span>Live</span>'
-        : isScheduled
-          ? '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gold/15 text-gold-dim"><span class="material-symbols-outlined text-[12px]">schedule</span>Scheduled</span>'
-          : '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-surface text-text-muted"><span class="material-symbols-outlined text-[12px]">drafts</span>Draft</span>'
-
-      var card = document.createElement('article')
-      card.className = 'quote-card bg-card-bg rounded-2xl p-6 shadow-card flex flex-col md:flex-row md:items-center gap-6 border ' + (isDraft ? 'border-dashed border-border-soft' : 'border-transparent') + ' hover:shadow-lifted'
-      card.dataset.status = q.status
-
-      card.innerHTML =
-        '<div class="flex-1 space-y-3 min-w-0">'
-          + '<div class="flex items-center gap-3 flex-wrap">'
-            + badge
-            + '<span class="text-xs text-text-light">' + dateStr + '</span>'
-          + '</div>'
-          + '<p class="font-headline font-extrabold text-lg lg:text-xl text-text-dark leading-relaxed' + (isDraft ? ' opacity-75' : '') + '">'
-            + '"' + q.text + '"'
-          + '</p>'
-          + '<div class="flex flex-wrap items-center gap-3">'
-            + '<span class="font-body italic text-text-muted text-sm">— ' + q.source + '</span>'
-            + '<span class="px-2.5 py-1 bg-primary/8 text-primary text-[10px] font-bold rounded-full">#' + q.category + '</span>'
-          + '</div>'
-        + '</div>'
-        + '<div class="flex items-center gap-8 flex-shrink-0 border-t md:border-t-0 md:border-l border-border-soft pt-4 md:pt-0 md:pl-8">'
-          + '<div class="text-center' + (isLive ? '' : ' opacity-40') + '">'
-            + '<p class="text-2xl font-headline font-bold ' + (isLive ? 'text-primary' : 'text-text-muted') + '">' + (isLive ? (q.share_count || 0) : '—') + '</p>'
-            + '<p class="text-[10px] text-text-light font-bold uppercase tracking-widest">Shares</p>'
-          + '</div>'
-          + '<div class="flex items-center gap-1">'
-            + '<button onclick="editQuote(\'' + quoteId + '\')" class="p-2 hover:bg-cream rounded-lg text-text-muted hover:text-primary transition-all" title="Edit">'
-              + '<span class="material-symbols-outlined text-[20px]">edit</span>'
-            + '</button>'
-            + '<button onclick="duplicateQuote(\'' + quoteId + '\')" class="p-2 hover:bg-cream rounded-lg text-text-muted hover:text-primary transition-all" title="Duplicate">'
-              + '<span class="material-symbols-outlined text-[20px]">content_copy</span>'
-            + '</button>'
-            + '<button onclick="toggleStatus(\'' + quoteId + '\',\'' + q.status + '\')" class="p-2 hover:bg-cream rounded-lg text-text-muted hover:text-primary transition-all" title="' + (isLive ? 'Unpublish' : 'Publish') + '">'
-              + '<span class="material-symbols-outlined text-[20px]">' + (isLive ? 'unpublished' : 'publish') + '</span>'
-            + '</button>'
-            + '<button onclick="openDeleteModal(\'' + quoteId + '\')" class="p-2 hover:bg-action/10 text-text-light hover:text-action rounded-lg transition-all" title="Delete">'
-              + '<span class="material-symbols-outlined text-[20px]">delete</span>'
-            + '</button>'
-          + '</div>'
-        + '</div>'
-
-      container.appendChild(card)
-    })
-  }
-
-  // ════════════════════════════════════════════
-  // FILTER
-  // ════════════════════════════════════════════
-  function filterQuotes(status, btn) {
-    document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active') })
-    btn.classList.add('active')
-    renderQuotes(status === 'all' ? allQuotes : allQuotes.filter(function(q) { return q.status === status }))
-  }
-
-  // ════════════════════════════════════════════
-  // SEARCH
-  // ════════════════════════════════════════════
-  function searchQuotes(query) {
-    var q = query.toLowerCase()
-    if (!q) { renderQuotes(allQuotes); return }
-    renderQuotes(allQuotes.filter(function(quote) {
-      return quote.text.toLowerCase().includes(q)
-        || quote.source.toLowerCase().includes(q)
-        || quote.category.toLowerCase().includes(q)
-    }))
-  }
-
-  // ════════════════════════════════════════════
-  // SORT
-  // ════════════════════════════════════════════
-  function sortQuotes(value) {
-    currentSort = value
-    var sorted = allQuotes.slice()
-    if (value === 'oldest') sorted.sort(function(a, b) { return new Date(a.created_at) - new Date(b.created_at) })
-    if (value === 'newest') sorted.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at) })
-    if (value === 'shares') sorted.sort(function(a, b) { return (b.share_count || 0) - (a.share_count || 0) })
-    renderQuotes(sorted)
-  }
-
-  // ════════════════════════════════════════════
-  // DELETE
-  // ════════════════════════════════════════════
-  function openDeleteModal(id) {
-    quoteToDelete = id
-    document.getElementById('deleteModal').classList.remove('hidden')
-  }
-
-  function closeDeleteModal() {
-    document.getElementById('deleteModal').classList.add('hidden')
-    quoteToDelete = null
-  }
-
-  async function confirmDeleteNow() {
-    if (!quoteToDelete) return
-    var result = await supabaseClient.from('quotes').delete().eq('id', quoteToDelete)
-    if (result.error) { showToast('Error deleting quote'); closeDeleteModal(); return }
-    showToast('Quote deleted successfully')
-    closeDeleteModal()
-    await loadQuotes()
-  }
-
-  document.getElementById('deleteModal').addEventListener('click', function(e) {
-    if (e.target === this) closeDeleteModal()
-  })
-
-  // ════════════════════════════════════════════
-  // EDIT
-  // ════════════════════════════════════════════
-function editQuote(id) {
-  sessionStorage.setItem('gstw_admin_edit_quote', id)
-  window.location.href = 'edit-quotes.html'
+function toggleSidebar() {
+  var s = document.getElementById('sidebar')
+  var o = document.getElementById('sidebarOverlay')
+  s.classList.toggle('hidden')
+  s.classList.toggle('flex')
+  o.classList.toggle('hidden')
 }
 
-  // ════════════════════════════════════════════
-  // DUPLICATE
-  // ════════════════════════════════════════════
-  async function duplicateQuote(id) {
-    var original = allQuotes.find(function(q) { return q.id === id })
-    if (!original) return
-    var result = await supabaseClient.from('quotes').insert([{
-      text: original.text,
-      source: original.source,
-      category: original.category,
-      status: 'draft'
-    }])
-    if (result.error) { showToast('Error duplicating'); return }
-    showToast('Quote duplicated as draft')
-    await loadQuotes()
+async function handleLogout() {
+  try { await supabaseClient.auth.signOut() } catch(e) {}
+  window.location.href = 'login.html'
+}
+
+// ════════════════════════════════════════════
+// LOAD QUOTES
+// ════════════════════════════════════════════
+async function loadQuotes() {
+  // Opportunistic promotion — promote any scheduled quotes past their scheduled time
+  try {
+    await supabaseClient.rpc('promote_scheduled_quotes')
+  } catch(e) {
+    console.warn('promote_scheduled_quotes RPC not available:', e)
   }
 
-  // ════════════════════════════════════════════
-  // TOGGLE STATUS
-  // ════════════════════════════════════════════
-  async function toggleStatus(id, currentStatus) {
-    var newStatus = currentStatus === 'live' ? 'draft' : 'live'
-    var updates = { status: newStatus }
-    if (newStatus === 'live') updates.published_at = new Date().toISOString()
-    var result = await supabaseClient.from('quotes').update(updates).eq('id', id)
-    if (result.error) { showToast('Error updating status'); return }
-    showToast(newStatus === 'live' ? 'Quote published!' : 'Quote unpublished')
-    await loadQuotes()
+  // Load live quote
+  var liveResult = await supabaseClient
+    .from('quotes')
+    .select('*')
+    .eq('status', 'live')
+    .order('published_at', { ascending: false })
+    .limit(1)
+
+  liveQuote = (liveResult.data && liveResult.data[0]) || null
+
+  // Load scheduled quotes (chronological, future dates)
+  var nowIso = new Date().toISOString()
+  var scheduledResult = await supabaseClient
+    .from('quotes')
+    .select('*')
+    .eq('status', 'scheduled')
+    .gte('scheduled_for', nowIso)
+    .order('scheduled_for', { ascending: true })
+
+  scheduledQuotes = scheduledResult.data || []
+
+  renderRunway()
+  renderLive()
+  renderScheduled()
+}
+
+async function loadArchived() {
+  var result = await supabaseClient
+    .from('quotes')
+    .select('*')
+    .eq('status', 'archived')
+    .order('published_at', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  archivedQuotes = result.data || []
+  renderArchived()
+}
+
+// ════════════════════════════════════════════
+// RUNWAY STATUS
+// ════════════════════════════════════════════
+function renderRunway() {
+  var section = document.getElementById('runwaySection')
+
+  var now = new Date()
+  var lastScheduled = null
+  if (scheduledQuotes.length > 0) {
+    lastScheduled = new Date(scheduledQuotes[scheduledQuotes.length - 1].scheduled_for)
   }
 
-  // ════════════════════════════════════════════
-  // LOGOUT
-  // ════════════════════════════════════════════
-  async function handleLogout() {
-    await supabaseClient.auth.signOut()
-    window.location.href = 'login.html'
+  var daysScheduled = 0
+  if (lastScheduled) {
+    daysScheduled = Math.ceil((lastScheduled - now) / (1000 * 60 * 60 * 24))
   }
 
-  // ════════════════════════════════════════════
-  // TOAST
-  // ════════════════════════════════════════════
-  var toastTimer
-  function showToast(msg) {
-    var toast = document.getElementById('toast')
-    var toastMsg = document.getElementById('toastMsg')
-    if (!toast || !toastMsg) return
-    toastMsg.textContent = msg
-    toast.classList.remove('hidden')
-    toast.classList.add('flex')
-    clearTimeout(toastTimer)
-    toastTimer = setTimeout(function() {
-      toast.classList.add('hidden')
-      toast.classList.remove('flex')
-    }, 3000)
+  // Count unique scheduled days in next 42 days
+  var uniqueDays = {}
+  scheduledQuotes.forEach(function(q) {
+    var d = new Date(q.scheduled_for)
+    var key = d.toISOString().split('T')[0]
+    uniqueDays[key] = true
+  })
+
+  var scheduledDayCount = Object.keys(uniqueDays).length
+  var runwayOk = daysScheduled >= RUNWAY_DAYS
+
+  var statusClass = runwayOk ? 'runway-good' : 'runway-warn'
+  var iconName = runwayOk ? 'check_circle' : 'warning'
+  var headline = runwayOk
+    ? daysScheduled + ' days of scheduled content'
+    : 'Runway low — ' + daysScheduled + ' days scheduled (target: ' + RUNWAY_DAYS + ')'
+
+  var subline = ''
+  if (runwayOk) {
+    subline = 'You have ' + scheduledDayCount + ' quote' + (scheduledDayCount !== 1 ? 's' : '') + ' queued through ' + lastScheduled.toLocaleDateString('en-AU', { month: 'short', day: 'numeric', year: 'numeric' })
+  } else {
+    var needed = RUNWAY_DAYS - daysScheduled
+    subline = 'Add at least ' + needed + ' more day' + (needed !== 1 ? 's' : '') + ' of content to reach the ' + RUNWAY_DAYS + '-day target'
   }
 
-  // ════════════════════════════════════════════
-  // INIT
-  // ════════════════════════════════════════════
-  async function init() {
-    var isAdmin = await checkAdminAuth()
-    if (!isAdmin) return
-    await loadQuotes()
+  section.innerHTML =
+    '<div class="' + statusClass + ' rounded-2xl p-5 fade-up">'
+      + '<div class="flex items-start gap-4">'
+        + '<div class="w-12 h-12 rounded-xl bg-white/50 flex items-center justify-center flex-shrink-0">'
+          + '<span class="material-symbols-outlined text-[24px] ' + (runwayOk ? 'filled' : '') + '">' + iconName + '</span>'
+        + '</div>'
+        + '<div class="flex-1 min-w-0">'
+          + '<p class="font-headline font-bold" style="font-size:15px;line-height:20px;">' + headline + '</p>'
+          + '<p class="font-body mt-1" style="font-size:12px;opacity:0.85;">' + subline + '</p>'
+          + '<div class="flex items-center gap-3 mt-3">'
+            + '<a href="quotes.html" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/60 rounded-lg font-body font-semibold hover:bg-white/80 transition-colors" style="font-size:12px;">'
+              + '<span class="material-symbols-outlined" style="font-size:16px;">add</span>Add Quote'
+            + '</a>'
+            + '<a href="schedule.html" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/60 rounded-lg font-body font-semibold hover:bg-white/80 transition-colors" style="font-size:12px;">'
+              + '<span class="material-symbols-outlined" style="font-size:16px;">calendar_month</span>View Calendar'
+            + '</a>'
+          + '</div>'
+        + '</div>'
+      + '</div>'
+    + '</div>'
+}
+
+// ════════════════════════════════════════════
+// RENDER LIVE
+// ════════════════════════════════════════════
+function renderLive() {
+  var container = document.getElementById('liveContainer')
+
+  if (!liveQuote) {
+    container.innerHTML =
+      '<div class="bg-surface-cl rounded-2xl p-8 text-center fade-up">'
+        + '<span class="material-symbols-outlined text-outline" style="font-size:32px;">visibility_off</span>'
+        + '<p class="font-body text-on-surface-variant mt-2" style="font-size:14px;">No quote is currently live</p>'
+        + '<p class="font-body text-outline mt-1" style="font-size:12px;">The next scheduled quote will go live automatically</p>'
+      + '</div>'
+    return
   }
 
-  init()
+  container.innerHTML = buildQuoteCard(liveQuote, 'live')
+}
 
+// ════════════════════════════════════════════
+// RENDER SCHEDULED
+// ════════════════════════════════════════════
+function renderScheduled() {
+  var container = document.getElementById('scheduledContainer')
+  var countEl = document.getElementById('scheduledCount')
+
+  countEl.textContent = scheduledQuotes.length > 0
+    ? scheduledQuotes.length + ' quote' + (scheduledQuotes.length !== 1 ? 's' : '') + ' queued'
+    : ''
+
+  if (scheduledQuotes.length === 0) {
+    container.innerHTML =
+      '<div class="bg-surface-cl rounded-2xl p-8 text-center fade-up">'
+        + '<span class="material-symbols-outlined text-outline" style="font-size:32px;">event_upcoming</span>'
+        + '<p class="font-body text-on-surface-variant mt-2" style="font-size:14px;">No scheduled quotes</p>'
+        + '<a href="quotes.html" class="inline-flex items-center gap-1.5 mt-3 px-4 py-2 signature-gradient text-on-primary font-body font-semibold rounded-lg" style="font-size:13px;">'
+          + '<span class="material-symbols-outlined" style="font-size:16px;">add</span>Schedule your first quote'
+        + '</a>'
+      + '</div>'
+    return
+  }
+
+  container.innerHTML = ''
+  scheduledQuotes.forEach(function(q) {
+    container.innerHTML += buildQuoteCard(q, 'scheduled')
+  })
+}
+
+// ════════════════════════════════════════════
+// RENDER ARCHIVED
+// ════════════════════════════════════════════
+function renderArchived() {
+  var container = document.getElementById('archivedContainer')
+  var countEl = document.getElementById('archivedCount')
+
+  countEl.textContent = archivedQuotes.length > 0
+    ? 'Showing latest ' + archivedQuotes.length
+    : ''
+
+  if (archivedQuotes.length === 0) {
+    container.innerHTML =
+      '<div class="bg-surface-cl rounded-2xl p-6 text-center">'
+        + '<p class="font-body text-on-surface-variant" style="font-size:13px;">No archived quotes</p>'
+      + '</div>'
+    return
+  }
+
+  container.innerHTML = ''
+  archivedQuotes.forEach(function(q) {
+    container.innerHTML += buildQuoteCard(q, 'archived')
+  })
+}
+
+// ════════════════════════════════════════════
+// BUILD QUOTE CARD
+// ════════════════════════════════════════════
+function buildQuoteCard(q, type) {
+  var bgUrl = q.background_url || ''
+  var thumbHtml = bgUrl
+    ? '<img src="' + bgUrl + '" alt="">'
+    : '<span class="material-symbols-outlined text-outline" style="font-size:24px;">image</span>'
+
+  // Status badge
+  var statusBadge = ''
+  var statusInfo = ''
+  if (type === 'live') {
+    statusBadge = '<span class="badge badge-live"><span class="material-symbols-outlined filled" style="font-size:10px;">radio_button_checked</span>Live</span>'
+    var since = q.published_at ? new Date(q.published_at) : new Date()
+    statusInfo = 'Since ' + since.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })
+  } else if (type === 'scheduled') {
+    statusBadge = '<span class="badge badge-scheduled"><span class="material-symbols-outlined" style="font-size:10px;">schedule</span>Scheduled</span>'
+    var when = new Date(q.scheduled_for)
+    statusInfo = formatScheduleDate(when)
+  } else {
+    statusBadge = '<span class="badge" style="background:#e9e8e1;color:#7a7b75;"><span class="material-symbols-outlined" style="font-size:10px;">archive</span>Archived</span>'
+    var archDate = q.published_at ? new Date(q.published_at) : new Date(q.created_at)
+    statusInfo = 'Archived ' + archDate.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })
+  }
+
+  // Meta chips
+  var metaChips = ''
+  if (q.category) metaChips += '<span class="meta-chip">' + escapeHtml(q.category) + '</span>'
+
+  // Indicators
+  var indicators = ''
+  if (q.context && q.context.trim()) indicators += '<span title="Has context"><span class="material-symbols-outlined text-outline" style="font-size:14px;">menu_book</span></span>'
+  if (hasCustomHomeDisplay(q)) indicators += '<span title="Custom home display"><span class="material-symbols-outlined text-primary" style="font-size:14px;">tune</span></span>'
+  if (q.background_url) indicators += '<span title="Custom background"><span class="material-symbols-outlined text-outline" style="font-size:14px;">wallpaper</span></span>'
+  if (q.hashtags && q.hashtags.length > 0) indicators += '<span title="' + q.hashtags.length + ' hashtags" class="font-body text-outline" style="font-size:10px;font-weight:600;">#' + q.hashtags.length + '</span>'
+
+  // Actions menu items
+  var menuItems = ''
+  if (type === 'live') {
+    menuItems =
+      '<a href="quotes.html?edit=' + q.id + '" class="action-item"><span class="material-symbols-outlined">edit</span>Edit</a>'
+      + '<div class="action-item" onclick="openPreview(\'' + q.id + '\')"><span class="material-symbols-outlined">visibility</span>Preview</div>'
+      + '<div class="action-item" onclick="confirmUnpublish(\'' + q.id + '\')"><span class="material-symbols-outlined">visibility_off</span>Unpublish</div>'
+      + '<div class="action-item danger" onclick="confirmDelete(\'' + q.id + '\')"><span class="material-symbols-outlined">delete</span>Delete</div>'
+  } else if (type === 'scheduled') {
+    menuItems =
+      '<a href="quotes.html?edit=' + q.id + '" class="action-item"><span class="material-symbols-outlined">edit</span>Edit</a>'
+      + '<div class="action-item" onclick="openPreview(\'' + q.id + '\')"><span class="material-symbols-outlined">visibility</span>Preview</div>'
+      + '<div class="action-item" onclick="confirmPublishNow(\'' + q.id + '\')"><span class="material-symbols-outlined">bolt</span>Publish Now</div>'
+      + '<div class="action-item" onclick="confirmUnpublish(\'' + q.id + '\')"><span class="material-symbols-outlined">visibility_off</span>Unpublish</div>'
+      + '<div class="action-item danger" onclick="confirmDelete(\'' + q.id + '\')"><span class="material-symbols-outlined">delete</span>Delete</div>'
+  } else {
+    menuItems =
+      '<div class="action-item" onclick="openPreview(\'' + q.id + '\')"><span class="material-symbols-outlined">visibility</span>Preview</div>'
+      + '<div class="action-item danger" onclick="confirmDelete(\'' + q.id + '\')"><span class="material-symbols-outlined">delete</span>Delete</div>'
+  }
+
+  return '<div class="quote-card fade-up ' + (type === 'live' ? 'is-live' : '') + '">'
+    + '<div class="quote-thumb">' + thumbHtml + '</div>'
+    + '<div class="flex-1 min-w-0">'
+      + '<div class="flex items-center justify-between gap-2 mb-2">'
+        + '<div class="flex items-center gap-2 flex-wrap">'
+          + statusBadge
+          + '<span class="font-body text-on-surface-variant" style="font-size:11px;font-weight:500;">' + statusInfo + '</span>'
+        + '</div>'
+        + '<div class="relative flex-shrink-0">'
+          + '<button onclick="toggleMenu(\'' + q.id + '\',event)" class="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:bg-surface-clow rounded-lg transition-colors" aria-label="Actions">'
+            + '<span class="material-symbols-outlined" style="font-size:18px;">more_vert</span>'
+          + '</button>'
+          + '<div id="menu-' + q.id + '" class="action-menu hidden">' + menuItems + '</div>'
+        + '</div>'
+      + '</div>'
+      + '<p class="font-headline text-on-surface quote-text-clamp mb-1" style="font-size:14px;font-weight:500;">' + escapeHtml(q.text || '') + '</p>'
+      + '<p class="font-body font-semibold text-primary mb-2" style="font-size:12px;">— ' + escapeHtml(q.source || '') + '</p>'
+      + '<div class="flex items-center gap-2 flex-wrap">'
+        + metaChips
+        + (indicators ? '<span class="flex items-center gap-1.5 ml-1">' + indicators + '</span>' : '')
+      + '</div>'
+    + '</div>'
+  + '</div>'
+}
+
+function hasCustomHomeDisplay(q) {
+  return q.home_font_size || q.home_text_color !== '#ffffff' || q.home_text_align !== 'left' || q.home_text_position !== 'center'
+}
+
+function formatScheduleDate(date) {
+  var now = new Date()
+  var today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  var target = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  var diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24))
+
+  var timeStr = date.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true })
+
+  if (diffDays === 0) return 'Today · ' + timeStr
+  if (diffDays === 1) return 'Tomorrow · ' + timeStr
+  if (diffDays < 7) return 'In ' + diffDays + ' days · ' + date.toLocaleDateString('en-AU', { weekday: 'short' }) + ' ' + timeStr
+  return date.toLocaleDateString('en-AU', { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' + timeStr
+}
+
+// ════════════════════════════════════════════
+// ACTION MENU
+// ════════════════════════════════════════════
+function toggleMenu(id, event) {
+  if (event) event.stopPropagation()
+
+  // Close all other menus
+  document.querySelectorAll('.action-menu').forEach(function(m) {
+    if (m.id !== 'menu-' + id) m.classList.add('hidden')
+  })
+
+  var menu = document.getElementById('menu-' + id)
+  if (menu) menu.classList.toggle('hidden')
+  openMenuId = menu && !menu.classList.contains('hidden') ? id : null
+}
+
+// Close menus on outside click
+document.addEventListener('click', function() {
+  document.querySelectorAll('.action-menu').forEach(function(m) { m.classList.add('hidden') })
+  openMenuId = null
+})
+
+// ════════════════════════════════════════════
+// ARCHIVED TOGGLE
+// ════════════════════════════════════════════
+async function toggleArchived() {
+  showArchived = !showArchived
+  var section = document.getElementById('archivedSection')
+  var label = document.getElementById('archivedToggleLabel')
+
+  if (showArchived) {
+    section.classList.remove('hidden')
+    label.textContent = 'Hide Archived Quotes'
+    await loadArchived()
+  } else {
+    section.classList.add('hidden')
+    label.textContent = 'Show Archived Quotes'
+  }
+}
+
+// ════════════════════════════════════════════
+// PREVIEW MODAL
+// ════════════════════════════════════════════
+function openPreview(id) {
+  var q = findQuote(id)
+  if (!q) return
+
+  var bg = document.getElementById('previewBg')
+  var text = document.getElementById('previewText')
+  var source = document.getElementById('previewSource')
+
+  if (q.background_url) {
+    bg.style.backgroundImage = 'url("' + q.background_url + '")'
+  } else {
+    bg.style.background = '#3d6285'
+    bg.style.backgroundImage = ''
+  }
+
+  text.textContent = q.text || ''
+  source.textContent = (q.source || '').toUpperCase()
+
+  // Apply home display overrides
+  if (q.home_font_size) text.style.fontSize = q.home_font_size
+  else text.style.fontSize = '22px'
+
+  if (q.home_text_align) text.style.textAlign = q.home_text_align
+  else text.style.textAlign = 'left'
+
+  if (q.home_text_color) text.style.color = q.home_text_color
+  else text.style.color = '#ffffff'
+
+  document.getElementById('previewModal').classList.remove('hidden')
+  document.body.style.overflow = 'hidden'
+}
+
+function closePreview() {
+  document.getElementById('previewModal').classList.add('hidden')
+  document.body.style.overflow = ''
+}
+
+function findQuote(id) {
+  if (liveQuote && liveQuote.id === id) return liveQuote
+  var s = scheduledQuotes.find(function(q) { return q.id === id })
+  if (s) return s
+  var a = archivedQuotes.find(function(q) { return q.id === id })
+  if (a) return a
+  return null
+}
+
+// ════════════════════════════════════════════
+// CONFIRMATIONS
+// ════════════════════════════════════════════
+function confirmPublishNow(id) {
+  var q = findQuote(id)
+  if (!q) return
+  confirmAction = { type: 'publish_now', id: id }
+  showConfirm(
+    'Publish Now?',
+    'This will replace the currently live quote. The current live quote will be automatically archived.',
+    'Publish Now',
+    'bolt',
+    'primary'
+  )
+}
+
+function confirmUnpublish(id) {
+  var q = findQuote(id)
+  if (!q) return
+  var isLive = q.status === 'live'
+  confirmAction = { type: 'unpublish', id: id }
+  showConfirm(
+    'Unpublish this quote?',
+    isLive
+      ? 'The next scheduled quote will automatically become live. This quote will be archived.'
+      : 'This quote will be moved to archive and will not appear on the home screen.',
+    'Unpublish',
+    'visibility_off',
+    'tertiary'
+  )
+}
+
+function confirmDelete(id) {
+  confirmAction = { type: 'delete', id: id }
+  showConfirm(
+    'Delete permanently?',
+    'This quote will be permanently deleted and cannot be recovered.',
+    'Delete Forever',
+    'delete_forever',
+    'tertiary'
+  )
+}
+
+function showConfirm(title, message, btnLabel, iconName, btnColor) {
+  document.getElementById('confirmTitle').textContent = title
+  document.getElementById('confirmMsg').textContent = message
+  var iconEl = document.getElementById('confirmIcon')
+  iconEl.innerHTML = '<span class="material-symbols-outlined text-[28px] ' + (btnColor === 'primary' ? 'text-primary' : 'text-tertiary') + '">' + iconName + '</span>'
+  iconEl.className = 'w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 ' + (btnColor === 'primary' ? 'bg-primary-container/20' : 'bg-tertiary-container/15')
+
+  var btn = document.getElementById('confirmBtn')
+  btn.textContent = btnLabel
+  btn.className = 'flex-1 py-3 font-headline font-bold rounded-xl active:scale-[0.98] transition-transform ' + (btnColor === 'primary' ? 'signature-gradient text-on-primary' : 'bg-tertiary text-on-tertiary')
+  btn.style.fontSize = '14px'
+
+  document.getElementById('confirmModal').classList.remove('hidden')
+  document.body.style.overflow = 'hidden'
+}
+
+function closeConfirm() {
+  document.getElementById('confirmModal').classList.add('hidden')
+  document.body.style.overflow = ''
+}
+
+async function executeConfirm() {
+  if (!confirmAction) return
+  closeConfirm()
+
+  var action = confirmAction.type
+  var id = confirmAction.id
+  confirmAction = null
+
+  if (action === 'publish_now') await publishNow(id)
+  else if (action === 'unpublish') await unpublish(id)
+  else if (action === 'delete') await deleteQuote(id)
+}
+
+// ════════════════════════════════════════════
+// QUOTE ACTIONS
+// ════════════════════════════════════════════
+async function publishNow(id) {
+  var result = await supabaseClient
+    .from('quotes')
+    .update({
+      status: 'live',
+      published_at: new Date().toISOString(),
+      scheduled_for: null
+    })
+    .eq('id', id)
+
+  if (result.error) { showToast('Error: ' + result.error.message); return }
+  showToast('Quote is now live')
+  await loadQuotes()
+  if (showArchived) await loadArchived()
+}
+
+async function unpublish(id) {
+  var q = findQuote(id)
+  var wasLive = q && q.status === 'live'
+
+  var result = await supabaseClient
+    .from('quotes')
+    .update({ status: 'archived' })
+    .eq('id', id)
+
+  if (result.error) { showToast('Error: ' + result.error.message); return }
+
+  // If we unpublished the live quote, auto-promote the next scheduled
+  if (wasLive) {
+    var nowIso = new Date().toISOString()
+    var nextResult = await supabaseClient
+      .from('quotes')
+      .select('id')
+      .eq('status', 'scheduled')
+      .order('scheduled_for', { ascending: true })
+      .limit(1)
+
+    if (nextResult.data && nextResult.data.length > 0) {
+      await supabaseClient
+        .from('quotes')
+        .update({
+          status: 'live',
+          published_at: new Date().toISOString(),
+          scheduled_for: null
+        })
+        .eq('id', nextResult.data[0].id)
+    }
+  }
+
+  showToast('Quote unpublished')
+  await loadQuotes()
+  if (showArchived) await loadArchived()
+}
+
+async function deleteQuote(id) {
+  var result = await supabaseClient.from('quotes').delete().eq('id', id)
+  if (result.error) { showToast('Error: ' + result.error.message); return }
+  showToast('Quote deleted')
+  await loadQuotes()
+  if (showArchived) await loadArchived()
+}
+
+// ════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════
+function escapeHtml(str) {
+  if (!str) return ''
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')
+}
+
+var toastTimer
+function showToast(msg) {
+  var toast = document.getElementById('toast')
+  var toastMsg = document.getElementById('toastMsg')
+  if (!toast || !toastMsg) return
+  toastMsg.textContent = msg
+  toast.classList.remove('hidden')
+  toast.classList.add('flex')
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(function() {
+    toast.classList.add('hidden')
+    toast.classList.remove('flex')
+  }, 2500)
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+async function init() {
+  var isAdmin = await checkAdminAuth()
+  if (!isAdmin) return
+  await loadQuotes()
+}
+
+init()
 </script>
 </body>
 </html>
