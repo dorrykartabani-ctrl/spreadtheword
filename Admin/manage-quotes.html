@@ -56,7 +56,6 @@
     ::-webkit-scrollbar-track{background:transparent}
     ::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:3px}
 
-    /* Sidebar */
     .sidebar{background:#0e0e0c;color:#f7f9ff}
     .sidebar-item{
       display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;
@@ -72,7 +71,6 @@
       padding:2px 6px;border-radius:99px;letter-spacing:0.05em;
     }
 
-    /* Quote card */
     .quote-card{
       background:#ffffff;border-radius:16px;padding:16px;
       display:flex;gap:14px;
@@ -91,7 +89,6 @@
     }
     .quote-thumb img{width:100%;height:100%;object-fit:cover}
 
-    /* Quote text 2-line clamp */
     .quote-text-clamp{
       display:-webkit-box;
       -webkit-line-clamp:2;
@@ -100,7 +97,6 @@
       line-height:1.4;
     }
 
-    /* Status badges */
     .badge{
       display:inline-flex;align-items:center;gap:4px;
       padding:3px 8px;border-radius:99px;
@@ -110,7 +106,6 @@
     .badge-live{background:rgba(61,98,133,0.15);color:#3d6285}
     .badge-scheduled{background:rgba(65,99,124,0.12);color:#41637c}
 
-    /* Meta chip */
     .meta-chip{
       display:inline-flex;align-items:center;gap:3px;
       background:#f5f4ed;color:#5e6059;
@@ -118,7 +113,14 @@
       font-size:10px;font-weight:600;
     }
 
-    /* Action menu */
+    /* Campaign chip — colored per campaign */
+    .campaign-chip{
+      display:inline-flex;align-items:center;gap:4px;
+      padding:2px 7px;border-radius:99px;
+      font-size:10px;font-weight:700;
+      color:#ffffff;
+    }
+
     .action-menu{
       position:absolute;top:100%;right:0;margin-top:6px;
       background:#ffffff;border-radius:12px;
@@ -136,11 +138,19 @@
     .action-item.danger{color:#ad332b}
     .action-item .material-symbols-outlined{font-size:18px}
 
-    /* Runway status */
     .runway-good{background:linear-gradient(135deg,rgba(61,98,133,0.1),rgba(107,155,195,0.1));color:#3d6285}
     .runway-warn{background:linear-gradient(135deg,rgba(173,51,43,0.1),rgba(254,109,96,0.1));color:#ad332b}
 
-    /* Skeleton */
+    /* Campaign filter banner */
+    .filter-banner{
+      background:linear-gradient(135deg,rgba(176,213,254,0.25),rgba(202,230,255,0.25));
+      border-radius:12px;
+      padding:14px 16px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+
     .skeleton{
       background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%);
       background-size:200% 100%;
@@ -182,6 +192,7 @@
     <a href="index.html" class="sidebar-item"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
     <a href="manage-quotes.html" class="sidebar-item active"><span class="material-symbols-outlined">format_quote</span>Quotes</a>
     <a href="schedule.html" class="sidebar-item"><span class="material-symbols-outlined">calendar_today</span>Schedule</a>
+    <a href="campaigns.html" class="sidebar-item"><span class="material-symbols-outlined">campaign</span>Campaigns</a>
     <a href="manage-backgrounds.html" class="sidebar-item"><span class="material-symbols-outlined">wallpaper</span>Backgrounds<span class="soon-tag">SOON</span></a>
     <a href="projects.html" class="sidebar-item"><span class="material-symbols-outlined">volunteer_activism</span>Missions</a>
     <a href="warriors.html" class="sidebar-item"><span class="material-symbols-outlined">group</span>Users</a>
@@ -212,7 +223,6 @@
 <!-- ═══════════════════════════════════════════ -->
 <div class="flex-1 md:ml-64 flex flex-col min-h-screen">
 
-  <!-- HEADER -->
   <header class="sticky top-0 z-20 bg-surface/85 backdrop-blur-xl">
     <div class="flex items-center justify-between gap-4 px-6 lg:px-8 py-4">
       <div class="flex items-center gap-4">
@@ -230,16 +240,28 @@
     </div>
   </header>
 
-  <!-- CONTENT -->
   <main class="p-6 lg:p-8 flex-1">
     <div class="max-w-4xl mx-auto space-y-6">
+
+      <!-- CAMPAIGN FILTER BANNER (shown when filtering) -->
+      <div id="campaignFilterBanner" class="hidden filter-banner fade-up">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" id="campaignFilterIcon" style="background:#3d6285;">
+          <span class="material-symbols-outlined text-white filled" style="font-size:20px;">campaign</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-body text-primary" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Filtered by Campaign</p>
+          <p id="campaignFilterName" class="font-headline font-bold text-on-surface" style="font-size:16px;line-height:22px;">—</p>
+        </div>
+        <button onclick="clearCampaignFilter()" class="flex items-center gap-1 px-3 py-1.5 bg-surface-cl text-on-surface-variant font-body font-semibold rounded-lg hover:bg-surface-chigh transition-colors" style="font-size:12px;">
+          <span class="material-symbols-outlined" style="font-size:16px;">close</span>Clear
+        </button>
+      </div>
 
       <!-- RUNWAY STATUS -->
       <section id="runwaySection">
         <div class="skeleton h-24 w-full"></div>
       </section>
 
-      <!-- LIVE NOW -->
       <section id="liveSection">
         <div class="flex items-center justify-between mb-3">
           <h3 class="font-headline font-bold text-on-surface" style="font-size:14px;">Live Now</h3>
@@ -249,7 +271,6 @@
         </div>
       </section>
 
-      <!-- SCHEDULED -->
       <section id="scheduledSection">
         <div class="flex items-center justify-between mb-3">
           <h3 class="font-headline font-bold text-on-surface" style="font-size:14px;">Scheduled</h3>
@@ -262,7 +283,6 @@
         </div>
       </section>
 
-      <!-- ARCHIVED TOGGLE -->
       <section class="pt-6 pb-2 text-center">
         <button onclick="toggleArchived()" id="archivedToggleBtn"
           class="inline-flex items-center gap-2 px-5 py-2.5 bg-surface-cl text-on-surface-variant font-body font-semibold rounded-xl hover:bg-surface-clow transition-colors"
@@ -272,7 +292,6 @@
         </button>
       </section>
 
-      <!-- ARCHIVED (hidden by default) -->
       <section id="archivedSection" class="hidden">
         <div class="flex items-center justify-between mb-3">
           <h3 class="font-headline font-bold text-on-surface-variant" style="font-size:14px;">Archived</h3>
@@ -297,7 +316,6 @@
       </button>
     </div>
 
-    <!-- Phone frame preview -->
     <div class="px-5 pb-5">
       <div id="previewFrame" class="relative w-full aspect-[9/16] rounded-2xl overflow-hidden bg-inverse-surface">
         <div id="previewBg" class="absolute inset-0 bg-cover bg-center"></div>
@@ -338,7 +356,6 @@
   </div>
 </div>
 
-<!-- TOAST -->
 <div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-3 rounded-full shadow-float items-center gap-2" style="font-size:13px;">
   <span class="material-symbols-outlined text-primary-container text-[16px] filled">check_circle</span>
   <span id="toastMsg"></span>
@@ -354,34 +371,38 @@ var currentUser = null
 var liveQuote = null
 var scheduledQuotes = []
 var archivedQuotes = []
+var campaignsMap = {}  // { id: campaign object }
 var showArchived = false
 var openMenuId = null
 var confirmAction = null
+var campaignFilterId = null  // active campaign filter
 
 var RUNWAY_DAYS = 42
 
 // ════════════════════════════════════════════
-// ADMIN AUTH
+// AUTH
 // ════════════════════════════════════════════
 async function checkAdminAuth() {
   try {
-    var result = await supabaseClient.auth.getSession()
-    if (!result.data.session) {
-      await new Promise(function(r) { setTimeout(r, 500) })
+    var result = null
+    for (var attempt = 0; attempt < 3; attempt++) {
       result = await supabaseClient.auth.getSession()
+      if (result.data && result.data.session) break
+      await new Promise(function(r) { setTimeout(r, 300) })
     }
-    if (!result.data.session) {
+    if (!result.data || !result.data.session) {
       try {
         var refreshed = await supabaseClient.auth.refreshSession()
-        if (!refreshed.data.session) { window.location.href = 'login.html'; return false }
-        result = refreshed
-      } catch(e) { window.location.href = 'login.html'; return false }
+        if (refreshed.data && refreshed.data.session) result = refreshed
+      } catch(e) {}
     }
+    if (!result.data || !result.data.session) { window.location.href = 'login.html'; return false }
 
     currentUser = result.data.session.user
     var p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single()
 
-    if (p.error || !p.data) { window.location.href = 'login.html'; return false }
+    if (p.error) { showToast('Connection error'); setTimeout(function() { window.location.reload() }, 1500); return false }
+    if (!p.data) { window.location.href = 'login.html'; return false }
     if (p.data.role !== 'admin') { window.location.href = '../app/index.html'; return false }
 
     var email = currentUser.email || ''
@@ -397,7 +418,7 @@ async function checkAdminAuth() {
     return true
   } catch(e) {
     console.error('checkAdminAuth error:', e)
-    window.location.href = 'login.html'
+    showToast('Error'); setTimeout(function() { window.location.reload() }, 1500)
     return false
   }
 }
@@ -416,35 +437,74 @@ async function handleLogout() {
 }
 
 // ════════════════════════════════════════════
+// LOAD CAMPAIGNS
+// ════════════════════════════════════════════
+async function loadCampaignsMap() {
+  var r = await supabaseClient.from('campaigns').select('id, name, color, icon')
+  if (r.data) {
+    campaignsMap = {}
+    r.data.forEach(function(c) { campaignsMap[c.id] = c })
+  }
+}
+
+// ════════════════════════════════════════════
+// CAMPAIGN FILTER
+// ════════════════════════════════════════════
+function applyCampaignFilter(campaignId) {
+  campaignFilterId = campaignId
+  var banner = document.getElementById('campaignFilterBanner')
+  var nameEl = document.getElementById('campaignFilterName')
+  var iconEl = document.getElementById('campaignFilterIcon')
+
+  if (campaignId && campaignsMap[campaignId]) {
+    var c = campaignsMap[campaignId]
+    banner.classList.remove('hidden')
+    nameEl.textContent = c.name
+    iconEl.style.background = c.color || '#3d6285'
+    iconEl.querySelector('.material-symbols-outlined').textContent = c.icon || 'campaign'
+  } else {
+    banner.classList.add('hidden')
+  }
+}
+
+function clearCampaignFilter() {
+  campaignFilterId = null
+  // Update URL without reload
+  var url = new URL(window.location.href)
+  url.searchParams.delete('campaign')
+  window.history.replaceState({}, '', url)
+  applyCampaignFilter(null)
+  loadQuotes()
+}
+
+// ════════════════════════════════════════════
 // LOAD QUOTES
 // ════════════════════════════════════════════
 async function loadQuotes() {
-  // Opportunistic promotion — promote any scheduled quotes past their scheduled time
-  try {
-    await supabaseClient.rpc('promote_scheduled_quotes')
-  } catch(e) {
-    console.warn('promote_scheduled_quotes RPC not available:', e)
-  }
+  try { await supabaseClient.rpc('promote_scheduled_quotes') } catch(e) {}
 
-  // Load live quote
-  var liveResult = await supabaseClient
+  // Live quote query
+  var liveQuery = supabaseClient
     .from('quotes')
     .select('*')
     .eq('status', 'live')
-    .order('published_at', { ascending: false })
-    .limit(1)
 
+  if (campaignFilterId) liveQuery = liveQuery.eq('campaign_id', campaignFilterId)
+
+  var liveResult = await liveQuery.order('published_at', { ascending: false }).limit(1)
   liveQuote = (liveResult.data && liveResult.data[0]) || null
 
-  // Load scheduled quotes (chronological, future dates)
+  // Scheduled quotes query
   var nowIso = new Date().toISOString()
-  var scheduledResult = await supabaseClient
+  var schedQuery = supabaseClient
     .from('quotes')
     .select('*')
     .eq('status', 'scheduled')
     .gte('scheduled_for', nowIso)
-    .order('scheduled_for', { ascending: true })
 
+  if (campaignFilterId) schedQuery = schedQuery.eq('campaign_id', campaignFilterId)
+
+  var scheduledResult = await schedQuery.order('scheduled_for', { ascending: true })
   scheduledQuotes = scheduledResult.data || []
 
   renderRunway()
@@ -453,10 +513,14 @@ async function loadQuotes() {
 }
 
 async function loadArchived() {
-  var result = await supabaseClient
+  var query = supabaseClient
     .from('quotes')
     .select('*')
     .eq('status', 'archived')
+
+  if (campaignFilterId) query = query.eq('campaign_id', campaignFilterId)
+
+  var result = await query
     .order('published_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
     .limit(50)
@@ -471,6 +535,22 @@ async function loadArchived() {
 function renderRunway() {
   var section = document.getElementById('runwaySection')
 
+  // If filtering by campaign, show simpler summary instead of runway
+  if (campaignFilterId) {
+    var total = (liveQuote ? 1 : 0) + scheduledQuotes.length
+    section.innerHTML =
+      '<div class="bg-surface-cl rounded-2xl p-5 fade-up">'
+        + '<p class="font-headline font-bold text-on-surface" style="font-size:15px;">'
+          + total + ' quote' + (total !== 1 ? 's' : '') + ' in this campaign'
+        + '</p>'
+        + '<p class="font-body text-on-surface-variant mt-1" style="font-size:12px;">'
+          + (liveQuote ? '1 live · ' : '')
+          + scheduledQuotes.length + ' scheduled'
+        + '</p>'
+      + '</div>'
+    return
+  }
+
   var now = new Date()
   var lastScheduled = null
   if (scheduledQuotes.length > 0) {
@@ -482,7 +562,6 @@ function renderRunway() {
     daysScheduled = Math.ceil((lastScheduled - now) / (1000 * 60 * 60 * 24))
   }
 
-  // Count unique scheduled days in next 42 days
   var uniqueDays = {}
   scheduledQuotes.forEach(function(q) {
     var d = new Date(q.scheduled_for)
@@ -539,8 +618,10 @@ function renderLive() {
     container.innerHTML =
       '<div class="bg-surface-cl rounded-2xl p-8 text-center fade-up">'
         + '<span class="material-symbols-outlined text-outline" style="font-size:32px;">visibility_off</span>'
-        + '<p class="font-body text-on-surface-variant mt-2" style="font-size:14px;">No quote is currently live</p>'
-        + '<p class="font-body text-outline mt-1" style="font-size:12px;">The next scheduled quote will go live automatically</p>'
+        + '<p class="font-body text-on-surface-variant mt-2" style="font-size:14px;">'
+          + (campaignFilterId ? 'No quote from this campaign is currently live' : 'No quote is currently live')
+        + '</p>'
+        + (!campaignFilterId ? '<p class="font-body text-outline mt-1" style="font-size:12px;">The next scheduled quote will go live automatically</p>' : '')
       + '</div>'
     return
   }
@@ -563,7 +644,9 @@ function renderScheduled() {
     container.innerHTML =
       '<div class="bg-surface-cl rounded-2xl p-8 text-center fade-up">'
         + '<span class="material-symbols-outlined text-outline" style="font-size:32px;">event_upcoming</span>'
-        + '<p class="font-body text-on-surface-variant mt-2" style="font-size:14px;">No scheduled quotes</p>'
+        + '<p class="font-body text-on-surface-variant mt-2" style="font-size:14px;">'
+          + (campaignFilterId ? 'No scheduled quotes in this campaign' : 'No scheduled quotes')
+        + '</p>'
         + '<a href="quotes.html" class="inline-flex items-center gap-1.5 mt-3 px-4 py-2 signature-gradient text-on-primary font-body font-semibold rounded-lg" style="font-size:13px;">'
           + '<span class="material-symbols-outlined" style="font-size:16px;">add</span>Schedule your first quote'
         + '</a>'
@@ -611,7 +694,6 @@ function buildQuoteCard(q, type) {
     ? '<img src="' + bgUrl + '" alt="">'
     : '<span class="material-symbols-outlined text-outline" style="font-size:24px;">image</span>'
 
-  // Status badge
   var statusBadge = ''
   var statusInfo = ''
   if (type === 'live') {
@@ -628,18 +710,25 @@ function buildQuoteCard(q, type) {
     statusInfo = 'Archived ' + archDate.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })
   }
 
-  // Meta chips
   var metaChips = ''
   if (q.category) metaChips += '<span class="meta-chip">' + escapeHtml(q.category) + '</span>'
 
-  // Indicators
+  // Campaign chip — colored per campaign
+  var campaignChip = ''
+  if (q.campaign_id && campaignsMap[q.campaign_id]) {
+    var c = campaignsMap[q.campaign_id]
+    campaignChip = '<span class="campaign-chip" style="background:' + (c.color || '#3d6285') + ';">'
+      + '<span class="material-symbols-outlined filled" style="font-size:11px;">' + (c.icon || 'campaign') + '</span>'
+      + escapeHtml(c.name)
+      + '</span>'
+  }
+
   var indicators = ''
   if (q.context && q.context.trim()) indicators += '<span title="Has context"><span class="material-symbols-outlined text-outline" style="font-size:14px;">menu_book</span></span>'
   if (hasCustomHomeDisplay(q)) indicators += '<span title="Custom home display"><span class="material-symbols-outlined text-primary" style="font-size:14px;">tune</span></span>'
   if (q.background_url) indicators += '<span title="Custom background"><span class="material-symbols-outlined text-outline" style="font-size:14px;">wallpaper</span></span>'
   if (q.hashtags && q.hashtags.length > 0) indicators += '<span title="' + q.hashtags.length + ' hashtags" class="font-body text-outline" style="font-size:10px;font-weight:600;">#' + q.hashtags.length + '</span>'
 
-  // Actions menu items
   var menuItems = ''
   if (type === 'live') {
     menuItems =
@@ -679,6 +768,7 @@ function buildQuoteCard(q, type) {
       + '<p class="font-body font-semibold text-primary mb-2" style="font-size:12px;">— ' + escapeHtml(q.source || '') + '</p>'
       + '<div class="flex items-center gap-2 flex-wrap">'
         + metaChips
+        + campaignChip
         + (indicators ? '<span class="flex items-center gap-1.5 ml-1">' + indicators + '</span>' : '')
       + '</div>'
     + '</div>'
@@ -686,7 +776,7 @@ function buildQuoteCard(q, type) {
 }
 
 function hasCustomHomeDisplay(q) {
-  return q.home_font_size || q.home_text_color !== '#ffffff' || q.home_text_align !== 'left' || q.home_text_position !== 'center'
+  return q.home_font_size || (q.home_text_color && q.home_text_color !== '#ffffff') || (q.home_text_align && q.home_text_align !== 'left') || (q.home_text_position && q.home_text_position !== 'center')
 }
 
 function formatScheduleDate(date) {
@@ -708,18 +798,14 @@ function formatScheduleDate(date) {
 // ════════════════════════════════════════════
 function toggleMenu(id, event) {
   if (event) event.stopPropagation()
-
-  // Close all other menus
   document.querySelectorAll('.action-menu').forEach(function(m) {
     if (m.id !== 'menu-' + id) m.classList.add('hidden')
   })
-
   var menu = document.getElementById('menu-' + id)
   if (menu) menu.classList.toggle('hidden')
   openMenuId = menu && !menu.classList.contains('hidden') ? id : null
 }
 
-// Close menus on outside click
 document.addEventListener('click', function() {
   document.querySelectorAll('.action-menu').forEach(function(m) { m.classList.add('hidden') })
   openMenuId = null
@@ -756,6 +842,7 @@ function openPreview(id) {
 
   if (q.background_url) {
     bg.style.backgroundImage = 'url("' + q.background_url + '")'
+    bg.style.background = ''
   } else {
     bg.style.background = '#3d6285'
     bg.style.backgroundImage = ''
@@ -764,13 +851,10 @@ function openPreview(id) {
   text.textContent = q.text || ''
   source.textContent = (q.source || '').toUpperCase()
 
-  // Apply home display overrides
   if (q.home_font_size) text.style.fontSize = q.home_font_size
   else text.style.fontSize = '22px'
-
   if (q.home_text_align) text.style.textAlign = q.home_text_align
   else text.style.textAlign = 'left'
-
   if (q.home_text_color) text.style.color = q.home_text_color
   else text.style.color = '#ffffff'
 
@@ -899,9 +983,7 @@ async function unpublish(id) {
 
   if (result.error) { showToast('Error: ' + result.error.message); return }
 
-  // If we unpublished the live quote, auto-promote the next scheduled
   if (wasLive) {
-    var nowIso = new Date().toISOString()
     var nextResult = await supabaseClient
       .from('quotes')
       .select('id')
@@ -963,6 +1045,17 @@ function showToast(msg) {
 async function init() {
   var isAdmin = await checkAdminAuth()
   if (!isAdmin) return
+
+  // Load campaigns first (needed for chip rendering)
+  await loadCampaignsMap()
+
+  // Check for campaign filter URL param
+  var campaignParam = new URLSearchParams(window.location.search).get('campaign')
+  if (campaignParam) {
+    campaignFilterId = campaignParam
+    applyCampaignFilter(campaignFilterId)
+  }
+
   await loadQuotes()
 }
 
