@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Warriors — GSTW Admin</title>
+  <title>Users — GSTW Admin</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -17,24 +17,28 @@
       theme: {
         extend: {
           colors: {
-            'primary':'#1E4060','primary-dim':'#152E45','primary-light':'#2B5780',
-            'action':'#E25B4D','action-dim':'#C84A3E',
-            'gold':'#D4A24C','gold-dim':'#B88A3D',
-            'cream':'#F7F4ED','dark':'#16202A','dark-soft':'#1F2A35',
-            'text-dark':'#1A1A1A','text-muted':'#5C6B7A','text-light':'#8E9AA8',
-            'border-soft':'rgba(92,107,122,0.15)',
-            'sidebar-bg':'#0F1E2E','sidebar-hover':'#1A2D40',
-            'card-bg':'#FFFFFF','surface':'#F0EDE6',
+            'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
+            'surface-c':'#efeee7','surface-chigh':'#e9e8e1','surface-chighest':'#e3e3db',
+            'on-surface':'#31332e','on-surface-variant':'#5e6059',
+            'inverse-surface':'#0e0e0c','inverse-on-surface':'#9e9d99',
+            'outline':'#7a7b75','outline-variant':'#b2b2ab',
+            'primary':'#3d6285','on-primary':'#f7f9ff',
+            'primary-container':'#b0d5fe','on-primary-container':'#234a6c',
+            'secondary':'#41637c','on-secondary':'#f6f9ff',
+            'secondary-container':'#cae6ff',
+            'tertiary':'#ad332b','on-tertiary':'#fff7f6',
+            'tertiary-container':'#fe6d60',
+            'primary-dim':'#305678','secondary-dim':'#355670','tertiary-dim':'#9d2621',
+            'sidebar-bg':'#0e0e0c','sidebar-hover':'#1a1a18',
           },
           fontFamily:{
             'headline':['Plus Jakarta Sans','sans-serif'],
             'body':['Manrope','sans-serif'],
           },
           boxShadow:{
-            'natural':'0 4px 16px rgba(26,32,42,0.06)',
-            'lifted':'0 8px 32px rgba(26,32,42,0.10)',
-            'tactical':'0 4px 20px rgba(30,64,96,0.25)',
-            'card':'0 32px 64px -15px rgba(30,64,96,0.06)',
+            'ambient':'0 20px 40px rgba(49,51,46,0.05)',
+            'ambient-sm':'0 8px 24px rgba(49,51,46,0.04)',
+            'float':'0 20px 40px rgba(49,51,46,0.08)',
           },
         },
       },
@@ -42,609 +46,1307 @@
   </script>
 
   <style>
-    body{font-family:'Manrope',sans-serif}
-    .font-headline{font-family:'Plus Jakarta Sans',sans-serif}
-    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle}
+    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;letter-spacing:-0.005em}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
     .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
-    .tactical-gradient{background:linear-gradient(145deg,#152E45,#1E4060)}
-    ::-webkit-scrollbar{width:5px}
+    .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
+
+    ::-webkit-scrollbar{width:6px;height:6px}
     ::-webkit-scrollbar-track{background:transparent}
-    ::-webkit-scrollbar-thumb{background:rgba(30,64,96,0.15);border-radius:3px}
+    ::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:3px}
     .no-scrollbar::-webkit-scrollbar{display:none}
     .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
-    .warrior-row{transition:background 0.15s}
-    .warrior-row:hover{background:rgba(30,64,96,0.03)}
+
+    /* Sidebar */
+    .sidebar{background:#0e0e0c;color:#f7f9ff}
+    .sidebar-item{
+      display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;
+      color:rgba(247,249,255,0.6);font-size:13px;font-weight:600;
+      transition:all 0.15s ease;text-decoration:none;
+    }
+    .sidebar-item:hover{background:#1a1a18;color:#f7f9ff}
+    .sidebar-item.active{background:#3d6285;color:#f7f9ff}
+    .sidebar-item .material-symbols-outlined{font-size:20px}
+    .sidebar-item .soon-tag{
+      margin-left:auto;font-size:9px;font-weight:700;
+      background:rgba(247,249,255,0.08);color:rgba(247,249,255,0.5);
+      padding:2px 6px;border-radius:99px;letter-spacing:0.05em;
+    }
+
+    /* Table */
+    .user-row{transition:background 0.15s;cursor:pointer}
+    .user-row:hover{background:#f5f4ed}
+
+    /* Sortable column header */
+    .th-sort{cursor:pointer;user-select:none;transition:color 0.15s}
+    .th-sort:hover{color:#3d6285}
+    .th-sort.active{color:#3d6285}
+
+    /* Filter chip */
+    .filter-chip{
+      padding:6px 12px;border-radius:99px;
+      font-size:11px;font-weight:700;
+      background:#ffffff;color:#5e6059;
+      transition:all 0.15s ease;
+      display:inline-flex;align-items:center;gap:5px;
+      cursor:pointer;white-space:nowrap;
+    }
+    .filter-chip.active{background:#3d6285;color:#f7f9ff}
+    .filter-chip:hover:not(.active){background:#f5f4ed}
+
+    /* Tier badges */
+    .tier-badge{
+      display:inline-flex;align-items:center;gap:3px;
+      padding:2px 7px;border-radius:99px;
+      font-size:9px;font-weight:700;
+      letter-spacing:0.03em;text-transform:uppercase;
+    }
+    .tier-free{background:#e9e8e1;color:#5e6059}
+    .tier-warrior{background:rgba(61,98,133,0.15);color:#3d6285}
+    .tier-commander{background:rgba(65,99,124,0.2);color:#41637c}
+    .tier-legacy{background:linear-gradient(135deg,#3d6285,#6b9bc3);color:#f7f9ff}
+
+    /* Level badges */
+    .level-badge{
+      padding:2px 8px;border-radius:99px;
+      font-size:10px;font-weight:700;
+      background:#f5f4ed;color:#5e6059;
+    }
+    .level-general{background:linear-gradient(135deg,#3d6285,#6b9bc3);color:#f7f9ff}
+    .level-commander{background:rgba(61,98,133,0.2);color:#3d6285}
+    .level-sergeant{background:rgba(65,99,124,0.15);color:#41637c}
+
+    /* Status pills */
+    .status-pill{
+      display:inline-flex;align-items:center;gap:3px;
+      padding:2px 6px;border-radius:99px;
+      font-size:9px;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;
+    }
+    .status-admin{background:rgba(61,98,133,0.15);color:#3d6285}
+    .status-suspended{background:rgba(173,51,43,0.15);color:#ad332b}
+    .status-deleted{background:rgba(122,123,117,0.2);color:#5e6059}
+
+    /* Skeleton */
+    .skeleton{
+      background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%);
+      background-size:200% 100%;
+      animation:shimmer 1.5s infinite;
+      border-radius:12px;
+    }
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
     @keyframes spin{to{transform:rotate(360deg)}}
     .spin{animation:spin 1s linear infinite;display:inline-block}
+
+    @keyframes fadeUp{
+      from{opacity:0;transform:translateY(8px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+    .fade-up{animation:fadeUp 0.3s ease-out both}
+
+    /* Modal */
+    .modal-sheet{max-height:90vh;overflow-y:auto}
+
+    /* Pagination */
+    .page-btn{
+      min-width:32px;height:32px;padding:0 8px;
+      border-radius:8px;font-size:12px;font-weight:600;
+      display:flex;align-items:center;justify-content:center;
+      color:#5e6059;transition:all 0.15s ease;
+    }
+    .page-btn:hover:not(.active):not(:disabled){background:#f5f4ed}
+    .page-btn.active{background:#3d6285;color:#f7f9ff}
+    .page-btn:disabled{opacity:0.4;cursor:not-allowed}
+
+    /* Custom select */
+    .form-select{
+      background:#ffffff;color:#31332e;
+      border:1px solid transparent;padding:8px 32px 8px 12px;
+      border-radius:8px;font-size:12px;font-weight:600;
+      appearance:none;cursor:pointer;
+      background-image:url("data:image/svg+xml;utf8,<svg fill='%235e6059' xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'><path d='M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z'/></svg>");
+      background-repeat:no-repeat;background-position:right 10px center;
+    }
+    .form-select:focus{outline:none;border-color:rgba(61,98,133,0.3)}
   </style>
 </head>
 
-<body class="bg-surface text-text-dark min-h-screen flex">
+<body class="min-h-screen flex">
 
+<!-- ═══════════════════════════════════════════ -->
 <!-- SIDEBAR -->
-<aside id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-sidebar-bg flex flex-col p-4 gap-2 z-40 hidden md:flex">
-  <div class="mb-8 px-4 pt-2">
+<!-- ═══════════════════════════════════════════ -->
+<aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 hidden md:flex">
+  <div class="mb-6 px-2 pt-2">
     <div class="flex items-center gap-2.5">
-      <div class="w-9 h-9 rounded-lg border-2 border-primary-light flex items-center justify-center">
-        <span class="font-headline font-extrabold text-gold text-[10px]">GSTW</span>
+      <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center">
+        <span class="font-headline font-bold text-on-primary" style="font-size:10px;">GSTW</span>
       </div>
       <div>
-        <h1 class="text-base font-headline font-extrabold tracking-tight text-white">STW Admin</h1>
-        <p class="text-[9px] uppercase tracking-[0.2em] text-text-light font-bold">Command Center</p>
+        <h1 class="font-headline font-bold text-white" style="font-size:15px;letter-spacing:-0.02em;">Command</h1>
+        <p class="text-white/40 font-body" style="font-size:9px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">Admin Panel</p>
       </div>
     </div>
   </div>
-  <nav class="flex flex-col gap-1 grow overflow-y-auto">
-    <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
-      <span class="material-symbols-outlined text-[20px]">dashboard</span><span class="font-body text-sm">Dashboard</span>
-    </a>
-    <a href="manage-quotes.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
-      <span class="material-symbols-outlined text-[20px]">format_quote</span><span class="font-body text-sm">Quotes</span>
-    </a>
-    <a href="schedule.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
-      <span class="material-symbols-outlined text-[20px]">calendar_today</span><span class="font-body text-sm">Schedule</span>
-    </a>
-    <a href="projects.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
-      <span class="material-symbols-outlined text-[20px]">folder_shared</span><span class="font-body text-sm">Missions</span>
-    </a>
-    <a href="analytics.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
-      <span class="material-symbols-outlined text-[20px]">analytics</span><span class="font-body text-sm">Analytics</span>
-    </a>
-    <a href="warriors.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-lg font-bold text-sm">
-      <span class="material-symbols-outlined text-[20px] filled">group</span><span class="font-body text-sm">Warriors</span>
-    </a>
-    <a href="notifications.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all">
-      <span class="material-symbols-outlined text-[20px]">notifications</span><span class="font-body text-sm">Notifications</span>
-    </a>
+
+  <nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
+    <a href="index.html" class="sidebar-item"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
+    <a href="manage-quotes.html" class="sidebar-item"><span class="material-symbols-outlined">format_quote</span>Quotes</a>
+    <a href="schedule.html" class="sidebar-item"><span class="material-symbols-outlined">calendar_today</span>Schedule</a>
+    <a href="campaigns.html" class="sidebar-item"><span class="material-symbols-outlined">campaign</span>Campaigns</a>
+    <a href="projects.html" class="sidebar-item"><span class="material-symbols-outlined">volunteer_activism</span>Missions</a>
+     <a href="manage-backgrounds.html" class="sidebar-item"><span class="material-symbols-outlined">wallpaper</span>Backgrounds<span class="soon-tag">SOON</span></a>
+    <a href="warriors.html" class="sidebar-item active"><span class="material-symbols-outlined">group</span>Users</a>
+    <a href="notifications.html" class="sidebar-item"><span class="material-symbols-outlined">notifications</span>Notifications</a>
+    <a href="ai-generator.html" class="sidebar-item"><span class="material-symbols-outlined">auto_awesome</span>AI Generator</a>
+    <a href="analytics.html" class="sidebar-item"><span class="material-symbols-outlined">analytics</span>Analytics</a>
   </nav>
-  <div class="mt-auto pt-4 flex flex-col gap-3">
-    <a href="quotes.html" class="action-gradient text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform" style="background:linear-gradient(145deg,#E25B4D,#C84A3E);box-shadow:0 4px 20px rgba(226,91,77,0.35)">
-      <span class="material-symbols-outlined text-sm">add_circle</span>
-      <span class="text-xs uppercase tracking-widest">Create Quote</span>
-    </a>
-    <a href="settings.html" class="flex items-center gap-3 px-4 py-2 text-white/40 hover:text-white/70 rounded-lg transition-all">
-      <span class="material-symbols-outlined text-[18px]">settings</span>
-      <span class="font-body text-xs">Settings</span>
-    </a>
-    <div class="flex items-center gap-3 px-2 py-3 border-t border-white/10">
-      <div class="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center text-white font-headline font-bold text-sm admin-initials">AD</div>
+
+  <div class="mt-4 pt-4 border-t border-white/10 space-y-2">
+    <a href="settings.html" class="sidebar-item"><span class="material-symbols-outlined">settings</span>Settings</a>
+    <div class="flex items-center gap-3 px-2 py-2">
+      <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center text-on-primary font-headline font-bold flex-shrink-0 admin-initials" style="font-size:13px;">AD</div>
       <div class="flex-1 min-w-0">
-        <p class="text-sm font-bold text-white leading-none admin-name truncate">Admin</p>
-        <p class="text-[10px] text-text-light">Super Admin</p>
+        <p class="font-body font-semibold text-white truncate admin-name" style="font-size:12px;">Admin</p>
+        <p class="text-white/40 font-body" style="font-size:10px;">Super Admin</p>
       </div>
-      <button onclick="handleLogout()" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-all flex-shrink-0" title="Logout">
-        <span class="material-symbols-outlined text-[16px]">logout</span>
+      <button onclick="handleLogout()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-all flex-shrink-0" title="Log out">
+        <span class="material-symbols-outlined" style="font-size:16px;">logout</span>
       </button>
     </div>
   </div>
 </aside>
 
-<div id="sidebarOverlay" class="fixed inset-0 bg-dark/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+<div id="sidebarOverlay" class="fixed inset-0 bg-inverse-surface/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
 
+<!-- ═══════════════════════════════════════════ -->
 <!-- MAIN -->
+<!-- ═══════════════════════════════════════════ -->
 <div class="flex-1 md:ml-64 flex flex-col min-h-screen">
 
   <!-- HEADER -->
-  <header class="flex justify-between items-center w-full px-6 lg:px-8 py-4 sticky top-0 z-20 bg-surface/80 backdrop-blur-xl border-b border-border-soft">
-    <div class="flex items-center gap-4">
-      <button onclick="toggleSidebar()" class="md:hidden text-text-dark"><span class="material-symbols-outlined">menu</span></button>
-      <nav class="flex items-center gap-2 text-sm font-body">
-        <a href="index.html" class="text-text-muted hover:text-primary transition-colors">Dashboard</a>
-        <span class="material-symbols-outlined text-text-light text-sm">chevron_right</span>
-        <span class="text-primary font-bold border-b-2 border-primary pb-0.5">Warriors</span>
-      </nav>
-    </div>
-    <div class="flex items-center gap-3">
-      <div class="text-right hidden sm:block">
-        <p class="text-sm font-bold text-text-dark admin-name">Admin</p>
-        <button onclick="handleLogout()" class="text-[10px] font-bold text-action uppercase tracking-widest flex items-center gap-1 hover:opacity-80 ml-auto">
-          Logout <span class="material-symbols-outlined text-[12px]">logout</span>
+  <header class="sticky top-0 z-20 bg-surface/85 backdrop-blur-xl">
+    <div class="flex items-center justify-between gap-4 px-6 lg:px-8 py-4">
+      <div class="flex items-center gap-4">
+        <button onclick="toggleSidebar()" class="md:hidden text-on-surface">
+          <span class="material-symbols-outlined">menu</span>
         </button>
+        <h2 class="font-headline font-bold text-on-surface" style="font-size:22px;line-height:28px;">Users</h2>
       </div>
-      <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white font-headline font-bold text-sm admin-initials">AD</div>
+      <div class="flex items-center gap-2">
+        <span id="totalCount" class="hidden sm:inline font-body text-on-surface-variant" style="font-size:12px;font-weight:500;">—</span>
+      </div>
     </div>
   </header>
 
   <!-- CONTENT -->
   <main class="p-6 lg:p-8 flex-1">
-    <div class="max-w-7xl mx-auto space-y-8">
+    <div class="max-w-7xl mx-auto space-y-6">
 
-      <!-- PAGE HEADER -->
-      <div>
-        <h2 class="font-headline font-extrabold text-3xl lg:text-4xl text-text-dark tracking-tight">Warriors</h2>
-        <p class="text-text-muted font-body mt-1">Manage and monitor all registered warriors</p>
-      </div>
+      <!-- STATS -->
+      <section>
+        <p class="font-body text-on-surface-variant mb-3" style="font-size:12px;font-weight:500;">Overview</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+          <div class="bg-surface-cl p-4 rounded-xl text-center">
+            <p id="statTotal" class="font-headline font-bold text-on-surface" style="font-size:22px;">—</p>
+            <p class="font-body text-outline mt-0.5" style="font-size:10px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">Total</p>
+          </div>
+          <div class="bg-surface-cl p-4 rounded-xl text-center">
+            <p id="statPrivates" class="font-headline font-bold text-on-surface" style="font-size:22px;">—</p>
+            <p class="font-body text-outline mt-0.5" style="font-size:10px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">Privates</p>
+          </div>
+          <div class="bg-surface-cl p-4 rounded-xl text-center">
+            <p id="statSoldiers" class="font-headline font-bold text-on-surface" style="font-size:22px;">—</p>
+            <p class="font-body text-outline mt-0.5" style="font-size:10px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">Soldiers</p>
+          </div>
+          <div class="bg-surface-cl p-4 rounded-xl text-center">
+            <p id="statSergeants" class="font-headline font-bold text-on-surface" style="font-size:22px;">—</p>
+            <p class="font-body text-outline mt-0.5" style="font-size:10px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">Sergeants</p>
+          </div>
+          <div class="bg-surface-cl p-4 rounded-xl text-center">
+            <p id="statCommanders" class="font-headline font-bold text-on-surface" style="font-size:22px;">—</p>
+            <p class="font-body text-outline mt-0.5" style="font-size:10px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">Commanders</p>
+          </div>
+          <div class="bg-surface-cl p-4 rounded-xl text-center">
+            <p id="statGenerals" class="font-headline font-bold text-on-surface" style="font-size:22px;">—</p>
+            <p class="font-body text-outline mt-0.5" style="font-size:10px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">Generals</p>
+          </div>
+          <div class="bg-surface-cl p-4 rounded-xl text-center" style="box-shadow:inset 0 0 0 2px rgba(61,98,133,0.15);">
+            <p id="statLegacy" class="font-headline font-bold text-primary" style="font-size:22px;">—</p>
+            <p class="font-body text-primary mt-0.5" style="font-size:10px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">Legacy</p>
+          </div>
+        </div>
+      </section>
 
-      <!-- ACHIEVEMENT STATS -->
-      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-        <div class="bg-card-bg p-4 rounded-2xl shadow-card border border-border-soft text-center">
-          <p id="statTotal" class="font-headline font-extrabold text-2xl text-text-dark">—</p>
-          <p class="text-[9px] font-bold text-text-light uppercase tracking-widest mt-1">Total</p>
+      <!-- SEARCH + FILTERS -->
+      <section class="bg-surface-cl rounded-xl p-4 space-y-3">
+        <!-- Search -->
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline" style="font-size:18px;">search</span>
+          <input id="searchInput" type="text" oninput="onSearchChange()"
+            class="w-full pl-10 pr-4 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface placeholder:text-outline-variant"
+            style="font-size:13px;border:1px solid transparent;"
+            onfocus="this.style.borderColor='rgba(61,98,133,0.3)'"
+            onblur="this.style.borderColor='transparent'"
+            placeholder="Search by name, email, or nickname...">
         </div>
-        <div class="bg-card-bg p-4 rounded-2xl shadow-card border border-border-soft text-center">
-          <p id="statPrivates" class="font-headline font-extrabold text-2xl text-text-dark">—</p>
-          <p class="text-[9px] font-bold text-text-light uppercase tracking-widest mt-1">Privates</p>
-        </div>
-        <div class="bg-card-bg p-4 rounded-2xl shadow-card border border-border-soft text-center">
-          <p id="statSoldiers" class="font-headline font-extrabold text-2xl text-text-dark">—</p>
-          <p class="text-[9px] font-bold text-text-light uppercase tracking-widest mt-1">Soldiers</p>
-        </div>
-        <div class="bg-card-bg p-4 rounded-2xl shadow-card border border-border-soft text-center">
-          <p id="statSergeants" class="font-headline font-extrabold text-2xl text-text-dark">—</p>
-          <p class="text-[9px] font-bold text-text-light uppercase tracking-widest mt-1">Sergeants</p>
-        </div>
-        <div class="bg-card-bg p-4 rounded-2xl shadow-card border border-border-soft text-center">
-          <p id="statCommanders" class="font-headline font-extrabold text-2xl text-text-dark">—</p>
-          <p class="text-[9px] font-bold text-text-light uppercase tracking-widest mt-1">Commanders</p>
-        </div>
-        <div class="bg-card-bg p-4 rounded-2xl shadow-card border border-border-soft text-center">
-          <p id="statGenerals" class="font-headline font-extrabold text-2xl text-text-dark">—</p>
-          <p class="text-[9px] font-bold text-text-light uppercase tracking-widest mt-1">Generals</p>
-        </div>
-        <div class="bg-card-bg p-4 rounded-2xl shadow-card border border-gold/30 text-center">
-          <p id="statFoundation" class="font-headline font-extrabold text-2xl text-gold-dim">—</p>
-          <p class="text-[9px] font-bold text-gold-dim uppercase tracking-widest mt-1">Foundation</p>
-        </div>
-      </div>
 
-      <!-- SEARCH + FILTER -->
-      <div class="flex flex-col sm:flex-row gap-3">
-        <div class="relative flex-1">
-          <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-text-light text-[18px]">search</span>
-          <input id="searchInput" type="text" oninput="searchWarriors(this.value)"
-            class="w-full pl-10 pr-4 py-2.5 bg-card-bg border border-border-soft rounded-xl text-sm font-body text-text-dark placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-primary"
-            placeholder="Search by name, email or nickname...">
+        <!-- Filter dropdowns -->
+        <div class="flex flex-wrap gap-2">
+          <select id="filterRole" onchange="applyFilters()" class="form-select">
+            <option value="all">All Roles</option>
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+          </select>
+          <select id="filterTier" onchange="applyFilters()" class="form-select">
+            <option value="all">All Tiers</option>
+            <option value="free">Free</option>
+            <option value="warrior">Warrior</option>
+            <option value="commander">Commander</option>
+            <option value="legacy">Legacy</option>
+          </select>
+          <select id="filterLevel" onchange="applyFilters()" class="form-select">
+            <option value="all">All Levels</option>
+            <option value="Private">Private</option>
+            <option value="Soldier">Soldier</option>
+            <option value="Sergeant">Sergeant</option>
+            <option value="Commander">Commander</option>
+            <option value="General">General</option>
+          </select>
+          <select id="filterCountry" onchange="applyFilters()" class="form-select">
+            <option value="all">All Countries</option>
+          </select>
+          <select id="filterGender" onchange="applyFilters()" class="form-select">
+            <option value="all">All Genders</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+            <option value="unspecified">Unspecified</option>
+          </select>
+          <select id="filterStatus" onchange="applyFilters()" class="form-select">
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+            <option value="deleted">Deleted</option>
+            <option value="all">All Statuses</option>
+          </select>
+          <button onclick="resetFilters()" class="filter-chip">
+            <span class="material-symbols-outlined" style="font-size:14px;">refresh</span>Reset
+          </button>
         </div>
-        <select id="filterRole" onchange="filterWarriors()"
-          class="bg-card-bg border border-border-soft rounded-xl px-4 py-2.5 text-sm font-body text-text-dark focus:outline-none focus:ring-2 focus:ring-primary appearance-none">
-          <option value="all">All Roles</option>
-          <option value="user">Users</option>
-          <option value="admin">Admins</option>
-        </select>
-        <select id="filterLevel" onchange="filterWarriors()"
-          class="bg-card-bg border border-border-soft rounded-xl px-4 py-2.5 text-sm font-body text-text-dark focus:outline-none focus:ring-2 focus:ring-primary appearance-none">
-          <option value="all">All Levels</option>
-          <option value="Private">Private</option>
-          <option value="Soldier">Soldier</option>
-          <option value="Sergeant">Sergeant</option>
-          <option value="Commander">Commander</option>
-          <option value="General">General</option>
-        </select>
-      </div>
+      </section>
 
-      <!-- WARRIORS LIST -->
-      <div class="bg-card-bg rounded-2xl shadow-card border border-border-soft overflow-hidden">
+      <!-- USER TABLE -->
+      <section class="bg-surface-cl rounded-xl overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full">
             <thead>
-              <tr class="border-b border-border-soft bg-surface/50">
-                <th class="text-left px-5 py-3 text-[10px] font-bold text-text-muted uppercase tracking-widest">Warrior</th>
-                <th class="text-left px-4 py-3 text-[10px] font-bold text-text-muted uppercase tracking-widest hidden md:table-cell">Level</th>
-                <th class="text-center px-4 py-3 text-[10px] font-bold text-text-muted uppercase tracking-widest hidden sm:table-cell">Shares</th>
-                <th class="text-center px-4 py-3 text-[10px] font-bold text-text-muted uppercase tracking-widest hidden lg:table-cell">Streak</th>
-                <th class="text-center px-4 py-3 text-[10px] font-bold text-text-muted uppercase tracking-widest hidden lg:table-cell">Recruits</th>
-                <th class="text-left px-4 py-3 text-[10px] font-bold text-text-muted uppercase tracking-widest hidden xl:table-cell">Country</th>
-                <th class="text-left px-4 py-3 text-[10px] font-bold text-text-muted uppercase tracking-widest hidden xl:table-cell">Joined</th>
-                <th class="text-right px-5 py-3 text-[10px] font-bold text-text-muted uppercase tracking-widest">Actions</th>
+              <tr>
+                <th class="text-left px-5 py-3 font-body text-on-surface-variant th-sort" style="font-size:10px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;" onclick="setSort('full_name')">
+                  User <span id="sort-full_name" class="sort-arrow"></span>
+                </th>
+                <th class="text-left px-4 py-3 font-body text-on-surface-variant hidden md:table-cell" style="font-size:10px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">
+                  Tier
+                </th>
+                <th class="text-left px-4 py-3 font-body text-on-surface-variant hidden md:table-cell" style="font-size:10px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">
+                  Level
+                </th>
+                <th class="text-center px-4 py-3 font-body text-on-surface-variant hidden sm:table-cell th-sort" style="font-size:10px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;" onclick="setSort('total_shares')">
+                  Shares <span id="sort-total_shares" class="sort-arrow"></span>
+                </th>
+                <th class="text-center px-4 py-3 font-body text-on-surface-variant hidden lg:table-cell th-sort" style="font-size:10px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;" onclick="setSort('current_streak')">
+                  Streak <span id="sort-current_streak" class="sort-arrow"></span>
+                </th>
+                <th class="text-center px-4 py-3 font-body text-on-surface-variant hidden lg:table-cell th-sort" style="font-size:10px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;" onclick="setSort('recruit_count')">
+                  Recruits <span id="sort-recruit_count" class="sort-arrow"></span>
+                </th>
+                <th class="text-left px-4 py-3 font-body text-on-surface-variant hidden xl:table-cell" style="font-size:10px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">
+                  Country
+                </th>
+                <th class="text-left px-4 py-3 font-body text-on-surface-variant hidden xl:table-cell th-sort" style="font-size:10px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;" onclick="setSort('created_at')">
+                  Joined <span id="sort-created_at" class="sort-arrow">↓</span>
+                </th>
+                <th class="text-right px-5 py-3 font-body text-on-surface-variant" style="font-size:10px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">
+                  Actions
+                </th>
               </tr>
             </thead>
-            <tbody id="warriorsList">
+            <tbody id="usersList">
               <tr>
-                <td colspan="8" class="text-center py-12 text-text-light text-sm">
-                  <span class="material-symbols-outlined text-primary text-[32px] spin">progress_activity</span>
-                  <p class="mt-3">Loading warriors...</p>
+                <td colspan="9" class="text-center py-12">
+                  <span class="material-symbols-outlined text-primary spin" style="font-size:28px;">progress_activity</span>
+                  <p class="font-body text-on-surface-variant mt-3" style="font-size:14px;">Loading users...</p>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-      </div>
 
-      <!-- EMPTY STATE -->
+        <!-- Pagination -->
+        <div id="paginationBar" class="hidden px-5 py-4 flex items-center justify-between">
+          <span id="pageInfo" class="font-body text-on-surface-variant" style="font-size:12px;font-weight:500;">—</span>
+          <div class="flex items-center gap-1">
+            <button onclick="prevPage()" id="prevBtn" class="page-btn" title="Previous">
+              <span class="material-symbols-outlined" style="font-size:18px;">chevron_left</span>
+            </button>
+            <div id="pageNumbers" class="flex items-center gap-1"></div>
+            <button onclick="nextPage()" id="nextBtn" class="page-btn" title="Next">
+              <span class="material-symbols-outlined" style="font-size:18px;">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Empty state -->
       <div id="emptyState" class="hidden text-center py-16">
-        <span class="material-symbols-outlined text-text-light text-[48px]">person_search</span>
-        <p class="text-sm text-text-muted mt-3">No warriors found matching your search.</p>
+        <div class="w-16 h-16 rounded-2xl bg-surface-clow flex items-center justify-center mx-auto mb-4">
+          <span class="material-symbols-outlined text-outline" style="font-size:32px;">person_search</span>
+        </div>
+        <h3 class="font-headline font-bold text-on-surface mb-2" style="font-size:18px;">No users found</h3>
+        <p class="font-body text-on-surface-variant" style="font-size:14px;">Try adjusting your search or filters.</p>
       </div>
 
     </div>
   </main>
 </div>
 
+<!-- ═══════════════════════════════════════════ -->
 <!-- USER DETAIL MODAL -->
-<div id="userModal" class="hidden fixed inset-0 bg-dark/60 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-  <div class="bg-card-bg rounded-2xl p-7 max-w-md w-full shadow-lifted max-h-[90vh] overflow-y-auto no-scrollbar">
-    <div class="flex items-center justify-between mb-5">
-      <h3 class="font-headline font-bold text-xl text-text-dark">Warrior Details</h3>
-      <button onclick="closeUserModal()" class="text-text-light hover:text-text-muted"><span class="material-symbols-outlined">close</span></button>
-    </div>
-
-    <!-- User info -->
-    <div class="flex items-center gap-4 mb-5">
-      <div id="modalAvatar" class="w-14 h-14 rounded-2xl tactical-gradient flex items-center justify-center text-white font-headline font-bold text-xl"></div>
-      <div>
-        <h4 id="modalName" class="font-headline font-bold text-lg text-text-dark"></h4>
-        <p id="modalEmail" class="text-sm text-text-muted"></p>
-        <p id="modalNickname" class="text-xs text-primary font-bold"></p>
-      </div>
-    </div>
-
-    <!-- Stats -->
-    <div class="grid grid-cols-4 gap-2 mb-5">
-      <div class="bg-surface rounded-xl p-3 text-center">
-        <p id="modalShares" class="font-headline font-bold text-lg text-primary">0</p>
-        <p class="text-[8px] font-bold text-text-light uppercase">Shares</p>
-      </div>
-      <div class="bg-surface rounded-xl p-3 text-center">
-        <p id="modalStreak" class="font-headline font-bold text-lg text-primary">0</p>
-        <p class="text-[8px] font-bold text-text-light uppercase">Streak</p>
-      </div>
-      <div class="bg-surface rounded-xl p-3 text-center">
-        <p id="modalRecruits" class="font-headline font-bold text-lg text-primary">0</p>
-        <p class="text-[8px] font-bold text-text-light uppercase">Recruits</p>
-      </div>
-      <div class="bg-surface rounded-xl p-3 text-center">
-        <p id="modalLevel" class="font-headline font-bold text-sm text-primary">—</p>
-        <p class="text-[8px] font-bold text-text-light uppercase">Level</p>
-      </div>
-    </div>
-
-    <!-- Details -->
-    <div class="space-y-3 mb-5">
-      <div class="flex justify-between text-sm"><span class="text-text-muted">Country</span><span id="modalCountry" class="font-bold text-text-dark">—</span></div>
-      <div class="flex justify-between text-sm"><span class="text-text-muted">Joined</span><span id="modalJoined" class="font-bold text-text-dark">—</span></div>
-      <div class="flex justify-between text-sm"><span class="text-text-muted">Role</span><span id="modalRole" class="font-bold text-text-dark">—</span></div>
-      <div class="flex justify-between text-sm"><span class="text-text-muted">Status</span><span id="modalStatus" class="font-bold text-text-dark">—</span></div>
-      <div class="flex justify-between text-sm"><span class="text-text-muted">Badges</span><span id="modalBadges" class="font-bold text-text-dark">—</span></div>
-      <div class="flex justify-between text-sm"><span class="text-text-muted">Invite Code</span><span id="modalInviteCode" class="font-bold text-primary">—</span></div>
-    </div>
-
-    <!-- Actions -->
-    <div class="space-y-2 pt-3 border-t border-border-soft">
-      <div class="flex gap-2">
-        <button onclick="toggleRole()" id="roleBtn" class="flex-1 py-2.5 bg-primary/10 text-primary font-bold text-xs rounded-xl flex items-center justify-center gap-1.5">
-          <span class="material-symbols-outlined text-[16px]">admin_panel_settings</span>
-          <span id="roleBtnLabel">Make Admin</span>
-        </button>
-        <button onclick="grantFreeAccess()" class="flex-1 py-2.5 bg-gold/10 text-gold-dim font-bold text-xs rounded-xl flex items-center justify-center gap-1.5">
-          <span class="material-symbols-outlined text-[16px]">card_giftcard</span>
-          Free Access
+<!-- ═══════════════════════════════════════════ -->
+<div id="userModal" class="hidden fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm z-[100] flex items-center justify-center px-4 py-6" onclick="if(event.target===this)closeUserModal()">
+  <div class="bg-surface-cl rounded-2xl max-w-lg w-full modal-sheet">
+    <div class="p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="font-headline font-bold text-on-surface" style="font-size:18px;">User Details</h3>
+        <button onclick="closeUserModal()" class="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:bg-surface-clow rounded-lg transition-colors">
+          <span class="material-symbols-outlined" style="font-size:18px;">close</span>
         </button>
       </div>
-      <div class="flex gap-2">
-        <button onclick="toggleSuspend()" id="suspendBtn" class="flex-1 py-2.5 bg-gold/10 text-gold-dim font-bold text-xs rounded-xl flex items-center justify-center gap-1.5">
-          <span class="material-symbols-outlined text-[16px]">block</span>
-          <span id="suspendBtnLabel">Suspend</span>
-        </button>
-        <button onclick="deleteUser()" class="flex-1 py-2.5 bg-action/10 text-action font-bold text-xs rounded-xl flex items-center justify-center gap-1.5">
-          <span class="material-symbols-outlined text-[16px]">delete</span>
-          Delete
-        </button>
+
+      <!-- User info -->
+      <div class="flex items-center gap-4 mb-5">
+        <div id="modalAvatar" class="w-16 h-16 rounded-2xl signature-gradient flex items-center justify-center text-on-primary font-headline font-bold flex-shrink-0" style="font-size:22px;">?</div>
+        <div class="flex-1 min-w-0">
+          <h4 id="modalName" class="font-headline font-bold text-on-surface" style="font-size:16px;">—</h4>
+          <p id="modalEmail" class="font-body text-on-surface-variant truncate" style="font-size:13px;">—</p>
+          <p id="modalNickname" class="font-body text-primary" style="font-size:11px;font-weight:600;"></p>
+        </div>
+        <div id="modalTierBadge" class="flex-shrink-0"></div>
+      </div>
+
+      <!-- Status badges row -->
+      <div id="modalStatusRow" class="flex items-center gap-2 mb-4"></div>
+
+      <!-- Stats grid -->
+      <div class="grid grid-cols-4 gap-2 mb-5">
+        <div class="bg-surface-clow rounded-xl p-3 text-center">
+          <p id="modalShares" class="font-headline font-bold text-primary" style="font-size:18px;">0</p>
+          <p class="font-body text-outline mt-0.5" style="font-size:9px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">Shares</p>
+        </div>
+        <div class="bg-surface-clow rounded-xl p-3 text-center">
+          <p id="modalStreak" class="font-headline font-bold text-primary" style="font-size:18px;">0</p>
+          <p class="font-body text-outline mt-0.5" style="font-size:9px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">Streak</p>
+        </div>
+        <div class="bg-surface-clow rounded-xl p-3 text-center">
+          <p id="modalRecruits" class="font-headline font-bold text-primary" style="font-size:18px;">0</p>
+          <p class="font-body text-outline mt-0.5" style="font-size:9px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">Recruits</p>
+        </div>
+        <div class="bg-surface-clow rounded-xl p-3 text-center">
+          <p id="modalLevel" class="font-headline font-bold text-primary" style="font-size:12px;line-height:22px;">—</p>
+          <p class="font-body text-outline mt-0.5" style="font-size:9px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">Level</p>
+        </div>
+      </div>
+
+      <!-- Contribution -->
+      <div class="bg-primary-container/15 rounded-xl p-4 mb-5">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-body text-on-surface-variant" style="font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">Total Contributed</p>
+            <p id="modalContributed" class="font-headline font-bold text-primary mt-1" style="font-size:24px;">$0.00</p>
+          </div>
+          <div class="text-right">
+            <p id="modalMonthsActive" class="font-body text-on-surface-variant" style="font-size:11px;">— months active</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Details -->
+      <div class="bg-surface-clow rounded-xl p-4 space-y-2.5 mb-5">
+        <div class="flex justify-between" style="font-size:13px;">
+          <span class="font-body text-on-surface-variant">Country</span>
+          <span id="modalCountry" class="font-body font-semibold text-on-surface">—</span>
+        </div>
+        <div class="flex justify-between" style="font-size:13px;">
+          <span class="font-body text-on-surface-variant">Gender</span>
+          <span id="modalGender" class="font-body font-semibold text-on-surface">—</span>
+        </div>
+        <div class="flex justify-between" style="font-size:13px;">
+          <span class="font-body text-on-surface-variant">Joined</span>
+          <span id="modalJoined" class="font-body font-semibold text-on-surface">—</span>
+        </div>
+        <div class="flex justify-between" style="font-size:13px;">
+          <span class="font-body text-on-surface-variant">Last seen</span>
+          <span id="modalLastSeen" class="font-body font-semibold text-on-surface">—</span>
+        </div>
+        <div class="flex justify-between" style="font-size:13px;">
+          <span class="font-body text-on-surface-variant">Invite code</span>
+          <span id="modalInviteCode" class="font-body font-semibold text-primary">—</span>
+        </div>
+      </div>
+
+      <!-- Legacy expiry (if set) -->
+      <div id="modalLegacyInfo" class="hidden bg-secondary-container/25 rounded-xl p-3 mb-5">
+        <p class="font-body font-semibold text-secondary" style="font-size:12px;">
+          <span class="material-symbols-outlined align-middle" style="font-size:14px;">star</span>
+          <span id="modalLegacyText">Legacy access</span>
+        </p>
+      </div>
+
+      <!-- Actions -->
+      <div class="space-y-2 border-t border-surface-clow pt-4">
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="confirmToggleRole()" id="roleBtn" class="py-2.5 bg-surface-clow text-on-surface font-body font-semibold rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-1.5" style="font-size:12px;">
+            <span class="material-symbols-outlined" style="font-size:16px;">admin_panel_settings</span>
+            <span id="roleBtnLabel">Make Admin</span>
+          </button>
+          <button onclick="openLegacyModal()" class="py-2.5 signature-gradient text-on-primary font-body font-semibold rounded-xl active:scale-[0.98] transition-transform flex items-center justify-center gap-1.5" style="font-size:12px;">
+            <span class="material-symbols-outlined" style="font-size:16px;">star</span>
+            <span id="legacyBtnLabel">Grant Legacy</span>
+          </button>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="confirmToggleSuspend()" id="suspendBtn" class="py-2.5 bg-surface-clow text-on-surface font-body font-semibold rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-1.5" style="font-size:12px;">
+            <span class="material-symbols-outlined" style="font-size:16px;">block</span>
+            <span id="suspendBtnLabel">Suspend</span>
+          </button>
+          <button onclick="confirmDelete()" id="deleteBtn" class="py-2.5 bg-tertiary/10 text-tertiary font-body font-semibold rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-1.5" style="font-size:12px;">
+            <span class="material-symbols-outlined" style="font-size:16px;">delete</span>
+            <span id="deleteBtnLabel">Delete</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- FREE ACCESS MODAL -->
-<div id="freeAccessModal" class="hidden fixed inset-0 bg-dark/60 backdrop-blur-sm z-[60] flex items-center justify-center px-4">
-  <div class="bg-card-bg rounded-2xl p-7 max-w-sm w-full shadow-lifted text-center">
-    <div class="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center mx-auto mb-4">
-      <span class="material-symbols-outlined text-gold-dim text-[28px]">card_giftcard</span>
+<!-- ═══════════════════════════════════════════ -->
+<!-- LEGACY GRANT MODAL -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="legacyModal" class="hidden fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm z-[110] flex items-center justify-center px-4" onclick="if(event.target===this)closeLegacyModal()">
+  <div class="bg-surface-cl rounded-2xl p-6 max-w-sm w-full">
+    <div class="text-center mb-5">
+      <div class="w-14 h-14 rounded-full signature-gradient flex items-center justify-center mx-auto mb-3">
+        <span class="material-symbols-outlined text-on-primary filled" style="font-size:28px;">star</span>
+      </div>
+      <h3 id="legacyModalTitle" class="font-headline font-bold text-on-surface mb-1" style="font-size:18px;">Grant Legacy Access</h3>
+      <p id="legacyModalSubtitle" class="font-body text-on-surface-variant" style="font-size:13px;">Full app access without billing</p>
     </div>
-    <h3 class="font-headline font-bold text-xl text-text-dark mb-2">Grant Free Access</h3>
-    <p class="text-sm text-text-muted mb-5">How many months of free access?</p>
-    <select id="freeMonths" class="w-full bg-surface border border-border-soft rounded-xl px-4 py-3 font-body text-sm text-text-dark focus:outline-none focus:ring-2 focus:ring-primary appearance-none mb-5">
-      <option value="1">1 Month</option>
-      <option value="3">3 Months</option>
-      <option value="6">6 Months</option>
-      <option value="12">12 Months</option>
-    </select>
-    <div class="flex gap-3">
-      <button onclick="closeFreeAccessModal()" class="flex-1 py-3 border-2 border-border-soft text-text-muted font-bold rounded-xl">Cancel</button>
-      <button onclick="confirmFreeAccess()" class="flex-1 py-3 tactical-gradient text-white font-bold rounded-xl shadow-tactical">Grant</button>
+
+    <div class="mb-5">
+      <label class="font-body text-on-surface-variant block mb-2" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Duration</label>
+      <div class="space-y-2">
+        <label class="flex items-center gap-3 p-3 bg-surface-clow rounded-xl cursor-pointer hover:bg-surface-chigh transition-colors">
+          <input type="radio" name="legacyDuration" value="1" class="w-4 h-4 accent-primary">
+          <span class="font-body font-semibold text-on-surface" style="font-size:13px;">1 Month</span>
+        </label>
+        <label class="flex items-center gap-3 p-3 bg-surface-clow rounded-xl cursor-pointer hover:bg-surface-chigh transition-colors">
+          <input type="radio" name="legacyDuration" value="3" class="w-4 h-4 accent-primary">
+          <span class="font-body font-semibold text-on-surface" style="font-size:13px;">3 Months</span>
+        </label>
+        <label class="flex items-center gap-3 p-3 bg-surface-clow rounded-xl cursor-pointer hover:bg-surface-chigh transition-colors">
+          <input type="radio" name="legacyDuration" value="6" class="w-4 h-4 accent-primary">
+          <span class="font-body font-semibold text-on-surface" style="font-size:13px;">6 Months</span>
+        </label>
+        <label class="flex items-center gap-3 p-3 bg-surface-clow rounded-xl cursor-pointer hover:bg-surface-chigh transition-colors">
+          <input type="radio" name="legacyDuration" value="12" class="w-4 h-4 accent-primary">
+          <span class="font-body font-semibold text-on-surface" style="font-size:13px;">12 Months</span>
+        </label>
+        <label class="flex items-center gap-3 p-3 bg-primary-container/15 rounded-xl cursor-pointer hover:bg-primary-container/25 transition-colors">
+          <input type="radio" name="legacyDuration" value="forever" checked class="w-4 h-4 accent-primary">
+          <span class="font-body font-semibold text-primary" style="font-size:13px;">Forever ✨</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="flex gap-2">
+      <button onclick="closeLegacyModal()" class="flex-1 py-3 bg-surface-clow text-on-surface-variant font-body font-semibold rounded-xl" style="font-size:13px;">Cancel</button>
+      <button id="legacyPrimaryBtn" onclick="confirmLegacy()" class="flex-1 py-3 signature-gradient text-on-primary font-headline font-bold rounded-xl active:scale-[0.98] transition-transform" style="font-size:13px;">Grant</button>
+    </div>
+
+    <button id="legacyRevokeBtn" onclick="revokeLegacy()" class="hidden w-full mt-2 py-2.5 text-tertiary font-body font-semibold rounded-xl hover:bg-tertiary/5 transition-colors" style="font-size:12px;">
+      Revoke Legacy Access
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- CONFIRM MODAL -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="confirmModal" class="hidden fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm z-[110] flex items-center justify-center px-5" onclick="if(event.target===this)closeConfirm()">
+  <div class="bg-surface-cl rounded-2xl p-6 w-full max-w-sm">
+    <div class="text-center">
+      <div id="confirmIcon" class="w-14 h-14 rounded-full bg-tertiary-container/15 flex items-center justify-center mx-auto mb-4">
+        <span class="material-symbols-outlined text-tertiary" style="font-size:28px;">warning</span>
+      </div>
+      <h3 id="confirmTitle" class="font-headline font-bold text-on-surface mb-2" style="font-size:18px;">Are you sure?</h3>
+      <p id="confirmMsg" class="font-body text-on-surface-variant mb-5 leading-relaxed" style="font-size:14px;">This action cannot be undone.</p>
+      <div class="flex gap-3">
+        <button onclick="closeConfirm()" class="flex-1 py-3 bg-surface-clow text-on-surface-variant font-body font-semibold rounded-xl active:scale-95 transition-transform" style="font-size:14px;">Cancel</button>
+        <button id="confirmBtn" onclick="executeConfirm()" class="flex-1 py-3 bg-tertiary text-on-tertiary font-headline font-bold rounded-xl active:scale-[0.98] transition-transform" style="font-size:14px;">Confirm</button>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- TOAST -->
-<div id="toast" class="hidden fixed top-6 right-6 z-[70] bg-primary text-white px-5 py-3.5 rounded-2xl shadow-lifted flex items-center gap-3 max-w-sm">
-  <span class="material-symbols-outlined text-gold text-[20px] filled">check_circle</span>
-  <p id="toastMsg" class="text-sm font-bold font-body"></p>
+<div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-3 rounded-full shadow-float items-center gap-2" style="font-size:13px;">
+  <span class="material-symbols-outlined text-primary-container" style="font-size:16px;">check_circle</span>
+  <span id="toastMsg"></span>
 </div>
+
 <script>
+var supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+)
 
-  var supabaseClient = supabase.createClient(
-    'https://nhymadutuhpjgkiurify.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
-  )
+var currentUser = null
+var allUsers = []
+var filteredUsers = []
+var displayedUsers = []
+var selectedUserId = null
+var selectedUser = null
+var confirmAction = null
 
-  var allWarriors = []
-  var selectedUserId = null
-  var selectedUser = null
+var currentSort = { field: 'created_at', direction: 'desc' }
+var currentPage = 1
+var PAGE_SIZE = 25
 
-  var warriorLevels = [
-    { title: 'Private',   min: 0,   max: 9 },
-    { title: 'Soldier',   min: 10,  max: 49 },
-    { title: 'Sergeant',  min: 50,  max: 99 },
-    { title: 'Commander', min: 100, max: 199 },
-    { title: 'General',   min: 200, max: 99999 }
-  ]
+var searchDebounce = null
 
-  function getLevel(shares) {
-    for (var i = warriorLevels.length - 1; i >= 0; i--) {
-      if (shares >= warriorLevels[i].min) return warriorLevels[i].title
-    }
-    return 'Private'
+var TIER_PRICES = { free: 0, warrior: 3.99, commander: 5.99, legacy: 0 }
+
+var warriorLevels = [
+  { title: 'Private',   min: 0,   max: 9 },
+  { title: 'Soldier',   min: 10,  max: 49 },
+  { title: 'Sergeant',  min: 50,  max: 99 },
+  { title: 'Commander', min: 100, max: 199 },
+  { title: 'General',   min: 200, max: 99999 }
+]
+
+function getLevel(shares) {
+  for (var i = warriorLevels.length - 1; i >= 0; i--) {
+    if (shares >= warriorLevels[i].min) return warriorLevels[i].title
   }
+  return 'Private'
+}
 
-  async function checkAdminAuth() {
-    try {
-      var result = await supabaseClient.auth.getSession()
-      if (!result.data.session) {
-        await new Promise(function(r) { setTimeout(r, 500) })
-        result = await supabaseClient.auth.getSession()
-      }
-      if (!result.data.session) {
+function getLevelClass(level) {
+  if (level === 'General') return 'level-general'
+  if (level === 'Commander') return 'level-commander'
+  if (level === 'Sergeant') return 'level-sergeant'
+  return ''
+}
+
+function getTierClass(tier) {
+  return 'tier-' + (tier || 'free')
+}
+
+function getTierLabel(tier) {
+  if (!tier || tier === 'free') return 'Free'
+  return tier.charAt(0).toUpperCase() + tier.slice(1)
+}
+
+// ════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════
+async function checkAdminAuth() {
+  try {
+    var result = null
+    for (var attempt = 0; attempt < 3; attempt++) {
+      result = await supabaseClient.auth.getSession()
+      if (result.data && result.data.session) break
+      await new Promise(function(r) { setTimeout(r, 300) })
+    }
+    if (!result.data || !result.data.session) {
+      try {
         var refreshed = await supabaseClient.auth.refreshSession()
-        if (!refreshed.data.session) { window.location.href = 'login.html'; return false }
-        result = refreshed
-      }
-      var userId = result.data.session.user.id
-      var email = result.data.session.user.email || ''
-      var profileResult = await supabaseClient.from('profiles').select('role, full_name').eq('id', userId).single()
-      if (profileResult.error || !profileResult.data || profileResult.data.role !== 'admin') {
-        window.location.href = '../app/index.html'; return false
-      }
-      var initials = email.substring(0, 2).toUpperCase()
-      document.querySelectorAll('.admin-initials').forEach(function(el) { el.textContent = initials })
-      document.querySelectorAll('.admin-name').forEach(function(el) { el.textContent = profileResult.data.full_name || email })
-      return true
-    } catch(e) { window.location.href = 'login.html'; return false }
-  }
-
-  function toggleSidebar() {
-    var s = document.getElementById('sidebar'), o = document.getElementById('sidebarOverlay')
-    s.classList.toggle('hidden'); s.classList.toggle('flex'); o.classList.toggle('hidden')
-  }
-
-  async function loadWarriors() {
-    var result = await supabaseClient
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (result.error) { showToast('Failed to load warriors'); return }
-    allWarriors = result.data || []
-    updateStats()
-    renderWarriors(allWarriors)
-  }
-
-  function updateStats() {
-    var levels = { Private: 0, Soldier: 0, Sergeant: 0, Commander: 0, General: 0 }
-    var foundationCount = 0
-
-    allWarriors.forEach(function(w) {
-      var level = getLevel(w.total_shares || 0)
-      if (levels[level] !== undefined) levels[level]++
-      if (w.badges && w.badges.indexOf('foundation_member') !== -1) foundationCount++
-    })
-
-    document.getElementById('statTotal').textContent = allWarriors.length
-    document.getElementById('statPrivates').textContent = levels.Private
-    document.getElementById('statSoldiers').textContent = levels.Soldier
-    document.getElementById('statSergeants').textContent = levels.Sergeant
-    document.getElementById('statCommanders').textContent = levels.Commander
-    document.getElementById('statGenerals').textContent = levels.General
-    document.getElementById('statFoundation').textContent = foundationCount
-  }
-
-  function renderWarriors(warriors) {
-    var tbody = document.getElementById('warriorsList')
-    tbody.innerHTML = ''
-
-    if (warriors.length === 0) {
-      document.getElementById('emptyState').classList.remove('hidden')
-      return
+        if (refreshed.data && refreshed.data.session) result = refreshed
+      } catch(e) {}
     }
-    document.getElementById('emptyState').classList.add('hidden')
+    if (!result.data || !result.data.session) { window.location.href = 'login.html'; return false }
 
-    warriors.forEach(function(w) {
-      var shares = w.total_shares || 0
-      var level = getLevel(shares)
-      var name = w.full_name || 'No name'
-      var initials = name.length >= 2 ? name.split(' ').map(function(n) { return n[0] }).join('').substring(0, 2).toUpperCase() : '?'
-      var email = w.email || '—'
-      var nickname = w.nickname ? '@' + w.nickname : ''
-      var country = w.country || '—'
-      var joined = w.created_at ? new Date(w.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) : '—'
-      var isAdmin = w.role === 'admin'
-      var isSuspended = w.is_suspended
-      var hasBadge = w.badges && w.badges.indexOf('foundation_member') !== -1
+    currentUser = result.data.session.user
+    var p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single()
+    if (p.error) { showToast('Connection error'); setTimeout(function() { window.location.reload() }, 1500); return false }
+    if (!p.data) { window.location.href = 'login.html'; return false }
+    if (p.data.role !== 'admin') { window.location.href = '../app/index.html'; return false }
 
-      var levelColor = level === 'General' ? 'text-gold-dim bg-gold/10'
-        : level === 'Commander' ? 'text-action bg-action/10'
-        : level === 'Sergeant' ? 'text-primary bg-primary/10'
-        : 'text-text-muted bg-surface'
+    var email = currentUser.email || ''
+    var initials = '?'
+    if (p.data.full_name) {
+      var parts = p.data.full_name.trim().split(' ')
+      initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : parts[0].substring(0,2).toUpperCase()
+    } else if (email) { initials = email.substring(0,2).toUpperCase() }
+    document.querySelectorAll('.admin-initials').forEach(function(el) { el.textContent = initials })
+    document.querySelectorAll('.admin-name').forEach(function(el) { el.textContent = p.data.full_name || email })
+    return true
+  } catch(e) { console.error(e); showToast('Error'); setTimeout(function() { window.location.reload() }, 1500); return false }
+}
 
-      var tr = document.createElement('tr')
-      tr.className = 'warrior-row border-b border-border-soft cursor-pointer'
-      tr.onclick = function() { openUserModal(w.id) }
+function toggleSidebar() {
+  var s = document.getElementById('sidebar'), o = document.getElementById('sidebarOverlay')
+  s.classList.toggle('hidden'); s.classList.toggle('flex'); o.classList.toggle('hidden')
+}
 
-      tr.innerHTML =
-        '<td class="px-5 py-3">'
-          + '<div class="flex items-center gap-3">'
-            + '<div class="w-9 h-9 rounded-xl tactical-gradient flex items-center justify-center text-white font-bold text-xs flex-shrink-0">' + initials + '</div>'
-            + '<div class="min-w-0">'
-              + '<p class="font-bold text-sm text-text-dark truncate">' + name
-                + (isAdmin ? ' <span class="text-[8px] bg-primary text-white px-1.5 py-0.5 rounded-full ml-1">ADMIN</span>' : '')
-                + (isSuspended ? ' <span class="text-[8px] bg-action text-white px-1.5 py-0.5 rounded-full ml-1">SUSPENDED</span>' : '')
-              + '</p>'
-              + '<p class="text-[11px] text-text-light truncate">' + email + '</p>'
-            + '</div>'
+async function handleLogout() {
+  try { await supabaseClient.auth.signOut() } catch(e) {}
+  window.location.href = 'login.html'
+}
+
+// ════════════════════════════════════════════
+// LOAD USERS
+// ════════════════════════════════════════════
+async function loadUsers() {
+  var result = await supabaseClient
+    .from('profiles')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (result.error) { showToast('Failed to load users'); return }
+  allUsers = result.data || []
+
+  populateCountryFilter()
+  renderStats()
+  applyFilters()
+}
+
+function populateCountryFilter() {
+  var countries = {}
+  allUsers.forEach(function(u) {
+    if (u.country && u.country.trim()) countries[u.country.trim()] = true
+  })
+  var sorted = Object.keys(countries).sort()
+
+  var select = document.getElementById('filterCountry')
+  var currentValue = select.value
+  select.innerHTML = '<option value="all">All Countries</option>'
+  sorted.forEach(function(c) {
+    var opt = document.createElement('option')
+    opt.value = c
+    opt.textContent = c
+    select.appendChild(opt)
+  })
+  select.value = currentValue || 'all'
+}
+
+function renderStats() {
+  var activeUsers = allUsers.filter(function(u) { return !u.deleted_at })
+  var levels = { Private: 0, Soldier: 0, Sergeant: 0, Commander: 0, General: 0 }
+  var legacyCount = 0
+
+  activeUsers.forEach(function(u) {
+    var level = getLevel(u.total_shares || 0)
+    if (levels[level] !== undefined) levels[level]++
+    if (u.subscription_tier === 'legacy') legacyCount++
+  })
+
+  document.getElementById('statTotal').textContent = activeUsers.length
+  document.getElementById('statPrivates').textContent = levels.Private
+  document.getElementById('statSoldiers').textContent = levels.Soldier
+  document.getElementById('statSergeants').textContent = levels.Sergeant
+  document.getElementById('statCommanders').textContent = levels.Commander
+  document.getElementById('statGenerals').textContent = levels.General
+  document.getElementById('statLegacy').textContent = legacyCount
+  document.getElementById('totalCount').textContent = activeUsers.length + ' user' + (activeUsers.length !== 1 ? 's' : '')
+}
+
+// ════════════════════════════════════════════
+// FILTERS & SORT
+// ════════════════════════════════════════════
+function onSearchChange() {
+  clearTimeout(searchDebounce)
+  searchDebounce = setTimeout(function() {
+    currentPage = 1
+    applyFilters()
+  }, 250)
+}
+
+function applyFilters() {
+  var q = document.getElementById('searchInput').value.trim().toLowerCase()
+  var role = document.getElementById('filterRole').value
+  var tier = document.getElementById('filterTier').value
+  var level = document.getElementById('filterLevel').value
+  var country = document.getElementById('filterCountry').value
+  var gender = document.getElementById('filterGender').value
+  var status = document.getElementById('filterStatus').value
+
+  filteredUsers = allUsers.filter(function(u) {
+    // Status filter first (deleted users)
+    if (status === 'active' && u.deleted_at) return false
+    if (status === 'suspended' && !u.is_suspended) return false
+    if (status === 'suspended' && u.deleted_at) return false
+    if (status === 'deleted' && !u.deleted_at) return false
+    if (status === 'active' && u.is_suspended) return false
+
+    // Search
+    if (q) {
+      var haystack = ((u.full_name || '') + ' ' + (u.email || '') + ' ' + (u.nickname || '')).toLowerCase()
+      if (haystack.indexOf(q) === -1) return false
+    }
+
+    // Role
+    if (role !== 'all' && u.role !== role) return false
+
+    // Tier
+    if (tier !== 'all' && (u.subscription_tier || 'free') !== tier) return false
+
+    // Level
+    if (level !== 'all' && getLevel(u.total_shares || 0) !== level) return false
+
+    // Country
+    if (country !== 'all' && u.country !== country) return false
+
+    // Gender
+    if (gender !== 'all') {
+      if (gender === 'unspecified') {
+        if (u.gender) return false
+      } else {
+        if (u.gender !== gender) return false
+      }
+    }
+
+    return true
+  })
+
+  sortFilteredUsers()
+  currentPage = 1
+  renderTable()
+}
+
+function sortFilteredUsers() {
+  var field = currentSort.field
+  var dir = currentSort.direction === 'asc' ? 1 : -1
+
+  filteredUsers.sort(function(a, b) {
+    var av = a[field], bv = b[field]
+
+    // Handle nulls
+    if (av === null || av === undefined) av = field.indexOf('count') > -1 || field.indexOf('shares') > -1 || field.indexOf('streak') > -1 ? 0 : ''
+    if (bv === null || bv === undefined) bv = field.indexOf('count') > -1 || field.indexOf('shares') > -1 || field.indexOf('streak') > -1 ? 0 : ''
+
+    // Numeric
+    if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir
+
+    // String
+    return String(av).toLowerCase().localeCompare(String(bv).toLowerCase()) * dir
+  })
+}
+
+function setSort(field) {
+  if (currentSort.field === field) {
+    currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc'
+  } else {
+    currentSort.field = field
+    currentSort.direction = field === 'full_name' ? 'asc' : 'desc'
+  }
+  updateSortArrows()
+  sortFilteredUsers()
+  renderTable()
+}
+
+function updateSortArrows() {
+  document.querySelectorAll('.sort-arrow').forEach(function(el) { el.textContent = '' })
+  var arrow = currentSort.direction === 'asc' ? '↑' : '↓'
+  var el = document.getElementById('sort-' + currentSort.field)
+  if (el) el.textContent = arrow
+}
+
+function resetFilters() {
+  document.getElementById('searchInput').value = ''
+  document.getElementById('filterRole').value = 'all'
+  document.getElementById('filterTier').value = 'all'
+  document.getElementById('filterLevel').value = 'all'
+  document.getElementById('filterCountry').value = 'all'
+  document.getElementById('filterGender').value = 'all'
+  document.getElementById('filterStatus').value = 'active'
+  currentSort = { field: 'created_at', direction: 'desc' }
+  updateSortArrows()
+  applyFilters()
+}
+
+// ════════════════════════════════════════════
+// TABLE + PAGINATION
+// ════════════════════════════════════════════
+function renderTable() {
+  var tbody = document.getElementById('usersList')
+  var empty = document.getElementById('emptyState')
+  var pagination = document.getElementById('paginationBar')
+
+  if (filteredUsers.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-12 text-outline">No users match</td></tr>'
+    empty.classList.remove('hidden')
+    pagination.classList.add('hidden')
+    return
+  }
+  empty.classList.add('hidden')
+
+  var totalPages = Math.ceil(filteredUsers.length / PAGE_SIZE)
+  if (currentPage > totalPages) currentPage = totalPages
+  if (currentPage < 1) currentPage = 1
+
+  var start = (currentPage - 1) * PAGE_SIZE
+  var end = start + PAGE_SIZE
+  displayedUsers = filteredUsers.slice(start, end)
+
+  tbody.innerHTML = ''
+  displayedUsers.forEach(function(u) { tbody.appendChild(buildUserRow(u)) })
+
+  // Pagination controls
+  pagination.classList.remove('hidden')
+  document.getElementById('pageInfo').textContent =
+    'Showing ' + (start + 1) + '–' + Math.min(end, filteredUsers.length) + ' of ' + filteredUsers.length
+
+  renderPageNumbers(totalPages)
+  document.getElementById('prevBtn').disabled = currentPage === 1
+  document.getElementById('nextBtn').disabled = currentPage === totalPages
+}
+
+function renderPageNumbers(totalPages) {
+  var container = document.getElementById('pageNumbers')
+  container.innerHTML = ''
+
+  var pagesToShow = []
+  if (totalPages <= 7) {
+    for (var i = 1; i <= totalPages; i++) pagesToShow.push(i)
+  } else {
+    pagesToShow.push(1)
+    if (currentPage > 3) pagesToShow.push('...')
+    for (var i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) pagesToShow.push(i)
+    if (currentPage < totalPages - 2) pagesToShow.push('...')
+    if (totalPages > 1) pagesToShow.push(totalPages)
+  }
+
+  pagesToShow.forEach(function(p) {
+    var btn = document.createElement('button')
+    btn.className = 'page-btn' + (p === currentPage ? ' active' : '')
+    btn.textContent = p
+    if (p === '...') { btn.disabled = true }
+    else { btn.onclick = function() { goToPage(p) } }
+    container.appendChild(btn)
+  })
+}
+
+function prevPage() { if (currentPage > 1) { currentPage--; renderTable() } }
+function nextPage() {
+  var total = Math.ceil(filteredUsers.length / PAGE_SIZE)
+  if (currentPage < total) { currentPage++; renderTable() }
+}
+function goToPage(p) { currentPage = p; renderTable() }
+
+function buildUserRow(u) {
+  var name = u.full_name || 'No name'
+  var initials = getInitials(name, u.email)
+  var email = u.email || '—'
+  var nickname = u.nickname ? '@' + u.nickname : ''
+  var country = u.country || '—'
+  var joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-AU', { month: 'short', day: 'numeric', year: '2-digit' }) : '—'
+  var shares = u.total_shares || 0
+  var level = getLevel(shares)
+  var tier = u.subscription_tier || 'free'
+
+  var statusPills = ''
+  if (u.role === 'admin') statusPills += '<span class="status-pill status-admin"><span class="material-symbols-outlined filled" style="font-size:9px;">admin_panel_settings</span>Admin</span> '
+  if (u.is_suspended) statusPills += '<span class="status-pill status-suspended"><span class="material-symbols-outlined" style="font-size:9px;">block</span>Suspended</span> '
+  if (u.deleted_at) statusPills += '<span class="status-pill status-deleted"><span class="material-symbols-outlined" style="font-size:9px;">delete</span>Deleted</span> '
+
+  var tr = document.createElement('tr')
+  tr.className = 'user-row'
+  tr.onclick = function() { openUserModal(u.id) }
+
+  tr.innerHTML =
+    '<td class="px-5 py-3">'
+      + '<div class="flex items-center gap-3">'
+        + '<div class="w-9 h-9 rounded-xl signature-gradient flex items-center justify-center text-on-primary font-headline font-bold flex-shrink-0" style="font-size:12px;">' + initials + '</div>'
+        + '<div class="min-w-0 flex-1">'
+          + '<div class="flex items-center gap-2">'
+            + '<p class="font-body font-semibold text-on-surface truncate" style="font-size:13px;">' + escapeHtml(name) + '</p>'
           + '</div>'
-        + '</td>'
-        + '<td class="px-4 py-3 hidden md:table-cell"><span class="text-[10px] font-bold px-2.5 py-1 rounded-full ' + levelColor + '">' + level + '</span></td>'
-        + '<td class="px-4 py-3 text-center hidden sm:table-cell"><span class="font-bold text-sm text-text-dark">' + shares + '</span></td>'
-        + '<td class="px-4 py-3 text-center hidden lg:table-cell"><span class="font-bold text-sm text-text-dark">' + (w.current_streak || 0) + '</span></td>'
-        + '<td class="px-4 py-3 text-center hidden lg:table-cell"><span class="font-bold text-sm text-text-dark">' + (w.recruit_count || 0) + '</span></td>'
-        + '<td class="px-4 py-3 hidden xl:table-cell"><span class="text-xs text-text-muted">' + country + '</span></td>'
-        + '<td class="px-4 py-3 hidden xl:table-cell"><span class="text-xs text-text-muted">' + joined + '</span></td>'
-        + '<td class="px-5 py-3 text-right">'
-          + '<button onclick="event.stopPropagation();openUserModal(\'' + w.id + '\')" class="text-primary hover:text-primary-dim text-xs font-bold">View</button>'
-        + '</td>'
+          + '<p class="font-body text-outline truncate" style="font-size:11px;">' + escapeHtml(email) + '</p>'
+          + (statusPills ? '<div class="mt-1">' + statusPills + '</div>' : '')
+        + '</div>'
+      + '</div>'
+    + '</td>'
+    + '<td class="px-4 py-3 hidden md:table-cell">'
+      + '<span class="tier-badge ' + getTierClass(tier) + '">' + getTierLabel(tier) + '</span>'
+    + '</td>'
+    + '<td class="px-4 py-3 hidden md:table-cell">'
+      + '<span class="level-badge ' + getLevelClass(level) + '">' + level + '</span>'
+    + '</td>'
+    + '<td class="px-4 py-3 text-center hidden sm:table-cell font-body font-semibold text-on-surface" style="font-size:13px;">' + shares + '</td>'
+    + '<td class="px-4 py-3 text-center hidden lg:table-cell font-body font-semibold text-on-surface" style="font-size:13px;">' + (u.current_streak || 0) + '</td>'
+    + '<td class="px-4 py-3 text-center hidden lg:table-cell font-body font-semibold text-on-surface" style="font-size:13px;">' + (u.recruit_count || 0) + '</td>'
+    + '<td class="px-4 py-3 hidden xl:table-cell font-body text-on-surface-variant" style="font-size:12px;">' + escapeHtml(country) + '</td>'
+    + '<td class="px-4 py-3 hidden xl:table-cell font-body text-on-surface-variant" style="font-size:12px;">' + joined + '</td>'
+    + '<td class="px-5 py-3 text-right">'
+      + '<button onclick="event.stopPropagation();openUserModal(\'' + u.id + '\')" class="text-primary font-body font-semibold hover:underline" style="font-size:12px;">View</button>'
+    + '</td>'
+  return tr
+}
 
-      tbody.appendChild(tr)
-    })
+function getInitials(name, email) {
+  if (name && name.trim().length > 0) {
+    var parts = name.trim().split(' ').filter(function(p) { return p.length > 0 })
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
+    if (parts[0].length >= 2) return parts[0].substring(0,2).toUpperCase()
+    return parts[0][0].toUpperCase()
+  }
+  if (email) return email.substring(0,2).toUpperCase()
+  return '?'
+}
+
+// ════════════════════════════════════════════
+// USER DETAIL MODAL
+// ════════════════════════════════════════════
+function openUserModal(userId) {
+  var user = allUsers.find(function(u) { return u.id === userId })
+  if (!user) return
+  selectedUserId = userId
+  selectedUser = user
+
+  var name = user.full_name || 'No name'
+  var initials = getInitials(name, user.email)
+  var level = getLevel(user.total_shares || 0)
+  var tier = user.subscription_tier || 'free'
+
+  document.getElementById('modalAvatar').textContent = initials
+  document.getElementById('modalName').textContent = name
+  document.getElementById('modalEmail').textContent = user.email || '—'
+  document.getElementById('modalNickname').textContent = user.nickname ? '@' + user.nickname : ''
+
+  var tierEl = document.getElementById('modalTierBadge')
+  tierEl.innerHTML = '<span class="tier-badge ' + getTierClass(tier) + '">' + getTierLabel(tier) + '</span>'
+
+  // Status row
+  var statusRow = document.getElementById('modalStatusRow')
+  var statusHtml = ''
+  if (user.role === 'admin') statusHtml += '<span class="status-pill status-admin"><span class="material-symbols-outlined filled" style="font-size:9px;">admin_panel_settings</span>Admin</span>'
+  if (user.is_suspended) statusHtml += '<span class="status-pill status-suspended"><span class="material-symbols-outlined" style="font-size:9px;">block</span>Suspended</span>'
+  if (user.deleted_at) statusHtml += '<span class="status-pill status-deleted"><span class="material-symbols-outlined" style="font-size:9px;">delete</span>Deleted</span>'
+  statusRow.innerHTML = statusHtml
+  statusRow.classList.toggle('hidden', !statusHtml)
+
+  // Stats
+  document.getElementById('modalShares').textContent = user.total_shares || 0
+  document.getElementById('modalStreak').textContent = user.current_streak || 0
+  document.getElementById('modalRecruits').textContent = user.recruit_count || 0
+  document.getElementById('modalLevel').textContent = level
+
+  // Contribution calc
+  var contribution = calculateContribution(user)
+  document.getElementById('modalContributed').textContent = '$' + contribution.total.toFixed(2)
+  document.getElementById('modalMonthsActive').textContent = contribution.months + ' month' + (contribution.months !== 1 ? 's' : '') + ' active'
+
+  // Details
+  document.getElementById('modalCountry').textContent = user.country || '—'
+  document.getElementById('modalGender').textContent = user.gender ? (user.gender.charAt(0).toUpperCase() + user.gender.slice(1)) : '—'
+  document.getElementById('modalJoined').textContent = user.created_at
+    ? new Date(user.created_at).toLocaleDateString('en-AU', { month: 'long', day: 'numeric', year: 'numeric' })
+    : '—'
+  document.getElementById('modalLastSeen').textContent = user.last_seen_at
+    ? timeAgo(user.last_seen_at)
+    : 'Never'
+  document.getElementById('modalInviteCode').textContent = user.invite_code || '—'
+
+  // Legacy info
+  var legacyInfo = document.getElementById('modalLegacyInfo')
+  var legacyText = document.getElementById('modalLegacyText')
+  if (tier === 'legacy') {
+    legacyInfo.classList.remove('hidden')
+    if (user.legacy_expires_at) {
+      var expiry = new Date(user.legacy_expires_at)
+      var now = new Date()
+      if (expiry > now) {
+        legacyText.textContent = 'Legacy access · expires ' + expiry.toLocaleDateString('en-AU', { month: 'long', day: 'numeric', year: 'numeric' })
+      } else {
+        legacyText.textContent = 'Legacy expired ' + expiry.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })
+      }
+    } else {
+      legacyText.textContent = 'Legacy access · forever'
+    }
+  } else {
+    legacyInfo.classList.add('hidden')
   }
 
-  function searchWarriors(query) {
-    var q = query.toLowerCase().trim()
-    if (!q) { renderWarriors(allWarriors); return }
-    var filtered = allWarriors.filter(function(w) {
-      return (w.full_name && w.full_name.toLowerCase().includes(q))
-        || (w.email && w.email.toLowerCase().includes(q))
-        || (w.nickname && w.nickname.toLowerCase().includes(q))
-    })
-    renderWarriors(filtered)
+  // Button labels
+  document.getElementById('roleBtnLabel').textContent = user.role === 'admin' ? 'Remove Admin' : 'Make Admin'
+  document.getElementById('suspendBtnLabel').textContent = user.is_suspended ? 'Unsuspend' : 'Suspend'
+  document.getElementById('legacyBtnLabel').textContent = tier === 'legacy' ? 'Manage Legacy' : 'Grant Legacy'
+  document.getElementById('deleteBtnLabel').textContent = user.deleted_at ? 'Restore' : 'Delete'
+
+  document.getElementById('userModal').classList.remove('hidden')
+  document.body.style.overflow = 'hidden'
+}
+
+function closeUserModal() {
+  document.getElementById('userModal').classList.add('hidden')
+  document.body.style.overflow = ''
+  selectedUserId = null
+  selectedUser = null
+}
+
+// ════════════════════════════════════════════
+// CONTRIBUTION CALCULATION
+// ════════════════════════════════════════════
+function calculateContribution(user) {
+  if (!user.created_at) return { total: 0, months: 0 }
+  var tier = user.subscription_tier || 'free'
+  var tierPrice = TIER_PRICES[tier] || 0
+
+  var start = new Date(user.created_at)
+  var end = user.deleted_at ? new Date(user.deleted_at) : new Date()
+  var monthsActive = Math.max(0, Math.floor((end - start) / (1000 * 60 * 60 * 24 * 30.44)))
+
+  var subscriptionTotal = tierPrice * monthsActive
+
+  // Use stored total_contributed if higher (accounts for donations we'd add later)
+  var storedTotal = Number(user.total_contributed || 0)
+  var total = Math.max(subscriptionTotal, storedTotal)
+
+  return { total: total, months: monthsActive }
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return '—'
+  var now = new Date(), then = new Date(dateStr)
+  var mins = Math.floor((now - then) / 60000)
+  var hrs = Math.floor(mins / 60)
+  var days = Math.floor(hrs / 24)
+  if (mins < 1) return 'Just now'
+  if (mins < 60) return mins + 'm ago'
+  if (hrs < 24) return hrs + 'h ago'
+  if (days < 7) return days + 'd ago'
+  if (days < 30) return Math.floor(days / 7) + 'w ago'
+  return then.toLocaleDateString('en-AU', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+// ════════════════════════════════════════════
+// ACTIONS — CONFIRMATIONS
+// ════════════════════════════════════════════
+function confirmToggleRole() {
+  if (!selectedUser) return
+  var newRole = selectedUser.role === 'admin' ? 'user' : 'admin'
+  confirmAction = { type: 'role', role: newRole }
+  showConfirm(
+    newRole === 'admin' ? 'Make this user an admin?' : 'Remove admin access?',
+    newRole === 'admin'
+      ? 'They will have full access to the admin panel.'
+      : 'They will lose access to the admin panel.',
+    newRole === 'admin' ? 'Make Admin' : 'Remove Admin',
+    newRole === 'admin' ? 'admin_panel_settings' : 'remove_moderator',
+    'primary'
+  )
+}
+
+function confirmToggleSuspend() {
+  if (!selectedUser) return
+  var suspend = !selectedUser.is_suspended
+  confirmAction = { type: 'suspend', suspend: suspend }
+  showConfirm(
+    suspend ? 'Suspend this user?' : 'Unsuspend this user?',
+    suspend
+      ? 'They will not be able to access the app until unsuspended.'
+      : 'They will regain access to the app.',
+    suspend ? 'Suspend' : 'Unsuspend',
+    suspend ? 'block' : 'check_circle',
+    suspend ? 'tertiary' : 'primary'
+  )
+}
+
+function confirmDelete() {
+  if (!selectedUser) return
+  if (selectedUser.deleted_at) {
+    confirmAction = { type: 'restore' }
+    showConfirm(
+      'Restore this user?',
+      'They will be visible in the app again.',
+      'Restore',
+      'restore_from_trash',
+      'primary'
+    )
+  } else {
+    confirmAction = { type: 'delete' }
+    showConfirm(
+      'Delete this user?',
+      'Their profile will be marked as deleted and hidden from the app. This can be reversed by an admin.',
+      'Delete User',
+      'delete',
+      'tertiary'
+    )
   }
+}
 
-  function filterWarriors() {
-    var role = document.getElementById('filterRole').value
-    var level = document.getElementById('filterLevel').value
-    var filtered = allWarriors.filter(function(w) {
-      var matchRole = role === 'all' || w.role === role
-      var matchLevel = level === 'all' || getLevel(w.total_shares || 0) === level
-      return matchRole && matchLevel
-    })
-    renderWarriors(filtered)
-  }
+function showConfirm(title, msg, btnLabel, iconName, btnColor) {
+  document.getElementById('confirmTitle').textContent = title
+  document.getElementById('confirmMsg').textContent = msg
 
-  function openUserModal(userId) {
-    var user = allWarriors.find(function(w) { return w.id === userId })
-    if (!user) return
-    selectedUserId = userId
-    selectedUser = user
+  var iconEl = document.getElementById('confirmIcon')
+  iconEl.innerHTML = '<span class="material-symbols-outlined ' + (btnColor === 'primary' ? 'text-primary' : 'text-tertiary') + '" style="font-size:28px;">' + iconName + '</span>'
+  iconEl.className = 'w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 ' + (btnColor === 'primary' ? 'bg-primary-container/20' : 'bg-tertiary-container/15')
 
-    var name = user.full_name || 'No name'
-    var initials = name.length >= 2 ? name.split(' ').map(function(n) { return n[0] }).join('').substring(0, 2).toUpperCase() : '?'
-    var level = getLevel(user.total_shares || 0)
+  var btn = document.getElementById('confirmBtn')
+  btn.textContent = btnLabel
+  btn.className = 'flex-1 py-3 font-headline font-bold rounded-xl active:scale-[0.98] transition-transform ' + (btnColor === 'primary' ? 'signature-gradient text-on-primary' : 'bg-tertiary text-on-tertiary')
+  btn.style.fontSize = '14px'
 
-    document.getElementById('modalAvatar').textContent = initials
-    document.getElementById('modalName').textContent = name
-    document.getElementById('modalEmail').textContent = user.email || '—'
-    document.getElementById('modalNickname').textContent = user.nickname ? '@' + user.nickname : ''
-    document.getElementById('modalShares').textContent = user.total_shares || 0
-    document.getElementById('modalStreak').textContent = user.current_streak || 0
-    document.getElementById('modalRecruits').textContent = user.recruit_count || 0
-    document.getElementById('modalLevel').textContent = level
-    document.getElementById('modalCountry').textContent = user.country || '—'
-    document.getElementById('modalJoined').textContent = user.created_at
-      ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-      : '—'
-    document.getElementById('modalRole').textContent = user.role === 'admin' ? 'Admin' : 'User'
-    document.getElementById('modalStatus').textContent = user.is_suspended ? 'Suspended' : 'Active'
-    document.getElementById('modalInviteCode').textContent = user.invite_code || '—'
+  document.getElementById('confirmModal').classList.remove('hidden')
+  document.body.style.overflow = 'hidden'
+}
 
-    var badges = user.badges || []
-    document.getElementById('modalBadges').textContent = badges.length > 0
-      ? badges.map(function(b) { return b === 'foundation_member' ? '🛡 Foundation' : b }).join(', ')
-      : 'None'
+function closeConfirm() {
+  document.getElementById('confirmModal').classList.add('hidden')
+  document.body.style.overflow = ''
+}
 
-    document.getElementById('roleBtnLabel').textContent = user.role === 'admin' ? 'Remove Admin' : 'Make Admin'
-    document.getElementById('suspendBtnLabel').textContent = user.is_suspended ? 'Unsuspend' : 'Suspend'
+async function executeConfirm() {
+  if (!confirmAction || !selectedUserId) return
+  var action = confirmAction
+  closeConfirm()
 
-    document.getElementById('userModal').classList.remove('hidden')
-  }
-
-  function closeUserModal() {
-    document.getElementById('userModal').classList.add('hidden')
-    selectedUserId = null
-    selectedUser = null
-  }
-
-  async function toggleRole() {
-    if (!selectedUserId || !selectedUser) return
-    var newRole = selectedUser.role === 'admin' ? 'user' : 'admin'
-    if (newRole === 'admin' && !confirm('Make this user an admin? They will have full access to the admin panel.')) return
-
-    await supabaseClient.from('profiles').update({ role: newRole }).eq('id', selectedUserId)
-    showToast(newRole === 'admin' ? 'User is now an admin' : 'Admin role removed')
-    closeUserModal()
-    await loadWarriors()
-  }
-
-  async function toggleSuspend() {
-    if (!selectedUserId || !selectedUser) return
-    var isSuspended = !selectedUser.is_suspended
-
-    await supabaseClient.from('profiles').update({
-      is_suspended: isSuspended,
-      suspended_at: isSuspended ? new Date().toISOString() : null
+  if (action.type === 'role') {
+    var r = await supabaseClient.from('profiles').update({ role: action.role }).eq('id', selectedUserId)
+    if (r.error) { showToast('Error'); return }
+    showToast(action.role === 'admin' ? 'User is now an admin' : 'Admin role removed')
+  } else if (action.type === 'suspend') {
+    var r = await supabaseClient.from('profiles').update({
+      is_suspended: action.suspend,
+      suspended_at: action.suspend ? new Date().toISOString() : null
     }).eq('id', selectedUserId)
-
-    showToast(isSuspended ? 'User suspended' : 'User unsuspended')
-    closeUserModal()
-    await loadWarriors()
+    if (r.error) { showToast('Error'); return }
+    showToast(action.suspend ? 'User suspended' : 'User unsuspended')
+  } else if (action.type === 'delete') {
+    var r = await supabaseClient.from('profiles').update({ deleted_at: new Date().toISOString() }).eq('id', selectedUserId)
+    if (r.error) { showToast('Error'); return }
+    showToast('User deleted (soft delete)')
+  } else if (action.type === 'restore') {
+    var r = await supabaseClient.from('profiles').update({ deleted_at: null }).eq('id', selectedUserId)
+    if (r.error) { showToast('Error'); return }
+    showToast('User restored')
   }
 
-  function grantFreeAccess() {
-    document.getElementById('freeAccessModal').classList.remove('hidden')
+  closeUserModal()
+  confirmAction = null
+  await loadUsers()
+}
+
+// ════════════════════════════════════════════
+// LEGACY GRANT / REVOKE
+// ════════════════════════════════════════════
+function openLegacyModal() {
+  if (!selectedUser) return
+  var isLegacy = selectedUser.subscription_tier === 'legacy'
+  document.getElementById('legacyModalTitle').textContent = isLegacy ? 'Manage Legacy Access' : 'Grant Legacy Access'
+  document.getElementById('legacyModalSubtitle').textContent = isLegacy
+    ? 'This user has legacy access'
+    : 'Full app access without billing'
+  document.getElementById('legacyPrimaryBtn').textContent = isLegacy ? 'Update' : 'Grant'
+  document.getElementById('legacyRevokeBtn').classList.toggle('hidden', !isLegacy)
+
+  document.getElementById('legacyModal').classList.remove('hidden')
+  document.body.style.overflow = 'hidden'
+}
+
+function closeLegacyModal() {
+  document.getElementById('legacyModal').classList.add('hidden')
+  document.body.style.overflow = ''
+}
+
+async function confirmLegacy() {
+  if (!selectedUserId) return
+  var duration = document.querySelector('input[name="legacyDuration"]:checked').value
+
+  var expiresAt = null
+  if (duration !== 'forever') {
+    var months = parseInt(duration)
+    var d = new Date()
+    d.setMonth(d.getMonth() + months)
+    expiresAt = d.toISOString()
   }
 
-  function closeFreeAccessModal() {
-    document.getElementById('freeAccessModal').classList.add('hidden')
-  }
+  var r = await supabaseClient.from('profiles').update({
+    subscription_tier: 'legacy',
+    subscription_status: 'active',
+    legacy_granted_at: new Date().toISOString(),
+    legacy_expires_at: expiresAt
+  }).eq('id', selectedUserId)
 
-  async function confirmFreeAccess() {
-    if (!selectedUserId) return
-    var months = parseInt(document.getElementById('freeMonths').value)
-    var endDate = new Date()
-    endDate.setMonth(endDate.getMonth() + months)
+  if (r.error) { showToast('Error: ' + r.error.message); return }
 
-    await supabaseClient.from('subscriptions').update({
-      status: 'active',
-      current_period_end: endDate.toISOString()
-    }).eq('user_id', selectedUserId)
+  showToast(duration === 'forever'
+    ? 'Legacy access granted forever'
+    : 'Legacy access granted for ' + duration + ' month' + (duration !== '1' ? 's' : ''))
 
-    showToast(months + ' month' + (months > 1 ? 's' : '') + ' free access granted')
-    closeFreeAccessModal()
-    closeUserModal()
-  }
+  closeLegacyModal()
+  closeUserModal()
+  await loadUsers()
+}
 
-  async function deleteUser() {
-    if (!selectedUserId) return
-    if (!confirm('Delete this user permanently? This cannot be undone.')) return
-    if (!confirm('Are you absolutely sure? All their data will be lost.')) return
+async function revokeLegacy() {
+  if (!selectedUserId) return
+  if (!confirm('Revoke legacy access? User will be moved to Free tier.')) return
 
-    await supabaseClient.from('profiles').delete().eq('id', selectedUserId)
-    showToast('User deleted')
-    closeUserModal()
-    await loadWarriors()
-  }
+  var r = await supabaseClient.from('profiles').update({
+    subscription_tier: 'free',
+    subscription_status: 'inactive',
+    legacy_granted_at: null,
+    legacy_expires_at: null
+  }).eq('id', selectedUserId)
 
-  async function handleLogout() {
-    await supabaseClient.auth.signOut()
-    window.location.href = 'login.html'
-  }
+  if (r.error) { showToast('Error: ' + r.error.message); return }
 
-  var toastTimer
-  function showToast(msg) {
-    var toast = document.getElementById('toast')
-    var toastMsg = document.getElementById('toastMsg')
-    if (!toast || !toastMsg) return
-    toastMsg.textContent = msg
-    toast.classList.remove('hidden'); toast.classList.add('flex')
-    clearTimeout(toastTimer)
-    toastTimer = setTimeout(function() { toast.classList.add('hidden'); toast.classList.remove('flex') }, 3000)
-  }
+  showToast('Legacy access revoked')
+  closeLegacyModal()
+  closeUserModal()
+  await loadUsers()
+}
 
-  async function init() {
-    var isAdmin = await checkAdminAuth()
-    if (!isAdmin) return
-    await loadWarriors()
-  }
+// ════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════
+function escapeHtml(str) {
+  if (!str) return ''
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')
+}
 
-  init()
+var toastTimer
+function showToast(msg) {
+  var toast = document.getElementById('toast')
+  var toastMsg = document.getElementById('toastMsg')
+  if (!toast || !toastMsg) return
+  toastMsg.textContent = msg
+  toast.classList.remove('hidden')
+  toast.classList.add('flex')
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(function() {
+    toast.classList.add('hidden')
+    toast.classList.remove('flex')
+  }, 2500)
+}
 
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+async function init() {
+  var isAdmin = await checkAdminAuth()
+  if (!isAdmin) return
+
+  // Default sort arrow
+  updateSortArrows()
+
+  await loadUsers()
+}
+
+init()
 </script>
 </body>
 </html>
