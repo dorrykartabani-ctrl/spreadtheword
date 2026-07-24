@@ -729,22 +729,50 @@ function filterList(filter, btn) {
     if (b) b.classList.add('active')
   }
 
-  var filtered = allNotifications.slice()
+     // Filter to relevant notifications
+    allNotifications = rawNotifs.filter(function(n) {
+      // Must be for this user, a broadcast, or match target criteria
+      var isBroadcast = n.type === 'broadcast' || n.category === 'broadcast'
+      var isDirectMessage = n.target_user_id === currentUser.id
+      var isMission = n.category === 'mission'
 
-  if (filter === 'sent') {
-    filtered = filtered.filter(function(n) {
-      return (n.status === 'sent' || !n.status) && !AUTOMATED_CATS.includes(n.category || n.type)
+      if (!isBroadcast && !isDirectMessage && !isMission) return false
+
+      // Check expiry
+      if (n.expires_at && new Date(n.expires_at) < new Date()) return false
+
+      // Check dismissed
+      var readState = readMap[n.id]
+      if (readState && readState.dismissed_at) return false
+
+      // Check target_criteria for broadcasts and missions (not direct messages)
+      if (!isDirectMessage && n.target_criteria) {
+        var criteria = n.target_criteria
+
+        // Handle string vs object (Supabase sometimes returns JSONB as string)
+        if (typeof criteria === 'string') {
+          try { criteria = JSON.parse(criteria) } catch(e) { criteria = {} }
+        }
+
+        // Tier filter
+        if (criteria.tier) {
+          var userTier = userProfile.subscription_tier || 'free'
+          if (userTier !== criteria.tier) return false
+        }
+
+        // Country filter
+        if (criteria.country) {
+          if (!userProfile.country || userProfile.country !== criteria.country) return false
+        }
+      }
+
+      // Check user preferences
+      var category = n.category || n.type || 'broadcast'
+      var prefKey = prefMap[category]
+      if (prefKey && userProfile[prefKey] === false) return false
+
+      return true
     })
-  } else if (filter === 'scheduled') {
-    filtered = filtered.filter(function(n) { return n.status === 'scheduled' })
-  } else if (filter === 'draft') {
-    filtered = filtered.filter(function(n) { return n.status === 'draft' })
-  } else if (filter === 'automated') {
-    filtered = filtered.filter(function(n) { return AUTOMATED_CATS.includes(n.category || n.type) })
-  }
-
-  renderList(filtered)
-}
 
 function renderList(list) {
   var container = document.getElementById('notifList')
