@@ -381,7 +381,7 @@
       <!-- Type -->
       <div>
         <label class="font-body text-on-surface-variant block mb-1.5" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Type <span class="text-tertiary">*</span></label>
-        <select id="uploadType" class="form-input w-full rounded-lg px-3 py-2.5 font-body cursor-pointer" style="font-size:13px;">
+       <select id="uploadType" onchange="updateTypeGuide()" class="form-input w-full rounded-lg px-3 py-2.5 font-body cursor-pointer" style="font-size:13px;">
           <option value="background">Background</option>
           <option value="mission">Mission</option>
           <option value="badge">Badge</option>
@@ -395,12 +395,24 @@
         </select>
       </div>
 
-      <!-- Drop zone -->
-      <div id="dropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()">
-        <span class="material-symbols-outlined text-outline block mb-2" style="font-size:48px;">cloud_upload</span>
-        <p class="font-body font-semibold text-on-surface mb-1" style="font-size:14px;">Click or drag images here</p>
-        <p class="font-body text-outline" style="font-size:11px;">JPG, PNG, WebP · Max 10MB per file · Multiple allowed</p>
-      </div>
+      <!-- Guidance for selected type -->
+<div id="typeGuide" class="bg-primary-container/15 rounded-xl p-3 flex items-start gap-2">
+  <span class="material-symbols-outlined text-primary flex-shrink-0" style="font-size:16px;">tips_and_updates</span>
+  <div class="flex-1 min-w-0">
+    <p class="font-body font-semibold text-primary" style="font-size:12px;">
+      <span id="typeGuideName">Background</span> · Recommended:
+      <span id="typeGuideDims" class="font-body font-bold">1200×1200</span>
+    </p>
+    <p id="typeGuideNote" class="font-body text-primary/80 mt-0.5" style="font-size:11px;">Square aspect ratio works best</p>
+  </div>
+</div>
+
+<!-- Drop zone -->
+<div id="dropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()">
+  <span class="material-symbols-outlined text-outline block mb-2" style="font-size:48px;">cloud_upload</span>
+  <p class="font-body font-semibold text-on-surface mb-1" style="font-size:14px;">Click or drag images here</p>
+  <p class="font-body text-outline" style="font-size:11px;">JPG, PNG, WebP · Max 10MB per file · Multiple allowed</p>
+</div>
 
       <!-- Selected files list -->
       <div id="fileList" class="hidden space-y-2">
@@ -601,6 +613,56 @@ var TYPE_CONFIG = {
   category:         { label: 'Category Icons', icon: 'category',             short: 'Categories' },
   ministry:         { label: 'Ministry',       icon: 'church',               short: 'Ministry' },
   other:            { label: 'Other',          icon: 'more_horiz',           short: 'Other' }
+}
+
+// Optimal dimensions and guidance per type
+var TYPE_GUIDANCE = {
+  background:       { name:'Background',      dims:'1200×1200', ratio:1,      note:'Square aspect ratio · used on home screen and editor' },
+  mission:          { name:'Mission',         dims:'1200×630',  ratio:1.905,  note:'Landscape (approx 2:1) · used as mission card cover' },
+  badge:            { name:'Badge',           dims:'512×512',   ratio:1,      note:'Square · icon-style with transparent background (PNG)' },
+  landing_hero:     { name:'Landing Hero',    dims:'1920×1080', ratio:1.778,  note:'16:9 widescreen · large hero banner' },
+  landing_feature:  { name:'Landing Feature', dims:'800×600',   ratio:1.333,  note:'4:3 landscape · feature illustration' },
+  social:           { name:'Social Icon',     dims:'128×128',   ratio:1,      note:'Square · platform logo with transparent background (PNG)' },
+  campaign:         { name:'Campaign Icon',   dims:'256×256',   ratio:1,      note:'Square · icon for campaign identification' },
+  category:         { name:'Category Icon',   dims:'256×256',   ratio:1,      note:'Square · icon for quote category' },
+  ministry:         { name:'Ministry Logo',   dims:'800×800',   ratio:1,      note:'Square · works best for ministry branding' },
+  other:            { name:'Other',           dims:'No restriction', ratio:0, note:'No specific size requirement' }
+}
+
+// ════════════════════════════════════════════
+// TYPE GUIDANCE
+// ════════════════════════════════════════════
+function updateTypeGuide() {
+  var type = document.getElementById('uploadType').value
+  var guide = TYPE_GUIDANCE[type] || TYPE_GUIDANCE.other
+
+  var nameEl = document.getElementById('typeGuideName')
+  var dimsEl = document.getElementById('typeGuideDims')
+  var noteEl = document.getElementById('typeGuideNote')
+
+  if (nameEl) nameEl.textContent = guide.name
+  if (dimsEl) dimsEl.textContent = guide.dims
+  if (noteEl) noteEl.textContent = guide.note
+
+  // Re-check any selected files against new type
+  if (selectedFiles.length > 0) renderFileList()
+}
+
+// Check file dimensions and provide warning
+function checkFileDimensions(file) {
+  return new Promise(function(resolve) {
+    var reader = new FileReader()
+    reader.onload = function(e) {
+      var img = new Image()
+      img.onload = function() {
+        resolve({ width: img.width, height: img.height, ratio: img.width / img.height })
+      }
+      img.onerror = function() { resolve(null) }
+      img.src = e.target.result
+    }
+    reader.onerror = function() { resolve(null) }
+    reader.readAsDataURL(file)
+  })
 }
 
 // ════════════════════════════════════════════
@@ -876,6 +938,9 @@ function openUpload() {
   if (currentType !== 'all') {
     document.getElementById('uploadType').value = currentType
   }
+
+
+  updateTypeGuide()
 }
 
 function closeUpload() {
@@ -899,7 +964,7 @@ function addFiles(files) {
   renderFileList()
 }
 
-function renderFileList() {
+async function renderFileList() {
   var container = document.getElementById('filesContainer')
   var wrapper = document.getElementById('fileList')
 
@@ -908,6 +973,53 @@ function renderFileList() {
     document.getElementById('uploadSubmitBtn').disabled = true
     return
   }
+
+  wrapper.classList.remove('hidden')
+  document.getElementById('uploadSubmitBtn').disabled = false
+  container.innerHTML = ''
+
+  var type = document.getElementById('uploadType').value
+  var guide = TYPE_GUIDANCE[type] || TYPE_GUIDANCE.other
+
+  for (var i = 0; i < selectedFiles.length; i++) {
+    var f = selectedFiles[i]
+    var kb = Math.round(f.size / 1024)
+
+    // Check dimensions
+    var dims = await checkFileDimensions(f)
+    var dimText = ''
+    var warningHtml = ''
+
+    if (dims) {
+      dimText = dims.width + '×' + dims.height
+
+      // Warn if aspect ratio is off (skip 'other' which has no ratio)
+      if (guide.ratio > 0) {
+        var ratioDiff = Math.abs(dims.ratio - guide.ratio) / guide.ratio
+        if (ratioDiff > 0.15) {
+          // More than 15% off ideal ratio
+          warningHtml = '<div class="flex items-center gap-1.5 mt-1"><span class="material-symbols-outlined text-tertiary" style="font-size:12px;">warning</span><span class="font-body text-tertiary" style="font-size:10px;">Aspect ratio doesn\'t match ideal (' + guide.dims + '). Image may look stretched or cropped.</span></div>'
+        }
+      }
+    }
+
+    var row = document.createElement('div')
+    row.className = 'flex items-start gap-3 bg-surface-clow rounded-lg p-2.5'
+    row.innerHTML =
+      '<div class="w-10 h-10 rounded bg-surface-cl flex items-center justify-center flex-shrink-0">'
+        + '<span class="material-symbols-outlined text-outline" style="font-size:18px;">image</span>'
+      + '</div>'
+      + '<div class="flex-1 min-w-0">'
+        + '<p class="font-body font-semibold text-on-surface truncate" style="font-size:12px;">' + escapeHtml(f.name) + '</p>'
+        + '<p class="font-body text-outline" style="font-size:10px;">' + kb + ' KB' + (dimText ? ' · ' + dimText : '') + '</p>'
+        + warningHtml
+      + '</div>'
+      + '<button onclick="removeFile(' + i + ')" class="w-7 h-7 flex items-center justify-center text-on-surface-variant hover:bg-surface-cl rounded transition-colors flex-shrink-0">'
+        + '<span class="material-symbols-outlined" style="font-size:14px;">close</span>'
+      + '</button>'
+    container.appendChild(row)
+  }
+}
 
   wrapper.classList.remove('hidden')
   document.getElementById('uploadSubmitBtn').disabled = false
