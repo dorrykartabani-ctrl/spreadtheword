@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Generator — GSTW Admin</title>
+  <title>Assistant — GSTW Admin</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -17,21 +17,27 @@
       theme: {
         extend: {
           colors: {
-            'primary':'#1E4060','primary-dim':'#152E45','primary-light':'#2B5780',
-            'action':'#E25B4D','action-dim':'#C84A3E',
-            'gold':'#D4A24C','gold-dim':'#B88A3D',
-            'cream':'#F7F4ED',
-            'dark':'#16202A','dark-soft':'#1F2A35',
-            'text-dark':'#1A1A1A','text-muted':'#5C6B7A','text-light':'#8E9AA8',
-            'border-soft':'rgba(92,107,122,0.15)',
-            'sidebar-bg':'#0F1E2E','sidebar-hover':'#1A2D40',
-            'card-bg':'#FFFFFF','surface':'#F0EDE6',
+            'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
+            'surface-c':'#efeee7','surface-chigh':'#e9e8e1','surface-chighest':'#e3e3db',
+            'on-surface':'#31332e','on-surface-variant':'#5e6059',
+            'inverse-surface':'#0e0e0c','inverse-on-surface':'#9e9d99',
+            'outline':'#7a7b75','outline-variant':'#b2b2ab',
+            'primary':'#3d6285','on-primary':'#f7f9ff',
+            'primary-container':'#b0d5fe','on-primary-container':'#234a6c',
+            'secondary':'#41637c','on-secondary':'#f6f9ff',
+            'secondary-container':'#cae6ff',
+            'tertiary':'#ad332b','on-tertiary':'#fff7f6',
+            'primary-dim':'#305678','secondary-dim':'#355670','tertiary-dim':'#9d2621',
+            'sidebar-bg':'#0e0e0c','sidebar-hover':'#1a1a18',
           },
-          fontFamily:{'headline':['Plus Jakarta Sans','sans-serif'],'body':['Manrope','sans-serif']},
+          fontFamily:{
+            'headline':['Plus Jakarta Sans','sans-serif'],
+            'body':['Manrope','sans-serif'],
+          },
           boxShadow:{
-            'natural':'0 4px 16px rgba(26,32,42,0.06)','lifted':'0 8px 32px rgba(26,32,42,0.10)',
-            'tactical':'0 4px 20px rgba(30,64,96,0.25)','action-glow':'0 4px 20px rgba(226,91,77,0.35)',
-            'card':'0 32px 64px -15px rgba(30,64,96,0.06)',
+            'ambient':'0 20px 40px rgba(49,51,46,0.05)',
+            'ambient-sm':'0 8px 24px rgba(49,51,46,0.04)',
+            'float':'0 20px 40px rgba(49,51,46,0.08)',
           },
         },
       },
@@ -39,527 +45,1228 @@
   </script>
 
   <style>
-    body{font-family:'Manrope',sans-serif}
-    .font-headline{font-family:'Plus Jakarta Sans',sans-serif}
-    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;letter-spacing:-0.005em}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
     .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
-    .tactical-gradient{background:linear-gradient(145deg,#152E45,#1E4060)}
-    .action-gradient{background:linear-gradient(145deg,#E25B4D,#C84A3E)}
-    ::-webkit-scrollbar{width:5px}
+    .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
+
+    ::-webkit-scrollbar{width:6px;height:6px}
     ::-webkit-scrollbar-track{background:transparent}
-    ::-webkit-scrollbar-thumb{background:rgba(30,64,96,0.15);border-radius:3px}
-    .no-scrollbar::-webkit-scrollbar{display:none}
-    .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
-    .theme-pill.active{background:#1E4060!important;color:white!important;border-color:#1E4060!important}
-    .result-card{border-left:4px solid #D4A24C}
-    @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
-    .shimmer{background:linear-gradient(90deg,#f0ede6 25%,#e8e4dc 50%,#f0ede6 75%);background-size:800px 100%;animation:shimmer 1.5s infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin 1s linear infinite}
-    .card-dismiss{transition:all 0.3s ease}.card-dismiss.dismissed{transform:translateX(40px);opacity:0}
+    ::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:3px}
+
+    /* Sidebar */
+    .sidebar{background:#0e0e0c;color:#f7f9ff}
+    .sidebar-item{
+      display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;
+      color:rgba(247,249,255,0.6);font-size:13px;font-weight:600;
+      transition:all 0.15s ease;text-decoration:none;
+    }
+    .sidebar-item:hover{background:#1a1a18;color:#f7f9ff}
+    .sidebar-item.active{background:#3d6285;color:#f7f9ff}
+    .sidebar-item .material-symbols-outlined{font-size:20px}
+
+    /* Chat container */
+    .chat-container{
+      max-width:800px;margin:0 auto;
+      display:flex;flex-direction:column;
+      height:calc(100vh - 140px);
+    }
+
+    /* Messages area */
+    .messages{
+      flex:1;overflow-y:auto;padding:20px 4px;
+      display:flex;flex-direction:column;gap:16px;
+    }
+
+    /* Message bubble */
+    .msg{
+      max-width:85%;
+      display:flex;flex-direction:column;gap:4px;
+    }
+    .msg-user{align-self:flex-end}
+    .msg-assistant{align-self:flex-start;max-width:95%}
+
+    .msg-bubble{
+      padding:12px 16px;border-radius:16px;
+      font-family:'Manrope',sans-serif;font-size:14px;line-height:20px;
+    }
+    .msg-user .msg-bubble{
+      background:#3d6285;color:#f7f9ff;border-bottom-right-radius:6px;
+    }
+    .msg-assistant .msg-bubble{
+      background:#ffffff;color:#31332e;border-bottom-left-radius:6px;
+    }
+
+    .msg-avatar{
+      width:32px;height:32px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      flex-shrink:0;
+    }
+
+    /* Action card in assistant message */
+    .action-card{
+      background:#f5f4ed;border-radius:12px;padding:14px;
+      margin-top:8px;
+    }
+
+    /* Quick action button */
+    .qa-btn{
+      background:#ffffff;color:#31332e;
+      border:1px solid transparent;
+      padding:12px 14px;border-radius:14px;
+      transition:all 0.15s ease;cursor:pointer;
+      display:flex;align-items:center;gap:10px;
+      text-align:left;
+    }
+    .qa-btn:hover{background:#f5f4ed;border-color:rgba(61,98,133,0.15)}
+    .qa-btn .qa-icon{
+      width:36px;height:36px;border-radius:10px;
+      background:rgba(61,98,133,0.15);color:#3d6285;
+      display:flex;align-items:center;justify-content:center;
+      flex-shrink:0;
+    }
+
+    /* Quote preview card in action card */
+    .preview-quote{
+      background:#ffffff;border-radius:10px;padding:12px;
+      margin-bottom:8px;
+    }
+
+    /* Input area */
+    .input-area{
+      background:#ffffff;border-radius:16px;padding:8px;
+      display:flex;align-items:center;gap:8px;
+      transition:all 0.2s ease;
+      border:1px solid transparent;
+    }
+    .input-area:focus-within{border-color:rgba(61,98,133,0.3)}
+
+    .input-field{
+      flex:1;border:none;outline:none;background:transparent;
+      padding:10px 12px;font-size:14px;
+      font-family:'Manrope',sans-serif;color:#31332e;
+    }
+    .input-field::placeholder{color:#b2b2ab}
+
+    .send-btn{
+      width:40px;height:40px;border-radius:12px;
+      background:linear-gradient(135deg,#3d6285,#6b9bc3);
+      color:#f7f9ff;display:flex;align-items:center;justify-content:center;
+      transition:all 0.15s ease;
+      flex-shrink:0;
+    }
+    .send-btn:disabled{opacity:0.4;cursor:not-allowed}
+    .send-btn:not(:disabled):hover{transform:scale(1.05)}
+
+    /* Suggestion chips */
+    .chip{
+      display:inline-flex;align-items:center;gap:5px;
+      background:#ffffff;color:#5e6059;
+      padding:6px 12px;border-radius:99px;
+      font-size:12px;font-weight:600;
+      cursor:pointer;transition:all 0.15s ease;
+      white-space:nowrap;
+    }
+    .chip:hover{background:#f5f4ed;color:#3d6285}
+
+    /* Loading dots */
+    .loading-dots{display:inline-flex;gap:4px;align-items:center;padding:8px 0;}
+    .loading-dots span{
+      width:8px;height:8px;border-radius:50%;
+      background:#3d6285;opacity:0.4;
+      animation:dotPulse 1.4s infinite ease-in-out;
+    }
+    .loading-dots span:nth-child(2){animation-delay:0.2s}
+    .loading-dots span:nth-child(3){animation-delay:0.4s}
+    @keyframes dotPulse{
+      0%,80%,100%{opacity:0.4;transform:scale(0.85)}
+      40%{opacity:1;transform:scale(1)}
+    }
+
+    @keyframes fadeUp{
+      from{opacity:0;transform:translateY(8px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+    .fade-up{animation:fadeUp 0.3s ease-out both}
+
+    /* Sparkle badge */
+    .sparkle-badge{
+      background:linear-gradient(135deg,#3d6285,#6b9bc3);
+      color:#f7f9ff;
+      padding:3px 8px;border-radius:99px;
+      font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;
+      display:inline-flex;align-items:center;gap:3px;
+    }
+
+    /* Result item */
+    .result-item{
+      background:#ffffff;border-radius:10px;padding:10px 12px;
+      display:flex;align-items:center;gap:10px;
+    }
+
+    /* Success card */
+    .success-card{
+      background:linear-gradient(135deg,rgba(61,98,133,0.1),rgba(176,213,254,0.15));
+      border-radius:12px;padding:14px;
+    }
   </style>
 </head>
 
-<body class="bg-surface text-text-dark min-h-screen flex">
+<body class="min-h-screen flex">
 
+<!-- ═══════════════════════════════════════════ -->
 <!-- SIDEBAR -->
-<aside id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-sidebar-bg flex flex-col p-4 gap-2 z-40 hidden md:flex">
-  <div class="mb-8 px-4 pt-2">
+<!-- ═══════════════════════════════════════════ -->
+<aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 hidden md:flex">
+  <div class="mb-6 px-2 pt-2">
     <div class="flex items-center gap-2.5">
-      <div class="w-9 h-9 rounded-lg border-2 border-primary-light flex items-center justify-center">
-        <span class="font-headline font-extrabold text-gold text-[10px]">GSTW</span>
+      <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center">
+        <span class="font-headline font-bold text-on-primary" style="font-size:10px;">GSTW</span>
       </div>
       <div>
-        <h1 class="text-base font-headline font-extrabold tracking-tight text-white">STW Admin</h1>
-        <p class="text-[9px] uppercase tracking-[0.2em] text-text-light font-bold">Command Center</p>
+        <h1 class="font-headline font-bold text-white" style="font-size:15px;letter-spacing:-0.02em;">Command</h1>
+        <p class="text-white/40 font-body" style="font-size:9px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">Admin Panel</p>
       </div>
     </div>
   </div>
-  <nav class="flex flex-col gap-1 grow overflow-y-auto">
-    <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all"><span class="material-symbols-outlined text-[20px]">dashboard</span><span class="font-body text-sm">Dashboard</span></a>
-    <a href="manage-quotes.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all"><span class="material-symbols-outlined text-[20px]">format_quote</span><span class="font-body text-sm">Quotes</span></a>
-    <a href="schedule.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all"><span class="material-symbols-outlined text-[20px]">calendar_today</span><span class="font-body text-sm">Schedule</span></a>
-    <a href="ai-generator.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-lg font-bold text-sm"><span class="material-symbols-outlined text-[20px] filled">auto_awesome</span><span class="font-body text-sm">AI Generator</span></a>
-    <a href="projects.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all"><span class="material-symbols-outlined text-[20px]">folder_shared</span><span class="font-body text-sm">Projects</span></a>
-    <a href="analytics.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all"><span class="material-symbols-outlined text-[20px]">analytics</span><span class="font-body text-sm">Analytics</span></a>
-    <a href="warriors.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all"><span class="material-symbols-outlined text-[20px]">group</span><span class="font-body text-sm">Warriors</span></a>
-    <a href="settings.html" class="flex items-center gap-3 px-4 py-3 text-white/60 hover:bg-sidebar-hover hover:text-white rounded-lg transition-all"><span class="material-symbols-outlined text-[20px]">settings</span><span class="font-body text-sm">Settings</span></a>
+
+  <nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
+    <a href="index.html" class="sidebar-item"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
+    <a href="manage-quotes.html" class="sidebar-item"><span class="material-symbols-outlined">format_quote</span>Quotes</a>
+    <a href="schedule.html" class="sidebar-item"><span class="material-symbols-outlined">calendar_today</span>Schedule</a>
+    <a href="campaigns.html" class="sidebar-item"><span class="material-symbols-outlined">campaign</span>Campaigns</a>
+    <a href="projects.html" class="sidebar-item"><span class="material-symbols-outlined">volunteer_activism</span>Missions</a>
+    <a href="manage-media.html" class="sidebar-item"><span class="material-symbols-outlined">perm_media</span>Media</a>
+    <a href="warriors.html" class="sidebar-item"><span class="material-symbols-outlined">group</span>Users</a>
+    <a href="notifications.html" class="sidebar-item"><span class="material-symbols-outlined">notifications</span>Notifications</a>
+    <a href="ai-generator.html" class="sidebar-item active"><span class="material-symbols-outlined">auto_awesome</span>Assistant</a>
+    <a href="analytics.html" class="sidebar-item"><span class="material-symbols-outlined">analytics</span>Analytics</a>
   </nav>
-  <div class="mt-auto pt-4 flex flex-col gap-4">
-    <a href="quotes.html" class="action-gradient text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 shadow-action-glow hover:scale-[1.02] transition-transform">
-      <span class="material-symbols-outlined text-sm">add_circle</span><span class="text-xs uppercase tracking-widest">Create New Quote</span>
-    </a>
-    <div class="flex items-center gap-3 px-2 py-3 border-t border-white/10">
-      <div class="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center text-white font-headline font-bold text-sm">DA</div>
-      <div><p class="text-sm font-bold text-white leading-none">David Hearth</p><p class="text-[10px] text-text-light">Super Admin</p></div>
+
+  <div class="mt-4 pt-4 border-t border-white/10 space-y-2">
+    <a href="settings.html" class="sidebar-item"><span class="material-symbols-outlined">settings</span>Settings</a>
+    <div class="flex items-center gap-3 px-2 py-2">
+      <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center text-on-primary font-headline font-bold flex-shrink-0 admin-initials" style="font-size:13px;">AD</div>
+      <div class="flex-1 min-w-0">
+        <p class="font-body font-semibold text-white truncate admin-name" style="font-size:12px;">Admin</p>
+        <p class="text-white/40 font-body" style="font-size:10px;">Super Admin</p>
+      </div>
+      <button onclick="handleLogout()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-all flex-shrink-0" title="Log out">
+        <span class="material-symbols-outlined" style="font-size:16px;">logout</span>
+      </button>
     </div>
   </div>
 </aside>
 
-<div id="sidebarOverlay" class="fixed inset-0 bg-dark/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+<div id="sidebarOverlay" class="fixed inset-0 bg-inverse-surface/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
 
+<!-- ═══════════════════════════════════════════ -->
 <!-- MAIN -->
+<!-- ═══════════════════════════════════════════ -->
 <div class="flex-1 md:ml-64 flex flex-col min-h-screen">
 
- <!-- HEADER -->
-<header class="flex justify-between items-center w-full px-6 lg:px-8 py-4 sticky top-0 z-20 bg-surface/80 backdrop-blur-xl border-b border-border-soft">
-  <div class="flex items-center gap-4">
-    <button onclick="toggleSidebar()" class="md:hidden text-text-dark"><span class="material-symbols-outlined">menu</span></button>
-    <nav class="flex items-center gap-2 text-sm font-body">
-      <a href="index.html" class="text-text-muted hover:text-primary transition-colors">Dashboard</a>
-      <span class="material-symbols-outlined text-text-light text-sm">chevron_right</span>
-      <span id="headerTitle" class="text-primary font-bold border-b-2 border-primary pb-0.5">AI Generator</span>
-    </nav>
-  </div>
-  <div class="flex items-center gap-4 lg:gap-6">
-    <button class="relative text-text-muted hover:text-primary transition-colors">
-      <span class="material-symbols-outlined">notifications</span>
-      <span class="absolute -top-1 -right-1 w-2 h-2 bg-action rounded-full"></span>
-    </button>
-    <div class="h-8 w-px bg-border-soft hidden sm:block"></div>
-    <div class="flex items-center gap-3">
-      <div class="text-right hidden sm:block">
-        <p class="text-sm font-bold text-text-dark">Super Admin</p>
-        <button onclick="handleLogout()" class="text-[10px] font-bold text-action uppercase tracking-widest flex items-center gap-1 hover:opacity-80 ml-auto">
-          Logout <span class="material-symbols-outlined text-[12px]">logout</span>
+  <!-- HEADER -->
+  <header class="sticky top-0 z-20 bg-surface/85 backdrop-blur-xl">
+    <div class="flex items-center justify-between gap-4 px-6 lg:px-8 py-4">
+      <div class="flex items-center gap-4">
+        <button onclick="toggleSidebar()" class="md:hidden text-on-surface">
+          <span class="material-symbols-outlined">menu</span>
         </button>
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl signature-gradient flex items-center justify-center">
+            <span class="material-symbols-outlined text-on-primary filled" style="font-size:20px;">auto_awesome</span>
+          </div>
+          <div>
+            <h2 class="font-headline font-bold text-on-surface" style="font-size:20px;line-height:26px;">Assistant</h2>
+            <p class="font-body text-on-surface-variant" style="font-size:11px;">Your admin co-pilot</p>
+          </div>
+        </div>
       </div>
-      <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white font-headline font-bold text-sm">DA</div>
+      <span class="sparkle-badge">
+        <span class="material-symbols-outlined" style="font-size:10px;">bolt</span>Beta
+      </span>
     </div>
-  </div>
-</header>
+  </header>
 
   <!-- CONTENT -->
-  <div class="flex-1 overflow-y-auto pb-8">
-    <div class="p-6 lg:p-8">
-      <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+  <main class="flex-1 flex flex-col px-6 lg:px-8 pb-6">
+    <div class="chat-container w-full">
 
-        <!-- LEFT: CONTROLS -->
-        <div class="lg:col-span-5 flex flex-col gap-7">
+      <!-- MESSAGES -->
+      <div id="messages" class="messages"></div>
 
-          <div>
-            <div class="relative inline-block">
-              <h2 class="text-3xl lg:text-4xl font-headline font-extrabold text-text-dark tracking-tight">Generate the Word</h2>
-              <div class="absolute -bottom-1.5 left-0 w-16 h-1 bg-gold rounded-full"></div>
-            </div>
-            <p class="text-text-muted font-body text-sm mt-4 leading-relaxed">
-              AI-generated scripture and faith quotes. Review, edit and publish directly to your soldiers.
-            </p>
-          </div>
-
-          <!-- Control Panel -->
-          <div class="bg-card-bg rounded-2xl p-6 flex flex-col gap-6 shadow-card border border-border-soft">
-
-            <!-- Theme -->
-            <div class="flex flex-col gap-2">
-              <label class="text-xs font-bold text-text-muted uppercase tracking-widest">Theme or Topic</label>
-              <input id="themeInput" type="text" class="w-full bg-surface border-b-2 border-border-soft focus:border-primary py-3 px-1 font-body text-sm text-text-dark placeholder:text-text-light focus:outline-none transition-all" placeholder="e.g. Strength in difficult seasons...">
-            </div>
-
-            <!-- Quick Theme Pills -->
-            <div class="flex flex-col gap-3">
-              <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest">Quick Themes</span>
-              <div class="flex flex-wrap gap-2">
-                <button onclick="selectTheme(this,'Hope')" class="theme-pill px-3 py-1.5 rounded-full bg-cream text-text-muted text-xs font-bold border border-border-soft hover:bg-primary hover:text-white transition-all">Hope</button>
-                <button onclick="selectTheme(this,'Courage')" class="theme-pill px-3 py-1.5 rounded-full bg-cream text-text-muted text-xs font-bold border border-border-soft hover:bg-primary hover:text-white transition-all">Courage</button>
-                <button onclick="selectTheme(this,'Love')" class="theme-pill px-3 py-1.5 rounded-full bg-cream text-text-muted text-xs font-bold border border-border-soft hover:bg-primary hover:text-white transition-all">Love</button>
-                <button onclick="selectTheme(this,'Grace')" class="theme-pill px-3 py-1.5 rounded-full bg-cream text-text-muted text-xs font-bold border border-border-soft hover:bg-primary hover:text-white transition-all">Grace</button>
-                <button onclick="selectTheme(this,'Faith')" class="theme-pill px-3 py-1.5 rounded-full bg-cream text-text-muted text-xs font-bold border border-border-soft hover:bg-primary hover:text-white transition-all">Faith</button>
-                <button onclick="selectTheme(this,'Healing')" class="theme-pill px-3 py-1.5 rounded-full bg-cream text-text-muted text-xs font-bold border border-border-soft hover:bg-primary hover:text-white transition-all">Healing</button>
-                <button onclick="selectTheme(this,'Peace')" class="theme-pill px-3 py-1.5 rounded-full bg-cream text-text-muted text-xs font-bold border border-border-soft hover:bg-primary hover:text-white transition-all">Peace</button>
-                <button onclick="selectTheme(this,'Strength')" class="theme-pill px-3 py-1.5 rounded-full bg-cream text-text-muted text-xs font-bold border border-border-soft hover:bg-primary hover:text-white transition-all">Strength</button>
-              </div>
-            </div>
-
-            <!-- Tone -->
-            <div class="flex flex-col gap-2">
-              <label class="text-xs font-bold text-text-muted uppercase tracking-widest">Tone</label>
-              <select id="toneSelect" class="w-full bg-surface border border-border-soft rounded-xl py-2.5 px-3 font-body text-sm text-text-dark focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer">
-                <option>Comforting</option><option>Urgent</option><option>Celebratory</option><option>Reflective</option><option>Challenging</option>
-              </select>
-            </div>
-
-            <!-- Generate Button -->
-            <button id="generateBtn" onclick="generateQuotes()" class="w-full py-4 tactical-gradient text-white font-headline font-bold text-base rounded-xl shadow-tactical hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3">
-              <span id="genIcon" class="material-symbols-outlined filled text-gold text-[20px]">auto_awesome</span>
-              <span id="genLabel">Generate Quotes</span>
-            </button>
-
-            <div class="bg-primary/6 rounded-xl border border-primary/15 px-4 py-3 flex items-center gap-3">
-              <span class="material-symbols-outlined text-primary text-[18px] filled flex-shrink-0">info</span>
-              <p class="text-[11px] text-text-muted leading-relaxed">
-                <span class="font-bold text-primary">Note:</span> AI generates sample quotes locally. Connect OpenAI API for real AI generation.
-              </p>
-            </div>
-          </div>
-
+      <!-- INPUT AREA -->
+      <div class="pt-4">
+        <div class="input-area">
+          <input id="userInput" type="text" class="input-field" placeholder="Ask me something, or try a suggestion above..." onkeydown="if(event.key==='Enter'){event.preventDefault();sendMessage()}">
+          <button onclick="sendMessage()" id="sendBtn" class="send-btn" disabled>
+            <span class="material-symbols-outlined" style="font-size:20px;">arrow_upward</span>
+          </button>
         </div>
-
-        <!-- RIGHT: RESULTS -->
-        <div class="lg:col-span-7 flex flex-col gap-5">
-
-          <div class="flex justify-between items-center">
-            <div class="flex items-center gap-3">
-              <h2 class="text-xl lg:text-2xl font-headline font-bold text-text-dark">Generated Quotes</h2>
-              <span id="resultCount" class="px-2.5 py-1 rounded-lg bg-cream text-text-muted text-[10px] font-bold border border-border-soft">0</span>
-            </div>
-            <button onclick="generateQuotes()" class="text-xs font-bold text-primary flex items-center gap-1.5 hover:underline">
-              <span class="material-symbols-outlined text-[16px]">refresh</span> Regenerate
-            </button>
-          </div>
-
-          <!-- Loading -->
-          <div id="loadingState" class="hidden space-y-4">
-            <div class="result-card bg-card-bg rounded-2xl p-6 border border-border-soft">
-              <div class="shimmer h-4 w-24 rounded-lg mb-4"></div>
-              <div class="shimmer h-5 w-full rounded-lg mb-2"></div>
-              <div class="shimmer h-5 w-4/5 rounded-lg mb-2"></div>
-              <div class="shimmer h-5 w-3/5 rounded-lg mb-4"></div>
-              <div class="shimmer h-4 w-32 rounded-lg"></div>
-            </div>
-            <div class="result-card bg-card-bg rounded-2xl p-6 border border-border-soft">
-              <div class="shimmer h-4 w-24 rounded-lg mb-4"></div>
-              <div class="shimmer h-5 w-full rounded-lg mb-2"></div>
-              <div class="shimmer h-5 w-3/4 rounded-lg mb-4"></div>
-              <div class="shimmer h-4 w-32 rounded-lg"></div>
-            </div>
-          </div>
-
-          <!-- Results List -->
-          <div id="resultsList" class="space-y-4">
-            <div class="text-center py-16 text-text-light">
-              <span class="material-symbols-outlined text-[48px] text-text-light/40">auto_awesome</span>
-              <p class="mt-3 text-sm">Enter a theme and click Generate to create quotes</p>
-            </div>
-          </div>
-
-        </div>
-
+        <p class="font-body text-outline text-center mt-2" style="font-size:11px;">
+          Try: <em>"schedule 4 faith quotes"</em>, <em>"fill next 4 weeks"</em>, <em>"create a Christmas campaign"</em>
+        </p>
       </div>
-    </div>
-  </div>
 
-</div>
-
-<!-- SCHEDULE MODAL -->
-<div id="scheduleModal" class="hidden fixed inset-0 bg-dark/60 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-  <div class="bg-card-bg rounded-2xl p-7 max-w-md w-full shadow-lifted">
-    <div class="flex items-center justify-between mb-5">
-      <h3 class="font-headline font-bold text-xl text-text-dark">Schedule This Quote</h3>
-      <button onclick="closeScheduleModal()" class="text-text-light hover:text-text-muted"><span class="material-symbols-outlined">close</span></button>
     </div>
-
-    <div id="schedulePreview" class="bg-cream rounded-xl p-4 mb-5 border-l-4 border-gold">
-      <p id="scheduleQuoteText" class="font-headline font-bold text-sm text-text-dark italic leading-relaxed"></p>
-      <p id="scheduleQuoteRef" class="text-xs text-primary font-bold mt-2"></p>
-    </div>
-
-    <div class="space-y-4 mb-6">
-      <div>
-        <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-1.5">Publish Date & Time</label>
-        <input id="scheduleDate" type="datetime-local" class="w-full bg-surface border border-border-soft rounded-xl px-4 py-3 font-body text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-      </div>
-      <div>
-        <label class="text-xs font-bold text-text-muted uppercase tracking-widest block mb-1.5">Category</label>
-        <select id="scheduleCategory" class="w-full bg-surface border border-border-soft rounded-xl px-4 py-3 font-body text-sm focus:outline-none focus:ring-2 focus:ring-primary appearance-none">
-          <option>Faith</option><option>Hope</option><option>Courage</option><option>Wisdom</option><option>Healing</option><option>Strength</option><option>Love</option><option>Peace</option><option>Mission</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="flex gap-3">
-      <button onclick="closeScheduleModal()" class="flex-1 py-3 border-2 border-border-soft text-text-muted font-bold rounded-xl hover:bg-cream transition-all">Cancel</button>
-      <button onclick="confirmSchedule()" class="flex-1 py-3 tactical-gradient text-white font-bold rounded-xl shadow-tactical hover:scale-[1.02] transition-transform">Schedule</button>
-    </div>
-  </div>
+  </main>
 </div>
 
 <!-- TOAST -->
-<div id="toast" class="hidden fixed top-6 right-6 z-[60] bg-primary text-white px-5 py-3.5 rounded-2xl shadow-lifted flex items-center gap-3 max-w-sm">
-  <span class="material-symbols-outlined text-gold text-[20px] filled">check_circle</span>
-  <p id="toastMsg" class="text-sm font-bold font-body"></p>
+<div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-3 rounded-full shadow-float items-center gap-2" style="font-size:13px;">
+  <span class="material-symbols-outlined text-primary-container" style="font-size:16px;">check_circle</span>
+  <span id="toastMsg"></span>
 </div>
 
 <script>
-  // ---- SUPABASE ----
-  const { createClient } = supabase
-  const db = createClient(
-    'https://nhymadutuhpjgkiurify.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+var supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+)
+
+var currentUser = null
+var messageHistory = []
+var availableCategories = []
+var isProcessing = false
+
+// ════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════
+async function checkAdminAuth() {
+  try {
+    var result = null
+    for (var attempt = 0; attempt < 3; attempt++) {
+      result = await supabaseClient.auth.getSession()
+      if (result.data && result.data.session) break
+      await new Promise(function(r) { setTimeout(r, 300) })
+    }
+    if (!result.data || !result.data.session) {
+      try {
+        var refreshed = await supabaseClient.auth.refreshSession()
+        if (refreshed.data && refreshed.data.session) result = refreshed
+      } catch(e) {}
+    }
+    if (!result.data || !result.data.session) { window.location.href = 'login.html'; return false }
+
+    currentUser = result.data.session.user
+    var p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single()
+    if (p.error) { showToast('Connection error'); setTimeout(function() { window.location.reload() }, 1500); return false }
+    if (!p.data) { window.location.href = 'login.html'; return false }
+    if (p.data.role !== 'admin') { window.location.href = '../app/index.html'; return false }
+
+    var email = currentUser.email || ''
+    var initials = '?'
+    if (p.data.full_name) {
+      var parts = p.data.full_name.trim().split(' ')
+      initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : parts[0].substring(0,2).toUpperCase()
+    } else if (email) { initials = email.substring(0,2).toUpperCase() }
+    document.querySelectorAll('.admin-initials').forEach(function(el) { el.textContent = initials })
+    document.querySelectorAll('.admin-name').forEach(function(el) { el.textContent = p.data.full_name || email })
+
+    // Store first name for greeting
+    if (p.data.full_name) {
+      window.adminFirstName = p.data.full_name.trim().split(' ')[0]
+    } else {
+      window.adminFirstName = 'Admin'
+    }
+
+    return true
+  } catch(e) {
+    console.error('Auth error:', e)
+    showToast('Error')
+    setTimeout(function() { window.location.reload() }, 1500)
+    return false
+  }
+}
+
+function toggleSidebar() {
+  var s = document.getElementById('sidebar'), o = document.getElementById('sidebarOverlay')
+  s.classList.toggle('hidden'); s.classList.toggle('flex'); o.classList.toggle('hidden')
+}
+
+async function handleLogout() {
+  try { await supabaseClient.auth.signOut() } catch(e) {}
+  window.location.href = 'login.html'
+}
+
+// ════════════════════════════════════════════
+// LOAD CATEGORIES (for parser)
+// ════════════════════════════════════════════
+async function loadCategories() {
+  var result = await supabaseClient.from('quotes').select('category').not('category', 'is', null)
+  var cats = {}
+  if (result.data) {
+    result.data.forEach(function(q) {
+      if (q.category) cats[q.category.toLowerCase()] = q.category
+    })
+  }
+  availableCategories = Object.values(cats)
+}
+
+// ════════════════════════════════════════════
+// GREETING MESSAGE
+// ════════════════════════════════════════════
+function showGreeting() {
+  var name = window.adminFirstName || 'Admin'
+  addAssistantMessage(
+    'Hi ' + name + ', I\'m your admin assistant. I can help you schedule quotes, fill your calendar, or launch a campaign — all while you focus on the bigger picture.',
+    buildQuickActions()
   )
+}
 
-  // ---- STATE ----
-  let generatedQuotes = []
-  let scheduleQuoteData = null
+function buildQuickActions() {
+  return '<div class="action-card">'
+    + '<p class="font-body text-on-surface-variant mb-3" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Quick Actions</p>'
+    + '<div class="grid grid-cols-1 gap-2">'
+      + '<button class="qa-btn" onclick="askAction(\'schedule_theme\')">'
+        + '<div class="qa-icon"><span class="material-symbols-outlined" style="font-size:18px;">event</span></div>'
+        + '<div class="flex-1 min-w-0">'
+          + '<p class="font-headline font-semibold text-on-surface" style="font-size:13px;">Schedule quotes on a theme</p>'
+          + '<p class="font-body text-on-surface-variant" style="font-size:11px;">Pick a category and I\'ll schedule some for you</p>'
+        + '</div>'
+      + '</button>'
+      + '<button class="qa-btn" onclick="askAction(\'fill_empty\')">'
+        + '<div class="qa-icon"><span class="material-symbols-outlined" style="font-size:18px;">event_available</span></div>'
+        + '<div class="flex-1 min-w-0">'
+          + '<p class="font-headline font-semibold text-on-surface" style="font-size:13px;">Fill empty calendar days</p>'
+          + '<p class="font-body text-on-surface-variant" style="font-size:11px;">I\'ll find gaps and suggest quotes to fill them</p>'
+        + '</div>'
+      + '</button>'
+      + '<button class="qa-btn" onclick="askAction(\'create_campaign\')">'
+        + '<div class="qa-icon"><span class="material-symbols-outlined" style="font-size:18px;">campaign</span></div>'
+        + '<div class="flex-1 min-w-0">'
+          + '<p class="font-headline font-semibold text-on-surface" style="font-size:13px;">Create a themed campaign</p>'
+          + '<p class="font-body text-on-surface-variant" style="font-size:11px;">Launch a series of quotes around a theme</p>'
+        + '</div>'
+      + '</button>'
+    + '</div>'
+    + '</div>'
+}
 
-  // ---- SIDEBAR ----
-  function toggleSidebar() {
-    const s = document.getElementById('sidebar'), o = document.getElementById('sidebarOverlay')
-    s.classList.toggle('hidden'); s.classList.toggle('flex'); o.classList.toggle('hidden')
+// ════════════════════════════════════════════
+// MESSAGE RENDERING
+// ════════════════════════════════════════════
+function addUserMessage(text) {
+  var messages = document.getElementById('messages')
+  var msg = document.createElement('div')
+  msg.className = 'msg msg-user fade-up'
+  msg.innerHTML = '<div class="msg-bubble">' + escapeHtml(text) + '</div>'
+  messages.appendChild(msg)
+  scrollToBottom()
+}
+
+function addAssistantMessage(text, extraHtml) {
+  var messages = document.getElementById('messages')
+  var msg = document.createElement('div')
+  msg.className = 'msg msg-assistant fade-up'
+
+  var bubble = '<div class="flex items-start gap-2">'
+    + '<div class="msg-avatar signature-gradient"><span class="material-symbols-outlined text-on-primary filled" style="font-size:16px;">auto_awesome</span></div>'
+    + '<div class="flex-1 min-w-0">'
+      + '<div class="msg-bubble">' + text + '</div>'
+      + (extraHtml || '')
+    + '</div>'
+  + '</div>'
+
+  msg.innerHTML = bubble
+  messages.appendChild(msg)
+  scrollToBottom()
+  return msg
+}
+
+function addLoadingMessage() {
+  var messages = document.getElementById('messages')
+  var msg = document.createElement('div')
+  msg.className = 'msg msg-assistant fade-up'
+  msg.id = 'loadingMsg'
+  msg.innerHTML =
+    '<div class="flex items-start gap-2">'
+      + '<div class="msg-avatar signature-gradient"><span class="material-symbols-outlined text-on-primary filled" style="font-size:16px;">auto_awesome</span></div>'
+      + '<div class="msg-bubble"><div class="loading-dots"><span></span><span></span><span></span></div></div>'
+    + '</div>'
+  messages.appendChild(msg)
+  scrollToBottom()
+}
+
+function removeLoadingMessage() {
+  var el = document.getElementById('loadingMsg')
+  if (el) el.remove()
+}
+
+function scrollToBottom() {
+  var messages = document.getElementById('messages')
+  setTimeout(function() { messages.scrollTop = messages.scrollHeight }, 50)
+}
+
+// ════════════════════════════════════════════
+// INPUT + PARSER
+// ════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function() {
+  var input = document.getElementById('userInput')
+  var btn = document.getElementById('sendBtn')
+  input.addEventListener('input', function() {
+    btn.disabled = !input.value.trim() || isProcessing
+  })
+})
+
+async function sendMessage() {
+  var input = document.getElementById('userInput')
+  var text = input.value.trim()
+  if (!text || isProcessing) return
+
+  input.value = ''
+  document.getElementById('sendBtn').disabled = true
+
+  isProcessing = true
+  addUserMessage(text)
+
+  addLoadingMessage()
+  await new Promise(function(r) { setTimeout(r, 600) })
+  removeLoadingMessage()
+
+  // Parse intent
+  var intent = parseIntent(text)
+  await handleIntent(intent, text)
+
+  isProcessing = false
+  document.getElementById('userInput').focus()
+}
+
+function parseIntent(text) {
+  var t = text.toLowerCase()
+  var intent = {
+    action: null,
+    count: null,
+    theme: null,
+    weeks: null,
+    campaignName: null
   }
 
-  // ---- THEME PILLS ----
-  function selectTheme(btn, theme) {
-    document.querySelectorAll('.theme-pill').forEach(p => {
-      p.classList.remove('active', 'bg-primary', 'text-white')
-      p.classList.add('bg-cream', 'text-text-muted')
-    })
-    btn.classList.add('active', 'bg-primary', 'text-white')
-    btn.classList.remove('bg-cream', 'text-text-muted')
-    document.getElementById('themeInput').value = theme
-  }
+  // Detect action verb
+  if (/\b(schedule|queue|plan|add)\b/.test(t)) intent.action = 'schedule_theme'
+  else if (/\b(fill|complete|populate|empty)\b/.test(t) && /\b(day|week|calendar|schedule|gap)\b/.test(t)) intent.action = 'fill_empty'
+  else if (/\b(campaign|series|collection|theme|set)\b/.test(t) && /\b(create|launch|new|make|start|build)\b/.test(t)) intent.action = 'create_campaign'
+  else if (/\b(create|launch|new|make|start|build)\b/.test(t) && /\b(campaign|series)\b/.test(t)) intent.action = 'create_campaign'
 
-  // ---- SAMPLE QUOTE DATABASE (until OpenAI connected) ----
-  const sampleQuotes = {
-    Hope: [
-      { text: "For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you, plans to give you hope and a future.", source: "Jeremiah 29:11" },
-      { text: "May the God of hope fill you with all joy and peace as you trust in him, so that you may overflow with hope by the power of the Holy Spirit.", source: "Romans 15:13" },
-      { text: "But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary.", source: "Isaiah 40:31" },
-    ],
-    Courage: [
-      { text: "Have I not commanded you? Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go.", source: "Joshua 1:9" },
-      { text: "The Lord is my light and my salvation — whom shall I fear? The Lord is the stronghold of my life — of whom shall I be afraid?", source: "Psalm 27:1" },
-      { text: "Be on your guard; stand firm in the faith; be courageous; be strong.", source: "1 Corinthians 16:13" },
-    ],
-    Love: [
-      { text: "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.", source: "John 3:16" },
-      { text: "And now these three remain: faith, hope and love. But the greatest of these is love.", source: "1 Corinthians 13:13" },
-      { text: "Dear friends, let us love one another, for love comes from God. Everyone who loves has been born of God and knows God.", source: "1 John 4:7" },
-    ],
-    Faith: [
-      { text: "Now faith is confidence in what we hope for and assurance about what we do not see.", source: "Hebrews 11:1" },
-      { text: "For we live by faith, not by sight.", source: "2 Corinthians 5:7" },
-      { text: "Trust in the Lord with all your heart and lean not on your own understanding.", source: "Proverbs 3:5" },
-    ],
-    Grace: [
-      { text: "For it is by grace you have been saved, through faith — and this is not from yourselves, it is the gift of God.", source: "Ephesians 2:8" },
-      { text: "But he said to me, 'My grace is sufficient for you, for my power is made perfect in weakness.'", source: "2 Corinthians 12:9" },
-      { text: "The Lord is gracious and compassionate, slow to anger and rich in love.", source: "Psalm 145:8" },
-    ],
-    Healing: [
-      { text: "He heals the brokenhearted and binds up their wounds.", source: "Psalm 147:3" },
-      { text: "But I will restore you to health and heal your wounds, declares the Lord.", source: "Jeremiah 30:17" },
-      { text: "Come to me, all you who are weary and burdened, and I will give you rest.", source: "Matthew 11:28" },
-    ],
-    Peace: [
-      { text: "Peace I leave with you; my peace I give you. I do not give to you as the world gives. Do not let your hearts be troubled and do not be afraid.", source: "John 14:27" },
-      { text: "The Lord gives strength to his people; the Lord blesses his people with peace.", source: "Psalm 29:11" },
-      { text: "And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.", source: "Philippians 4:7" },
-    ],
-    Strength: [
-      { text: "I can do all this through him who gives me strength.", source: "Philippians 4:13" },
-      { text: "The Lord is my strength and my shield; my heart trusts in him, and he helps me.", source: "Psalm 28:7" },
-      { text: "God is our refuge and strength, an ever-present help in trouble.", source: "Psalm 46:1" },
-    ],
-  }
+  // Extract number
+  var numMatch = t.match(/(\d+)/)
+  if (numMatch) intent.count = parseInt(numMatch[1])
 
-  // ---- GENERATE ----
-  function generateQuotes() {
-    const theme = document.getElementById('themeInput').value.trim() || 'Faith'
-    const icon = document.getElementById('genIcon')
-    const label = document.getElementById('genLabel')
-    const loading = document.getElementById('loadingState')
-    const results = document.getElementById('resultsList')
+  // Extract weeks specifically
+  var weekMatch = t.match(/(\d+)\s*(week|wk)/)
+  if (weekMatch) intent.weeks = parseInt(weekMatch[1])
 
-    // Loading state
-    results.classList.add('hidden')
-    loading.classList.remove('hidden')
-    icon.classList.add('spin')
-    label.textContent = 'Generating...'
+  // "next N weeks"
+  var nextWeeks = t.match(/next\s+(\d+)\s*(week|wk)/)
+  if (nextWeeks) intent.weeks = parseInt(nextWeeks[1])
 
-    setTimeout(() => {
-      // Get quotes for theme (fallback to Faith)
-      const themeKey = Object.keys(sampleQuotes).find(k => k.toLowerCase() === theme.toLowerCase()) || 'Faith'
-      generatedQuotes = [...(sampleQuotes[themeKey] || sampleQuotes.Faith)]
-
-      // Shuffle
-      generatedQuotes.sort(() => Math.random() - 0.5)
-
-      loading.classList.add('hidden')
-      results.classList.remove('hidden')
-      icon.classList.remove('spin')
-      label.textContent = 'Generate Quotes'
-
-      renderResults()
-      showToast(generatedQuotes.length + ' quotes generated for "' + theme + '"')
-    }, 1500)
-  }
-
-  // ---- RENDER RESULTS ----
-  function renderResults() {
-    const container = document.getElementById('resultsList')
-    container.innerHTML = ''
-
-    document.getElementById('resultCount').textContent = generatedQuotes.length + ' RESULTS'
-
-    generatedQuotes.forEach((q, i) => {
-      const card = document.createElement('div')
-      card.className = 'card-dismiss result-card bg-card-bg rounded-2xl p-6 shadow-natural border border-border-soft hover:shadow-lifted transition-all'
-
-      card.innerHTML = `
-        <div class="flex justify-between items-start mb-4">
-          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-[10px] font-bold">
-            <span class="material-symbols-outlined text-[13px] filled">check_circle</span> SCRIPTURE
-          </span>
-        </div>
-        <blockquote class="font-headline font-bold text-base lg:text-lg text-text-dark leading-relaxed mb-4">
-          "${q.text}"
-        </blockquote>
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-border-soft">
-          <cite class="text-sm font-medium text-text-muted not-italic italic">— ${q.source}</cite>
-          <div class="flex items-center gap-2 flex-wrap">
-            <button onclick="dismissCard(this)" class="p-2 rounded-xl hover:bg-action/10 text-text-light hover:text-action transition-all" title="Dismiss">
-              <span class="material-symbols-outlined text-[18px]">close</span>
-            </button>
-            <button onclick="useAsDraft(${i})" class="px-4 py-2 bg-cream text-text-dark text-xs font-bold rounded-xl border border-border-soft hover:bg-surface transition-all">
-              Save Draft
-            </button>
-            <button onclick="publishNow(${i})" class="px-4 py-2 tactical-gradient text-white text-xs font-bold rounded-xl hover:scale-[1.02] transition-all shadow-tactical">
-              Publish Now
-            </button>
-            <button onclick="openScheduleModal(${i})" class="px-4 py-2 bg-gold text-white text-xs font-bold rounded-xl hover:scale-[1.02] transition-all">
-              Schedule
-            </button>
-          </div>
-        </div>
-      `
-
-      container.appendChild(card)
-    })
-  }
-
-  // ---- SAVE AS DRAFT ----
-  async function useAsDraft(index) {
-    const q = generatedQuotes[index]
-    if (!q) return
-
-    const theme = document.getElementById('themeInput').value.trim() || 'Faith'
-    const category = Object.keys(sampleQuotes).find(k => k.toLowerCase() === theme.toLowerCase()) || 'Faith'
-
-    const { error } = await db.from('quotes').insert([{
-      text: q.text,
-      source: q.source,
-      category: category,
-      status: 'draft',
-    }])
-
-    if (error) { showToast('Error: ' + error.message); return }
-
-    showToast('Saved as draft!')
-    dismissCardByIndex(index)
-  }
-
-  // ---- PUBLISH NOW ----
-  async function publishNow(index) {
-    const q = generatedQuotes[index]
-    if (!q) return
-
-    const theme = document.getElementById('themeInput').value.trim() || 'Faith'
-    const category = Object.keys(sampleQuotes).find(k => k.toLowerCase() === theme.toLowerCase()) || 'Faith'
-
-    const { error } = await db.from('quotes').insert([{
-      text: q.text,
-      source: q.source,
-      category: category,
-      status: 'live',
-      published_at: new Date().toISOString(),
-    }])
-
-    if (error) { showToast('Error: ' + error.message); return }
-
-    showToast('Quote published! Live now for soldiers.')
-    dismissCardByIndex(index)
-  }
-
-  // ---- SCHEDULE ----
-  function openScheduleModal(index) {
-    const q = generatedQuotes[index]
-    if (!q) return
-
-    scheduleQuoteData = { ...q, index: index }
-    document.getElementById('scheduleQuoteText').textContent = '"' + q.text.substring(0, 120) + '..."'
-    document.getElementById('scheduleQuoteRef').textContent = '— ' + q.source
-
-    // Set default date to tomorrow 9am
-    const tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    tomorrow.setHours(9, 0, 0, 0)
-    document.getElementById('scheduleDate').value = tomorrow.toISOString().substring(0, 16)
-
-    const theme = document.getElementById('themeInput').value.trim() || 'Faith'
-    const category = Object.keys(sampleQuotes).find(k => k.toLowerCase() === theme.toLowerCase()) || 'Faith'
-    document.getElementById('scheduleCategory').value = category
-
-    document.getElementById('scheduleModal').classList.remove('hidden')
-    document.body.style.overflow = 'hidden'
-  }
-
-  function closeScheduleModal() {
-    document.getElementById('scheduleModal').classList.add('hidden')
-    document.body.style.overflow = ''
-    scheduleQuoteData = null
-  }
-
-  async function confirmSchedule() {
-    if (!scheduleQuoteData) return
-
-    const date = document.getElementById('scheduleDate').value
-    const category = document.getElementById('scheduleCategory').value
-
-    if (!date) { showToast('Please select a date and time'); return }
-
-    const { error } = await db.from('quotes').insert([{
-      text: scheduleQuoteData.text,
-      source: scheduleQuoteData.source,
-      category: category,
-      status: 'scheduled',
-      scheduled_for: date,
-    }])
-
-    if (error) { showToast('Error: ' + error.message); return }
-
-    const dateStr = new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-    showToast('Scheduled for ' + dateStr)
-
-    dismissCardByIndex(scheduleQuoteData.index)
-    closeScheduleModal()
-  }
-
-  document.getElementById('scheduleModal').addEventListener('click', function(e) { if (e.target === this) closeScheduleModal() })
-
-  // ---- DISMISS ----
-  function dismissCard(btn) {
-    const card = btn.closest('.card-dismiss')
-    card.classList.add('dismissed')
-    setTimeout(() => { card.remove(); updateCount() }, 300)
-  }
-
-  function dismissCardByIndex(index) {
-    const cards = document.querySelectorAll('.card-dismiss')
-    if (cards[index]) {
-      cards[index].classList.add('dismissed')
-      setTimeout(() => { cards[index].remove(); updateCount() }, 300)
+  // Extract theme from known categories
+  for (var i = 0; i < availableCategories.length; i++) {
+    var cat = availableCategories[i]
+    if (t.indexOf(cat.toLowerCase()) > -1) {
+      intent.theme = cat
+      break
     }
   }
 
-  function updateCount() {
-    const count = document.querySelectorAll('.card-dismiss:not(.dismissed)').length
-    document.getElementById('resultCount').textContent = count + ' RESULTS'
+  // Extract campaign name (words between "campaign" and other keywords)
+  if (intent.action === 'create_campaign') {
+    // Try "campaign called X" or "X campaign"
+    var nameMatch = t.match(/(?:campaign\s+(?:called|named|for)\s+)([a-z0-9\s]+?)(?:\s+with|\s+for|$)/i)
+    if (nameMatch) intent.campaignName = nameMatch[1].trim()
+    else {
+      // "christmas campaign" pattern
+      var themeName = t.match(/([a-z]+)\s+campaign/i)
+      if (themeName && themeName[1] !== 'a' && themeName[1] !== 'the' && themeName[1] !== 'new') {
+        intent.campaignName = themeName[1].charAt(0).toUpperCase() + themeName[1].slice(1)
+      }
+    }
   }
-  // ---- LOGOUT ----
-async function handleLogout() {
-  await db.auth.signOut()
-  window.location.href = '../app/login.html'
-  }
-  // ---- TOAST ----
-  let toastTimer
-  function showToast(msg) {
-    const toast = document.getElementById('toast')
-    document.getElementById('toastMsg').textContent = msg
-    toast.classList.remove('hidden'); toast.classList.add('flex')
-    clearTimeout(toastTimer)
-    toastTimer = setTimeout(() => { toast.classList.add('hidden'); toast.classList.remove('flex') }, 3000)
-  }
-</script>
 
+  return intent
+}
+
+async function handleIntent(intent, originalText) {
+  if (intent.action === 'schedule_theme') {
+    await handleScheduleTheme(intent)
+  } else if (intent.action === 'fill_empty') {
+    await handleFillEmpty(intent)
+  } else if (intent.action === 'create_campaign') {
+    await handleCreateCampaign(intent)
+  } else {
+    // Unknown intent
+    addAssistantMessage(
+      'I\'m not sure what you\'d like me to do. Could you try one of the quick actions below, or rephrase using words like <em>schedule</em>, <em>fill</em>, or <em>campaign</em>?',
+      buildQuickActions()
+    )
+  }
+}
+
+// ════════════════════════════════════════════
+// QUICK ACTION HANDLERS
+// ════════════════════════════════════════════
+async function askAction(action) {
+  if (isProcessing) return
+
+  if (action === 'schedule_theme') {
+    addUserMessage('Schedule quotes on a theme')
+    isProcessing = true
+    addLoadingMessage()
+    await new Promise(function(r) { setTimeout(r, 400) })
+    removeLoadingMessage()
+    askForThemeAndCount()
+    isProcessing = false
+  } else if (action === 'fill_empty') {
+    addUserMessage('Fill empty calendar days')
+    isProcessing = true
+    addLoadingMessage()
+    await new Promise(function(r) { setTimeout(r, 400) })
+    removeLoadingMessage()
+    await handleFillEmpty({ weeks: 6 })
+    isProcessing = false
+  } else if (action === 'create_campaign') {
+    addUserMessage('Create a themed campaign')
+    isProcessing = true
+    addLoadingMessage()
+    await new Promise(function(r) { setTimeout(r, 400) })
+    removeLoadingMessage()
+    askForCampaignDetails()
+    isProcessing = false
+  }
+}
+
+function askForThemeAndCount() {
+  var chipsHtml = '<div class="action-card">'
+    + '<p class="font-body text-on-surface-variant mb-2" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Pick a theme</p>'
+    + '<div class="flex flex-wrap gap-2 mb-3">'
+  availableCategories.forEach(function(cat) {
+    chipsHtml += '<span class="chip" onclick="selectTheme(\'' + cat + '\')">' + escapeHtml(cat) + '</span>'
+  })
+  chipsHtml += '</div>'
+    + '<p class="font-body text-on-surface-variant mb-2" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">How many quotes?</p>'
+    + '<div class="flex flex-wrap gap-2">'
+    + '<span class="chip" onclick="selectCount(3)">3 quotes</span>'
+    + '<span class="chip" onclick="selectCount(5)">5 quotes</span>'
+    + '<span class="chip" onclick="selectCount(7)">7 quotes (1 week)</span>'
+    + '<span class="chip" onclick="selectCount(14)">14 quotes (2 weeks)</span>'
+    + '</div>'
+  + '</div>'
+
+  addAssistantMessage('Which theme would you like to schedule?', chipsHtml)
+  window.pendingSchedule = { theme: null, count: null }
+}
+
+function selectTheme(theme) {
+  if (isProcessing) return
+  window.pendingSchedule = window.pendingSchedule || {}
+  window.pendingSchedule.theme = theme
+  addUserMessage(theme)
+  if (window.pendingSchedule.count) {
+    handleScheduleTheme({ theme: theme, count: window.pendingSchedule.count })
+  } else {
+    addAssistantMessage('Great — <strong>' + escapeHtml(theme) + '</strong>. How many quotes would you like to schedule?',
+      '<div class="action-card"><div class="flex flex-wrap gap-2">'
+        + '<span class="chip" onclick="selectCount(3)">3</span>'
+        + '<span class="chip" onclick="selectCount(5)">5</span>'
+        + '<span class="chip" onclick="selectCount(7)">7 (1 week)</span>'
+        + '<span class="chip" onclick="selectCount(14)">14 (2 weeks)</span>'
+      + '</div></div>')
+  }
+}
+
+function selectCount(n) {
+  if (isProcessing) return
+  window.pendingSchedule = window.pendingSchedule || {}
+  window.pendingSchedule.count = n
+  addUserMessage(n + ' quotes')
+  if (window.pendingSchedule.theme) {
+    handleScheduleTheme({ theme: window.pendingSchedule.theme, count: n })
+  } else {
+    askForThemeAndCount()
+  }
+}
+
+// ════════════════════════════════════════════
+// TASK: SCHEDULE N QUOTES ON THEME
+// ════════════════════════════════════════════
+async function handleScheduleTheme(intent) {
+  if (isProcessing) return
+  isProcessing = true
+
+  // If missing pieces, ask
+  if (!intent.theme && !intent.count) {
+    askForThemeAndCount()
+    isProcessing = false
+    return
+  }
+  if (!intent.theme) {
+    addAssistantMessage('I need to know the theme. Which category should I use?',
+      buildCategoryChips())
+    window.pendingSchedule = { count: intent.count }
+    isProcessing = false
+    return
+  }
+  if (!intent.count) {
+    addAssistantMessage('How many <strong>' + escapeHtml(intent.theme) + '</strong> quotes should I schedule?',
+      '<div class="action-card"><div class="flex flex-wrap gap-2">'
+        + '<span class="chip" onclick="selectCount(3)">3</span>'
+        + '<span class="chip" onclick="selectCount(5)">5</span>'
+        + '<span class="chip" onclick="selectCount(7)">7 (1 week)</span>'
+        + '<span class="chip" onclick="selectCount(14)">14 (2 weeks)</span>'
+      + '</div></div>')
+    window.pendingSchedule = { theme: intent.theme }
+    isProcessing = false
+    return
+  }
+
+  addLoadingMessage()
+
+  // Find available (unscheduled/archived) quotes matching theme
+  var quotesResult = await supabaseClient
+    .from('quotes')
+    .select('*')
+    .eq('category', intent.theme)
+    .in('status', ['archived', 'draft'])
+    .limit(50)
+
+  var availableQuotes = quotesResult.data || []
+
+  // Also include live quotes not currently used (unlikely case)
+  if (availableQuotes.length < intent.count) {
+    var allTheme = await supabaseClient
+      .from('quotes')
+      .select('*')
+      .eq('category', intent.theme)
+      .limit(50)
+    if (allTheme.data) {
+      allTheme.data.forEach(function(q) {
+        if (q.status === 'archived' || q.status === 'draft') return
+        if (availableQuotes.find(function(x) { return x.id === q.id })) return
+        // Only add if not already scheduled or currently live
+        if (q.status !== 'scheduled' && q.status !== 'live') availableQuotes.push(q)
+      })
+    }
+  }
+
+  // Find empty dates in next 6 weeks
+  var emptyDates = await findEmptyDates(42)
+
+  removeLoadingMessage()
+
+  if (availableQuotes.length === 0) {
+    addAssistantMessage(
+      'I couldn\'t find any unscheduled <strong>' + escapeHtml(intent.theme) + '</strong> quotes in your library. You\'d need to create some first, or choose a different theme.',
+      '<div class="action-card"><a href="quotes.html" class="qa-btn"><div class="qa-icon"><span class="material-symbols-outlined" style="font-size:18px;">add</span></div><div><p class="font-headline font-semibold text-on-surface" style="font-size:13px;">Create ' + escapeHtml(intent.theme) + ' quote</p></div></a></div>'
+    )
+    isProcessing = false
+    return
+  }
+
+  if (emptyDates.length === 0) {
+    addAssistantMessage(
+      'Your next 6 weeks are fully scheduled — no empty days to fill. You\'d need to extend your runway further out first.'
+    )
+    isProcessing = false
+    return
+  }
+
+  var count = Math.min(intent.count, availableQuotes.length, emptyDates.length)
+  var selectedQuotes = availableQuotes.slice(0, count)
+  var selectedDates = emptyDates.slice(0, count)
+
+  // Store proposal
+  window.pendingProposal = {
+    type: 'schedule',
+    quotes: selectedQuotes,
+    dates: selectedDates
+  }
+
+  // Build proposal card
+  var proposalHtml = '<div class="action-card">'
+    + '<p class="font-body font-semibold text-on-surface mb-3" style="font-size:12px;">I found <strong>' + count + '</strong> ' + escapeHtml(intent.theme) + ' quote' + (count !== 1 ? 's' : '') + ' and <strong>' + count + '</strong> empty day' + (count !== 1 ? 's' : '') + '. Here\'s my plan:</p>'
+
+  for (var i = 0; i < count; i++) {
+    var q = selectedQuotes[i]
+    var d = selectedDates[i]
+    var dateLabel = new Date(d).toLocaleDateString('en-AU', { weekday: 'short', month: 'short', day: 'numeric' })
+    proposalHtml += '<div class="preview-quote">'
+      + '<div class="flex items-center gap-2 mb-1">'
+        + '<span class="font-body font-bold text-primary" style="font-size:10px;">' + dateLabel + '</span>'
+        + '<span class="font-body text-outline" style="font-size:10px;">·</span>'
+        + '<span class="font-body text-outline" style="font-size:10px;">' + escapeHtml(q.source || '') + '</span>'
+      + '</div>'
+      + '<p class="font-body text-on-surface" style="font-size:12px;line-height:16px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">"' + escapeHtml(q.text || '') + '"</p>'
+    + '</div>'
+  }
+
+  proposalHtml += '<div class="flex gap-2 mt-3">'
+    + '<button onclick="confirmSchedule()" class="flex-1 py-2.5 signature-gradient text-on-primary font-headline font-semibold rounded-lg active:scale-[0.98] transition-transform" style="font-size:12px;">Schedule All</button>'
+    + '<button onclick="cancelProposal()" class="px-4 py-2.5 bg-white text-on-surface-variant font-body font-semibold rounded-lg" style="font-size:12px;">Cancel</button>'
+    + '</div>'
+    + '</div>'
+
+  addAssistantMessage('Here\'s what I recommend:', proposalHtml)
+
+  if (availableQuotes.length < intent.count) {
+    addAssistantMessage(
+      '<span class="font-body text-on-surface-variant" style="font-size:12px;">Heads up: you asked for <strong>' + intent.count + '</strong> but I only found <strong>' + count + '</strong> available ' + escapeHtml(intent.theme) + ' quote' + (count !== 1 ? 's' : '') + '. You may want to create more first.</span>'
+    )
+  }
+
+  isProcessing = false
+}
+
+async function confirmSchedule() {
+  if (!window.pendingProposal || window.pendingProposal.type !== 'schedule') return
+  if (isProcessing) return
+  isProcessing = true
+
+  var quotes = window.pendingProposal.quotes
+  var dates = window.pendingProposal.dates
+
+  addUserMessage('Schedule all')
+  addLoadingMessage()
+
+  var success = 0
+  var errors = 0
+
+  for (var i = 0; i < quotes.length; i++) {
+    var q = quotes[i]
+    var d = dates[i]
+    // Convert to AEST 5:30 AM (default) then UTC
+    var utcDate = new Date(d + 'T05:30:00+10:00')
+    var utcIso = utcDate.toISOString()
+
+    var r = await supabaseClient.from('quotes').update({
+      status: 'scheduled',
+      scheduled_for: utcIso,
+      published_at: null
+    }).eq('id', q.id)
+
+    if (r.error) errors++
+    else success++
+  }
+
+  removeLoadingMessage()
+
+  if (success > 0) {
+    addAssistantMessage(
+      '<span class="font-body text-primary" style="font-size:14px;">✓ Done!</span> I\'ve scheduled <strong>' + success + '</strong> quote' + (success !== 1 ? 's' : '') + '.' + (errors > 0 ? ' (' + errors + ' failed)' : ''),
+      '<div class="action-card">'
+        + '<div class="success-card">'
+          + '<div class="flex items-center gap-2 mb-1">'
+            + '<span class="material-symbols-outlined text-primary filled" style="font-size:18px;">check_circle</span>'
+            + '<p class="font-headline font-bold text-on-surface" style="font-size:13px;">' + success + ' quote' + (success !== 1 ? 's' : '') + ' scheduled</p>'
+          + '</div>'
+          + '<p class="font-body text-on-surface-variant" style="font-size:11px;">You can view or adjust these on the schedule page.</p>'
+        + '</div>'
+        + '<div class="flex gap-2 mt-2">'
+          + '<a href="schedule.html" class="flex-1 py-2 bg-white text-primary font-body font-semibold rounded-lg text-center" style="font-size:12px;">View Schedule</a>'
+          + '<button onclick="showGreeting()" class="flex-1 py-2 bg-white text-primary font-body font-semibold rounded-lg" style="font-size:12px;">Another Task</button>'
+        + '</div>'
+      + '</div>'
+    )
+  } else {
+    addAssistantMessage('Something went wrong — no quotes were scheduled. Please try again or check the schedule page.')
+  }
+
+  window.pendingProposal = null
+  isProcessing = false
+}
+
+// ════════════════════════════════════════════
+// TASK: FILL EMPTY DAYS
+// ════════════════════════════════════════════
+async function handleFillEmpty(intent) {
+  isProcessing = true
+  addLoadingMessage()
+
+  var weeks = intent.weeks || 6
+  var days = weeks * 7
+
+  // Find available quotes (any category)
+  var quotesResult = await supabaseClient
+    .from('quotes')
+    .select('*')
+    .in('status', ['archived', 'draft'])
+    .limit(100)
+
+  var availableQuotes = quotesResult.data || []
+
+  // Shuffle for variety
+  availableQuotes.sort(function() { return Math.random() - 0.5 })
+
+  var emptyDates = await findEmptyDates(days)
+
+  removeLoadingMessage()
+
+  if (emptyDates.length === 0) {
+    addAssistantMessage(
+      '<span class="font-body text-primary" style="font-size:14px;">✓</span> Your next <strong>' + weeks + '</strong> week' + (weeks !== 1 ? 's' : '') + ' are already fully scheduled. You\'re in great shape!'
+    )
+    isProcessing = false
+    return
+  }
+
+  if (availableQuotes.length === 0) {
+    addAssistantMessage(
+      'I found <strong>' + emptyDates.length + '</strong> empty day' + (emptyDates.length !== 1 ? 's' : '') + ' in the next ' + weeks + ' weeks, but no unscheduled quotes in your library to fill them.',
+      '<div class="action-card"><a href="quotes.html" class="qa-btn"><div class="qa-icon"><span class="material-symbols-outlined" style="font-size:18px;">add</span></div><div><p class="font-headline font-semibold text-on-surface" style="font-size:13px;">Create a new quote</p></div></a></div>'
+    )
+    isProcessing = false
+    return
+  }
+
+  var count = Math.min(emptyDates.length, availableQuotes.length)
+  var selectedQuotes = availableQuotes.slice(0, count)
+  var selectedDates = emptyDates.slice(0, count)
+
+  window.pendingProposal = {
+    type: 'schedule',
+    quotes: selectedQuotes,
+    dates: selectedDates
+  }
+
+  // Group by category for the preview
+  var categoryCounts = {}
+  selectedQuotes.forEach(function(q) {
+    var c = q.category || 'Uncategorized'
+    categoryCounts[c] = (categoryCounts[c] || 0) + 1
+  })
+
+  var mixHtml = ''
+  Object.keys(categoryCounts).forEach(function(c) {
+    mixHtml += '<span class="chip">' + escapeHtml(c) + ' (' + categoryCounts[c] + ')</span>'
+  })
+
+  var proposalHtml = '<div class="action-card">'
+    + '<p class="font-body font-semibold text-on-surface mb-2" style="font-size:12px;">I found <strong>' + emptyDates.length + '</strong> empty day' + (emptyDates.length !== 1 ? 's' : '') + ' in the next ' + weeks + ' weeks. I can fill <strong>' + count + '</strong> with a mix:</p>'
+    + '<div class="flex flex-wrap gap-2 mb-3">' + mixHtml + '</div>'
+
+  // Preview first 5
+  var previewCount = Math.min(count, 5)
+  proposalHtml += '<p class="font-body text-on-surface-variant mb-2" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Preview (first ' + previewCount + ')</p>'
+  for (var i = 0; i < previewCount; i++) {
+    var q = selectedQuotes[i]
+    var d = selectedDates[i]
+    var dateLabel = new Date(d).toLocaleDateString('en-AU', { weekday: 'short', month: 'short', day: 'numeric' })
+    proposalHtml += '<div class="preview-quote">'
+      + '<div class="flex items-center gap-2 mb-1">'
+        + '<span class="font-body font-bold text-primary" style="font-size:10px;">' + dateLabel + '</span>'
+        + '<span class="font-body text-outline" style="font-size:10px;">·</span>'
+        + '<span class="font-body text-outline" style="font-size:10px;">' + escapeHtml(q.category || '') + '</span>'
+      + '</div>'
+      + '<p class="font-body text-on-surface" style="font-size:12px;line-height:16px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">"' + escapeHtml(q.text || '') + '"</p>'
+    + '</div>'
+  }
+
+  if (count > previewCount) {
+    proposalHtml += '<p class="font-body text-outline text-center mt-2" style="font-size:11px;">+ ' + (count - previewCount) + ' more</p>'
+  }
+
+  proposalHtml += '<div class="flex gap-2 mt-3">'
+    + '<button onclick="confirmSchedule()" class="flex-1 py-2.5 signature-gradient text-on-primary font-headline font-semibold rounded-lg active:scale-[0.98] transition-transform" style="font-size:12px;">Fill Calendar</button>'
+    + '<button onclick="cancelProposal()" class="px-4 py-2.5 bg-white text-on-surface-variant font-body font-semibold rounded-lg" style="font-size:12px;">Cancel</button>'
+    + '</div>'
+    + '</div>'
+
+  addAssistantMessage('Here\'s my plan:', proposalHtml)
+
+  if (emptyDates.length > count) {
+    addAssistantMessage(
+      '<span class="font-body text-on-surface-variant" style="font-size:12px;">You have <strong>' + (emptyDates.length - count) + '</strong> more empty day' + ((emptyDates.length - count) !== 1 ? 's' : '') + ' but I ran out of available quotes. Consider creating more.</span>'
+    )
+  }
+
+  isProcessing = false
+}
+
+// ════════════════════════════════════════════
+// TASK: CREATE CAMPAIGN
+// ════════════════════════════════════════════
+function askForCampaignDetails() {
+  addAssistantMessage(
+    'Let\'s create a campaign! What theme or name?',
+    '<div class="action-card">'
+      + '<div class="flex flex-wrap gap-2 mb-3">'
+        + '<span class="chip" onclick="selectCampaignName(\'Christmas\')">Christmas</span>'
+        + '<span class="chip" onclick="selectCampaignName(\'Easter\')">Easter</span>'
+        + '<span class="chip" onclick="selectCampaignName(\'New Beginnings\')">New Beginnings</span>'
+        + '<span class="chip" onclick="selectCampaignName(\'Healing\')">Healing</span>'
+        + '<span class="chip" onclick="selectCampaignName(\'Recovery\')">Recovery</span>'
+      + '</div>'
+      + '<p class="font-body text-outline" style="font-size:11px;">Or type your own name in the input below.</p>'
+    + '</div>'
+  )
+  window.pendingCampaign = {}
+}
+
+function selectCampaignName(name) {
+  if (isProcessing) return
+  window.pendingCampaign = window.pendingCampaign || {}
+  window.pendingCampaign.name = name
+  addUserMessage(name)
+  handleCreateCampaign({ campaignName: name, count: 7 })
+}
+
+async function handleCreateCampaign(intent) {
+  if (isProcessing) return
+  isProcessing = true
+
+  if (!intent.campaignName) {
+    askForCampaignDetails()
+    isProcessing = false
+    return
+  }
+
+  var count = intent.count || 7
+  addLoadingMessage()
+
+  // Find matching category by name (fuzzy match)
+  var themeMatch = null
+  var lowerName = intent.campaignName.toLowerCase()
+  for (var i = 0; i < availableCategories.length; i++) {
+    if (availableCategories[i].toLowerCase() === lowerName) {
+      themeMatch = availableCategories[i]
+      break
+    }
+  }
+
+  // Get available quotes (matching category first, then any)
+  var availableQuotes = []
+  if (themeMatch) {
+    var themeResult = await supabaseClient
+      .from('quotes')
+      .select('*')
+      .eq('category', themeMatch)
+      .in('status', ['archived', 'draft'])
+      .limit(50)
+    availableQuotes = themeResult.data || []
+  }
+
+  if (availableQuotes.length < count) {
+    var allResult = await supabaseClient
+      .from('quotes')
+      .select('*')
+      .in('status', ['archived', 'draft'])
+      .limit(100)
+    if (allResult.data) {
+      allResult.data.forEach(function(q) {
+        if (availableQuotes.find(function(x) { return x.id === q.id })) return
+        availableQuotes.push(q)
+      })
+    }
+  }
+
+  var emptyDates = await findEmptyDates(42)
+
+  removeLoadingMessage()
+
+  if (availableQuotes.length === 0) {
+    addAssistantMessage(
+      'I couldn\'t find enough available quotes for a <strong>' + escapeHtml(intent.campaignName) + '</strong> campaign. Please create some quotes first.',
+      '<div class="action-card"><a href="quotes.html" class="qa-btn"><div class="qa-icon"><span class="material-symbols-outlined" style="font-size:18px;">add</span></div><div><p class="font-headline font-semibold text-on-surface" style="font-size:13px;">Create quotes</p></div></a></div>'
+    )
+    isProcessing = false
+    return
+  }
+
+  if (emptyDates.length === 0) {
+    addAssistantMessage(
+      'Your next 6 weeks are fully scheduled — I can\'t fit a campaign into them.'
+    )
+    isProcessing = false
+    return
+  }
+
+  var actualCount = Math.min(count, availableQuotes.length, emptyDates.length)
+  var selectedQuotes = availableQuotes.slice(0, actualCount)
+  var selectedDates = emptyDates.slice(0, actualCount)
+
+  window.pendingProposal = {
+    type: 'campaign',
+    name: intent.campaignName,
+    quotes: selectedQuotes,
+    dates: selectedDates
+  }
+
+  var proposalHtml = '<div class="action-card">'
+    + '<div class="flex items-center gap-2 mb-3">'
+      + '<div class="w-10 h-10 rounded-xl signature-gradient flex items-center justify-center">'
+        + '<span class="material-symbols-outlined text-on-primary filled" style="font-size:20px;">campaign</span>'
+      + '</div>'
+      + '<div>'
+        + '<p class="font-headline font-bold text-on-surface" style="font-size:14px;">' + escapeHtml(intent.campaignName) + ' Campaign</p>'
+        + '<p class="font-body text-on-surface-variant" style="font-size:11px;">' + actualCount + ' quotes across ' + actualCount + ' days</p>'
+      + '</div>'
+    + '</div>'
+    + '<p class="font-body text-on-surface" style="font-size:12px;line-height:18px;">I\'ll create a campaign called <strong>' + escapeHtml(intent.campaignName) + '</strong>, tag <strong>' + actualCount + '</strong> quote' + (actualCount !== 1 ? 's' : '') + ' to it, and schedule them starting from <strong>' + new Date(selectedDates[0]).toLocaleDateString('en-AU', { weekday: 'long', month: 'long', day: 'numeric' }) + '</strong>.</p>'
+    + '<div class="flex gap-2 mt-3">'
+      + '<button onclick="confirmCampaign()" class="flex-1 py-2.5 signature-gradient text-on-primary font-headline font-semibold rounded-lg active:scale-[0.98] transition-transform" style="font-size:12px;">Create & Schedule</button>'
+      + '<button onclick="cancelProposal()" class="px-4 py-2.5 bg-white text-on-surface-variant font-body font-semibold rounded-lg" style="font-size:12px;">Cancel</button>'
+    + '</div>'
+  + '</div>'
+
+  addAssistantMessage('Here\'s my proposal:', proposalHtml)
+  isProcessing = false
+}
+
+async function confirmCampaign() {
+  if (!window.pendingProposal || window.pendingProposal.type !== 'campaign') return
+  if (isProcessing) return
+  isProcessing = true
+
+  var name = window.pendingProposal.name
+  var quotes = window.pendingProposal.quotes
+  var dates = window.pendingProposal.dates
+
+  addUserMessage('Create the campaign')
+  addLoadingMessage()
+
+  // Create campaign
+  var campaignResult = await supabaseClient.from('campaigns').insert({
+    name: name,
+    description: 'Auto-created via Assistant',
+    color: '#3d6285',
+    icon: 'campaign',
+    status: 'active',
+    start_date: dates[0],
+    end_date: dates[dates.length - 1]
+  }).select().single()
+
+  if (campaignResult.error) {
+    removeLoadingMessage()
+    addAssistantMessage('Error creating campaign: ' + campaignResult.error.message)
+    isProcessing = false
+    return
+  }
+
+  var campaignId = campaignResult.data.id
+
+  // Update quotes with campaign_id + schedule
+  var success = 0
+  for (var i = 0; i < quotes.length; i++) {
+    var q = quotes[i]
+    var d = dates[i]
+    var utcDate = new Date(d + 'T05:30:00+10:00')
+
+    var r = await supabaseClient.from('quotes').update({
+      status: 'scheduled',
+      scheduled_for: utcDate.toISOString(),
+      published_at: null,
+      campaign_id: campaignId
+    }).eq('id', q.id)
+
+    if (!r.error) success++
+  }
+
+  removeLoadingMessage()
+
+  addAssistantMessage(
+    '<span class="font-body text-primary" style="font-size:14px;">✓ Done!</span> The <strong>' + escapeHtml(name) + '</strong> campaign is live with <strong>' + success + '</strong> scheduled quote' + (success !== 1 ? 's' : '') + '.',
+    '<div class="action-card">'
+      + '<div class="success-card">'
+        + '<div class="flex items-center gap-2 mb-1">'
+          + '<span class="material-symbols-outlined text-primary filled" style="font-size:18px;">check_circle</span>'
+          + '<p class="font-headline font-bold text-on-surface" style="font-size:13px;">Campaign created</p>'
+        + '</div>'
+        + '<p class="font-body text-on-surface-variant" style="font-size:11px;">First quote goes live ' + new Date(dates[0]).toLocaleDateString('en-AU', { weekday: 'long', month: 'long', day: 'numeric' }) + '</p>'
+      + '</div>'
+      + '<div class="flex gap-2 mt-2">'
+        + '<a href="campaigns.html" class="flex-1 py-2 bg-white text-primary font-body font-semibold rounded-lg text-center" style="font-size:12px;">View Campaign</a>'
+        + '<button onclick="showGreeting()" class="flex-1 py-2 bg-white text-primary font-body font-semibold rounded-lg" style="font-size:12px;">Another Task</button>'
+      + '</div>'
+    + '</div>'
+  )
+
+  window.pendingProposal = null
+  isProcessing = false
+}
+
+function cancelProposal() {
+  if (isProcessing) return
+  window.pendingProposal = null
+  addUserMessage('Cancel')
+  addAssistantMessage('No problem — nothing was scheduled. What else can I help with?', buildQuickActions())
+}
+
+// ════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════
+async function findEmptyDates(daysAhead) {
+  var now = new Date()
+  var scheduledResult = await supabaseClient
+    .from('quotes')
+    .select('scheduled_for, status')
+    .in('status', ['scheduled', 'live'])
+    .gte('scheduled_for', now.toISOString())
+
+  var busyDates = {}
+  if (scheduledResult.data) {
+    scheduledResult.data.forEach(function(q) {
+      if (q.scheduled_for) {
+        // Convert to AEST date key
+        var d = new Date(q.scheduled_for)
+        var aest = new Date(d.getTime() + (10 * 60 * 60 * 1000))
+        var key = aest.toISOString().split('T')[0]
+        busyDates[key] = true
+      }
+    })
+  }
+
+  var emptyDates = []
+  for (var i = 1; i <= daysAhead; i++) {
+    var d = new Date(now)
+    d.setDate(d.getDate() + i)
+    var aest = new Date(d.getTime() + (10 * 60 * 60 * 1000))
+    var key = aest.toISOString().split('T')[0]
+    if (!busyDates[key]) emptyDates.push(key)
+  }
+
+  return emptyDates
+}
+
+function buildCategoryChips() {
+  var html = '<div class="action-card"><div class="flex flex-wrap gap-2">'
+  availableCategories.forEach(function(cat) {
+    html += '<span class="chip" onclick="selectTheme(\'' + cat + '\')">' + escapeHtml(cat) + '</span>'
+  })
+  html += '</div></div>'
+  return html
+}
+
+function escapeHtml(str) {
+  if (!str) return ''
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')
+}
+
+var toastTimer
+function showToast(msg) {
+  var toast = document.getElementById('toast')
+  var toastMsg = document.getElementById('toastMsg')
+  if (!toast || !toastMsg) return
+  toastMsg.textContent = msg
+  toast.classList.remove('hidden')
+  toast.classList.add('flex')
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(function() {
+    toast.classList.add('hidden')
+    toast.classList.remove('flex')
+  }, 2500)
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+async function init() {
+  var isAdmin = await checkAdminAuth()
+  if (!isAdmin) return
+  await loadCategories()
+  showGreeting()
+}
+
+init()
+</script>
 </body>
 </html>
