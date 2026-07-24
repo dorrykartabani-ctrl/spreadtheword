@@ -561,181 +561,65 @@ var supabaseClient = supabase.createClient(
 )
 
 var currentUser = null
+var userProfile = null
 var allNotifications = []
-var readCountsMap = {}   // { notification_id: read_count }
-var totalUsersCache = 0
-var allProfiles = []     // for targeting estimation
-var currentCategory = 'broadcast'
-var currentSendMode = 'now'
-var expiryEnabled = false
-var editNotifId = null
-var confirmAction = null
+var readMap = {}       // { notification_id: { read_at, dismissed_at } }
 var currentFilter = 'all'
 
+// Category config
 var categoryConfig = {
-  broadcast: { icon: 'campaign', class: 'cat-broadcast', label: 'Broadcast' },
-  mission:   { icon: 'volunteer_activism', class: 'cat-mission', label: 'Mission' },
-  milestone: { icon: 'emoji_events', class: 'cat-milestone', label: 'Milestone' },
-  recruit:   { icon: 'group_add', class: 'cat-recruit', label: 'Recruit' },
-  system:    { icon: 'settings', class: 'cat-system', label: 'System' }
+  broadcast: { icon:'campaign',        iconClass:'filled', bg:'bg-primary-container/20', color:'text-primary',   label:'Announcement' },
+  milestone: { icon:'emoji_events',    iconClass:'filled', bg:'bg-secondary-container/20',color:'text-secondary', label:'Milestone' },
+  recruit:   { icon:'group_add',       iconClass:'filled', bg:'bg-primary-container/20', color:'text-primary',   label:'Recruit' },
+  mission:   { icon:'volunteer_activism',iconClass:'filled',bg:'bg-secondary-container/20',color:'text-secondary',label:'Mission' },
+  system:    { icon:'settings',        iconClass:'',       bg:'bg-surface-chigh',        color:'text-on-surface-variant', label:'System' },
 }
 
-var AUTOMATED_CATS = ['milestone', 'recruit', 'system']
+// Preference keys map to categories
+var prefMap = {
+  broadcast: 'notif_broadcasts',
+  milestone: 'notif_milestones',
+  recruit:   'notif_recruits',
+  mission:   'notif_missions',
+  system:    'notif_system'
+}
+
+var observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible') })
+}, {threshold:0.1})
 
 // ════════════════════════════════════════════
-// AUTH
+// INIT
 // ════════════════════════════════════════════
-async function checkAdminAuth() {
+async function init() {
   try {
-    var result = null
-    for (var attempt = 0; attempt < 3; attempt++) {
-      result = await supabaseClient.auth.getSession()
-      if (result.data && result.data.session) break
-      await new Promise(function(r) { setTimeout(r, 300) })
-    }
-    if (!result.data || !result.data.session) {
-      try {
-        var refreshed = await supabaseClient.auth.refreshSession()
-        if (refreshed.data && refreshed.data.session) result = refreshed
-      } catch(e) {}
-    }
-    if (!result.data || !result.data.session) { window.location.href = 'login.html'; return false }
+    var s = await supabaseClient.auth.getSession()
+    if (!s.data || !s.data.session) { window.location.href = 'login.html'; return }
+    currentUser = s.data.session.user
 
-    currentUser = result.data.session.user
-    var p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single()
-    if (p.error) { showToast('Connection error'); setTimeout(function() { window.location.reload() }, 1500); return false }
-    if (!p.data) { window.location.href = 'login.html'; return false }
-    if (p.data.role !== 'admin') { window.location.href = '../app/index.html'; return false }
+    var results = await Promise.allSettled([
+      supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single(),
+      supabaseClient.from('notifications').select('*').order('created_at', {ascending:false}).limit(100),
+      supabaseClient.from('notification_reads').select('*').eq('user_id', currentUser.id)
+    ])
 
-    var email = currentUser.email || ''
-    var initials = '?'
-    if (p.data.full_name) {
-      var parts = p.data.full_name.trim().split(' ')
-      initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : parts[0].substring(0,2).toUpperCase()
-    } else if (email) { initials = email.substring(0,2).toUpperCase() }
-    document.querySelectorAll('.admin-initials').forEach(function(el) { el.textContent = initials })
-    document.querySelectorAll('.admin-name').forEach(function(el) { el.textContent = p.data.full_name || email })
-    return true
-  } catch(e) { console.error(e); showToast('Error'); setTimeout(function() { window.location.reload() }, 1500); return false }
-}
+    userProfile = (results[0].status === 'fulfilled' && results[0].value.data) ? results[0].value.data : {}
+    var rawNotifs = (results[1].status === 'fulfilled' && results[1].value.data) ? results[1].value.data : []
+    var reads = (results[2].status === 'fulfilled' && results[2].value.data) ? results[2].value.data : []
 
-function toggleSidebar() {
-  var s = document.getElementById('sidebar'), o = document.getElementById('sidebarOverlay')
-  s.classList.toggle('hidden'); s.classList.toggle('flex'); o.classList.toggle('hidden')
-}
+    // Build read map
+    reads.forEach(function(r) {
+      readMap[r.notification_id] = { read_at: r.read_at, dismissed_at: r.dismissed_at }
+    })
 
-async function handleLogout() {
-  try { await supabaseClient.auth.signOut() } catch(e) {}
-  window.location.href = 'login.html'
-}
-
-// ════════════════════════════════════════════
-// AUTO-SEND SCHEDULED NOTIFICATIONS
-// ════════════════════════════════════════════
-async function autoSendScheduled() {
-  var nowIso = new Date().toISOString()
-  try {
-    await supabaseClient
-      .from('notifications')
-      .update({ status: 'sent', created_at: nowIso })
-      .eq('status', 'scheduled')
-      .lte('scheduled_for', nowIso)
-  } catch(e) { console.warn('Auto-send failed:', e) }
-}
-
-// ════════════════════════════════════════════
-// LOAD DATA
-// ════════════════════════════════════════════
-async function loadAll() {
-  await autoSendScheduled()
-
-  var results = await Promise.all([
-    supabaseClient.from('notifications').select('*').order('created_at', { ascending: false }),
-    supabaseClient.from('profiles').select('id, country, subscription_tier, deleted_at').is('deleted_at', null),
-    loadReadCounts()
-  ])
-
-  allNotifications = results[0].data || []
-  allProfiles = results[1].data || []
-  totalUsersCache = allProfiles.length
-
-  populateCountryFilter()
-  renderStats()
-  filterList(currentFilter)
-}
-
-async function loadReadCounts() {
-  var result = await supabaseClient.from('notification_reads').select('notification_id')
-  if (result.error || !result.data) return
-  readCountsMap = {}
-  result.data.forEach(function(r) {
-    readCountsMap[r.notification_id] = (readCountsMap[r.notification_id] || 0) + 1
-  })
-}
-
-function populateCountryFilter() {
-  var countries = {}
-  allProfiles.forEach(function(u) {
-    if (u.country && u.country.trim()) countries[u.country.trim()] = true
-  })
-  var sorted = Object.keys(countries).sort()
-  var select = document.getElementById('targetCountry')
-  select.innerHTML = '<option value="">All Countries</option>'
-  sorted.forEach(function(c) {
-    var opt = document.createElement('option')
-    opt.value = c
-    opt.textContent = c
-    select.appendChild(opt)
-  })
-}
-
-function renderStats() {
-  var now = new Date()
-  var weekAgo = new Date()
-  weekAgo.setDate(weekAgo.getDate() - 7)
-
-  var sent = allNotifications.filter(function(n) { return n.status === 'sent' || !n.status })
-  var scheduled = allNotifications.filter(function(n) { return n.status === 'scheduled' })
-  var thisWeek = sent.filter(function(n) { return new Date(n.created_at) >= weekAgo })
-
-  // Calculate average read rate (only for sent broadcasts with known reach)
-  var totalReads = 0
-  var totalReach = 0
-  sent.forEach(function(n) {
-    if (n.type === 'broadcast' || n.category === 'broadcast') {
-      totalReads += (readCountsMap[n.id] || 0)
-      totalReach += totalUsersCache
-    }
-  })
-  var readRate = totalReach > 0 ? Math.round((totalReads / totalReach) * 100) : 0
-
-  document.getElementById('statSent').textContent = sent.length
-  document.getElementById('statWeek').textContent = thisWeek.length
-  document.getElementById('statScheduled').textContent = scheduled.length
-  document.getElementById('statReadRate').textContent = readRate + '%'
-
-  document.getElementById('countAll').textContent = '(' + allNotifications.length + ')'
-}
-
-// ════════════════════════════════════════════
-// FILTER + RENDER LIST
-// ════════════════════════════════════════════
-function filterList(filter, btn) {
-  currentFilter = filter
-  document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active') })
-  if (btn) btn.classList.add('active')
-  else {
-    var b = document.querySelector('.filter-tab[onclick*="\'' + filter + '\'"]')
-    if (b) b.classList.add('active')
-  }
-
-     // Filter to relevant notifications
+    // Filter to relevant notifications
     allNotifications = rawNotifs.filter(function(n) {
-      // Must be for this user, a broadcast, or match target criteria
+      // Determine notification type
       var isBroadcast = n.type === 'broadcast' || n.category === 'broadcast'
       var isDirectMessage = n.target_user_id === currentUser.id
       var isMission = n.category === 'mission'
 
+      // Must be one of the above
       if (!isBroadcast && !isDirectMessage && !isMission) return false
 
       // Check expiry
@@ -749,7 +633,7 @@ function filterList(filter, btn) {
       if (!isDirectMessage && n.target_criteria) {
         var criteria = n.target_criteria
 
-        // Handle string vs object (Supabase sometimes returns JSONB as string)
+        // Handle JSONB returned as string
         if (typeof criteria === 'string') {
           try { criteria = JSON.parse(criteria) } catch(e) { criteria = {} }
         }
@@ -774,531 +658,444 @@ function filterList(filter, btn) {
       return true
     })
 
-function renderList(list) {
-  var container = document.getElementById('notifList')
-  var empty = document.getElementById('emptyState')
+    // Migrate old localStorage reads to DB (one-time)
+    await migrateLocalStorageReads()
 
-  if (list.length === 0) {
+    renderNotifications()
+    updateMarkAllButton()
+
+    setTimeout(function() {
+      document.querySelectorAll('.fade-up').forEach(function(el) { observer.observe(el) })
+    }, 50)
+
+    setupListeners()
+
+  } catch(e) {
+    console.error('[Notifications] Init error:', e)
+    showToast('Error loading notifications')
+  }
+}
+
+// ════════════════════════════════════════════
+// MIGRATE OLD LOCALSTORAGE READS
+// ════════════════════════════════════════════
+async function migrateLocalStorageReads() {
+  try {
+    var oldReads = JSON.parse(localStorage.getItem('gstw_read_notifs') || '[]')
+    if (oldReads.length === 0) return
+
+    var toInsert = []
+    oldReads.forEach(function(notifId) {
+      if (!readMap[notifId]) {
+        toInsert.push({
+          user_id: currentUser.id,
+          notification_id: notifId,
+          read_at: new Date().toISOString()
+        })
+        readMap[notifId] = { read_at: new Date().toISOString(), dismissed_at: null }
+      }
+    })
+
+    if (toInsert.length > 0) {
+      await supabaseClient.from('notification_reads').upsert(toInsert, { onConflict: 'user_id,notification_id' })
+    }
+
+    // Clear old localStorage
+    localStorage.removeItem('gstw_read_notifs')
+  } catch(e) {
+    console.error('Migration error:', e)
+  }
+}
+
+// ════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════
+function renderNotifications() {
+  var container = document.getElementById('notifContainer')
+  var emptyState = document.getElementById('emptyState')
+  if (!container) return
+
+  // Filter
+  var filtered = allNotifications
+  if (currentFilter === 'unread') {
+    filtered = allNotifications.filter(function(n) { return !readMap[n.id] || !readMap[n.id].read_at })
+  } else if (currentFilter !== 'all') {
+    filtered = allNotifications.filter(function(n) {
+      var cat = n.category || n.type || 'broadcast'
+      return cat === currentFilter
+    })
+  }
+
+  if (filtered.length === 0) {
     container.innerHTML = ''
-    empty.classList.remove('hidden')
+    if (emptyState) {
+      emptyState.classList.remove('hidden')
+      var icon = document.getElementById('emptyIcon')
+      var title = document.getElementById('emptyTitle')
+      var msg = document.getElementById('emptyMsg')
+
+      if (currentFilter === 'unread') {
+        if (icon) icon.textContent = 'done_all'
+        if (title) title.textContent = "You're all caught up"
+        if (msg) msg.textContent = 'No unread notifications'
+      } else if (currentFilter !== 'all') {
+        if (icon) icon.textContent = 'filter_list_off'
+        if (title) title.textContent = 'Nothing here'
+        if (msg) msg.textContent = 'No ' + currentFilter + ' notifications'
+      } else {
+        if (icon) icon.textContent = 'notifications_off'
+        if (title) title.textContent = "You're all caught up"
+        if (msg) msg.textContent = 'No notifications to show'
+      }
+    }
     return
   }
-  empty.classList.add('hidden')
+
+  if (emptyState) emptyState.classList.add('hidden')
+
+  // Group by time
+  var groups = groupByTime(filtered)
   container.innerHTML = ''
-  list.forEach(function(n) { container.appendChild(buildNotifRow(n)) })
-}
 
-function buildNotifRow(n) {
-  var category = n.category || n.type || 'broadcast'
-  var config = categoryConfig[category] || categoryConfig.broadcast
-  var isAutomated = AUTOMATED_CATS.includes(category)
+  Object.keys(groups).forEach(function(label) {
+    if (groups[label].length === 0) return
 
-  var statusBadge = ''
-  if (n.status === 'scheduled') {
-    statusBadge = '<span class="badge badge-scheduled">Scheduled</span>'
-  } else if (n.status === 'draft') {
-    statusBadge = '<span class="badge badge-draft">Draft</span>'
-  } else if (isAutomated) {
-    statusBadge = '<span class="badge badge-automated">Auto</span>'
-  } else {
-    statusBadge = '<span class="badge badge-sent">Sent</span>'
-  }
+    var sectionLabel = document.createElement('p')
+    sectionLabel.className = 'section-label font-body mt-4 first:mt-0'
+    sectionLabel.textContent = label
+    container.appendChild(sectionLabel)
 
-  var timeInfo = ''
-  if (n.status === 'scheduled' && n.scheduled_for) {
-    timeInfo = 'Sends ' + formatDateTime(n.scheduled_for)
-  } else if (n.status === 'draft') {
-    timeInfo = 'Created ' + timeAgo(n.created_at)
-  } else {
-    timeInfo = timeAgo(n.created_at)
-  }
-
-  var readCount = readCountsMap[n.id] || 0
-  var reach = (category === 'broadcast' || n.type === 'broadcast') ? totalUsersCache : 1
-  var readPct = reach > 0 ? Math.round((readCount / reach) * 100) : 0
-
-  var metricsHtml = ''
-  if (n.status === 'sent' || !n.status) {
-    if (category === 'broadcast' || n.type === 'broadcast') {
-      metricsHtml =
-        '<div class="mt-3">'
-          + '<div class="flex items-center justify-between mb-1">'
-            + '<span class="font-body text-outline" style="font-size:11px;">'
-              + readCount + ' of ~' + reach + ' read'
-            + '</span>'
-            + '<span class="font-body font-semibold text-primary" style="font-size:11px;">' + readPct + '%</span>'
-          + '</div>'
-          + '<div class="read-bar"><div class="read-fill" style="width:' + readPct + '%"></div></div>'
-        + '</div>'
-    }
-  }
-
-  // Target criteria display
-  var targetHtml = ''
-  if (n.target_criteria) {
-    var criteria = []
-    if (n.target_criteria.tier) criteria.push(capitalize(n.target_criteria.tier) + ' tier')
-    if (n.target_criteria.country) criteria.push(n.target_criteria.country)
-    if (criteria.length > 0) targetHtml = '<span class="font-body text-outline" style="font-size:11px;"><span class="material-symbols-outlined align-middle" style="font-size:11px;">group</span> ' + criteria.join(' · ') + '</span>'
-  }
-
-  var card = document.createElement('div')
-  card.className = 'notif-card fade-up cursor-pointer'
-  card.onclick = function() { openDetail(n.id) }
-
-  card.innerHTML =
-    '<div class="flex items-start gap-3">'
-      + '<div class="cat-icon ' + config.class + '">'
-        + '<span class="material-symbols-outlined filled" style="font-size:20px;">' + config.icon + '</span>'
-      + '</div>'
-      + '<div class="flex-1 min-w-0">'
-        + '<div class="flex items-start justify-between gap-2 mb-1">'
-          + '<div class="flex items-center gap-2 flex-wrap">'
-            + statusBadge
-            + '<span class="font-body text-on-surface-variant" style="font-size:11px;font-weight:500;">' + timeInfo + '</span>'
-          + '</div>'
-        + '</div>'
-        + '<p class="font-headline font-semibold text-on-surface mb-1" style="font-size:14px;line-height:20px;">' + escapeHtml(n.title || '') + '</p>'
-        + '<p class="font-body text-on-surface-variant" style="font-size:12px;line-height:18px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">' + escapeHtml(n.message || '') + '</p>'
-        + (targetHtml ? '<div class="mt-2">' + targetHtml + '</div>' : '')
-        + metricsHtml
-      + '</div>'
-    + '</div>'
-
-  return card
-}
-
-function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '' }
-
-// ════════════════════════════════════════════
-// COMPOSE MODAL
-// ════════════════════════════════════════════
-function openCompose(id) {
-  editNotifId = id || null
-  resetCompose()
-
-  document.getElementById('composeTitle').textContent = id ? 'Edit Notification' : 'New Notification'
-
-  if (id) {
-    var n = allNotifications.find(function(x) { return x.id === id })
-    if (!n) return
-
-    // Only allow editing drafts and scheduled
-    if (n.status !== 'draft' && n.status !== 'scheduled') {
-      showToast('Sent notifications cannot be edited')
-      return
-    }
-
-    document.getElementById('notifTitle').value = n.title || ''
-    document.getElementById('notifMessage').value = n.message || ''
-
-    setCategory(n.category || n.type || 'broadcast')
-
-    if (n.target_criteria) {
-      if (n.target_criteria.tier) document.getElementById('targetTier').value = n.target_criteria.tier
-      if (n.target_criteria.country) document.getElementById('targetCountry').value = n.target_criteria.country
-    }
-
-    if (n.expires_at) {
-      expiryEnabled = true
-      updateExpiryToggle()
-      document.getElementById('expiryDate').value = n.expires_at.split('T')[0]
-    }
-
-    if (n.status === 'scheduled' && n.scheduled_for) {
-      setSendMode('schedule')
-      var d = new Date(n.scheduled_for)
-      var aest = new Date(d.getTime() + (10 * 60 * 60 * 1000))
-      document.getElementById('scheduleDate').value = aest.toISOString().split('T')[0]
-      document.getElementById('scheduleTime').value = String(aest.getUTCHours()).padStart(2,'0') + ':' + String(aest.getUTCMinutes()).padStart(2,'0')
-    } else if (n.status === 'draft') {
-      setSendMode('draft')
-    }
-
-    updateTitleCount()
-    updateMsgCount()
-    updatePreview()
-    updateEstimate()
-  } else {
-    // Default schedule date to tomorrow
-    var tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    document.getElementById('scheduleDate').value = tomorrow.toISOString().split('T')[0]
-
-    // Default expiry date to 30 days
-    var expiry = new Date()
-    expiry.setDate(expiry.getDate() + 30)
-    document.getElementById('expiryDate').value = expiry.toISOString().split('T')[0]
-
-    updateEstimate()
-  }
-
-  document.getElementById('composeModal').classList.remove('hidden')
-  document.body.style.overflow = 'hidden'
-}
-
-function closeCompose() {
-  document.getElementById('composeModal').classList.add('hidden')
-  document.body.style.overflow = ''
-  editNotifId = null
-}
-
-function resetCompose() {
-  document.getElementById('notifTitle').value = ''
-  document.getElementById('notifMessage').value = ''
-  document.getElementById('targetTier').value = ''
-  document.getElementById('targetCountry').value = ''
-  document.getElementById('expiryDate').value = ''
-  document.getElementById('formError').classList.add('hidden')
-  currentCategory = 'broadcast'
-  currentSendMode = 'now'
-  expiryEnabled = false
-  setCategory('broadcast')
-  setSendMode('now')
-  updateExpiryToggle()
-  updateTitleCount()
-  updateMsgCount()
-  updatePreview()
-  updateEstimate()
-}
-
-function setCategory(cat) {
-  currentCategory = cat
-  document.querySelectorAll('.cat-btn').forEach(function(b) {
-    b.classList.toggle('active', b.dataset.cat === cat)
+    groups[label].forEach(function(notif) {
+      container.appendChild(buildNotifCard(notif))
+    })
   })
-  updatePreview()
+
+  // Update unread badge
+  updateUnreadBadge()
 }
 
-function setSendMode(mode) {
-  currentSendMode = mode
-  document.querySelectorAll('.send-card').forEach(function(c) {
-    c.classList.toggle('active', c.dataset.mode === mode)
+function groupByTime(notifs) {
+  var now = new Date()
+  var today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  var weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate() - 7)
+  var monthAgo = new Date(today); monthAgo.setDate(monthAgo.getDate() - 30)
+
+  var groups = { 'Today': [], 'This Week': [], 'This Month': [], 'Earlier': [] }
+
+  notifs.forEach(function(n) {
+    var d = new Date(n.created_at)
+    if (d >= today) groups['Today'].push(n)
+    else if (d >= weekAgo) groups['This Week'].push(n)
+    else if (d >= monthAgo) groups['This Month'].push(n)
+    else groups['Earlier'].push(n)
   })
-  document.getElementById('schedulePicker').classList.toggle('hidden', mode !== 'schedule')
 
-  var label = document.getElementById('submitLabel')
-  var icon = document.getElementById('submitIcon')
-  if (mode === 'now') { label.textContent = 'Send Now'; icon.textContent = 'send' }
-  else if (mode === 'schedule') { label.textContent = 'Schedule'; icon.textContent = 'schedule' }
-  else { label.textContent = 'Save Draft'; icon.textContent = 'drafts' }
-}
-
-function toggleExpiry() {
-  expiryEnabled = !expiryEnabled
-  updateExpiryToggle()
-}
-
-function updateExpiryToggle() {
-  document.getElementById('expiryToggle').classList.toggle('on', expiryEnabled)
-  document.getElementById('expirySection').classList.toggle('hidden', !expiryEnabled)
-}
-
-function updateTitleCount() {
-  var len = document.getElementById('notifTitle').value.length
-  var el = document.getElementById('titleCount')
-  el.textContent = len + ' / 80'
-  el.className = 'font-body ' + (len > 70 ? 'text-tertiary font-semibold' : 'text-outline')
-  el.style.fontSize = '11px'
-}
-
-function updateMsgCount() {
-  var len = document.getElementById('notifMessage').value.length
-  var el = document.getElementById('msgCount')
-  el.textContent = len + ' / 240'
-  el.className = 'font-body ' + (len > 220 ? 'text-tertiary font-semibold' : 'text-outline')
-  el.style.fontSize = '11px'
-}
-
-function updatePreview() {
-  var title = document.getElementById('notifTitle').value.trim() || 'Your title appears here'
-  var msg = document.getElementById('notifMessage').value.trim() || 'Your message body will appear here...'
-  var config = categoryConfig[currentCategory] || categoryConfig.broadcast
-
-  document.getElementById('previewTitle').textContent = title
-  document.getElementById('previewMsg').textContent = msg
-
-  var iconEl = document.getElementById('previewIcon')
-  iconEl.className = 'cat-icon ' + config.class
-  iconEl.querySelector('.material-symbols-outlined').textContent = config.icon
-}
-
-function updateEstimate() {
-  var tier = document.getElementById('targetTier').value
-  var country = document.getElementById('targetCountry').value
-
-  var count = allProfiles.filter(function(u) {
-    if (tier && (u.subscription_tier || 'free') !== tier) return false
-    if (country && u.country !== country) return false
-    return true
-  }).length
-
-  document.getElementById('estimateCount').textContent = count + ' user' + (count !== 1 ? 's' : '')
+  return groups
 }
 
 // ════════════════════════════════════════════
-// SUBMIT COMPOSE
+// BUILD CARD
 // ════════════════════════════════════════════
-async function submitCompose() {
-  var title = document.getElementById('notifTitle').value.trim()
-  var message = document.getElementById('notifMessage').value.trim()
-  var errorEl = document.getElementById('formError')
-  var errorMsg = document.getElementById('formErrorMsg')
+function buildNotifCard(notif) {
+  var isRead = readMap[notif.id] && readMap[notif.id].read_at
+  var category = notif.category || notif.type || 'broadcast'
+  var config = categoryConfig[category] || categoryConfig['broadcast']
+  var timeStr = timeAgo(notif.created_at)
 
-  errorEl.classList.add('hidden')
+  // Swipe container
+  var swipeContainer = document.createElement('div')
+  swipeContainer.className = 'notif-swipe-container fade-up'
+  swipeContainer.setAttribute('data-notif-id', notif.id)
 
-  if (!title) { errorMsg.textContent = 'Title is required'; errorEl.classList.remove('hidden'); return }
-  if (!message) { errorMsg.textContent = 'Message is required'; errorEl.classList.remove('hidden'); return }
+  // Dismiss background
+  var dismissBg = document.createElement('div')
+  dismissBg.className = 'notif-dismiss-bg'
+  dismissBg.innerHTML = '<span class="material-symbols-outlined text-on-tertiary text-[22px]">delete</span>'
 
-  var tier = document.getElementById('targetTier').value
-  var country = document.getElementById('targetCountry').value
-  var targetCriteria = {}
-  if (tier) targetCriteria.tier = tier
-  if (country) targetCriteria.country = country
-  var hasCriteria = Object.keys(targetCriteria).length > 0
+  // Content
+  var content = document.createElement('div')
+  content.className = 'notif-content notif-card ' + (isRead ? 'read' : 'unread')
+  content.setAttribute('data-notif-id', notif.id)
 
-  var status = 'sent'
-  var scheduledFor = null
-
-  if (currentSendMode === 'schedule') {
-    var d = document.getElementById('scheduleDate').value
-    var t = document.getElementById('scheduleTime').value || '09:00'
-    if (!d) { errorMsg.textContent = 'Please select a schedule date'; errorEl.classList.remove('hidden'); return }
-    var parts = d.split('-')
-    var timeParts = t.split(':')
-    var utcHours = parseInt(timeParts[0]) - 10
-    scheduledFor = new Date(Date.UTC(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]), utcHours, parseInt(timeParts[1]), 0)).toISOString()
-
-    // Check if past
-    if (new Date(scheduledFor) < new Date()) {
-      errorMsg.textContent = 'Schedule time is in the past'
-      errorEl.classList.remove('hidden')
-      return
-    }
-
-    status = 'scheduled'
-  } else if (currentSendMode === 'draft') {
-    status = 'draft'
-  }
-
-  var expiresAt = null
-  if (expiryEnabled) {
-    var expDate = document.getElementById('expiryDate').value
-    if (expDate) expiresAt = new Date(expDate + 'T23:59:59').toISOString()
-  }
-
-  var btn = document.getElementById('submitBtn')
-  var icon = document.getElementById('submitIcon')
-  var label = document.getElementById('submitLabel')
-  icon.classList.add('spin')
-  icon.textContent = 'progress_activity'
-  label.textContent = 'Saving...'
-  btn.disabled = true
-
-  var data = {
-    title: title,
-    message: message,
-    type: currentCategory,      // legacy type field
-    category: currentCategory,  // new category field
-    status: status,
-    scheduled_for: scheduledFor,
-    expires_at: expiresAt,
-    target_criteria: hasCriteria ? targetCriteria : null,
-    sent_by: currentUser.id
-  }
-
-  var result = editNotifId
-    ? await supabaseClient.from('notifications').update(data).eq('id', editNotifId).select().single()
-    : await supabaseClient.from('notifications').insert(data).select().single()
-
-  icon.classList.remove('spin')
-  btn.disabled = false
-
-  if (result.error) {
-    icon.textContent = 'send'
-    label.textContent = 'Try Again'
-    errorMsg.textContent = 'Error: ' + result.error.message
-    errorEl.classList.remove('hidden')
-    return
-  }
-
-  var msg = status === 'sent' ? 'Notification sent' : status === 'scheduled' ? 'Scheduled successfully' : 'Draft saved'
-  showToast(msg)
-  closeCompose()
-  await loadAll()
-}
-
-async function sendTest() {
-  var title = document.getElementById('notifTitle').value.trim() || 'Test Notification'
-  var message = document.getElementById('notifMessage').value.trim() || 'This is a test message.'
-
-  var data = {
-    title: '[TEST] ' + title,
-    message: message,
-    type: currentCategory,
-    category: currentCategory,
-    status: 'sent',
-    target_user_id: currentUser.id,
-    sent_by: currentUser.id
-  }
-
-  var result = await supabaseClient.from('notifications').insert(data).select().single()
-  if (result.error) { showToast('Test failed: ' + result.error.message); return }
-  showToast('Test sent to yourself')
-}
-
-// ════════════════════════════════════════════
-// DETAIL MODAL
-// ════════════════════════════════════════════
-function openDetail(id) {
-  var n = allNotifications.find(function(x) { return x.id === id })
-  if (!n) return
-
-  var category = n.category || n.type || 'broadcast'
-  var config = categoryConfig[category] || categoryConfig.broadcast
-  var isAutomated = AUTOMATED_CATS.includes(category)
-  var readCount = readCountsMap[n.id] || 0
-  var reach = (category === 'broadcast' || n.type === 'broadcast') ? totalUsersCache : 1
-  var readPct = reach > 0 ? Math.round((readCount / reach) * 100) : 0
-
-  var statusBadge = ''
-  if (n.status === 'scheduled') statusBadge = '<span class="badge badge-scheduled">Scheduled</span>'
-  else if (n.status === 'draft') statusBadge = '<span class="badge badge-draft">Draft</span>'
-  else if (isAutomated) statusBadge = '<span class="badge badge-automated">Automated</span>'
-  else statusBadge = '<span class="badge badge-sent">Sent</span>'
-
-  var targetInfo = 'All users'
-  if (n.target_user_id) targetInfo = 'Specific user (test)'
-  else if (n.target_criteria) {
-    var criteria = []
-    if (n.target_criteria.tier) criteria.push(capitalize(n.target_criteria.tier) + ' tier')
-    if (n.target_criteria.country) criteria.push(n.target_criteria.country)
-    if (criteria.length > 0) targetInfo = criteria.join(' · ')
-  }
-
-  var content = document.getElementById('detailContent')
   content.innerHTML =
-    '<div class="flex items-center gap-3 mb-4">'
-      + '<div class="cat-icon ' + config.class + '">'
-        + '<span class="material-symbols-outlined filled" style="font-size:22px;">' + config.icon + '</span>'
+    '<div class="p-4 flex items-start gap-3">'
+      + '<div class="notif-icon ' + config.bg + '">'
+        + '<span class="material-symbols-outlined ' + config.color + ' text-[20px] ' + config.iconClass + '">' + config.icon + '</span>'
       + '</div>'
       + '<div class="flex-1 min-w-0">'
-        + statusBadge
-      + '</div>'
-    + '</div>'
-    + '<h4 class="font-headline font-bold text-on-surface mb-2" style="font-size:16px;line-height:22px;">' + escapeHtml(n.title || '') + '</h4>'
-    + '<p class="font-body text-on-surface-variant mb-4 leading-relaxed" style="font-size:13px;">' + escapeHtml(n.message || '') + '</p>'
-
-    + '<div class="bg-surface-clow rounded-xl p-4 space-y-2 mb-4">'
-      + '<div class="flex justify-between" style="font-size:12px;">'
-        + '<span class="font-body text-on-surface-variant">Category</span>'
-        + '<span class="font-body font-semibold text-on-surface">' + config.label + '</span>'
-      + '</div>'
-      + '<div class="flex justify-between" style="font-size:12px;">'
-        + '<span class="font-body text-on-surface-variant">Target</span>'
-        + '<span class="font-body font-semibold text-on-surface">' + escapeHtml(targetInfo) + '</span>'
-      + '</div>'
-      + '<div class="flex justify-between" style="font-size:12px;">'
-        + '<span class="font-body text-on-surface-variant">Created</span>'
-        + '<span class="font-body font-semibold text-on-surface">' + formatDateTime(n.created_at) + '</span>'
-      + '</div>'
-      + (n.scheduled_for ? '<div class="flex justify-between" style="font-size:12px;"><span class="font-body text-on-surface-variant">Scheduled for</span><span class="font-body font-semibold text-on-surface">' + formatDateTime(n.scheduled_for) + '</span></div>' : '')
-      + (n.expires_at ? '<div class="flex justify-between" style="font-size:12px;"><span class="font-body text-on-surface-variant">Expires</span><span class="font-body font-semibold text-on-surface">' + formatDateTime(n.expires_at) + '</span></div>' : '')
-    + '</div>'
-
-    + ((n.status === 'sent' || !n.status) && (category === 'broadcast' || n.type === 'broadcast')
-      ? '<div class="bg-primary-container/15 rounded-xl p-4">'
-          + '<p class="font-body text-primary mb-2" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Delivery Metrics</p>'
-          + '<div class="flex items-baseline gap-2 mb-2">'
-            + '<span class="font-headline font-bold text-primary" style="font-size:28px;">' + readPct + '%</span>'
-            + '<span class="font-body text-on-surface-variant" style="font-size:12px;">' + readCount + ' of ~' + reach + ' users read</span>'
+        + '<div class="flex items-start justify-between gap-2">'
+          + '<p class="font-headline font-semibold text-on-surface leading-tight" style="font-size:13px;">' + escapeHtml(notif.title) + '</p>'
+          + '<div class="flex items-center gap-2 flex-shrink-0">'
+            + '<span class="font-body text-outline" style="font-size:10px;">' + timeStr + '</span>'
+            + (!isRead ? '<div class="unread-dot"></div>' : '')
           + '</div>'
-          + '<div class="read-bar"><div class="read-fill" style="width:' + readPct + '%"></div></div>'
         + '</div>'
-      : '')
+        + '<p class="font-body text-on-surface-variant mt-1 leading-relaxed" style="font-size:12px;">' + escapeHtml(notif.message) + '</p>'
+        + '<span class="font-body text-outline mt-1.5 inline-block" style="font-size:10px;font-weight:500;">' + config.label + '</span>'
+      + '</div>'
+    + '</div>'
 
-  var actions = document.getElementById('detailActions')
-  var actionsHtml = ''
-
-  if (n.status === 'draft' || n.status === 'scheduled') {
-    actionsHtml += '<button onclick="closeDetail();openCompose(\'' + n.id + '\')" class="w-full py-3 signature-gradient text-on-primary font-headline font-semibold rounded-xl active:scale-[0.98] transition-transform flex items-center justify-center gap-2" style="font-size:13px;">'
-      + '<span class="material-symbols-outlined" style="font-size:18px;">edit</span>Edit'
-    + '</button>'
+  // Mark as read on view
+  if (!isRead) {
+    var observerRead = new IntersectionObserver(function(entries) {
+      if (entries[0].isIntersecting) {
+        markAsRead(notif.id)
+        observerRead.disconnect()
+      }
+    }, { threshold: 0.5 })
+    setTimeout(function() { observerRead.observe(swipeContainer) }, 1000)
   }
 
-  actionsHtml += '<button onclick="confirmDelete(\'' + n.id + '\')" class="w-full py-3 bg-tertiary/10 text-tertiary font-body font-semibold rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2" style="font-size:13px;">'
-    + '<span class="material-symbols-outlined" style="font-size:18px;">delete</span>Delete'
-  + '</button>'
+  swipeContainer.appendChild(dismissBg)
+  swipeContainer.appendChild(content)
 
-  actions.innerHTML = actionsHtml
+  // Setup swipe
+  setupSwipe(content, notif.id)
 
-  document.getElementById('detailModal').classList.remove('hidden')
-  document.body.style.overflow = 'hidden'
-}
-
-function closeDetail() {
-  document.getElementById('detailModal').classList.add('hidden')
-  document.body.style.overflow = ''
+  return swipeContainer
 }
 
 // ════════════════════════════════════════════
-// DELETE
+// SWIPE TO DISMISS
 // ════════════════════════════════════════════
-function confirmDelete(id) {
-  confirmAction = { type: 'delete', id: id }
-  document.getElementById('confirmTitle').textContent = 'Delete notification?'
-  document.getElementById('confirmMsg').textContent = 'This will permanently delete the notification and all read records.'
-  document.getElementById('confirmBtn').textContent = 'Delete'
-  document.getElementById('confirmModal').classList.remove('hidden')
-  document.body.style.overflow = 'hidden'
+function setupSwipe(el, notifId) {
+  var startX = 0, currentX = 0, isSwiping = false
+
+  el.addEventListener('touchstart', function(e) {
+    startX = e.touches[0].clientX
+    currentX = 0
+    isSwiping = true
+    el.classList.add('swiping')
+  }, { passive: true })
+
+  el.addEventListener('touchmove', function(e) {
+    if (!isSwiping) return
+    currentX = e.touches[0].clientX - startX
+    // Only allow left swipe
+    if (currentX > 0) currentX = 0
+    if (currentX < -120) currentX = -120
+    el.style.transform = 'translateX(' + currentX + 'px)'
+  }, { passive: true })
+
+  el.addEventListener('touchend', function() {
+    isSwiping = false
+    el.classList.remove('swiping')
+
+    if (currentX < -80) {
+      // Dismiss
+      el.classList.add('dismissed')
+      setTimeout(function() {
+        dismissNotification(notifId)
+      }, 300)
+    } else {
+      // Snap back
+      el.style.transform = 'translateX(0)'
+    }
+  })
+
+  // Mouse support for desktop
+  el.addEventListener('mousedown', function(e) {
+    startX = e.clientX; currentX = 0; isSwiping = true
+    el.classList.add('swiping')
+    e.preventDefault()
+  })
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isSwiping || !el.classList.contains('swiping')) return
+    currentX = e.clientX - startX
+    if (currentX > 0) currentX = 0
+    if (currentX < -120) currentX = -120
+    el.style.transform = 'translateX(' + currentX + 'px)'
+  })
+
+  document.addEventListener('mouseup', function() {
+    if (!isSwiping || !el.classList.contains('swiping')) return
+    isSwiping = false
+    el.classList.remove('swiping')
+    if (currentX < -80) {
+      el.classList.add('dismissed')
+      setTimeout(function() { dismissNotification(notifId) }, 300)
+    } else {
+      el.style.transform = 'translateX(0)'
+    }
+  })
 }
 
-function closeConfirm() {
-  document.getElementById('confirmModal').classList.add('hidden')
-  document.body.style.overflow = ''
-}
+// ════════════════════════════════════════════
+// READ / DISMISS ACTIONS
+// ════════════════════════════════════════════
+async function markAsRead(notifId) {
+  if (readMap[notifId] && readMap[notifId].read_at) return
 
-async function executeConfirm() {
-  if (!confirmAction) return
-  closeConfirm()
+  readMap[notifId] = readMap[notifId] || {}
+  readMap[notifId].read_at = new Date().toISOString()
 
-  if (confirmAction.type === 'delete') {
-    // Delete reads first
-    await supabaseClient.from('notification_reads').delete().eq('notification_id', confirmAction.id)
-    // Then delete notification
-    var r = await supabaseClient.from('notifications').delete().eq('id', confirmAction.id)
-    if (r.error) { showToast('Error: ' + r.error.message); return }
-    showToast('Notification deleted')
-    closeDetail()
-    await loadAll()
+  // Update UI immediately
+  var card = document.querySelector('.notif-content[data-notif-id="' + notifId + '"]')
+  if (card) {
+    card.classList.remove('unread')
+    card.classList.add('read')
+    var dot = card.querySelector('.unread-dot')
+    if (dot) dot.remove()
   }
-  confirmAction = null
+
+  updateUnreadBadge()
+  updateMarkAllButton()
+
+  // Save to DB
+  try {
+    await supabaseClient.from('notification_reads').upsert({
+      user_id: currentUser.id,
+      notification_id: notifId,
+      read_at: readMap[notifId].read_at
+    }, { onConflict: 'user_id,notification_id' })
+  } catch(e) { console.error('markAsRead error:', e) }
+}
+
+async function dismissNotification(notifId) {
+  readMap[notifId] = readMap[notifId] || {}
+  readMap[notifId].dismissed_at = new Date().toISOString()
+  if (!readMap[notifId].read_at) readMap[notifId].read_at = readMap[notifId].dismissed_at
+
+  // Remove from allNotifications
+  allNotifications = allNotifications.filter(function(n) { return n.id !== notifId })
+
+  // Remove from DOM
+  var container = document.querySelector('.notif-swipe-container[data-notif-id="' + notifId + '"]')
+  if (container) {
+    container.style.maxHeight = container.offsetHeight + 'px'
+    container.style.transition = 'max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease'
+    requestAnimationFrame(function() {
+      container.style.maxHeight = '0'
+      container.style.opacity = '0'
+      container.style.marginBottom = '0'
+      container.style.overflow = 'hidden'
+    })
+    setTimeout(function() {
+      if (container.parentNode) container.remove()
+      // Check if group label is now orphaned
+      cleanupEmptyGroups()
+    }, 350)
+  }
+
+  updateUnreadBadge()
+  updateMarkAllButton()
+
+  // Save to DB
+  try {
+    await supabaseClient.from('notification_reads').upsert({
+      user_id: currentUser.id,
+      notification_id: notifId,
+      read_at: readMap[notifId].read_at,
+      dismissed_at: readMap[notifId].dismissed_at
+    }, { onConflict: 'user_id,notification_id' })
+  } catch(e) { console.error('dismissNotification error:', e) }
+
+  showToast('Notification dismissed')
+}
+
+async function markAllRead() {
+  var unread = allNotifications.filter(function(n) { return !readMap[n.id] || !readMap[n.id].read_at })
+  if (unread.length === 0) return
+
+  var now = new Date().toISOString()
+  var toUpsert = []
+
+  unread.forEach(function(n) {
+    readMap[n.id] = readMap[n.id] || {}
+    readMap[n.id].read_at = now
+    toUpsert.push({
+      user_id: currentUser.id,
+      notification_id: n.id,
+      read_at: now
+    })
+  })
+
+  // Update UI
+  document.querySelectorAll('.notif-card.unread').forEach(function(card) {
+    card.classList.remove('unread')
+    card.classList.add('read')
+    var dot = card.querySelector('.unread-dot')
+    if (dot) dot.remove()
+  })
+
+  updateUnreadBadge()
+  updateMarkAllButton()
+  showToast('All marked as read')
+
+  // Save to DB
+  try {
+    await supabaseClient.from('notification_reads').upsert(toUpsert, { onConflict: 'user_id,notification_id' })
+  } catch(e) { console.error('markAllRead error:', e) }
+}
+
+// ════════════════════════════════════════════
+// CLEANUP
+// ════════════════════════════════════════════
+function cleanupEmptyGroups() {
+  var container = document.getElementById('notifContainer')
+  if (!container) return
+
+  var labels = container.querySelectorAll('.section-label')
+  labels.forEach(function(label) {
+    var next = label.nextElementSibling
+    // If next element is another label or doesn't exist, remove this label
+    if (!next || next.classList.contains('section-label')) {
+      label.remove()
+    }
+  })
+
+  // Check if completely empty
+  if (container.children.length === 0) {
+    document.getElementById('emptyState').classList.remove('hidden')
+  }
+}
+
+// ════════════════════════════════════════════
+// FILTER
+// ════════════════════════════════════════════
+function setFilter(filter, btn) {
+  currentFilter = filter
+  document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active') })
+  if (btn) btn.classList.add('active')
+  renderNotifications()
+}
+
+// ════════════════════════════════════════════
+// UI UPDATES
+// ════════════════════════════════════════════
+function updateUnreadBadge() {
+  var unreadCount = allNotifications.filter(function(n) { return !readMap[n.id] || !readMap[n.id].read_at }).length
+  var badge = document.getElementById('unreadBadge')
+  if (badge) {
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount
+      badge.classList.remove('hidden')
+    } else {
+      badge.classList.add('hidden')
+    }
+  }
+}
+
+function updateMarkAllButton() {
+  var unreadCount = allNotifications.filter(function(n) { return !readMap[n.id] || !readMap[n.id].read_at }).length
+  var btn = document.getElementById('markAllBtn')
+  if (btn) btn.classList.toggle('hidden', unreadCount === 0)
 }
 
 // ════════════════════════════════════════════
 // HELPERS
 // ════════════════════════════════════════════
 function timeAgo(dateStr) {
-  if (!dateStr) return '—'
   var now = new Date(), then = new Date(dateStr)
-  var diff = now - then
-  var mins = Math.floor(diff / 60000)
+  var mins = Math.floor((now - then) / 60000)
   var hrs = Math.floor(mins / 60)
   var days = Math.floor(hrs / 24)
-  if (diff < 0) return 'in ' + Math.abs(Math.floor(diff / (1000*60*60*24))) + 'd'
   if (mins < 1) return 'Just now'
   if (mins < 60) return mins + 'm ago'
   if (hrs < 24) return hrs + 'h ago'
   if (days < 7) return days + 'd ago'
-  return then.toLocaleDateString('en-AU', { month: 'short', day: 'numeric', year: 'numeric' })
-}
-
-function formatDateTime(dateStr) {
-  if (!dateStr) return '—'
-  var d = new Date(dateStr)
-  return d.toLocaleDateString('en-AU', { month: 'short', day: 'numeric', year: 'numeric' })
-    + ' at '
-    + d.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true })
+  return then.toLocaleDateString('en-US', { month:'short', day:'numeric' })
 }
 
 function escapeHtml(str) {
@@ -1306,31 +1103,30 @@ function escapeHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')
 }
 
-var toastTimer
+function goBack() {
+  if (window.history.length > 1) window.history.back()
+  else window.location.href = 'profile.html'
+}
+
 function showToast(msg) {
-  var toast = document.getElementById('toast')
-  var toastMsg = document.getElementById('toastMsg')
-  if (!toast || !toastMsg) return
-  toastMsg.textContent = msg
-  toast.classList.remove('hidden')
-  toast.classList.add('flex')
-  clearTimeout(toastTimer)
-  toastTimer = setTimeout(function() {
-    toast.classList.add('hidden')
-    toast.classList.remove('flex')
-  }, 2500)
+  var existing = document.getElementById('notifToast')
+  if (existing) existing.remove()
+  var t = document.createElement('div')
+  t.id = 'notifToast'
+  t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-2.5 rounded-full shadow-float whitespace-nowrap flex items-center gap-2'
+  t.style.fontSize = '13px'
+  t.innerHTML = '<span class="material-symbols-outlined text-primary-container text-[14px] filled">check_circle</span> ' + msg
+  document.body.appendChild(t)
+  setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
 }
 
-// ════════════════════════════════════════════
-// INIT
-// ════════════════════════════════════════════
-async function init() {
-  var isAdmin = await checkAdminAuth()
-  if (!isAdmin) return
-  await loadAll()
+function setupListeners() {
+  window.addEventListener('scroll', function() {
+    var header = document.getElementById('pageHeader')
+    if (header) header.classList.toggle('header-scrolled', window.scrollY > 8)
+  })
 }
 
-init()
-</script>
+init()</script>
 </body>
 </html>
