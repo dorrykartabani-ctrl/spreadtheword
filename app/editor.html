@@ -770,7 +770,107 @@ async function initEditor() {
   } else {
     applyBackground('image', DEFAULT_BG)
   }
+    // ── Restore editor state from sessionStorage (when returning from preview) ──
+    var savedFilter = sessionStorage.getItem('gstw_filter')
+    if (savedFilter && savedFilter !== 'none') {
+      currentFilter = savedFilter
+      var bgEl = document.getElementById('bgLayer')
+      if (bgEl) bgEl.style.filter = filterCSS[savedFilter] || ''
+      // Update filter button active state
+      document.querySelectorAll('#panelFilter .style-btn').forEach(function(b) { b.classList.remove('active') })
+      var filterBtn = document.querySelector('#panelFilter .style-btn[onclick*="' + savedFilter + '"]')
+      if (filterBtn) filterBtn.classList.add('active')
+    }
 
+    var savedDarkness = sessionStorage.getItem('gstw_darkness')
+    if (savedDarkness) {
+      var darkEl = document.getElementById('darkLayer')
+      if (darkEl) darkEl.style.background = savedDarkness
+      // Extract percentage from rgba string
+      var darkMatch = savedDarkness.match(/[\d.]+\)$/)
+      if (darkMatch) {
+        var pct = Math.round(parseFloat(darkMatch[0]) * 100)
+        var darkLabel = document.getElementById('darkLabel')
+        if (darkLabel) darkLabel.textContent = pct + '%'
+        var darkRange = document.querySelector('input[type="range"][min="0"][max="85"]')
+        if (darkRange) darkRange.value = pct
+      }
+    }
+
+    var savedTextColor = sessionStorage.getItem('gstw_text_color')
+    if (savedTextColor) {
+      setTextColorDirect(savedTextColor)
+    }
+
+    var savedTextStyle = sessionStorage.getItem('gstw_text_style')
+    if (savedTextStyle) {
+      applyTextStyle(savedTextStyle)
+      document.querySelectorAll('#textStyle .style-btn').forEach(function(b) { b.classList.remove('active') })
+      var styleBtn = document.querySelector('#textStyle .style-btn[onclick*="' + savedTextStyle + '"]')
+      if (styleBtn) styleBtn.classList.add('active')
+    }
+
+    var savedAlign = sessionStorage.getItem('gstw_text_align')
+    if (savedAlign) {
+      currentAlign = savedAlign
+      var qt2 = document.getElementById('quoteText')
+      var qr2 = document.getElementById('quoteRef')
+      var ov2 = document.getElementById('quoteOverlay')
+      if (qt2) qt2.style.textAlign = savedAlign
+      if (qr2) qr2.style.textAlign = savedAlign
+      if (ov2) ov2.style.textAlign = savedAlign
+      document.querySelectorAll('#textAlign .style-btn').forEach(function(b) { b.classList.remove('active') })
+      var alignBtn = document.querySelector('#textAlign .style-btn[onclick*="' + savedAlign + '"]')
+      if (alignBtn) alignBtn.classList.add('active')
+    }
+
+    var savedFontFamily = sessionStorage.getItem('gstw_font_family')
+    if (savedFontFamily) {
+      var qt3 = document.getElementById('quoteText')
+      var qr3 = document.getElementById('quoteRef')
+      if (qt3) qt3.style.fontFamily = savedFontFamily
+      if (qr3) qr3.style.fontFamily = savedFontFamily
+    }
+
+    var savedFontSize = sessionStorage.getItem('gstw_font_size')
+    if (savedFontSize) {
+      var qt4 = document.getElementById('quoteText')
+      if (qt4) qt4.style.fontSize = savedFontSize
+      var sizeLabel = document.getElementById('sizeLabel')
+      if (sizeLabel) sizeLabel.textContent = savedFontSize
+      var sizeRange = document.querySelector('input[type="range"][min="10"]')
+      if (sizeRange) sizeRange.value = parseInt(savedFontSize)
+    }
+
+    var savedWatermark = sessionStorage.getItem('gstw_watermark')
+    if (savedWatermark === '1') {
+      watermarkOn = true
+      var wmEl = document.getElementById('watermarkEl')
+      if (wmEl) wmEl.classList.remove('hidden')
+      var wmChip = document.getElementById('watermarkChip')
+      if (wmChip) wmChip.className = 'flex items-center gap-1.5 px-3 py-3 bg-primary text-on-primary rounded-xl font-body font-semibold active:scale-[0.98] transition-transform'
+    } else if (savedWatermark === '0') {
+      watermarkOn = false
+      var wmEl2 = document.getElementById('watermarkEl')
+      if (wmEl2) wmEl2.classList.add('hidden')
+      var wmChip2 = document.getElementById('watermarkChip')
+      if (wmChip2) wmChip2.className = 'flex items-center gap-1.5 px-3 py-3 bg-surface-clow text-on-surface-variant rounded-xl font-body font-semibold active:scale-[0.98] transition-transform'
+    }
+
+    // Restore overlay position
+    var savedX = sessionStorage.getItem('gstw_overlay_x')
+    var savedY = sessionStorage.getItem('gstw_overlay_y')
+    var savedW = sessionStorage.getItem('gstw_overlay_w')
+    if (savedX && savedY) {
+      var overlayEl = document.getElementById('quoteOverlay')
+      var canvasEl = document.getElementById('previewCanvas')
+      if (overlayEl && canvasEl) {
+        var canvasRect = canvasEl.getBoundingClientRect()
+        overlayEl.style.left = (parseFloat(savedX) / 100 * canvasRect.width) + 'px'
+        overlayEl.style.top = (parseFloat(savedY) / 100 * canvasRect.height) + 'px'
+        if (savedW) overlayEl.style.width = (parseFloat(savedW) / 100 * canvasRect.width) + 'px'
+      }
+    }
   // Load admin background images
   await loadAdminBackgrounds(quoteBgUrl)
 
