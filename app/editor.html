@@ -348,13 +348,7 @@
         <span class="material-symbols-outlined text-primary" style="font-size:20px;">photo_library</span>
         Gallery
       </button>
-      <button onclick="toggleWatermark()" id="watermarkChip"
-        class="flex items-center gap-1.5 px-3 py-3 bg-primary text-on-primary rounded-xl font-body font-semibold active:scale-[0.98] transition-transform"
-        style="font-size:11px;">
-        <span class="material-symbols-outlined" style="font-size:16px;">verified</span>
-        <span id="watermarkChipLabel">GSTW</span>
-      </button>
-    </div>
+     </div>
   </section>
 
   <!-- STYLE PRESETS -->
@@ -755,6 +749,20 @@ async function initEditor() {
 
   autoFitQuote()
 
+    // Load watermark preference from profile
+    var profileResult = await supabaseClient
+      .from('profiles')
+      .select('watermark_enabled')
+      .eq('id', session.data.session.user.id)
+      .single()
+
+    if (profileResult.data) {
+      watermarkOn = profileResult.data.watermark_enabled !== false  // default true
+    }
+
+    var wmEl = document.getElementById('watermarkEl')
+    if (wmEl) wmEl.classList.toggle('hidden', !watermarkOn)
+
   // Background priority: saved → quote bg → admin images → default
   var savedBgType = sessionStorage.getItem('gstw_bg_type')
   var savedBgValue = sessionStorage.getItem('gstw_bg_value')
@@ -841,7 +849,6 @@ async function initEditor() {
       var sizeRange = document.querySelector('input[type="range"][min="10"]')
       if (sizeRange) sizeRange.value = parseInt(savedFontSize)
     }
-
     var savedWatermark = sessionStorage.getItem('gstw_watermark')
     if (savedWatermark === '1') {
       watermarkOn = true
@@ -1488,10 +1495,12 @@ function generateImage(qt, qr) {
   var darkness = sessionStorage.getItem('gstw_darkness') || 'rgba(0,0,0,0.3)'
   var textStyle = currentTextStyle || 'clean'
   var filter = currentFilter || 'none'
-  var blurVal = 0
-  var blurEl = document.getElementById('blurLabel')
-  if (blurEl) blurVal = parseInt(blurEl.textContent) || 0
   var wm = watermarkOn
+
+  // Get blur value
+  var blurVal = 0
+  var blurLabel = document.getElementById('blurLabel')
+  if (blurLabel) blurVal = parseInt(blurLabel.textContent) || 0
 
   function wrapText(ctx, text, maxWidth) {
     if (textTransform === 'uppercase') text = text.toUpperCase()
@@ -1507,26 +1516,95 @@ function generateImage(qt, qr) {
     return lines
   }
 
-  function drawContent() {
-    // Apply blur if set — draw blurred bg to a temp canvas then composite
-    if (blurVal > 0) {
-      var tempCanvas = document.createElement('canvas')
-      tempCanvas.width = 1080; tempCanvas.height = 1080
-      var tempCtx = tempCanvas.getContext('2d')
-      tempCtx.drawImage(canvas, 0, 0)
+  function applyFilterToCanvas(ctx, filterName, w, h) {
+    if (filterName === 'none') return
 
-      // Simple box blur approximation using scaling down then up
-      var scaleFactor = Math.max(0.05, 1 - (blurVal * 0.04))
-      var smallW = Math.round(1080 * scaleFactor)
-      var smallH = Math.round(1080 * scaleFactor)
+    var imageData = ctx.getImageData(0, 0, w, h)
+    var data = imageData.data
 
-      var blurCanvas = document.createElement('canvas')
-      blurCanvas.width = smallW; blurCanvas.height = smallH
-      var blurCtx = blurCanvas.getContext('2d')
-      blurCtx.drawImage(tempCanvas, 0, 0, smallW, smallH)
+    for (var i = 0; i < data.length; i += 4) {
+      var r = data[i], g = data[i+1], b = data[i+2]
 
-      ctx.drawImage(blurCanvas, 0, 0, smallW, smallH, 0, 0, 1080, 1080)
+      if (filterName === 'warm') {
+        // Saturate + slight sepia
+        var gray = 0.299 * r + 0.587 * g + 0.114 * b
+        data[i]   = Math.min(255, r * 1.15 + gray * 0.08)
+        data[i+1] = Math.min(255, g * 1.05 + gray * 0.05)
+        data[i+2] = Math.min(255, b * 0.90)
+      }
+      else if (filterName === 'cool') {
+        data[i]   = Math.min(255, r * 0.95)
+        data[i+1] = Math.min(255, g * 1.0)
+        data[i+2] = Math.min(255, b * 1.15)
+      }
+      else if (filterName === 'bw') {
+        var gray = 0.299 * r + 0.587 * g + 0.114 * b
+        data[i] = data[i+1] = data[i+2] = gray
+      }
+      else if (filterName === 'sepia') {
+        data[i]   = Math.min(255, r * 0.393 + g * 0.769 + b * 0.189)
+        data[i+1] = Math.min(255, r * 0.349 + g * 0.686 + b * 0.168)
+        data[i+2] = Math.min(255, r * 0.272 + g * 0.534 + b * 0.131)
+      }
+      else if (filterName === 'vivid') {
+        // Increase saturation + slight contrast
+        var gray = 0.299 * r + 0.587 * g + 0.114 * b
+        var sat = 1.5
+        data[i]   = Math.min(255, Math.max(0, gray + sat * (r - gray)))
+        data[i+1] = Math.min(255, Math.max(0, gray + sat * (g - gray)))
+        data[i+2] = Math.min(255, Math.max(0, gray + sat * (b - gray)))
+        // Slight contrast
+        data[i]   = Math.min(255, Math.max(0, (data[i] - 128) * 1.1 + 128))
+        data[i+1] = Math.min(255, Math.max(0, (data[i+1] - 128) * 1.1 + 128))
+        data[i+2] = Math.min(255, Math.max(0, (data[i+2] - 128) * 1.1 + 128))
+      }
+      else if (filterName === 'dramatic') {
+        // High contrast + slight desaturation + darken
+        var gray = 0.299 * r + 0.587 * g + 0.114 * b
+        var sat = 0.85
+        r = gray + sat * (r - gray)
+        g = gray + sat * (g - gray)
+        b = gray + sat * (b - gray)
+        // Contrast
+        data[i]   = Math.min(255, Math.max(0, (r - 128) * 1.4 + 118))
+        data[i+1] = Math.min(255, Math.max(0, (g - 128) * 1.4 + 118))
+        data[i+2] = Math.min(255, Math.max(0, (b - 128) * 1.4 + 118))
+      }
     }
+
+    ctx.putImageData(imageData, 0, 0)
+  }
+
+  function applyBlurToCanvas(ctx, blurAmount, w, h) {
+    if (blurAmount <= 0) return
+
+    // Scale down then up for blur approximation
+    var scale = Math.max(0.05, 1 - (blurAmount * 0.04))
+    var smallW = Math.round(w * scale)
+    var smallH = Math.round(h * scale)
+
+    var tempCanvas = document.createElement('canvas')
+    tempCanvas.width = w; tempCanvas.height = h
+    var tempCtx = tempCanvas.getContext('2d')
+    tempCtx.drawImage(canvas, 0, 0)
+
+    var blurCanvas = document.createElement('canvas')
+    blurCanvas.width = smallW; blurCanvas.height = smallH
+    var blurCtx = blurCanvas.getContext('2d')
+
+    // Multiple passes for smoother blur
+    blurCtx.drawImage(tempCanvas, 0, 0, smallW, smallH)
+
+    ctx.clearRect(0, 0, w, h)
+    ctx.drawImage(blurCanvas, 0, 0, smallW, smallH, 0, 0, w, h)
+  }
+
+  function drawContent() {
+    // Apply filter via pixel manipulation (cross-browser reliable)
+    applyFilterToCanvas(ctx, filter, 1080, 1080)
+
+    // Apply blur
+    applyBlurToCanvas(ctx, blurVal, 1080, 1080)
 
     // Darkness overlay
     ctx.fillStyle = darkness
@@ -1595,21 +1673,13 @@ function generateImage(qt, qr) {
     window.location.href = 'preview.html'
   }
 
-  // Build combined filter string for canvas
-  var canvasFilter = ''
-  if (filter !== 'none' && filterCSS[filter]) canvasFilter = filterCSS[filter]
-
   if (selectedBgType === 'image') {
     var img = new Image(); img.crossOrigin = 'anonymous'
     img.onload = function() {
       var scale = Math.max(1080 / img.width, 1080 / img.height)
       var sw = img.width * scale, sh = img.height * scale
-
-      // Apply filter to image drawing
-      if (canvasFilter) ctx.filter = canvasFilter
+      // Draw image WITHOUT ctx.filter (we apply filter manually after)
       ctx.drawImage(img, (1080-sw)/2, (1080-sh)/2, sw, sh)
-      ctx.filter = 'none'
-
       drawContent()
     }
     img.onerror = function() { ctx.fillStyle = '#305678'; ctx.fillRect(0,0,1080,1080); drawContent() }
@@ -1625,7 +1695,6 @@ function generateImage(qt, qr) {
     ctx.fillRect(0, 0, 1080, 1080); drawContent()
   }
 }
-
 // ════════════════════════════════════════════
 // COLOR UTILITIES
 // ════════════════════════════════════════════
