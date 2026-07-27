@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Account Paused — GSTW</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/x-icon" href="/images/favicon/favicon.ico">
+ <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32.png">
+ <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16.png">
+ <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png">
+
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        colors: { 'primary':'#1E4060','gold':'#D4A24C','action':'#E25B4D','cream':'#F7F4ED','dark':'#16202A','text-dark':'#1A1A1A','text-muted':'#5C6B7A','text-light':'#8E9AA8','border-soft':'rgba(92,107,122,0.15)','card-bg':'#FFFFFF','surface':'#F0EDE6' },
+        fontFamily: { 'headline':['Plus Jakarta Sans','sans-serif'],'body':['Manrope','sans-serif'] }
+      }}
+    }
+  </script>
+  <style>
+    body{font-family:'Manrope',sans-serif;background:#16202A;min-height:100dvh}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle}
+    .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+    .tactical-gradient{background:linear-gradient(145deg,#152E45,#1E4060)}
+  </style>
+</head>
+<body class="text-white flex items-center justify-center">
+<div class="max-w-md mx-auto px-6 text-center">
+
+  <div class="w-20 h-20 rounded-3xl bg-action/20 flex items-center justify-center mx-auto mb-6">
+    <span class="material-symbols-outlined text-action text-[40px]">lock</span>
+  </div>
+
+  <h1 class="font-headline font-extrabold text-3xl text-white mb-3">Account Paused</h1>
+  <p id="suspensionReason" class="text-white/60 text-sm leading-relaxed mb-8">
+    Your subscription payment has failed. Your account is temporarily paused.
+  </p>
+
+  <div class="bg-white/5 border border-white/10 rounded-2xl p-5 mb-6 text-left">
+    <p class="text-[10px] font-bold text-gold uppercase tracking-widest mb-3">What's preserved</p>
+    <div class="space-y-2">
+      <div class="flex items-center gap-2 text-sm text-white/70">
+        <span class="material-symbols-outlined text-green-400 text-[16px] filled">check_circle</span>
+        Your warrior level and rank
+      </div>
+      <div class="flex items-center gap-2 text-sm text-white/70">
+        <span class="material-symbols-outlined text-green-400 text-[16px] filled">check_circle</span>
+        All your badges and achievements
+      </div>
+      <div class="flex items-center gap-2 text-sm text-white/70">
+        <span class="material-symbols-outlined text-green-400 text-[16px] filled">check_circle</span>
+        Your sharing history and impact data
+      </div>
+      <div class="flex items-center gap-2 text-sm text-white/70">
+        <span class="material-symbols-outlined text-green-400 text-[16px] filled">check_circle</span>
+        Your recruits and referral link
+      </div>
+    </div>
+  </div>
+
+  <button onclick="reactivate()"
+    class="w-full py-4 bg-gold text-dark font-headline font-bold text-base rounded-2xl
+    flex items-center justify-center gap-2 active:scale-[0.98] transition-transform mb-3">
+    <span class="material-symbols-outlined text-[20px]">payments</span>
+    Reactivate Account
+  </button>
+
+  <button onclick="logout()"
+    class="w-full py-3 text-white/40 font-bold text-sm">
+    Log Out
+  </button>
+
+</div>
+
+<script>
+  var supabaseClient = supabase.createClient(
+    'https://nhymadutuhpjgkiurify.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+  )
+
+  async function init() {
+    var result = await supabaseClient.auth.getSession()
+    if (!result.data.session) { window.location.href = 'login.html'; return }
+
+    var profile = await supabaseClient.from('profiles')
+      .select('is_suspended, suspension_reason')
+      .eq('id', result.data.session.user.id)
+      .single()
+
+    if (profile.data && profile.data.suspension_reason) {
+      document.getElementById('suspensionReason').textContent = profile.data.suspension_reason
+    }
+
+    // If not suspended, redirect to home
+    if (profile.data && !profile.data.is_suspended) {
+      window.location.href = 'index.html'
+    }
+  }
+
+  function reactivate() {
+    // Redirect to Stripe payment link
+    window.location.href = 'https://buy.stripe.com/14A6oHczR6q7fs60mfbMQ01'
+  }
+
+  async function logout() {
+    await supabaseClient.auth.signOut()
+    window.location.href = 'login.html'
+  }
+
+  init()
+</script>
+</body>
+</html>
