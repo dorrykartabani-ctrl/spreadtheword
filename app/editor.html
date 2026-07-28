@@ -336,7 +336,7 @@
     </div>
   </section>
 
-  <!-- CAMERA / GALLERY + WATERMARK ROW -->
+  <!-- CAMERA / GALLERY ROW -->
   <section class="px-4 pt-3">
     <div class="flex gap-2">
       <button onclick="openCamera()"
@@ -350,13 +350,7 @@
         style="font-size:13px;">
         <span class="material-symbols-outlined text-primary" style="font-size:20px;">photo_library</span>
         Gallery
-      </button>
-      <button onclick="toggleWatermark()" id="watermarkChip"
-        class="flex items-center gap-1.5 px-3 py-3 bg-primary text-on-primary rounded-xl font-body font-semibold active:scale-[0.98] transition-transform"
-        style="font-size:11px;">
-        <span class="material-symbols-outlined" style="font-size:16px;">verified</span>
-        <span id="watermarkChipLabel">GSTW</span>
-      </button>
+     </button>
     </div>
   </section>
 
@@ -726,6 +720,19 @@ async function initEditor() {
   var selectedSource = sessionStorage.getItem('gstw_selected_quote_source')
   var selectedId     = sessionStorage.getItem('gstw_selected_quote_id')
 
+ // Load watermark preference from profile
+    var profileResult = await supabaseClient
+      .from('profiles')
+      .select('watermark_enabled')
+      .eq('id', session.data.session.user.id)
+      .single()
+
+    if (profileResult.data) {
+      watermarkOn = profileResult.data.watermark_enabled !== false  // default true
+    }
+
+    var wmEl = document.getElementById('watermarkEl')
+    if (wmEl) wmEl.classList.toggle('hidden', !watermarkOn)
   var quoteBgUrl = null
 
   if (selectedText && selectedSource && selectedId) {
