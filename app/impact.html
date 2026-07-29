@@ -104,15 +104,6 @@
     /* Chart bar */
     .chart-bar{transition:height 0.8s cubic-bezier(0.22,1,0.36,1);border-radius:8px 8px 0 0}
 
-    /* Dot map */
-    .dot-map-container{position:relative;width:100%;aspect-ratio:2/1;border-radius:16px;overflow:hidden;background:#1a2a3a}
-    .dot-map-container svg{width:100%;height:100%}
-    .map-dot{fill:#b0d5fe;opacity:0}
-    .map-dot.active{opacity:1;filter:drop-shadow(0 0 4px rgba(176,213,254,0.6))}
-    .map-dot.user{fill:#6b9bc3;filter:drop-shadow(0 0 8px rgba(107,155,195,0.8))}
-    @keyframes dotPulse{0%,100%{r:2.5;opacity:0.8}50%{r:4;opacity:1}}
-    .map-dot.pulse{animation:dotPulse 2s ease-in-out infinite}
-
     /* Monthly calendar */
     .cal-week{display:flex;gap:4px}
     .cal-day{width:100%;aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;transition:all 0.2s ease}
@@ -209,14 +200,44 @@
     </div>
   </section>
 
+  <!-- YOUR JOURNEY -->
+  <section class="fade-up">
+    <p class="font-body text-on-surface-variant mb-3" style="font-size:12px;font-weight:500;">Your Journey</p>
+    <div class="grid grid-cols-3 gap-3 mb-3">
+      <div class="bg-surface-cl rounded-xl p-4 text-center">
+        <div class="flex items-center justify-center gap-1">
+          <span class="material-symbols-outlined text-primary filled" style="font-size:16px;">emoji_events</span>
+          <span id="journeyTrophyCount" class="font-headline font-bold text-primary" style="font-size:24px;">0</span>
+        </div>
+        <div class="font-body text-on-surface-variant mt-0.5" style="font-size:10px;font-weight:500;">Trophies</div>
+      </div>
+      <div class="bg-surface-cl rounded-xl p-4 text-center">
+        <div class="flex items-center justify-center gap-1">
+          <span class="material-symbols-outlined text-primary filled" style="font-size:16px;">shield</span>
+          <span id="journeyBadgeCount" class="font-headline font-bold text-primary" style="font-size:24px;">0</span>
+        </div>
+        <div class="font-body text-on-surface-variant mt-0.5" style="font-size:10px;font-weight:500;">Badges</div>
+      </div>
+      <div class="bg-surface-cl rounded-xl p-4 text-center">
+        <div id="journeyPercent" class="font-headline font-bold text-primary" style="font-size:24px;">0%</div>
+        <div class="font-body text-on-surface-variant mt-0.5" style="font-size:10px;font-weight:500;">Complete</div>
+      </div>
+    </div>
+    <div class="bg-surface-cl rounded-xl p-4">
+      <div class="progress-track mb-2">
+        <div id="journeyBar" class="progress-fill progress-primary" style="width:0%"></div>
+      </div>
+      <p id="journeyMessage" class="font-body text-on-surface-variant text-center" style="font-size:12px;">Loading...</p>
+      <a href="trophies.html" class="flex items-center justify-center gap-1 mt-3 font-body font-semibold text-primary" style="font-size:12px;">
+        View Trophies <span class="material-symbols-outlined" style="font-size:14px;">chevron_right</span>
+      </a>
+    </div>
+  </section>
+
   <!-- GEOGRAPHIC REACH -->
   <section class="fade-up">
     <div class="bg-surface-cl rounded-xl overflow-hidden">
-      <!-- Dot map -->
-      <div class="dot-map-container" id="dotMapContainer">
-        <svg id="dotMapSvg" viewBox="0 0 360 180" preserveAspectRatio="xMidYMid meet"></svg>
-      </div>
-      <!-- Country stats -->
+  <!-- Country stats -->
       <div class="p-5">
         <div class="flex items-center gap-2 mb-3">
           <span class="material-symbols-outlined text-primary text-[20px] filled">public</span>
@@ -396,31 +417,22 @@ var supabaseClient = supabase.createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
 )
 
-// Country coordinates (lat/lon → SVG x/y: x = lon+180, y = 90-lat)
-var countryCoords = {
-  'United States':{x:100,y:50},'Canada':{x:105,y:35},'Mexico':{x:90,y:67},
-  'Brazil':{x:145,y:100},'Argentina':{x:130,y:125},'Colombia':{x:115,y:86},
-  'United Kingdom':{x:180,y:38},'France':{x:182,y:43},'Germany':{x:190,y:39},
-  'Spain':{x:176,y:50},'Italy':{x:192,y:48},'Netherlands':{x:185,y:38},
-  'Sweden':{x:195,y:30},'Norway':{x:190,y:28},'Poland':{x:200,y:38},
-  'Nigeria':{x:188,y:80},'South Africa':{x:208,y:120},'Kenya':{x:218,y:89},
-  'Ghana':{x:180,y:84},'Egypt':{x:211,y:63},'Ethiopia':{x:219,y:82},
-  'Tanzania':{x:215,y:96},'Uganda':{x:212,y:89},
-  'India':{x:255,y:68},'Pakistan':{x:247,y:60},'Bangladesh':{x:270,y:67},
-  'Philippines':{x:300,y:75},'Indonesia':{x:295,y:95},'Japan':{x:320,y:54},
-  'South Korea':{x:307,y:53},'China':{x:285,y:55},'Australia':{x:312,y:120},
-  'New Zealand':{x:352,y:135},'Singapore':{x:284,y:89},
-  'UAE':{x:236,y:66},'Saudi Arabia':{x:227,y:66},'Israel':{x:215,y:58},
-  'Turkey':{x:215,y:50},'Russia':{x:220,y:30},'Ukraine':{x:210,y:40},
-  'Jamaica':{x:105,y:72},'Trinidad and Tobago':{x:120,y:80},
-  'Barbados':{x:120,y:77},'Haiti':{x:108,y:71},'Dominican Republic':{x:110,y:71},
-  'Costa Rica':{x:96,y:80},'Guatemala':{x:89,y:75},'Honduras':{x:92,y:75},
-  'Peru':{x:105,y:100},'Chile':{x:110,y:125},'Ecuador':{x:100,y:88},
-  'Venezuela':{x:115,y:80},'Cuba':{x:100,y:68},
-  'Portugal':{x:171,y:50},'Ireland':{x:170,y:37},'Belgium':{x:184,y:40},
-  'Switzerland':{x:188,y:43},'Austria':{x:195,y:43},'Czech Republic':{x:195,y:40},
-  'Romania':{x:206,y:44},'Greece':{x:204,y:52},'Finland':{x:206,y:28},
-  'Denmark':{x:190,y:34}
+// Country to flag emoji
+var countryFlags = {
+  'Australia':'🇦🇺','United States':'🇺🇸','USA':'🇺🇸','United Kingdom':'🇬🇧','UK':'🇬🇧',
+  'Canada':'🇨🇦','New Zealand':'🇳🇿','South Africa':'🇿🇦','Nigeria':'🇳🇬','Kenya':'🇰🇪',
+  'Ghana':'🇬🇭','India':'🇮🇳','Philippines':'🇵🇭','Singapore':'🇸🇬','Malaysia':'🇲🇾',
+  'Indonesia':'🇮🇩','Brazil':'🇧🇷','Mexico':'🇲🇽','Germany':'🇩🇪','France':'🇫🇷',
+  'Spain':'🇪🇸','Italy':'🇮🇹','Netherlands':'🇳🇱','Sweden':'🇸🇪','Norway':'🇳🇴',
+  'Japan':'🇯🇵','South Korea':'🇰🇷','China':'🇨🇳','UAE':'🇦🇪','Saudi Arabia':'🇸🇦',
+  'Egypt':'🇪🇬','Ethiopia':'🇪🇹','Tanzania':'🇹🇿','Uganda':'🇺🇬','Jamaica':'🇯🇲',
+  'Trinidad and Tobago':'🇹🇹','Ireland':'🇮🇪','Pakistan':'🇵🇰','Bangladesh':'🇧🇩',
+  'Colombia':'🇨🇴','Argentina':'🇦🇷','Chile':'🇨🇱','Peru':'🇵🇪','Israel':'🇮🇱',
+  'Turkey':'🇹🇷','Russia':'🇷🇺','Ukraine':'🇺🇦','Poland':'🇵🇱','Romania':'🇷🇴',
+  'Greece':'🇬🇷','Portugal':'🇵🇹','Belgium':'🇧🇪','Switzerland':'🇨🇭','Austria':'🇦🇹',
+  'Denmark':'🇩🇰','Finland':'🇫🇮','Costa Rica':'🇨🇷','Guatemala':'🇬🇹','Honduras':'🇭🇳',
+  'Cuba':'🇨🇺','Dominican Republic':'🇩🇴','Haiti':'🇭🇹','Barbados':'🇧🇧','Venezuela':'🇻🇪',
+  'Ecuador':'🇪🇨'
 }
 
 var continentMap = {
@@ -443,6 +455,11 @@ var continentMap = {
   'Australia':'Oceania','New Zealand':'Oceania'
 }
 
+function getFlag(country) {
+  if (!country) return '🌍'
+  return countryFlags[country] || '🌍'
+}
+
 var narratives = [
   'Every share plants a seed that could change a life.',
   'Your voice is echoing farther than you know.',
@@ -460,11 +477,11 @@ var allShares = []
 var allProjects = []
 var userPriorities = {}
 var allCountries = []
-var state = { timeframe:'all' }
+var state = { timeframe: 'all' }
 
 var observer = new IntersectionObserver(function(entries) {
   entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible') })
-}, { threshold:0.1 })
+}, { threshold: 0.1 })
 
 // ════════════════════════════════════════════
 // INIT
@@ -486,10 +503,10 @@ async function loadEverything() {
     supabaseClient.from('projects').select('*').eq('is_visible', true),
     supabaseClient.from('profiles').select('id, total_shares').order('total_shares', { ascending: false }),
     supabaseClient.from('profiles').select('country'),
-    supabaseClient.from('profiles').select('*', { count:'exact', head:true }),
-    supabaseClient.from('shares').select('*', { count:'exact', head:true }),
-    supabaseClient.from('projects').select('raised_amount').eq('status','completed'),
-    supabaseClient.from('projects').select('*', { count:'exact', head:true }).eq('status','completed')
+    supabaseClient.from('profiles').select('*', { count: 'exact', head: true }),
+    supabaseClient.from('shares').select('*', { count: 'exact', head: true }),
+    supabaseClient.from('projects').select('raised_amount').eq('status', 'completed'),
+    supabaseClient.from('projects').select('*', { count: 'exact', head: true }).eq('status', 'completed')
   ])
 
   userProfile = results[0].data || {}
@@ -525,7 +542,6 @@ async function loadEverything() {
   // Total raised
   var totalRaised = 0
   completedProjects.forEach(function(p) { totalRaised += Number(p.raised_amount || 0) })
-  // Add active project raised amounts too
   allProjects.forEach(function(p) { if (p.status === 'active') totalRaised += Number(p.raised_amount || 0) })
 
   // Continents
@@ -537,16 +553,12 @@ async function loadEverything() {
 
   renderHero(percentile, allCountries.length)
   renderStats()
-  renderDotMap(countryCounts)
-  renderCountryList(countryCounts)
+  renderJourney()
+  renderGeographic(countryCounts, continents)
   renderCalendar()
   renderPlatforms()
   renderMissions()
   renderCollective(totalWarriors, totalGlobalShares, allCountries.length, totalRaised, completedCount, userRank)
-
-  // Update geo text
-  document.getElementById('geoHeadline').textContent = 'Warriors sharing from ' + allCountries.length + ' countries'
-  document.getElementById('geoSubline').textContent = 'across ' + Object.keys(continents).length + ' continents'
 }
 
 // ════════════════════════════════════════════
@@ -595,7 +607,7 @@ function getFlameClass(s) {
 function getFilteredShares() {
   var now = new Date()
   if (state.timeframe === 'week') {
-    var sw = new Date(now); sw.setDate(now.getDate() - now.getDay()); sw.setHours(0,0,0,0)
+    var sw = new Date(now); sw.setDate(now.getDate() - now.getDay()); sw.setHours(0, 0, 0, 0)
     return allShares.filter(function(s) { return new Date(s.shared_at) >= sw })
   }
   if (state.timeframe === 'month') {
@@ -614,77 +626,105 @@ function setTimeframe(tf) {
 }
 
 // ════════════════════════════════════════════
-// DOT MAP
+// JOURNEY PROGRESS
 // ════════════════════════════════════════════
-function renderDotMap(countryCounts) {
-  var svg = document.getElementById('dotMapSvg')
-  svg.innerHTML = ''
+function renderJourney() {
+  var totalMilestones = 13
+  var earned = 0
 
-  // Background grid dots (subtle world shape hint)
-  for (var gx = 10; gx < 360; gx += 15) {
-    for (var gy = 10; gy < 180; gy += 15) {
-      var dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-      dot.setAttribute('cx', gx)
-      dot.setAttribute('cy', gy)
-      dot.setAttribute('r', '0.5')
-      dot.setAttribute('fill', 'rgba(176,213,254,0.08)')
-      svg.appendChild(dot)
-    }
-  }
+  var thresholds = [
+    { type: 'shares', val: 1 }, { type: 'shares', val: 10 }, { type: 'shares', val: 50 },
+    { type: 'shares', val: 100 }, { type: 'shares', val: 200 }, { type: 'shares', val: 500 },
+    { type: 'streak', val: 3 }, { type: 'streak', val: 7 }, { type: 'streak', val: 30 }, { type: 'streak', val: 100 },
+    { type: 'recruits', val: 1 }, { type: 'recruits', val: 5 }, { type: 'recruits', val: 25 }
+  ]
 
-  // Country dots
-  var userCountry = userProfile.country ? userProfile.country.trim() : null
-  var maxCount = 1
-  Object.keys(countryCounts).forEach(function(c) { if (countryCounts[c] > maxCount) maxCount = countryCounts[c] })
+  var shareCount = allShares.length
+  var streak = userProfile.current_streak || 0
+  var recruits = userProfile.recruit_count || 0
 
-  Object.keys(countryCounts).forEach(function(country) {
-    var coords = countryCoords[country]
-    if (!coords) return
-
-    var count = countryCounts[country]
-    var radius = 2 + (count / maxCount) * 3
-    var isUser = country === userCountry
-
-    var dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-    dot.setAttribute('cx', coords.x)
-    dot.setAttribute('cy', coords.y)
-    dot.setAttribute('r', radius)
-    dot.setAttribute('class', 'map-dot active' + (isUser ? ' user pulse' : ''))
-    svg.appendChild(dot)
+  thresholds.forEach(function(t) {
+    var current = 0
+    if (t.type === 'shares') current = shareCount
+    else if (t.type === 'streak') current = streak
+    else if (t.type === 'recruits') current = recruits
+    if (current >= t.val) earned++
   })
+
+  var badges = (userProfile.badges || []).length
+  var percent = Math.round((earned / totalMilestones) * 100)
+
+  var trophyEl = document.getElementById('journeyTrophyCount')
+  var badgeEl = document.getElementById('journeyBadgeCount')
+  var percentEl = document.getElementById('journeyPercent')
+  var barEl = document.getElementById('journeyBar')
+  var msgEl = document.getElementById('journeyMessage')
+
+  if (trophyEl) trophyEl.textContent = earned
+  if (badgeEl) badgeEl.textContent = badges
+  if (percentEl) percentEl.textContent = percent + '%'
+  if (barEl) setTimeout(function() { barEl.style.width = percent + '%' }, 300)
+
+  var message = ''
+  if (percent === 0) message = 'Your journey begins with a single share'
+  else if (percent <= 15) message = "You're just getting started — keep spreading the Word!"
+  else if (percent <= 30) message = 'Building momentum — every share matters'
+  else if (percent <= 50) message = "You're making real impact — halfway there"
+  else if (percent <= 75) message = 'A faithful warrior — the Word is spreading through you'
+  else if (percent < 100) message = 'Almost legendary — so close to completing them all'
+  else message = 'All trophies earned — you are a champion of the Word'
+
+  if (msgEl) msgEl.textContent = message
 }
 
-function renderCountryList(countryCounts) {
+// ════════════════════════════════════════════
+// GEOGRAPHIC REACH (flag-based, no map)
+// ════════════════════════════════════════════
+function renderGeographic(countryCounts, continents) {
+  var headlineEl = document.getElementById('geoHeadline')
+  var sublineEl = document.getElementById('geoSubline')
   var container = document.getElementById('countryList')
+
+  var countryCount = Object.keys(countryCounts).length
+  var continentCount = Object.keys(continents).length
+
+  if (headlineEl) headlineEl.textContent = 'Warriors sharing from ' + countryCount + ' countr' + (countryCount !== 1 ? 'ies' : 'y')
+  if (sublineEl) sublineEl.textContent = 'across ' + continentCount + ' continent' + (continentCount !== 1 ? 's' : '')
+
+  if (!container) return
   container.innerHTML = ''
 
   var sorted = Object.keys(countryCounts).sort(function(a, b) { return countryCounts[b] - countryCounts[a] })
-  var top = sorted.slice(0, 5)
   var total = 0
   Object.keys(countryCounts).forEach(function(c) { total += countryCounts[c] })
 
-  if (top.length === 0) {
-    container.innerHTML = '<p class="font-body text-outline text-center py-2" style="font-size:13px;">Geographic data building...</p>'
+  if (sorted.length === 0) {
+    container.innerHTML = '<p class="font-body text-outline text-center py-4" style="font-size:13px;">Geographic data building...</p>'
     return
   }
+
+  var top = sorted.slice(0, 8)
 
   top.forEach(function(country) {
     var count = countryCounts[country]
     var pct = total > 0 ? Math.round((count / total) * 100) : 0
+    var flag = getFlag(country)
+
     var el = document.createElement('div')
-    el.className = 'flex items-center gap-3'
+    el.className = 'flex items-center gap-3 py-1.5'
     el.innerHTML =
-      '<span class="font-body font-semibold text-on-surface flex-1 truncate" style="font-size:13px;">' + escapeHtml(country) + '</span>'
-      + '<span class="font-body text-on-surface-variant" style="font-size:12px;font-weight:500;">' + count + ' warriors</span>'
+      '<span style="font-size:18px;">' + flag + '</span>'
+      + '<span class="font-body font-semibold text-on-surface flex-1 truncate" style="font-size:13px;">' + escapeHtml(country) + '</span>'
+      + '<span class="font-body text-on-surface-variant" style="font-size:12px;font-weight:500;">' + count + ' warrior' + (count !== 1 ? 's' : '') + '</span>'
       + '<div class="w-16 progress-track"><div class="progress-fill progress-primary" style="width:' + pct + '%"></div></div>'
     container.appendChild(el)
   })
 
-  if (sorted.length > 5) {
+  if (sorted.length > 8) {
     var more = document.createElement('p')
-    more.className = 'font-body text-on-surface-variant text-center pt-1'
+    more.className = 'font-body text-on-surface-variant text-center pt-2'
     more.style.fontSize = '11px'
-    more.textContent = '+ ' + (sorted.length - 5) + ' more countries'
+    more.textContent = '+ ' + (sorted.length - 8) + ' more countr' + ((sorted.length - 8) !== 1 ? 'ies' : 'y')
     container.appendChild(more)
   }
 }
@@ -698,34 +738,18 @@ function renderCalendar() {
   var month = now.getMonth()
   var today = now.getDate()
 
-  var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December']
+  var monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
   document.getElementById('calMonthLabel').textContent = monthNames[month] + ' ' + year
 
-  // Get sharing days this month
   var startOfMonth = new Date(year, month, 1)
   var endOfMonth = new Date(year, month + 1, 0)
   var shareDays = {}
   allShares.forEach(function(s) {
     var d = new Date(s.shared_at)
-    if (d >= startOfMonth && d <= endOfMonth) {
-      shareDays[d.getDate()] = true
-    }
+    if (d >= startOfMonth && d <= endOfMonth) shareDays[d.getDate()] = true
   })
 
   var activeDays = Object.keys(shareDays).length
-  var totalDays = endOfMonth.getDate()
-  var weeksWithActivity = 0
-  // Count weeks with at least one share
-  for (var w = 0; w < Math.ceil(totalDays / 7); w++) {
-    for (var wd = 0; wd < 7; wd++) {
-      var dayNum = w * 7 + wd + 1 - startOfMonth.getDay()
-      if (dayNum > 0 && dayNum <= totalDays && shareDays[dayNum]) {
-        weeksWithActivity++
-        break
-      }
-    }
-  }
-
   document.getElementById('calSummary').textContent = activeDays + ' active day' + (activeDays !== 1 ? 's' : '')
 
   var container = document.getElementById('calendarGrid')
@@ -773,7 +797,7 @@ function renderPlatforms() {
 
   var counts = {}
   allShares.forEach(function(s) {
-    var p = (s.platform || 'Other').replace('native-share','Share Sheet').replace('desktop-download','Desktop')
+    var p = (s.platform || 'Other').replace('native-share', 'Share Sheet').replace('desktop-download', 'Desktop')
     counts[p] = (counts[p] || 0) + 1
   })
 
@@ -894,7 +918,7 @@ function animateNumber(el, from, to, duration) {
 
 function escapeHtml(str) {
   if (!str) return ''
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')
 }
 
 function showToast(msg) {
