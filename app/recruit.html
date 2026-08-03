@@ -310,20 +310,52 @@ async function init() {
 async function ensureInviteCode() {
   if (userProfile.invite_code) return
 
-  // Generate a unique code: first 4 chars of name + random 4 digits
-  var name = (userProfile.nickname || userProfile.full_name || 'gstw').toLowerCase().replace(/[^a-z]/g, '')
-  var prefix = name.substring(0, 4)
-  var suffix = Math.floor(1000 + Math.random() * 9000)
-  var code = prefix + suffix
+  // Sanitize name for prefix
+  var name = (userProfile.nickname || userProfile.full_name || 'gstw')
+    .toLowerCase()
+    .replace(/[^a-z]/g, '')
+  var prefix = name.substring(0, 4) || 'gstw'
 
-  // Check uniqueness
-  var check = await supabaseClient.from('profiles').select('id').eq('invite_code', code).single()
-  if (check.data) {
-    // Collision — add more random
-    code = prefix + Math.floor(10000 + Math.random() * 90000)
+  var code = null
+  var maxAttempts = 5
+
+  for (var i = 0; i < maxAttempts; i++) {
+    // Generate: 4-char prefix + 4 random digits (first attempt) or 5-6 digits (later attempts)
+    var digitCount = 4 + Math.floor(i / 2)
+    var min = Math.pow(10, digitCount - 1)
+    var max = Math.pow(10, digitCount) - 1
+    var suffix = Math.floor(min + Math.random() * (max - min))
+    var candidate = prefix + suffix
+
+    // Check uniqueness using maybeSingle (returns null cleanly if not found)
+    var check = await supabaseClient
+      .from('profiles')
+      .select('id')
+      .eq('invite_code', candidate)
+      .maybeSingle()
+
+    if (!check.data) {
+      code = candidate
+      break
+    }
   }
 
-  await supabaseClient.from('profiles').update({ invite_code: code }).eq('id', currentUser.id)
+  // Ultimate fallback if we somehow can't find a unique code
+  if (!code) {
+    code = prefix + Date.now().toString().slice(-6)
+  }
+
+  var updateResult = await supabaseClient
+    .from('profiles')
+    .update({ invite_code: code })
+    .eq('id', currentUser.id)
+
+  if (updateResult.error) {
+    console.error('Failed to save invite code:', updateResult.error)
+    showToast('Could not create invite code. Please refresh.')
+    return
+  }
+
   userProfile.invite_code = code
 }
 
