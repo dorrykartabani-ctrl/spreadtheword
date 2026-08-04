@@ -99,12 +99,32 @@
     }
     .search-wrap input::placeholder{color:#8a8c85}
 
-    /* Tab bar */
-    .tab-strip{
-      display:flex;gap:8px;overflow-x:auto;padding:2px 0;
-      -ms-overflow-style:none;scrollbar-width:none;
-    }
-    .tab-strip::-webkit-scrollbar{display:none}
+  /* Tab bar with desktop scroll arrows */
+.tab-wrap{position:relative}
+.tab-strip{
+  display:flex;gap:8px;overflow-x:auto;padding:2px 0;
+  -ms-overflow-style:none;scrollbar-width:none;
+  scroll-behavior:smooth;
+}
+.tab-strip::-webkit-scrollbar{display:none}
+
+.tab-scroll-btn{
+  position:absolute;top:50%;transform:translateY(-50%);
+  width:32px;height:32px;border-radius:50%;
+  background:#ffffff;color:#3d6285;
+  display:none;align-items:center;justify-content:center;
+  box-shadow:0 4px 12px rgba(49,51,46,0.12);
+  cursor:pointer;transition:all 0.15s ease;z-index:2;
+}
+.tab-scroll-btn:hover{background:#f5f4ed;transform:translateY(-50%) scale(1.05)}
+.tab-scroll-btn:active{transform:translateY(-50%) scale(0.95)}
+.tab-scroll-btn.left{left:-6px}
+.tab-scroll-btn.right{right:-6px}
+
+/* Only show on devices with fine pointer (mouse/trackpad) */
+@media (hover:hover) and (pointer:fine){
+  .tab-scroll-btn.visible{display:flex}
+}
     .lib-tab{
       flex-shrink:0;padding:8px 14px;border-radius:99px;
       background:#ffffff;color:#5e6059;
@@ -309,12 +329,20 @@
     </div>
   </section>
 
-  <!-- TABS -->
-  <section class="fade-up">
+ <!-- TABS -->
+<section class="fade-up">
+  <div class="tab-wrap">
+    <button id="tabScrollLeft" onclick="scrollTabs(-160)" class="tab-scroll-btn left" aria-label="Scroll left">
+      <span class="material-symbols-outlined" style="font-size:18px;">chevron_left</span>
+    </button>
     <div id="tabStrip" class="tab-strip">
       <!-- Populated dynamically -->
     </div>
-  </section>
+    <button id="tabScrollRight" onclick="scrollTabs(160)" class="tab-scroll-btn right" aria-label="Scroll right">
+      <span class="material-symbols-outlined" style="font-size:18px;">chevron_right</span>
+    </button>
+  </div>
+</section>
 
   <!-- CAMPAIGN HERO (only on campaign tabs) -->
   <section id="campaignHero" class="hidden fade-up"></section>
@@ -446,7 +474,7 @@
       <span class="ms bottom-nav-icon" style="font-size:1.35rem;">home</span>
       <span class="font-body text-[10px] font-600 bottom-nav-label">Home</span>
     </a>
-     <a href="library.html" data-nav="library" class="bottom-nav-item flex flex-col items-center gap-0.5 transition-colors duration-200 py-1.5 px-3 rounded-xl">
+   <a href="library.html" data-nav="library" class="bottom-nav-item flex flex-col items-center gap-0.5 transition-colors duration-200 py-1.5 px-3 rounded-xl">
       <span class="ms bottom-nav-icon" style="font-size:1.35rem;color:#3d6285;">auto_stories</span>
       <span class="font-body text-[10px] font-600 bottom-nav-label" style="color:#3d6285;font-weight:700;">Library</span>
     </a>
@@ -458,7 +486,7 @@
       <span class="ms bottom-nav-icon" style="font-size:1.35rem;">bar_chart</span>
       <span class="font-body text-[10px] font-600 bottom-nav-label">Impact</span>
     </a>
-   <a href="profile.html" data-nav="profile" class="bottom-nav-item flex flex-col items-center gap-0.5 transition-colors duration-200 py-1.5 px-3 rounded-xl">
+      <a href="profile.html" data-nav="profile" class="bottom-nav-item flex flex-col items-center gap-0.5 transition-colors duration-200 py-1.5 px-3 rounded-xl">
       <span class="ms bottom-nav-icon" style="font-size:1.35rem;">person</span>
       <span class="font-body text-[10px] font-600 bottom-nav-label">Profile</span>
     </a>
@@ -585,6 +613,8 @@ function buildTabs(){
 
   var activeCampaigns = allCampaigns.filter(function(c){ return c.status === 'active' })
   var hasEndedCampaigns = allCampaigns.some(function(c){ return c.status === 'ended' })
+setTimeout(updateTabScrollButtons, 50)
+}
 
   // Base tabs
   addTab(strip, 'all', 'All', getAllTabQuotes().length, 'library_books')
@@ -631,6 +661,26 @@ function setTab(tabId){
   buildTabs()
   render()
   window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function scrollTabs(delta){
+  var strip = document.getElementById('tabStrip')
+  if(strip) strip.scrollBy({ left: delta, behavior: 'smooth' })
+  // Re-check arrow visibility after scroll
+  setTimeout(updateTabScrollButtons, 350)
+}
+
+function updateTabScrollButtons(){
+  var strip = document.getElementById('tabStrip')
+  var leftBtn = document.getElementById('tabScrollLeft')
+  var rightBtn = document.getElementById('tabScrollRight')
+  if(!strip || !leftBtn || !rightBtn) return
+
+  var canScrollLeft = strip.scrollLeft > 4
+  var canScrollRight = strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 4
+
+  leftBtn.classList.toggle('visible', canScrollLeft)
+  rightBtn.classList.toggle('visible', canScrollRight)
 }
 
 // ═══════════════════════════════════════
@@ -1192,8 +1242,14 @@ function setupListeners(){
   })
   var input = document.getElementById('searchInput')
   input.addEventListener('input', function(){ handleSearchInput(this.value) })
-}
 
+  // Tab scroll button visibility
+  var strip = document.getElementById('tabStrip')
+  if(strip){
+    strip.addEventListener('scroll', updateTabScrollButtons)
+    window.addEventListener('resize', updateTabScrollButtons)
+  }
+}
 init()
 </script>
 </body>
