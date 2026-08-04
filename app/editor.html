@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#f2f6fa">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#f2f6fa">
 <title>Create — Go Spread The Word</title>
 
   <link rel="icon" type="image/x-icon" href="/images/favicon/favicon.ico">
@@ -134,7 +134,48 @@
       margin-top:6px;
       padding:0 4px;
     }
+    /* Hashtag pill inside caption */
+    .hashtag-row{
+      margin-top:8px;
+      padding:0 4px;
+    }
+    .hashtag-pill-btn{
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      padding:5px 10px;
+      background:rgba(176,213,254,0.20);
+      color:#234a6c;
+      border-radius:99px;
+      font-family:'Manrope',sans-serif;
+      font-size:11px;
+      font-weight:700;
+      transition:all 0.15s ease;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .hashtag-pill-btn:hover{background:rgba(176,213,254,0.32)}
+    .hashtag-pill-btn:active{transform:scale(0.96)}
+    .hashtag-pill-btn.open{background:#3d6285;color:#f7f9ff}
+    .hashtag-pill-btn.open #hashtagChevron{transform:rotate(180deg)}
 
+    .hashtag-panel{
+      max-height:0;
+      opacity:0;
+      overflow:hidden;
+      padding:0 4px;
+      transition:max-height 0.3s cubic-bezier(0.22,1,0.36,1),
+                 opacity 0.2s ease,
+                 padding 0.25s ease,
+                 margin-top 0.25s ease;
+      margin-top:0;
+    }
+    .hashtag-panel.open{
+      max-height:300px;
+      opacity:1;
+      padding-top:10px;
+      padding-bottom:4px;
+      margin-top:4px;
+    }
     #quoteOverlay{position:absolute;z-index:10;touch-action:none;cursor:grab;width:80%;left:10%;top:25%}
     #quoteOverlay:active{cursor:grabbing}
 
@@ -296,10 +337,10 @@
 <input type="file" id="selfieInput" accept="image/*" capture="user" class="hidden" onchange="handleImageSelect(this)">
 <input type="file" id="galleryInput" accept="image/*" class="hidden" onchange="handleImageSelect(this)">
 
-<div class="max-w-[430px] mx-auto flex flex-col min-h-[100dvh]">
+<div class="max-w-[430px] mx-auto flex flex-col min-h-[100dvh]" style="padding-top:calc(56px + env(safe-area-inset-top));">
 
   <!-- HEADER -->
-  <header class="glass-header sticky top-0 z-40 flex items-center justify-between px-4 py-3 relative">
+  <header class="glass-header fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-3">
     <button onclick="goHome()" class="header-btn" title="Back to home">
       <span class="material-symbols-outlined text-[22px]">home</span>
     </button>
@@ -361,7 +402,7 @@
             onfocus="onInputFocus(this)"
             onblur="onInputBlur(this)"></textarea>
         </div>
-        <div class="caption-footer">
+                <div class="caption-footer">
           <div class="flex items-center gap-1.5">
             <span class="material-symbols-outlined text-primary text-[12px] filled">check_circle</span>
             <span class="font-body text-on-surface-variant" style="font-size:10px;">Auto-saved</span>
@@ -371,31 +412,38 @@
             <span id="charCounter" class="font-body text-on-surface-variant" style="font-size:10px;font-weight:600;">0 / 2200</span>
           </div>
         </div>
+
+        <!-- Hashtag pill row (collapsed by default) -->
+        <div class="hashtag-row">
+          <button id="hashtagToggle" onclick="toggleHashtagPanel()" class="hashtag-pill-btn">
+            <span class="material-symbols-outlined" style="font-size:14px;">tag</span>
+            <span id="hashtagPillLabel">2 hashtags</span>
+            <span id="hashtagChevron" class="material-symbols-outlined" style="font-size:16px;transition:transform 0.25s ease;">expand_more</span>
+          </button>
+        </div>
+
+        <!-- Hashtag expanded panel (hidden by default) -->
+        <div id="hashtagPanel" class="hashtag-panel">
+          <div id="hashtagsContainer" class="flex flex-wrap gap-1.5"></div>
+          <div id="hashtagInput" class="hidden mt-2">
+            <div class="flex gap-2">
+              <input id="hashtagField" type="text" placeholder="#YourTag"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();addHashtagFromInput()}"
+                class="flex-1 bg-white rounded-lg px-3 py-2 font-body text-on-surface placeholder:text-outline-variant"
+                style="font-size:12px;border:1px solid rgba(61,98,133,0.3);"
+                onfocus="onInputFocus(this)" onblur="onInputBlur(this)">
+              <button onclick="addHashtagFromInput()"
+                class="signature-gradient text-on-primary font-headline font-semibold px-3 py-2 rounded-lg active:scale-95 transition-transform"
+                style="font-size:12px;">Add</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <!-- Suggested context hint (below pill) -->
     <div id="captionHint" class="hidden items-center gap-1.5 mt-2 px-3 py-2 bg-primary-container/25 rounded-lg">
       <span class="material-symbols-outlined text-primary text-[14px] filled flex-shrink-0">auto_awesome</span>
       <span class="font-body text-primary" style="font-size:11px;font-weight:600;">Context added as your caption — edit or clear as you like</span>
-    </div>
-  </section>
-
-  <!-- HASHTAGS (outside the post pill) -->
-  <section class="px-4 pt-3">
-    <div class="bg-surface-cl rounded-xl p-4">
-      <div class="flex justify-between items-center mb-2">
-        <p class="font-body text-on-surface-variant" style="font-size:11px;font-weight:500;">Hashtags</p>
-        <span id="hashtagCounter" class="font-body text-outline" style="font-size:11px;">2 / 5</span>
-      </div>
-      <div id="hashtagsContainer" class="flex flex-wrap gap-2"></div>
-      <div id="hashtagInput" class="hidden mt-3">
-        <div class="flex gap-2">
-          <input id="hashtagField" type="text" placeholder="#YourTag" onkeydown="if(event.key==='Enter'){event.preventDefault();addHashtagFromInput()}"
-            class="flex-1 bg-surface-clow rounded-lg px-3 py-2 font-body text-on-surface placeholder:text-outline-variant"
-            style="font-size:13px;border:1px solid transparent;" onfocus="onInputFocus(this)" onblur="onInputBlur(this)">
-          <button onclick="addHashtagFromInput()" class="signature-gradient text-on-primary font-headline font-semibold px-4 py-2 rounded-lg active:scale-95 transition-transform" style="font-size:13px;">Add</button>
-        </div>
-      </div>
     </div>
   </section>
 
@@ -830,11 +878,43 @@ function clearCaption(){
   var m=document.getElementById('postCaption');if(m){m.value='';updateCaption()};var h=document.getElementById('captionHint');if(h){h.classList.add('hidden');h.classList.remove('flex')};showToast('Cleared')
 }
 function renderHashtags(){
-  var c=document.getElementById('hashtagsContainer');if(!c)return;var h='';hashtags.forEach(function(t){var s=t.replace(/'/g,"\\'")
-    h+='<span class="hashtag-chip">'+t+' <button onclick="removeHashtag(\''+s+'\')" class="opacity-50 hover:opacity-100"><span class="material-symbols-outlined text-[13px]">close</span></button></span>'
+  var c = document.getElementById('hashtagsContainer')
+  if(!c) return
+  var h = ''
+  hashtags.forEach(function(t){
+    var s = t.replace(/'/g,"\\'")
+    h += '<span class="hashtag-chip">' + t + ' <button onclick="removeHashtag(\'' + s + '\')" class="opacity-50 hover:opacity-100"><span class="material-symbols-outlined text-[12px]">close</span></button></span>'
   })
-  if(hashtags.length<MAX_TAGS)h+='<button onclick="toggleHashtagInput()" class="inline-flex items-center bg-surface-chigh text-on-surface-variant px-3 py-1.5 rounded-full font-body font-medium active:scale-95 transition-transform" style="font-size:12px;"><span class="material-symbols-outlined text-[14px] mr-1">add</span>Add</button>'
-  c.innerHTML=h;document.getElementById('hashtagCounter').textContent=hashtags.length+' / '+MAX_TAGS;updateCaption()
+  if(hashtags.length < MAX_TAGS){
+    h += '<button onclick="toggleHashtagInput()" class="inline-flex items-center bg-surface-chigh text-on-surface-variant px-2.5 py-1 rounded-full font-body font-medium active:scale-95 transition-transform" style="font-size:11px;"><span class="material-symbols-outlined text-[13px] mr-0.5">add</span>Add</button>'
+  }
+  c.innerHTML = h
+
+  // Update the pill label
+  var pillLabel = document.getElementById('hashtagPillLabel')
+  if(pillLabel){
+    pillLabel.textContent = hashtags.length + ' hashtag' + (hashtags.length !== 1 ? 's' : '')
+  }
+
+  updateCaption()
+}
+function toggleHashtagPanel(){
+  var panel = document.getElementById('hashtagPanel')
+  var btn = document.getElementById('hashtagToggle')
+  if(!panel || !btn) return
+
+  var isOpen = panel.classList.contains('open')
+  if(isOpen){
+    panel.classList.remove('open')
+    btn.classList.remove('open')
+    // Also close the input if it's open
+    var input = document.getElementById('hashtagInput')
+    if(input && !input.classList.contains('hidden')) input.classList.add('hidden')
+  } else {
+    panel.classList.add('open')
+    btn.classList.add('open')
+  }
+  haptic('light')
 }
 function toggleHashtagInput(){var el=document.getElementById('hashtagInput');el.classList.toggle('hidden');if(!el.classList.contains('hidden'))setTimeout(function(){document.getElementById('hashtagField').focus()},50)}
 function addHashtagFromInput(){var f=document.getElementById('hashtagField'),tag=f.value.trim();if(!tag)return;if(tag.charAt(0)!=='#')tag='#'+tag;if(hashtags.indexOf(tag)>-1){return}if(hashtags.length>=MAX_TAGS){return}hashtags.push(tag);f.value='';renderHashtags();haptic('light')}
