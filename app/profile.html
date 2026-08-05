@@ -10,6 +10,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="nav.js"></script>
+  <script src="badges-config.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -455,6 +456,26 @@ function renderHero(){
   var nicknameEl = document.getElementById('profileNickname')
   if(nicknameEl) nicknameEl.textContent = displayName
 
+ // Show subscription badge next to nickname
+var subBadge = getUserSubscriptionBadge(userProfile)
+if (subBadge && nicknameEl) {
+  var wrap = document.createElement('div')
+  wrap.style.cssText = 'display:flex;align-items:center;gap:8px;'
+  var img = document.createElement('img')
+  img.src = subBadge.image
+  img.alt = subBadge.name
+  img.width = 26
+  img.height = 26
+  img.style.cssText = 'display:block;border-radius:50%;flex-shrink:0;'
+  img.title = subBadge.name
+  wrap.appendChild(img)
+  var textSpan = document.createElement('span')
+  textSpan.textContent = displayName
+  wrap.appendChild(textSpan)
+  nicknameEl.innerHTML = ''
+  nicknameEl.appendChild(wrap)
+}
+
   // Full name (secondary — only show if nickname is set and different from full name)
   var nameEl = document.getElementById('profileName')
   if(nameEl){
@@ -531,16 +552,21 @@ function getNextLevel(s){
 // NAV HINTS
 // ════════════════════════════════════════════
 function renderNavHints(notifications){
-  var subHint = document.getElementById('subStatusHint')
-  if(subHint){
-    var tier = userProfile.subscription_tier || 'free'
-    var status = userProfile.subscription_status || 'inactive'
-    if(status === 'suspended') subHint.textContent = 'Payment required'
-    else if(tier === 'warrior') subHint.textContent = 'Warrior Plan · $3.99/month'
-    else if(tier === 'commander') subHint.textContent = 'Commander Plan · $5.99/month'
-    else if(tier === 'legacy') subHint.textContent = 'Legacy · Full access'
-    else subHint.textContent = 'Free Plan · Upgrade for full access'
-  }
+ var subHint = document.getElementById('subStatusHint')
+if(subHint){
+  var tier = userProfile.subscription_tier || 'free'
+  var status = userProfile.subscription_status || 'inactive'
+  var badge = getUserSubscriptionBadge(userProfile)
+  var tierLabel = ''
+  if(status === 'suspended') tierLabel = 'Payment required'
+  else if(tier === 'warrior') tierLabel = 'Warrior Plan · $3.99/month'
+  else if(tier === 'commander') tierLabel = 'Commander Plan · $5.99/month'
+  else if(tier === 'legacy') tierLabel = 'Legacy · Full access'
+  else tierLabel = 'Free Plan · Upgrade for full access'
+  subHint.innerHTML = badge
+    ? '<span style="display:inline-flex;align-items:center;gap:6px;"><img src="' + badge.image + '" width="16" height="16" style="border-radius:50%;">' + tierLabel + '</span>'
+    : tierLabel
+}
 
   var recruitCount = userProfile.recruit_count || 0
   var recruitHint = document.getElementById('recruitHint')
