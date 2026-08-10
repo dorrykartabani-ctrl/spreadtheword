@@ -68,7 +68,7 @@
     ::-webkit-scrollbar{display:none}
     body{-ms-overflow-style:none;scrollbar-width:none}
 
-    button,.bg-thumb,.color-swatch,.font-opt,.style-btn,.subtab,.dock-btn,.tool-card{
+    button,.bg-thumb,.color-swatch,.font-opt,.style-btn,.subtab,.tool-card{
       touch-action:manipulation;
     }
 
@@ -191,6 +191,14 @@
     }
     @keyframes hintFade{0%,100%{opacity:0}15%,85%{opacity:1}}
 
+    /* Tool cards (Background / Text buttons) */
+    .tool-card{
+      display:flex;align-items:center;gap:12px;padding:14px;
+      border-radius:16px;background:#ffffff;
+      box-shadow:0 4px 12px rgba(49,51,46,0.03);
+      transition:all 0.15s ease;
+    }
+    .tool-card:active{transform:scale(0.97)}
     .tool-card.active{
       background:linear-gradient(135deg,#3d6285 0%,#5478a0 100%);
       box-shadow:0 8px 20px rgba(61,98,133,0.25);
@@ -198,14 +206,6 @@
     .tool-card.active p{color:#ffffff!important}
     .tool-card.active .tool-card-icon{background:rgba(255,255,255,0.2)}
     .tool-card.active .tool-card-icon span{color:#ffffff!important}
-
-    .tool-panel{
-      background:#ffffff;border-radius:20px;padding:16px;margin-top:10px;
-      max-height:0;opacity:0;overflow:hidden;
-      transition:max-height 0.35s cubic-bezier(0.22,1,0.36,1),opacity 0.25s ease,padding 0.25s ease;
-      padding-top:0;padding-bottom:0;box-shadow:0 4px 16px rgba(49,51,46,0.04);
-    }
-    .tool-panel.open{max-height:500px;opacity:1;padding-top:16px;padding-bottom:16px}
 
     .subtab{
       padding:6px 12px;border-radius:10px;font-size:11px;font-weight:700;
@@ -304,6 +304,63 @@
     .overflow-item:active{background:#efeee7}
     .overflow-item.danger{color:#ad332b}
 
+    /* ═══ BOTTOM SHEET TOOL MODAL (Change #3) ═══ */
+    .tool-sheet-overlay{
+      position:fixed;inset:0;
+      background:rgba(14,14,12,0.25);
+      backdrop-filter:blur(2px);
+      z-index:60;opacity:0;pointer-events:none;
+      transition:opacity 0.3s ease;
+    }
+    .tool-sheet-overlay.open{opacity:1;pointer-events:auto}
+
+    .tool-sheet{
+      position:fixed;
+      left:50%;
+      transform:translateX(-50%) translateY(100%);
+      width:100%;
+      max-width:430px;
+      background:#ffffff;
+      border-radius:22px 22px 0 0;
+      box-shadow:0 -12px 40px rgba(49,51,46,0.15);
+      z-index:70;
+      transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      bottom:88px; /* Above CTA footer */
+      padding-bottom:env(safe-area-inset-bottom);
+      max-height:60vh;
+      overflow-y:auto;
+      -ms-overflow-style:none;
+      scrollbar-width:none;
+    }
+    .tool-sheet::-webkit-scrollbar{display:none}
+    .tool-sheet.open{transform:translateX(-50%) translateY(0)}
+
+    .tool-sheet-handle{
+      width:40px;height:5px;
+      background:rgba(94,96,89,0.25);
+      border-radius:99px;
+      margin:10px auto 0;
+    }
+    .tool-sheet-header{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px 20px 8px;
+    }
+    .tool-sheet-title{
+      font-family:'Plus Jakarta Sans',sans-serif;
+      font-weight:800;font-size:16px;color:#31332e;
+      letter-spacing:-0.02em;
+    }
+    .tool-sheet-close{
+      width:34px;height:34px;border-radius:50%;
+      background:#f5f4ed;
+      display:flex;align-items:center;justify-content:center;
+      color:#5e6059;transition:all 0.15s ease;
+    }
+    .tool-sheet-close:hover{background:#efeee7}
+    .tool-sheet-close:active{transform:scale(0.92)}
+
+    .tool-sheet-body{padding:8px 20px 24px}
+
     /* ═══ CEREMONIAL CONFIRMATION SHEET ═══ */
     .confirm-share-sheet{
       background:linear-gradient(180deg,#ffffff 0%,#f2f6fa 100%);
@@ -315,16 +372,61 @@
     }
     .seed-icon-animate{animation:seedGrow 0.6s cubic-bezier(0.34,1.56,0.64,1) both}
 
-    /* ═══ SUCCESS MODAL ═══ */
-    @keyframes confettiBurst{0%{transform:scale(0.8);opacity:0}50%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
-    .success-logo-animate{animation:confettiBurst 0.5s cubic-bezier(0.34,1.56,0.64,1) both}
+    /* ═══ SUCCESS MODAL (Change #4) ═══ */
+    @keyframes logoBurst{
+      0%{transform:scale(0.4);opacity:0}
+      60%{transform:scale(1.15);opacity:1}
+      100%{transform:scale(1);opacity:1}
+    }
+    .success-logo-animate{animation:logoBurst 0.6s cubic-bezier(0.34,1.56,0.64,1) both}
+
+    /* Confetti burst */
+    .confetti-container{
+      position:absolute;top:0;left:0;right:0;height:220px;
+      overflow:visible;pointer-events:none;z-index:1;
+    }
+    .confetti-piece{
+      position:absolute;top:60px;left:50%;
+      width:8px;height:12px;
+      opacity:0;
+    }
+    @keyframes confettiFly{
+      0%{opacity:1;transform:translate(-50%,0) rotate(0deg) scale(1)}
+      100%{opacity:0;transform:translate(var(--tx),var(--ty)) rotate(var(--tr)) scale(0.5)}
+    }
+    .confetti-piece.go{animation:confettiFly 1.2s ease-out forwards}
+
     .quick-action{
-      display:flex;align-items:center;gap:10px;width:100%;padding:14px 16px;
+      display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;
       border-radius:14px;transition:all 0.18s ease;font-weight:700;font-size:14px;
+      text-align:left;
     }
     .quick-action:active{transform:scale(0.97)}
-    .quick-action-save{background:#f5f4ed;color:#31332e}
-    .quick-action-impact{background:#efeee7;color:#31332e}
+    .quick-action-primary{background:#3d6285;color:#f7f9ff}
+    .quick-action-secondary{background:#f5f4ed;color:#31332e}
+    .quick-action-tertiary{background:#efeee7;color:#31332e}
+
+    /* Rank progress card */
+    .rank-progress{
+      background:linear-gradient(135deg,rgba(176,213,254,0.20),rgba(202,230,255,0.15));
+      border-radius:16px;padding:14px 16px;
+      display:flex;align-items:center;gap:12px;
+    }
+    .rank-progress-icon{
+      width:38px;height:38px;border-radius:12px;
+      background:#3d6285;
+      display:flex;align-items:center;justify-content:center;
+      color:#f7f9ff;flex-shrink:0;
+    }
+    .rank-progress-bar{
+      height:5px;background:rgba(61,98,133,0.15);
+      border-radius:99px;overflow:hidden;margin-top:5px;
+    }
+    .rank-progress-fill{
+      height:100%;background:linear-gradient(90deg,#3d6285,#6b9bc3);
+      border-radius:99px;
+      transition:width 1s cubic-bezier(0.22,1,0.36,1);
+    }
 
     /* ═══ DESKTOP PLATFORM PICKER ═══ */
     .platform-btn{
@@ -345,6 +447,17 @@
     }
 
     body.kb-open footer{position:absolute!important}
+
+    /* Pinch hint for text overlay */
+    .pinch-hint{
+      position:absolute;top:8px;left:50%;transform:translateX(-50%);
+      background:rgba(0,0,0,0.7);color:#fff;
+      font-size:10px;font-weight:600;
+      padding:5px 10px;border-radius:99px;
+      z-index:15;pointer-events:none;
+      display:flex;align-items:center;gap:4px;
+      animation:hintFade 4s ease-in-out forwards;
+    }
   </style>
 </head>
 
@@ -353,7 +466,7 @@
 <input type="file" id="selfieInput" accept="image/*" capture="user" class="hidden" onchange="handleImageSelect(this)">
 <input type="file" id="galleryInput" accept="image/*" class="hidden" onchange="handleImageSelect(this)">
 
-<!-- HEADER — matches pattern from working pages -->
+<!-- HEADER -->
 <header id="pageHeader" class="fixed top-0 w-full z-50 glass-header">
   <div class="max-w-[430px] mx-auto px-4 pt-10 pb-3 flex items-center justify-between relative">
     <button onclick="goHome()" class="header-btn" title="Back to home">
@@ -388,10 +501,9 @@
 
 <div class="max-w-[430px] mx-auto flex flex-col min-h-[100dvh] pt-24 pb-32">
 
-  <!-- ═══ THE POST PILL: Image + Caption as ONE unit ═══ -->
+  <!-- ═══ THE POST PILL ═══ -->
   <section class="px-4 pt-4">
     <div class="post-pill">
-      <!-- Image area -->
       <div class="post-canvas-wrap">
         <div class="preview-canvas" id="previewCanvas">
           <div id="bgLayer" class="absolute inset-0 bg-cover bg-center"></div>
@@ -406,12 +518,15 @@
 
           <div id="dragHint" class="drag-hint">
             <span class="material-symbols-outlined text-[14px]">drag_pan</span>
-            Drag to reposition text
+            Drag to reposition
+          </div>
+          <div id="pinchHint" class="pinch-hint hidden">
+            <span class="material-symbols-outlined text-[12px]">pinch</span>
+            Pinch to resize width
           </div>
         </div>
       </div>
 
-      <!-- Caption area with hashtag pill -->
       <div class="post-caption-wrap">
         <div class="post-caption-inner">
           <textarea id="postCaption" maxlength="10000"
@@ -427,11 +542,10 @@
           </div>
           <div class="flex items-center gap-2">
             <button id="clearCaptionBtn" onclick="clearCaption()" class="font-body text-tertiary active:opacity-60" style="font-size:10px;font-weight:600;">Clear</button>
-            <span id="charCounter" class="font-body text-on-surface-variant" style="font-size:10px;font-weight:600;">0 / 2200</span>
+            <span id="charCounter" class="font-body text-on-surface-variant" style="font-size:10px;font-weight:600;">0 / 2200 · Instagram</span>
           </div>
         </div>
 
-        <!-- Hashtag pill row -->
         <div class="hashtag-row">
           <button id="hashtagToggle" onclick="toggleHashtagPanel()" class="hashtag-pill-btn">
             <span class="material-symbols-outlined" style="font-size:14px;">tag</span>
@@ -440,7 +554,6 @@
           </button>
         </div>
 
-        <!-- Hashtag expanded panel -->
         <div id="hashtagPanel" class="hashtag-panel">
           <div id="hashtagsContainer" class="flex flex-wrap gap-1.5"></div>
           <div id="hashtagInput" class="hidden mt-2">
@@ -458,7 +571,6 @@
         </div>
       </div>
     </div>
-    <!-- Suggested context hint (below pill) -->
     <div id="captionHint" class="hidden items-center gap-1.5 mt-2 px-3 py-2 bg-primary-container/25 rounded-lg">
       <span class="material-symbols-outlined text-primary text-[14px] filled flex-shrink-0">auto_awesome</span>
       <span class="font-body text-primary" style="font-size:11px;font-weight:600;">Context added as your caption — edit or clear as you like</span>
@@ -492,11 +604,10 @@
     </div>
   </section>
 
-  <!-- TOOL DOCK -->
+  <!-- TOOL DOCK — now opens bottom sheets -->
   <section class="px-4 pt-3">
     <div class="grid grid-cols-2 gap-2.5">
-      <button id="dockBackground" onclick="openTool('background')"
-        class="tool-card flex items-center gap-3 p-3 rounded-2xl bg-surface-cl active:scale-[0.97] transition-all shadow-ambient-sm">
+      <button id="dockBackground" onclick="openToolSheet('background')" class="tool-card">
         <div class="tool-card-icon w-9 h-9 rounded-xl bg-surface-clow flex items-center justify-center flex-shrink-0">
           <span class="material-symbols-outlined text-outline" style="font-size:18px;">wallpaper</span>
         </div>
@@ -506,8 +617,7 @@
         </div>
       </button>
 
-      <button id="dockText" onclick="openTool('text')"
-        class="tool-card flex items-center gap-3 p-3 rounded-2xl bg-surface-cl active:scale-[0.97] transition-all shadow-ambient-sm">
+      <button id="dockText" onclick="openToolSheet('text')" class="tool-card">
         <div class="tool-card-icon w-9 h-9 rounded-xl bg-surface-clow flex items-center justify-center flex-shrink-0">
           <span class="material-symbols-outlined text-outline" style="font-size:18px;">text_fields</span>
         </div>
@@ -517,10 +627,38 @@
         </div>
       </button>
     </div>
+  </section>
 
-    <div id="panelBackground" class="tool-panel">
+</div>
+
+<!-- STICKY CTA -->
+<footer class="glass-footer fixed bottom-0 left-0 right-0 z-40">
+  <div class="max-w-[430px] mx-auto px-4 pt-3" style="padding-bottom:max(16px,env(safe-area-inset-bottom))">
+    <button id="shareBtn" onclick="openConfirmShare()"
+      class="w-full py-4 signature-gradient text-on-primary font-headline font-bold rounded-xl flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-ambient"
+      style="font-size:16px;">
+      <span>Spread The Word</span>
+      <span class="cta-arrow" style="font-size:18px;">→</span>
+    </button>
+  </div>
+</footer>
+
+<!-- ═══ BOTTOM SHEET TOOL MODAL ═══ -->
+<div id="toolSheetOverlay" class="tool-sheet-overlay" onclick="closeToolSheet()"></div>
+<div id="toolSheet" class="tool-sheet">
+  <div class="tool-sheet-handle"></div>
+  <div class="tool-sheet-header">
+    <span id="toolSheetTitle" class="tool-sheet-title">Background</span>
+    <button onclick="closeToolSheet()" class="tool-sheet-close">
+      <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+    </button>
+  </div>
+  <div class="tool-sheet-body">
+
+    <!-- Background panel content -->
+    <div id="sheetBackground" class="tool-content">
       <p class="font-body text-on-surface-variant mb-3" style="font-size:11px;font-weight:500;">Background</p>
-      <div id="bgThumbsContainer" class="chip-scroll h-scroll mb-4">
+      <div id="bgThumbsContainer" class="chip-scroll h-scroll mb-5">
         <div class="bg-skeleton"></div><div class="bg-skeleton"></div>
         <div class="bg-skeleton"></div><div class="bg-skeleton"></div><div class="bg-skeleton"></div>
       </div>
@@ -531,10 +669,12 @@
       <input type="range" min="0" max="85" value="30" oninput="onDarknessInput(this.value)">
     </div>
 
-    <div id="panelText" class="tool-panel">
-      <div class="flex gap-2 mb-4 overflow-x-auto" style="-ms-overflow-style:none;scrollbar-width:none">
+    <!-- Text panel content -->
+    <div id="sheetText" class="tool-content hidden">
+      <div class="flex justify-center gap-2 mb-4 overflow-x-auto" style="-ms-overflow-style:none;scrollbar-width:none">
         <button onclick="showTextTab('font',this)" class="subtab active">Font</button>
         <button onclick="showTextTab('size',this)" class="subtab">Size</button>
+        <button onclick="showTextTab('width',this)" class="subtab">Width</button>
         <button onclick="showTextTab('color',this)" class="subtab">Color</button>
         <button onclick="showTextTab('align',this)" class="subtab">Align</button>
         <button onclick="showTextTab('effects',this)" class="subtab">Effects</button>
@@ -555,6 +695,14 @@
           <span id="sizeLabel" class="font-body font-bold text-primary" style="font-size:12px;">18px</span>
         </div>
         <input type="range" min="10" max="34" value="18" oninput="setSize(this.value)">
+      </div>
+      <div id="textWidth" class="text-sub hidden">
+        <div class="flex items-center justify-between mb-3">
+          <span class="font-body text-on-surface-variant" style="font-size:11px;font-weight:500;">Text Width</span>
+          <span id="widthLabel" class="font-body font-bold text-primary" style="font-size:12px;">80%</span>
+        </div>
+        <input id="widthSlider" type="range" min="30" max="95" value="80" oninput="setTextWidth(this.value)">
+        <p class="font-body text-on-surface-variant mt-2 text-center" style="font-size:10px;">💡 On mobile: pinch text to resize. On desktop: Ctrl/Cmd + scroll on text.</p>
       </div>
       <div id="textColor" class="text-sub hidden">
         <div class="h-scroll">
@@ -586,21 +734,9 @@
         </div>
       </div>
     </div>
-  </section>
 
-</div>
-
-<!-- STICKY CTA -->
-<footer class="glass-footer fixed bottom-0 left-0 right-0 z-40">
-  <div class="max-w-[430px] mx-auto px-4 pt-3" style="padding-bottom:max(16px,env(safe-area-inset-bottom))">
-    <button id="shareBtn" onclick="openConfirmShare()"
-      class="w-full py-4 signature-gradient text-on-primary font-headline font-bold rounded-xl flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-ambient"
-      style="font-size:16px;">
-      <span>Spread The Word</span>
-      <span class="cta-arrow" style="font-size:18px;">→</span>
-    </button>
   </div>
-</footer>
+</div>
 
 <!-- CEREMONIAL SHARE CONFIRMATION SHEET -->
 <div id="confirmShareOverlay" class="hidden fixed inset-0 bg-inverse-surface/50 backdrop-blur-sm z-[100]" onclick="closeConfirmShare()"></div>
@@ -653,112 +789,75 @@
 
       <p class="font-body text-on-surface-variant font-semibold mb-2" style="font-size:11px;letter-spacing:0.06em;text-transform:uppercase;">Open Platform</p>
       <div class="grid grid-cols-3 gap-2 mb-5">
-        <button onclick="openPlatform('twitter')" class="platform-btn">
-          <div class="w-10 h-10 rounded-xl bg-black flex items-center justify-center mx-auto mb-1.5">
-            <span class="text-white font-bold" style="font-size:16px;">𝕏</span>
-          </div>
-          <span class="platform-label">X / Twitter</span>
-        </button>
-
-        <button onclick="openPlatform('facebook')" class="platform-btn">
-          <div class="w-10 h-10 rounded-xl bg-[#1877F2] flex items-center justify-center mx-auto mb-1.5">
-            <span class="text-white font-black" style="font-size:20px;font-family:Georgia,serif;">f</span>
-          </div>
-          <span class="platform-label">Facebook</span>
-        </button>
-
-        <button onclick="openPlatform('whatsapp')" class="platform-btn">
-          <div class="w-10 h-10 rounded-xl bg-[#25D366] flex items-center justify-center mx-auto mb-1.5">
-            <span class="material-symbols-outlined text-white filled" style="font-size:20px;">chat</span>
-          </div>
-          <span class="platform-label">WhatsApp</span>
-        </button>
-
-        <button onclick="openPlatform('telegram')" class="platform-btn">
-          <div class="w-10 h-10 rounded-xl bg-[#0088CC] flex items-center justify-center mx-auto mb-1.5">
-            <span class="material-symbols-outlined text-white filled" style="font-size:20px;">send</span>
-          </div>
-          <span class="platform-label">Telegram</span>
-        </button>
-
-        <button onclick="openPlatform('threads')" class="platform-btn">
-          <div class="w-10 h-10 rounded-xl bg-black flex items-center justify-center mx-auto mb-1.5">
-            <span class="text-white font-black" style="font-size:20px;">@</span>
-          </div>
-          <span class="platform-label">Threads</span>
-        </button>
-
-        <button onclick="openPlatform('linkedin')" class="platform-btn">
-          <div class="w-10 h-10 rounded-xl bg-[#0A66C2] flex items-center justify-center mx-auto mb-1.5">
-            <span class="text-white font-black" style="font-size:14px;">in</span>
-          </div>
-          <span class="platform-label">LinkedIn</span>
-        </button>
-
-        <button onclick="openPlatform('email')" class="platform-btn">
-          <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center mx-auto mb-1.5">
-            <span class="material-symbols-outlined text-white filled" style="font-size:20px;">mail</span>
-          </div>
-          <span class="platform-label">Email</span>
-        </button>
-
-        <button onclick="copyLinkOnly()" class="platform-btn">
-          <div class="w-10 h-10 rounded-xl bg-surface-chigh flex items-center justify-center mx-auto mb-1.5">
-            <span class="material-symbols-outlined text-on-surface-variant" style="font-size:20px;">content_copy</span>
-          </div>
-          <span class="platform-label">Copy Again</span>
-        </button>
-
-        <button onclick="closeDesktopPickerAndSucceed()" class="platform-btn">
-          <div class="w-10 h-10 rounded-xl bg-surface-chigh flex items-center justify-center mx-auto mb-1.5">
-            <span class="material-symbols-outlined text-on-surface-variant" style="font-size:20px;">check</span>
-          </div>
-          <span class="platform-label">Done</span>
-        </button>
+        <button onclick="openPlatform('twitter')" class="platform-btn"><div class="w-10 h-10 rounded-xl bg-black flex items-center justify-center mx-auto mb-1.5"><span class="text-white font-bold" style="font-size:16px;">𝕏</span></div><span class="platform-label">X / Twitter</span></button>
+        <button onclick="openPlatform('facebook')" class="platform-btn"><div class="w-10 h-10 rounded-xl bg-[#1877F2] flex items-center justify-center mx-auto mb-1.5"><span class="text-white font-black" style="font-size:20px;font-family:Georgia,serif;">f</span></div><span class="platform-label">Facebook</span></button>
+        <button onclick="openPlatform('whatsapp')" class="platform-btn"><div class="w-10 h-10 rounded-xl bg-[#25D366] flex items-center justify-center mx-auto mb-1.5"><span class="material-symbols-outlined text-white filled" style="font-size:20px;">chat</span></div><span class="platform-label">WhatsApp</span></button>
+        <button onclick="openPlatform('telegram')" class="platform-btn"><div class="w-10 h-10 rounded-xl bg-[#0088CC] flex items-center justify-center mx-auto mb-1.5"><span class="material-symbols-outlined text-white filled" style="font-size:20px;">send</span></div><span class="platform-label">Telegram</span></button>
+        <button onclick="openPlatform('threads')" class="platform-btn"><div class="w-10 h-10 rounded-xl bg-black flex items-center justify-center mx-auto mb-1.5"><span class="text-white font-black" style="font-size:20px;">@</span></div><span class="platform-label">Threads</span></button>
+        <button onclick="openPlatform('linkedin')" class="platform-btn"><div class="w-10 h-10 rounded-xl bg-[#0A66C2] flex items-center justify-center mx-auto mb-1.5"><span class="text-white font-black" style="font-size:14px;">in</span></div><span class="platform-label">LinkedIn</span></button>
+        <button onclick="openPlatform('email')" class="platform-btn"><div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center mx-auto mb-1.5"><span class="material-symbols-outlined text-white filled" style="font-size:20px;">mail</span></div><span class="platform-label">Email</span></button>
+        <button onclick="copyLinkOnly()" class="platform-btn"><div class="w-10 h-10 rounded-xl bg-surface-chigh flex items-center justify-center mx-auto mb-1.5"><span class="material-symbols-outlined text-on-surface-variant" style="font-size:20px;">content_copy</span></div><span class="platform-label">Copy Again</span></button>
+        <button onclick="closeDesktopPickerAndSucceed()" class="platform-btn"><div class="w-10 h-10 rounded-xl bg-surface-chigh flex items-center justify-center mx-auto mb-1.5"><span class="material-symbols-outlined text-on-surface-variant" style="font-size:20px;">check</span></div><span class="platform-label">Done</span></button>
       </div>
 
       <div class="bg-surface-clow rounded-xl p-3 mb-4 flex items-start gap-2">
         <span class="material-symbols-outlined text-outline text-[16px] flex-shrink-0" style="margin-top:1px;">info</span>
-        <p class="font-body text-on-surface-variant leading-relaxed" style="font-size:11px;">
-          Instagram &amp; TikTok require you to <span class="font-semibold">upload the image manually</span> from your device. Caption is already copied to your clipboard.
-        </p>
+        <p class="font-body text-on-surface-variant leading-relaxed" style="font-size:11px;">Instagram &amp; TikTok require you to <span class="font-semibold">upload the image manually</span> from your device. Caption is already copied to your clipboard.</p>
       </div>
 
-      <button onclick="closeDesktopPicker()" class="w-full py-3 text-on-surface-variant font-body font-semibold rounded-xl active:scale-95 transition-transform" style="font-size:13px;">
-        Cancel
-      </button>
+      <button onclick="closeDesktopPicker()" class="w-full py-3 text-on-surface-variant font-body font-semibold rounded-xl active:scale-95 transition-transform" style="font-size:13px;">Cancel</button>
     </div>
   </div>
 </div>
 
-<!-- SUCCESS MODAL -->
+<!-- ═══ SUCCESS MODAL (Change #4) ═══ -->
 <div id="successModal" class="hidden fixed inset-0 z-[120] flex items-end justify-center">
   <div class="absolute inset-0 bg-inverse-surface/70 backdrop-blur-sm" onclick="closeSuccess()"></div>
-  <div class="relative w-full max-w-[430px] bg-surface rounded-t-3xl" style="max-height:92vh;overflow-y:auto;-ms-overflow-style:none;scrollbar-width:none">
-    <div class="p-6 pb-8" style="padding-bottom:max(32px,env(safe-area-inset-bottom))">
+  <div class="relative w-full max-w-[430px] bg-surface-cl rounded-t-3xl" style="max-height:92vh;overflow-y:auto;-ms-overflow-style:none;scrollbar-width:none">
+    <div class="p-6 pb-8 relative" style="padding-bottom:max(32px,env(safe-area-inset-bottom))">
       <div class="w-10 h-1 bg-outline-variant/30 rounded-full mx-auto mb-5"></div>
 
-      <!-- Tier badge (subscription-aware) -->
-      <div id="successTierBadge" class="hidden justify-center mb-2"></div>
+      <!-- Confetti burst container -->
+      <div id="confettiContainer" class="confetti-container"></div>
 
-      <div class="flex justify-center mb-5">
-        <div class="success-logo-animate w-20 h-20 rounded-2xl signature-gradient shadow-float flex items-center justify-center">
-          <span class="font-headline font-black text-on-primary tracking-tight" style="font-size:22px;letter-spacing:-0.03em;">GSTW</span>
+      <!-- Brand logo -->
+      <div class="flex justify-center mb-4 relative" style="z-index:2;">
+        <div id="successLogoWrap" class="success-logo-animate w-20 h-20 rounded-2xl overflow-hidden shadow-float flex items-center justify-center bg-white">
+          <img src="/icons/icon-192.png" alt="GSTW" style="width:100%;height:100%;object-fit:contain;">
         </div>
       </div>
 
       <h2 class="text-center font-headline font-extrabold text-on-surface mb-1" style="font-size:24px;">Word Shared!</h2>
-      <p id="successDesc" class="text-center font-body text-on-surface-variant mb-6" style="font-size:15px;">You planted another seed 🌱</p>
+      <p id="successDesc" class="text-center font-body text-on-surface-variant mb-5" style="font-size:15px;">You planted another seed 🌱</p>
 
-      <div class="bg-surface-chigh rounded-xl p-3 flex items-center gap-3 mb-5">
-        <span class="material-symbols-outlined text-primary text-[18px] filled flex-shrink-0">check_circle</span>
-        <div><p class="font-body font-semibold text-primary" style="font-size:13px;">Caption copied to clipboard</p><p class="font-body text-on-surface-variant" style="font-size:11px;">Paste it when you post on any platform</p></div>
+      <!-- Rank progress card -->
+      <div id="rankProgressCard" class="rank-progress mb-5 hidden">
+        <div class="rank-progress-icon">
+          <span class="material-symbols-outlined filled" style="font-size:20px;">military_tech</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p id="rankProgressText" class="font-headline font-bold text-on-surface" style="font-size:13px;line-height:1.3;">—</p>
+          <p id="rankProgressSubtext" class="font-body text-on-surface-variant" style="font-size:11px;">—</p>
+          <div class="rank-progress-bar">
+            <div id="rankProgressFill" class="rank-progress-fill" style="width:0%"></div>
+          </div>
+        </div>
       </div>
 
       <p class="font-body text-on-surface-variant font-semibold mb-2" style="font-size:11px;letter-spacing:0.06em;text-transform:uppercase;">Quick Actions</p>
       <div class="flex flex-col gap-2 mb-5">
-        <button onclick="saveImageAndClose()" class="quick-action quick-action-save"><span class="material-symbols-outlined text-[20px]" style="color:#3d6285">download</span> Save image to device</button>
-        <button onclick="goToImpact()" class="quick-action quick-action-impact"><span class="material-symbols-outlined text-[20px]" style="color:#3d6285">analytics</span> See your impact</button>
+        <button onclick="reshareFromSuccess()" class="quick-action quick-action-primary">
+          <span class="material-symbols-outlined text-[20px]">share</span>
+          Share to another platform
+        </button>
+        <button onclick="saveImageAndClose()" class="quick-action quick-action-secondary">
+          <span class="material-symbols-outlined text-[20px]" style="color:#3d6285">download</span>
+          Save image to device
+        </button>
+        <button onclick="goToImpact()" class="quick-action quick-action-tertiary">
+          <span class="material-symbols-outlined text-[20px]" style="color:#3d6285">analytics</span>
+          See your impact
+        </button>
       </div>
 
       <button onclick="goHome()" class="w-full py-3 text-on-surface-variant font-body font-semibold rounded-xl" style="font-size:14px;">Back to Home</button>
@@ -826,6 +925,13 @@ var MAX_DRAFTS = 3
 var dragActive = false, dragStartX = 0, dragStartY = 0, overlayStartX = 0, overlayStartY = 0
 var imageDataUrl = null, imageFile = null, imageBlob = null
 
+// Pinch state
+var pinchActive = false
+var pinchStartDist = 0
+var pinchStartWidth = 80
+var pinchStartFontSize = 18
+var currentTextWidth = 80 // percent
+
 var fontClasses = ['font-lora','font-jakarta','font-playfair','font-oswald','font-bebas','font-merri']
 var fontMap = {
   'font-lora':"'Lora',serif",'font-jakarta':"'Plus Jakarta Sans',sans-serif",
@@ -835,11 +941,28 @@ var fontMap = {
 
 var PLATFORM_LIMITS = { 'Instagram':2200,'Facebook':63206,'WhatsApp':65536,'X':280,'TikTok':2200,'Telegram':4096,'Messages':5000,'Other':5000 }
 
+// Warrior ranks
+var WARRIOR_RANKS = [
+  {level:1, title:'Private',   min:0,   max:9},
+  {level:2, title:'Soldier',   min:10,  max:49},
+  {level:3, title:'Sergeant',  min:50,  max:99},
+  {level:4, title:'Captain',   min:100, max:199},
+  {level:5, title:'Commander', min:200, max:499},
+  {level:6, title:'General',   min:500, max:999999}
+]
+
 function isMobileDevice(){return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)}
 function haptic(type){if(!navigator.vibrate)return;try{if(type==='light')navigator.vibrate(10);else if(type==='medium')navigator.vibrate(20);else if(type==='success')navigator.vibrate([15,40,15])}catch(e){}}
 
 // ═══ INIT ═══
-document.addEventListener('DOMContentLoaded', function(){setupDrag();setupKeyboardHandling();setupOverflowClickOutside();initEditor()})
+document.addEventListener('DOMContentLoaded', function(){
+  setupDrag()
+  setupPinch()
+  setupCtrlScroll()
+  setupKeyboardHandling()
+  setupOverflowClickOutside()
+  initEditor()
+})
 
 async function initEditor(){
   var session = await supabaseClient.auth.getSession()
@@ -847,7 +970,7 @@ async function initEditor(){
   currentUser = session.data.session.user
 
   try{
-    var profRes = await supabaseClient.from('profiles').select('default_platform,subscription_tier').eq('id', currentUser.id).single()
+    var profRes = await supabaseClient.from('profiles').select('default_platform,subscription_tier,total_shares').eq('id', currentUser.id).single()
     if(profRes.data){
       userProfileCache = profRes.data
       if(profRes.data.default_platform) userDefaultPlatform = profRes.data.default_platform
@@ -907,6 +1030,15 @@ async function initEditor(){
   if(!selectedBgValue){var firstThumb=document.querySelector('.bg-thumb img');if(firstThumb)selectedBgValue=firstThumb.src;if(selectedBgValue)applyBackground('image',selectedBgValue)}
   setTimeout(function(){var h=document.getElementById('dragHint');if(h)h.style.display='none'},4000)
   renderHashtags();updateCaption();updateCharCounter()
+
+  // Show pinch hint on mobile once
+  if(isMobileDevice() && !localStorage.getItem('gstw_pinch_hint_shown')){
+    setTimeout(function(){
+      var ph=document.getElementById('pinchHint')
+      if(ph){ph.classList.remove('hidden');localStorage.setItem('gstw_pinch_hint_shown','1')}
+      setTimeout(function(){if(ph)ph.classList.add('hidden')},4500)
+    },5000)
+  }
 }
 
 // ═══ ADMIN BACKGROUNDS ═══
@@ -928,23 +1060,108 @@ function autoFitQuote(){
 
 // ═══ DRAG ═══
 function setupDrag(){
-  var o=document.getElementById('quoteOverlay');if(!o)return;o.addEventListener('mousedown',onDragStart);o.addEventListener('touchstart',onDragStart,{passive:false})
-  document.addEventListener('mousemove',onDragMove);document.addEventListener('touchmove',onDragMove,{passive:false})
-  document.addEventListener('mouseup',onDragEnd);document.addEventListener('touchend',onDragEnd)
+  var o=document.getElementById('quoteOverlay');if(!o)return
+  o.addEventListener('mousedown',onDragStart)
+  o.addEventListener('touchstart',onTouchStart,{passive:false})
+  document.addEventListener('mousemove',onDragMove)
+  document.addEventListener('touchmove',onTouchMove,{passive:false})
+  document.addEventListener('mouseup',onDragEnd)
+  document.addEventListener('touchend',onTouchEnd)
 }
 function onDragStart(e){
+  if(pinchActive) return
   dragActive=true;var o=document.getElementById('quoteOverlay');overlayStartX=o.offsetLeft;overlayStartY=o.offsetTop;o.style.left=overlayStartX+'px';o.style.top=overlayStartY+'px'
-  dragStartX=e.touches?e.touches[0].clientX:e.clientX;dragStartY=e.touches?e.touches[0].clientY:e.clientY
+  dragStartX=e.clientX;dragStartY=e.clientY
   var h=document.getElementById('dragHint');if(h)h.style.display='none';if(e.cancelable)e.preventDefault()
 }
 function onDragMove(e){
-  if(!dragActive)return;var o=document.getElementById('quoteOverlay'),c=document.getElementById('previewCanvas');if(!o||!c)return
-  var cx=e.touches?e.touches[0].clientX:e.clientX,cy=e.touches?e.touches[0].clientY:e.clientY
+  if(!dragActive || pinchActive) return
+  var o=document.getElementById('quoteOverlay'),c=document.getElementById('previewCanvas');if(!o||!c)return
+  var cx=e.clientX,cy=e.clientY
   var mX=c.offsetWidth-o.offsetWidth,mY=c.offsetHeight-o.offsetHeight
   var nX=Math.max(0,Math.min(overlayStartX+(cx-dragStartX),mX)),nY=Math.max(0,Math.min(overlayStartY+(cy-dragStartY),mY))
   o.style.left=nX+'px';o.style.top=nY+'px';if(e.cancelable)e.preventDefault()
 }
 function onDragEnd(){dragActive=false}
+
+// Touch handlers (route to drag OR pinch)
+function onTouchStart(e){
+  if(e.touches.length === 2){
+    // Pinch start
+    pinchActive = true
+    dragActive = false
+    pinchStartDist = touchDistance(e.touches)
+    pinchStartWidth = currentTextWidth
+    var qt = document.getElementById('quoteText')
+    pinchStartFontSize = qt ? parseInt(qt.style.fontSize) || 18 : 18
+    if(e.cancelable) e.preventDefault()
+  } else if(e.touches.length === 1){
+    // Drag start
+    onDragStart({clientX: e.touches[0].clientX, clientY: e.touches[0].clientY, cancelable: e.cancelable, preventDefault: function(){ e.preventDefault() }})
+  }
+}
+function onTouchMove(e){
+  if(pinchActive && e.touches.length === 2){
+    var newDist = touchDistance(e.touches)
+    var ratio = newDist / pinchStartDist
+    var newWidth = Math.max(30, Math.min(95, pinchStartWidth * ratio))
+    // Font auto-scales with width
+    var newFont = Math.max(10, Math.min(34, Math.round(pinchStartFontSize * ratio)))
+    setTextWidth(newWidth, false)
+    setSize(newFont)
+    if(e.cancelable) e.preventDefault()
+  } else if(dragActive && e.touches.length === 1){
+    onDragMove({clientX: e.touches[0].clientX, clientY: e.touches[0].clientY, cancelable: e.cancelable, preventDefault: function(){ e.preventDefault() }})
+  }
+}
+function onTouchEnd(e){
+  if(e.touches.length === 0){
+    pinchActive = false
+    dragActive = false
+  }
+}
+function touchDistance(touches){
+  var dx = touches[0].clientX - touches[1].clientX
+  var dy = touches[0].clientY - touches[1].clientY
+  return Math.sqrt(dx*dx + dy*dy)
+}
+
+// ═══ PINCH SUPPORT (setup wrapper) ═══
+function setupPinch(){ /* Handled inside setupDrag via touch events */ }
+
+// ═══ CTRL/CMD + SCROLL RESIZE (Desktop) ═══
+function setupCtrlScroll(){
+  var overlay = document.getElementById('quoteOverlay')
+  if(!overlay) return
+  overlay.addEventListener('wheel', function(e){
+    if(!(e.ctrlKey || e.metaKey)) return
+    e.preventDefault()
+    var delta = e.deltaY < 0 ? 3 : -3
+    var newWidth = Math.max(30, Math.min(95, currentTextWidth + delta))
+    var qt = document.getElementById('quoteText')
+    var currentFont = qt ? parseInt(qt.style.fontSize) || 18 : 18
+    var ratio = newWidth / currentTextWidth
+    var newFont = Math.max(10, Math.min(34, Math.round(currentFont * ratio)))
+    setTextWidth(newWidth, false)
+    setSize(newFont)
+  }, { passive: false })
+}
+
+// ═══ TEXT WIDTH ═══
+function setTextWidth(pct, syncSlider){
+  currentTextWidth = pct
+  var overlay = document.getElementById('quoteOverlay')
+  if(overlay){
+    overlay.style.width = pct + '%'
+    overlay.style.left = ((100 - pct) / 2) + '%'
+  }
+  var label = document.getElementById('widthLabel')
+  if(label) label.textContent = Math.round(pct) + '%'
+  if(syncSlider !== false){
+    var slider = document.getElementById('widthSlider')
+    if(slider) slider.value = Math.round(pct)
+  }
+}
 
 // ═══ BACKGROUND ═══
 function applyBackground(t,v){var b=document.getElementById('bgLayer');if(!b)return;if(t==='image'){b.style.background='none';b.style.backgroundImage="url('"+v+"')";b.style.backgroundSize='cover';b.style.backgroundPosition='center'}else{b.style.backgroundImage='none';b.style.background=v}}
@@ -953,19 +1170,39 @@ var _darkRaf=null
 function onDarknessInput(v){if(_darkRaf)cancelAnimationFrame(_darkRaf);_darkRaf=requestAnimationFrame(function(){setDarkness(v)})}
 function setDarkness(v){var d=document.getElementById('darkLayer');if(d)d.style.background='rgba(0,0,0,'+(v/100)+')';var l=document.getElementById('darkLabel');if(l)l.textContent=v+'%'}
 
-// ═══ TEXT TOOLS ═══
-function openTool(name){
-  var nt=currentTool===name?null:name;document.querySelectorAll('.tool-panel').forEach(function(p){p.classList.remove('open')});document.querySelectorAll('.dock-btn,.tool-card').forEach(function(b){b.classList.remove('active')})
-  if(nt){var p=document.getElementById('panel'+nt.charAt(0).toUpperCase()+nt.slice(1)),d=document.getElementById('dock'+nt.charAt(0).toUpperCase()+nt.slice(1));if(p)p.classList.add('open');if(d)d.classList.add('active')}
-  currentTool=nt
+// ═══ BOTTOM SHEET TOOL MODAL ═══
+function openToolSheet(name){
+  if(currentTool === name){ closeToolSheet(); return }
+  currentTool = name
+  var titles = { background: 'Background', text: 'Text' }
+  document.getElementById('toolSheetTitle').textContent = titles[name] || name
+  // Show right content
+  document.getElementById('sheetBackground').classList.toggle('hidden', name !== 'background')
+  document.getElementById('sheetText').classList.toggle('hidden', name !== 'text')
+  // Highlight active tool card
+  document.querySelectorAll('.tool-card').forEach(function(c){ c.classList.remove('active') })
+  var activeCard = document.getElementById('dock' + name.charAt(0).toUpperCase() + name.slice(1))
+  if(activeCard) activeCard.classList.add('active')
+  // Open sheet
+  document.getElementById('toolSheetOverlay').classList.add('open')
+  document.getElementById('toolSheet').classList.add('open')
+  haptic('light')
 }
-function showTextTab(n,b){document.querySelectorAll('.text-sub').forEach(function(s){s.classList.add('hidden')});document.querySelectorAll('#panelText .subtab').forEach(function(b){b.classList.remove('active')});var el=document.getElementById('text'+n.charAt(0).toUpperCase()+n.slice(1));if(el)el.classList.remove('hidden');if(b)b.classList.add('active')}
+function closeToolSheet(){
+  currentTool = null
+  document.getElementById('toolSheetOverlay').classList.remove('open')
+  document.getElementById('toolSheet').classList.remove('open')
+  document.querySelectorAll('.tool-card').forEach(function(c){ c.classList.remove('active') })
+}
+
+// ═══ TEXT TOOLS ═══
+function showTextTab(n,b){document.querySelectorAll('.text-sub').forEach(function(s){s.classList.add('hidden')});document.querySelectorAll('#sheetText .subtab').forEach(function(b){b.classList.remove('active')});var el=document.getElementById('text'+n.charAt(0).toUpperCase()+n.slice(1));if(el)el.classList.remove('hidden');if(b)b.classList.add('active')}
 function setFont(fc,b){
   var qt=document.getElementById('quoteText'),qr=document.getElementById('quoteRef');if(!qt)return;fontClasses.forEach(function(f){qt.classList.remove(f);if(qr)qr.classList.remove(f)});
   qt.classList.add(fc);if(qr)qr.classList.add(fc);qt.style.fontFamily=fontMap[fc];if(qr)qr.style.fontFamily=fontMap[fc];qt.style.textTransform=fc==='font-oswald'?'uppercase':'none'
   document.querySelectorAll('.font-opt').forEach(function(b){b.classList.remove('selected')});if(b)b.classList.add('selected')
 }
-function setSize(v){var q=document.getElementById('quoteText');if(q)q.style.fontSize=v+'px';var l=document.getElementById('sizeLabel');if(l)l.textContent=v+'px'}
+function setSize(v){var q=document.getElementById('quoteText');if(q)q.style.fontSize=v+'px';var l=document.getElementById('sizeLabel');if(l)l.textContent=v+'px';var sr=document.querySelector('input[type="range"][min="10"]');if(sr)sr.value=v}
 function setTextColor(h,s){currentTextColor=h;var q=document.getElementById('quoteText'),r=document.getElementById('quoteRef');if(q)q.style.color=h;if(r)r.style.color=h;document.querySelectorAll('#textColor .color-swatch').forEach(function(s){s.classList.remove('selected')});if(s)s.classList.add('selected')}
 function setAlign(a,b){currentAlign=a;var q=document.getElementById('quoteText'),r=document.getElementById('quoteRef');if(q)q.style.textAlign=a;if(r)r.style.textAlign=a;document.querySelectorAll('#textAlign .style-btn').forEach(function(b){b.classList.remove('active')});if(b)b.classList.add('active')}
 function toggleTextShadow(){
@@ -977,7 +1214,13 @@ function toggleTextShadow(){
 
 // ═══ CAMERA/GALLERY ═══
 function openCamera(){haptic('light');document.getElementById('selfieInput').click()}
-function openGallery(){haptic('light');document.getElementById('galleryInput').click()}
+function openGallery(){
+  haptic('light')
+  var input = document.getElementById('galleryInput')
+  // Ensure no capture attribute — direct to gallery
+  input.removeAttribute('capture')
+  input.click()
+}
 function compressImage(file){
   return new Promise(function(resolve,reject){
     var r=new FileReader();r.onload=function(e){
@@ -1001,10 +1244,14 @@ function updateCaption(){
   updateCharCounter()
 }
 function updateCharCounter(){
-  var c=document.getElementById('charCounter');if(!c)return;var l=fullCaption.length,L=PLATFORM_LIMITS[userDefaultPlatform]||2200
-  c.textContent=l+' / '+L
+  var c=document.getElementById('charCounter');if(!c)return
+  var m=document.getElementById('postCaption')
+  var captionOnly = m ? m.value.length : 0
+  var L=PLATFORM_LIMITS[userDefaultPlatform]||2200
+  c.textContent = captionOnly + ' / ' + L + ' · ' + userDefaultPlatform
   c.classList.remove('char-warn','char-over')
-  if(l>L)c.classList.add('char-over');else if(l>L*0.85)c.classList.add('char-warn')
+  if(captionOnly>L) c.classList.add('char-over')
+  else if(captionOnly>L*0.85) c.classList.add('char-warn')
 }
 function clearCaption(){
   var m=document.getElementById('postCaption');if(m){m.value='';updateCaption()};var h=document.getElementById('captionHint');if(h){h.classList.add('hidden');h.classList.remove('flex')};showToast('Cleared')
@@ -1021,12 +1268,8 @@ function renderHashtags(){
     h += '<button onclick="toggleHashtagInput()" class="inline-flex items-center bg-surface-chigh text-on-surface-variant px-2.5 py-1 rounded-full font-body font-medium active:scale-95 transition-transform" style="font-size:11px;"><span class="material-symbols-outlined text-[13px] mr-0.5">add</span>Add</button>'
   }
   c.innerHTML = h
-
   var pillLabel = document.getElementById('hashtagPillLabel')
-  if(pillLabel){
-    pillLabel.textContent = hashtags.length + ' hashtag' + (hashtags.length !== 1 ? 's' : '')
-  }
-
+  if(pillLabel){ pillLabel.textContent = hashtags.length + ' hashtag' + (hashtags.length !== 1 ? 's' : '') }
   updateCaption()
 }
 function toggleHashtagInput(){var el=document.getElementById('hashtagInput');el.classList.toggle('hidden');if(!el.classList.contains('hidden'))setTimeout(function(){document.getElementById('hashtagField').focus()},50)}
@@ -1036,13 +1279,11 @@ function toggleHashtagPanel(){
   if(!panel || !btn) return
   var isOpen = panel.classList.contains('open')
   if(isOpen){
-    panel.classList.remove('open')
-    btn.classList.remove('open')
+    panel.classList.remove('open'); btn.classList.remove('open')
     var input = document.getElementById('hashtagInput')
     if(input && !input.classList.contains('hidden')) input.classList.add('hidden')
   } else {
-    panel.classList.add('open')
-    btn.classList.add('open')
+    panel.classList.add('open'); btn.classList.add('open')
   }
   haptic('light')
 }
@@ -1085,6 +1326,7 @@ function saveDraft(){
   d={id:Date.now(),savedAt:new Date().toISOString(),quoteId:currentQuoteId,caption:m?m.value:'',hashtags:hashtags.slice(),
     fontClass:(function(){for(var i=0;i<fontClasses.length;i++)if(qt&&qt.classList.contains(fontClasses[i]))return fontClasses[i];return'font-lora'})(),
     fontSize:qt?qt.style.fontSize:'18px',color:currentTextColor,align:currentAlign,darkness:parseInt(document.getElementById('darkLabel').textContent)||30,shadow:textShadowEnabled,
+    textWidth:currentTextWidth,
     bgUrl:selectedBgValue&&selectedBgValue.indexOf('data:')===0?null:selectedBgValue}
   ds.push(d);saveDrafts(ds);showToast('Saved ('+ds.length+'/'+MAX_DRAFTS+')');haptic('success')
 }
@@ -1109,7 +1351,9 @@ function loadDraft(id){
     fontClasses.forEach(function(f){qt.classList.remove(f);if(qr)qr.classList.remove(f)});qt.classList.add(d.fontClass||'font-lora');if(qr)qr.classList.add(d.fontClass||'font-lora')
     qt.style.fontFamily=fontMap[d.fontClass||'font-lora'];if(qr)qr.style.fontFamily=fontMap[d.fontClass||'font-lora'];qt.style.fontSize=d.fontSize||'18px';qt.style.color=currentTextColor;if(qr)qr.style.color=currentTextColor;qt.style.textAlign=currentAlign;if(qr)qr.style.textAlign=currentAlign
     if(textShadowEnabled){qt.classList.add('text-with-shadow');if(qr)qr.classList.add('text-with-shadow')}else{qt.classList.remove('text-with-shadow');if(qr)qr.classList.remove('text-with-shadow')}
-  }if(d.bgUrl){selectedBgValue=d.bgUrl;applyBackground('image',d.bgUrl)}setDarkness(d.darkness||30);renderHashtags();updateCaption();closeDraftsSheet();showToast('Loaded');haptic('success')
+  }if(d.bgUrl){selectedBgValue=d.bgUrl;applyBackground('image',d.bgUrl)}setDarkness(d.darkness||30)
+  if(d.textWidth) setTextWidth(d.textWidth, true)
+  renderHashtags();updateCaption();closeDraftsSheet();showToast('Loaded');haptic('success')
 }
 function deleteDraft(id){saveDrafts(getDrafts().filter(function(x){return x.id!==id}));renderDraftsList();haptic('light')}
 
@@ -1214,520 +1458,34 @@ function openPlatform(platform){
 }
 async function copyLinkOnly(){
   if(navigator.clipboard){
-    try{
-      await navigator.clipboard.writeText(fullCaption)
-      showToast('Caption copied again')
-      haptic('success')
-    }catch(e){ showToast('Could not copy') }
+    try{ await navigator.clipboard.writeText(fullCaption); showToast('Caption copied again'); haptic('success') }
+    catch(e){ showToast('Could not copy') }
   }
 }
 
-// ═══ GENERATE IMAGE ═══
-function generateImage(){
-  return new Promise(function(resolve){
-    try{
-      var canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1080;var ctx=canvas.getContext('2d')
-      if(!ctx){resolve({success:false,error:'Canvas not supported'});return}
-      ctx.fillStyle='#0e0e0c';ctx.fillRect(0,0,1080,1080)
-      var ov=document.getElementById('quoteOverlay'),cv=document.getElementById('previewCanvas'),qt=document.getElementById('quoteText'),qr=document.getElementById('quoteRef')
-      var xPct=cv?(ov.offsetLeft/cv.offsetWidth)*100:10,yPct=cv?(ov.offsetTop/cv.offsetHeight)*100:25,wPct=cv?(ov.offsetWidth/cv.offsetWidth)*100:80,
-      textColor=currentTextColor||'#FFFFFF',fontSize=parseInt(qt?(qt.style.fontSize||'18'):'18'),
-      fontFam=qt?(qt.style.fontFamily||"'Lora',serif"):"'Lora',serif",txtTrnsfm=qt?(qt.style.textTransform||'none'):'none',aln=currentAlign||'center',
-      dVal=30,dl=document.getElementById('darkLabel');if(dl)dVal=parseInt(dl.textContent)||30
-
-      function wrap(ctx,text,maxW){
-        if(txtTrnsfm==='uppercase')text=text.toUpperCase();var wds=text.split(' '),ln='',lines=[];for(var n=0;n<wds.length;n++){var tl=ln+wds[n]+' ';if(ctx.measureText(tl).width>maxW&&n>0){lines.push(ln.trim());ln=wds[n]+' '}else{ln=tl}}lines.push(ln.trim());return lines
-      }
-
-      function drawContent(){
-        try{
-          ctx.fillStyle='rgba(0,0,0,'+(dVal/100)+')';ctx.fillRect(0,0,1080,1080)
-          var tX=Math.round((xPct/100)*1080),tY=Math.round((yPct/100)*1080),tW=Math.round((wPct/100)*1080),pad=16,cX=tX+pad,cY=tY+pad,cW=tW-(pad*2)
-          ctx.textAlign=aln==='center'?'center':aln==='right'?'right':'left';ctx.textBaseline='top'
-          var sS=Math.round(fontSize*3.2);ctx.font='600 '+sS+'px '+fontFam;var qTxt=qt?qt.textContent:'',lines=wrap(ctx,qTxt,cW),lH=sS*1.45,startY=cY+20,tXA=aln==='center'?cX+cW/2:aln==='right'?cX+tW:cX
-          if(textShadowEnabled){ctx.shadowColor='rgba(0,0,0,0.8)';ctx.shadowBlur=12;ctx.shadowOffsetY=2}
-          for(var i=0;i<lines.length;i++){var ly=startY+i*lH;ctx.fillStyle=textColor;ctx.fillText(lines[i],tXA,ly)}
-          var endY=startY+lines.length*lH,refSz=Math.round(fontSize*1.5);ctx.font='bold '+refSz+'px "Plus Jakarta Sans",sans-serif';var refX=aln==='center'?tX+tW/2:aln==='right'?tX+tW-pad:cX;ctx.fillStyle=textColor;ctx.globalAlpha=0.9;ctx.fillText(qr?qr.textContent:'',refX,endY+24);ctx.globalAlpha=1
-          ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0
-          ctx.font='600 26px "Plus Jakarta Sans", sans-serif';ctx.textAlign='right';ctx.textBaseline='bottom';ctx.shadowColor='rgba(0,0,0,0.6)';ctx.shadowBlur=8;ctx.shadowOffsetY=2;ctx.fillStyle='rgba(255,255,255,0.8)';ctx.fillText('gospreadtheword.app',1080-48,1080-48);ctx.shadowColor='transparent';ctx.shadowBlur=0
-          try{imageDataUrl=canvas.toDataURL('image/png')}catch(te){resolve({success:false,error:'Canvas blocked by CORS. Try a different background.'});return}
-          try{
-            var bs=atob(imageDataUrl.split(',')[1]),ab=new ArrayBuffer(bs.length),ia=new Uint8Array(ab);for(var j=0;j<bs.length;j++)ia[j]=bs.charCodeAt(j);imageBlob=new Blob([ab],{type:'image/png'});imageFile=new File([imageBlob],'GSTW-'+Date.now()+'.png',{type:'image/png'});resolve({success:true})
-          }catch(ce){resolve({success:false,error:'Could not prepare image'})}
-        }catch(de){console.error(de);resolve({success:false,error:'Drawing error'})}
-      }
-      if(selectedBgType==='image'&&selectedBgValue){
-        var im=new Image();im.crossOrigin='anonymous';im.onload=function(){var sc=Math.max(1080/im.width,1080/im.height),sw=im.width*sc,sh=im.height*sc;ctx.drawImage(im,(1080-sw)/2,(1080-sh)/2,sw,sh);drawContent()};im.onerror=function(){ctx.fillStyle='#305678';ctx.fillRect(0,0,1080,1080);drawContent()};im.src=selectedBgValue
-      }else{ctx.fillStyle='#305678';ctx.fillRect(0,0,1080,1080);drawContent()}
-    }catch(e){console.error(e);resolve({success:false,error:'Unexpected error'})}
-  })
-}
-
-// ═══ HELPERS ═══
-function downloadImage(){if(!imageDataUrl)return;var a=document.createElement('a');a.download='GSTW-'+Date.now()+'.png';a.href=imageDataUrl;a.click()}
-async function logShare(pl){if(!currentUser||!currentQuoteId)return;try{await supabaseClient.from('shares').insert({user_id:currentUser.id,quote_id:currentQuoteId,platform:pl})}catch(e){console.error(e)}}
-function showToast(msg){var ex=document.getElementById('editorToast');if(ex)ex.remove();var t=document.createElement('div');t.id='editorToast';t.className='fixed top-20 left-1/2 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-2.5 rounded-full whitespace-nowrap flex items-center gap-2 shadow-float';t.style.transform='translateX(-50%)';t.style.fontSize='13px';t.innerHTML='<span class="material-symbols-outlined text-primary-container text-[14px] filled">check_circle</span> '+msg;document.body.appendChild(t);setTimeout(function(){if(t.parentNode)t.remove()},2200)}
-
-// ═══ SUCCESS MODAL ═══
-function showSuccess(method){
-  var m=document.getElementById('successModal');if(!m)return
-  var de=document.getElementById('successDesc');if(de&&method)de.textContent='Successfully '+method+'. Every share plants a seed.'
-
-  try {
-    if (typeof getUserSubscriptionBadge === 'function' && userProfileCache) {
-      var badge = getUserSubscriptionBadge(userProfileCache)
-      if (badge) {
-        var wrap = document.getElementById('successTierBadge')
-        if (wrap) {
-          wrap.innerHTML = '<div style="width:36px;height:36px;border-radius:50%;overflow:hidden;background:transparent;"><img src="' + badge.image + '" alt="' + badge.name + '" width="36" height="36" style="display:block;" title="' + badge.name + '"></div>'
-          wrap.classList.remove('hidden')
-          wrap.classList.add('flex')
-        }
-      }
-    }
-  } catch(e) { console.warn('Badge display skipped:', e) }
-
-  var lg=m.querySelector('.success-logo-animate');if(lg){lg.classList.remove('success-logo-animate');void lg.offsetWidth;lg.classList.add('success-logo-animate')}
-  m.classList.remove('hidden');haptic('success')
-}
-function closeSuccess(){var m=document.getElementById('successModal');if(m)m.classList.add('hidden')}
-function saveImageAndClose(){downloadImage();showToast('Image saved to device');closeSuccess();haptic('light')}
-function goToImpact(){window.location.href='impact.html'}
-
-// ═══ RESET ═══
-function confirmReset(){document.getElementById('resetOverlay').classList.remove('hidden');requestAnimationFrame(function(){document.getElementById('resetSheet').classList.add('open')})}
-function closeResetSheet(){document.getElementById('resetSheet').classList.remove('open');setTimeout(function(){document.getElementById('resetOverlay').classList.add('hidden')},300)}
-function doReset(){closeResetSheet();setTimeout(function(){location.reload()},300)}
-
-function goHome(){window.location.href='index.html'}
-</script>
-</body>
-</html>
-
-<script>
-var supabaseClient = supabase.createClient(
-  'https://nhymadutuhpjgkiurify.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
-)
-
-// ═══════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════
-var selectedBgType = 'image'
-var selectedBgValue = ''
-var currentAlign = 'center'
-var currentTextColor = '#FFFFFF'
-var currentTool = null
-var currentUser = null
-var currentQuoteId = null
-var textShadowEnabled = true
-var userDefaultPlatform = 'Instagram'
-var userProfileCache = null
-
-var fullCaption = ''
-var hashtags = ['#SpreadTheWord', '#GreatCommission']
-var MAX_TAGS = 5
-var MAX_DRAFTS = 3
-
-var dragActive = false, dragStartX = 0, dragStartY = 0, overlayStartX = 0, overlayStartY = 0
-var imageDataUrl = null, imageFile = null, imageBlob = null
-
-var fontClasses = ['font-lora','font-jakarta','font-playfair','font-oswald','font-bebas','font-merri']
-var fontMap = {
-  'font-lora':"'Lora',serif",'font-jakarta':"'Plus Jakarta Sans',sans-serif",
-  'font-playfair':"'Playfair Display',serif",'font-oswald':"'Oswald',sans-serif",
-  'font-bebas':"'Bebas Neue',sans-serif",'font-merri':"'Merriweather',serif"
-}
-
-var PLATFORM_LIMITS = { 'Instagram':2200,'Facebook':63206,'WhatsApp':65536,'X':280,'TikTok':2200,'Telegram':4096,'Messages':5000,'Other':5000 }
-
-function isMobileDevice(){return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)}
-function haptic(type){if(!navigator.vibrate)return;try{if(type==='light')navigator.vibrate(10);else if(type==='medium')navigator.vibrate(20);else if(type==='success')navigator.vibrate([15,40,15])}catch(e){}}
-
-// ═══ INIT ═══
-document.addEventListener('DOMContentLoaded', function(){setupDrag();setupKeyboardHandling();setupOverflowClickOutside();initEditor()})
-
-async function initEditor(){
-  var session = await supabaseClient.auth.getSession()
-  if(!session.data.session){window.location.href='login.html';return}
-  currentUser = session.data.session.user
-
-  try{
-    var profRes = await supabaseClient.from('profiles').select('default_platform,subscription_tier').eq('id', currentUser.id).single()
-    if(profRes.data){
-      userProfileCache = profRes.data
-      if(profRes.data.default_platform) userDefaultPlatform = profRes.data.default_platform
-    }
-  }catch(e){}
-  sessionStorage.setItem('gstw_default_platform', userDefaultPlatform)
-
-  var qt = document.getElementById('quoteText'), qr = document.getElementById('quoteRef')
-  var selectedText = sessionStorage.getItem('gstw_selected_quote_text')
-  var selectedSource = sessionStorage.getItem('gstw_selected_quote_source')
-  var selectedId = sessionStorage.getItem('gstw_selected_quote_id')
-  var quoteBgUrl = null, quoteContext = null, quoteHashtags = null
-
-  if(selectedText && selectedId){
-    var qResult = await supabaseClient.from('quotes').select('background_url,context,hashtags').eq('id',selectedId).single()
-    if(qResult.data){
-      if(qResult.data.background_url) quoteBgUrl=qResult.data.background_url
-      if(qResult.data.context) quoteContext=qResult.data.context
-      if(qResult.data.hashtags) quoteHashtags=qResult.data.hashtags
-    }
-    if(qt) qt.textContent = selectedText; if(qr) qr.textContent = '— '+(selectedSource||'GSTW').toUpperCase(); currentQuoteId=selectedId
-  }else{
-    var result = await supabaseClient.from('quotes').select('*').eq('status','live').order('published_at',{ascending:false}).limit(1)
-    if(result.data && result.data.length>0){
-      var q=result.data[0]
-      if(qt)qt.textContent=q.text;if(qr)qr.textContent='— '+(q.source||'GSTW').toUpperCase()
-      currentQuoteId=q.id;sessionStorage.setItem('gstw_quote_id',q.id)
-      if(q.background_url)quoteBgUrl=q.background_url
-      if(q.context)quoteContext=q.context
-      if(q.hashtags)quoteHashtags=q.hashtags
-    }else{if(qt)qt.textContent='The Word is with you today.';if(qr)qr.textContent='— GSTW'}
-  }
-
-  if(qt)qt.style.opacity='1';if(qr)qr.style.opacity='1';autoFitQuote()
-
-  var msgEl=document.getElementById('postCaption')
-  if(msgEl && quoteContext){
-    msgEl.value=quoteContext
-    var hint=document.getElementById('captionHint')
-    if(hint){hint.classList.remove('hidden');hint.classList.add('flex')}
-  }
-
-  if(quoteHashtags){
-    var list = []
-    if(Array.isArray(quoteHashtags)) list = quoteHashtags
-    else if(typeof quoteHashtags === 'string') list = quoteHashtags.split(/[,\s]+/)
-    list.forEach(function(t){
-      var tag = t.trim()
-      if(tag && tag.charAt(0) !== '#') tag = '#' + tag
-      if(tag && hashtags.indexOf(tag) === -1 && hashtags.length < MAX_TAGS) hashtags.push(tag)
-    })
-  }
-
-  if(quoteBgUrl){selectedBgType='image';selectedBgValue=quoteBgUrl;applyBackground('image',quoteBgUrl)} else {selectedBgType='image';selectedBgValue=''}
-
-  await loadAdminBackgrounds(quoteBgUrl)
-  if(!selectedBgValue){var firstThumb=document.querySelector('.bg-thumb img');if(firstThumb)selectedBgValue=firstThumb.src;if(selectedBgValue)applyBackground('image',selectedBgValue)}
-  setTimeout(function(){var h=document.getElementById('dragHint');if(h)h.style.display='none'},4000)
-  renderHashtags();updateCaption();updateCharCounter()
-}
-
-// ═══ ADMIN BACKGROUNDS ═══
-async function loadAdminBackgrounds(quoteBgUrl){
-  var c=document.getElementById('bgThumbsContainer');if(!c)return
-  var CACHE_KEY='gstw_bg_cache_v1',CACHE_TTL=3600000,imgs=null
-  try{var cached=sessionStorage.getItem(CACHE_KEY);if(cached){var p=JSON.parse(cached);if(p&&p.ts&&(Date.now()-p.ts<CACHE_TTL))imgs=p.data}}catch(e){}
-  if(!imgs){
-    try{var r=await supabaseClient.from('media').select('*').eq('type','background').eq('is_active',true).order('sort_order',{ascending:true});imgs=r.data||[];sessionStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),data:imgs}))}catch(e){imgs=[]}
-  }
-  c.innerHTML='<div class="bg-thumb bg-surface-clow flex items-center justify-center" style="border:2px dashed #b2b2ab;cursor:pointer" onclick="openGallery()"><span class="material-symbols-outlined text-outline text-[22px]">add_photo_alternate</span></div>'
-  if(quoteBgUrl){var t=document.createElement('div');t.className='bg-thumb flex-shrink-0'+(selectedBgValue===quoteBgUrl?' selected':'');t.onclick=(function(u){return function(){selectBg(this,u)}})(quoteBgUrl);t.innerHTML='<img src="'+quoteBgUrl+'" class="w-full h-full object-cover" alt="">';c.appendChild(t)}
-  imgs.forEach(function(img){if(img.url===quoteBgUrl)return;var t=document.createElement('div');t.className='bg-thumb flex-shrink-0'+(selectedBgValue===img.url?' selected':'');var u=img.url;t.onclick=function(){selectBg(this,u)};t.innerHTML='<img src="'+(img.thumbnail_url||img.url)+'" class="w-full h-full object-cover" alt="">';c.appendChild(t)})
-}
-
-function autoFitQuote(){
-  var q=document.getElementById('quoteText');if(!q)return;var l=(q.textContent||'').length,s=l>200?12:l>150?14:l>100?16:18;q.style.fontSize=s+'px';var sl=document.getElementById('sizeLabel');if(sl)sl.textContent=s+'px';var sr=document.querySelector('input[type="range"][min="10"]');if(sr)sr.value=s
-}
-
-// ═══ DRAG ═══
-function setupDrag(){
-  var o=document.getElementById('quoteOverlay');if(!o)return;o.addEventListener('mousedown',onDragStart);o.addEventListener('touchstart',onDragStart,{passive:false})
-  document.addEventListener('mousemove',onDragMove);document.addEventListener('touchmove',onDragMove,{passive:false})
-  document.addEventListener('mouseup',onDragEnd);document.addEventListener('touchend',onDragEnd)
-}
-function onDragStart(e){
-  dragActive=true;var o=document.getElementById('quoteOverlay');overlayStartX=o.offsetLeft;overlayStartY=o.offsetTop;o.style.left=overlayStartX+'px';o.style.top=overlayStartY+'px'
-  dragStartX=e.touches?e.touches[0].clientX:e.clientX;dragStartY=e.touches?e.touches[0].clientY:e.clientY
-  var h=document.getElementById('dragHint');if(h)h.style.display='none';if(e.cancelable)e.preventDefault()
-}
-function onDragMove(e){
-  if(!dragActive)return;var o=document.getElementById('quoteOverlay'),c=document.getElementById('previewCanvas');if(!o||!c)return
-  var cx=e.touches?e.touches[0].clientX:e.clientX,cy=e.touches?e.touches[0].clientY:e.clientY
-  var mX=c.offsetWidth-o.offsetWidth,mY=c.offsetHeight-o.offsetHeight
-  var nX=Math.max(0,Math.min(overlayStartX+(cx-dragStartX),mX)),nY=Math.max(0,Math.min(overlayStartY+(cy-dragStartY),mY))
-  o.style.left=nX+'px';o.style.top=nY+'px';if(e.cancelable)e.preventDefault()
-}
-function onDragEnd(){dragActive=false}
-
-// ═══ BACKGROUND ═══
-function applyBackground(t,v){var b=document.getElementById('bgLayer');if(!b)return;if(t==='image'){b.style.background='none';b.style.backgroundImage="url('"+v+"')";b.style.backgroundSize='cover';b.style.backgroundPosition='center'}else{b.style.backgroundImage='none';b.style.background=v}}
-function selectBg(el,url){document.querySelectorAll('.bg-thumb').forEach(function(t){t.classList.remove('selected')});if(el)el.classList.add('selected');selectedBgType='image';selectedBgValue=url;applyBackground('image',url);haptic('light')}
-var _darkRaf=null
-function onDarknessInput(v){if(_darkRaf)cancelAnimationFrame(_darkRaf);_darkRaf=requestAnimationFrame(function(){setDarkness(v)})}
-function setDarkness(v){var d=document.getElementById('darkLayer');if(d)d.style.background='rgba(0,0,0,'+(v/100)+')';var l=document.getElementById('darkLabel');if(l)l.textContent=v+'%'}
-
-// ═══ TEXT TOOLS ═══
-function openTool(name){
-  var nt=currentTool===name?null:name;document.querySelectorAll('.tool-panel').forEach(function(p){p.classList.remove('open')});document.querySelectorAll('.dock-btn,.tool-card').forEach(function(b){b.classList.remove('active')})
-  if(nt){var p=document.getElementById('panel'+nt.charAt(0).toUpperCase()+nt.slice(1)),d=document.getElementById('dock'+nt.charAt(0).toUpperCase()+nt.slice(1));if(p)p.classList.add('open');if(d)d.classList.add('active')}
-  currentTool=nt
-}
-function showTextTab(n,b){document.querySelectorAll('.text-sub').forEach(function(s){s.classList.add('hidden')});document.querySelectorAll('#panelText .subtab').forEach(function(b){b.classList.remove('active')});var el=document.getElementById('text'+n.charAt(0).toUpperCase()+n.slice(1));if(el)el.classList.remove('hidden');if(b)b.classList.add('active')}
-function setFont(fc,b){
-  var qt=document.getElementById('quoteText'),qr=document.getElementById('quoteRef');if(!qt)return;fontClasses.forEach(function(f){qt.classList.remove(f);if(qr)qr.classList.remove(f)});
-  qt.classList.add(fc);if(qr)qr.classList.add(fc);qt.style.fontFamily=fontMap[fc];if(qr)qr.style.fontFamily=fontMap[fc];qt.style.textTransform=fc==='font-oswald'?'uppercase':'none'
-  document.querySelectorAll('.font-opt').forEach(function(b){b.classList.remove('selected')});if(b)b.classList.add('selected')
-}
-function setSize(v){var q=document.getElementById('quoteText');if(q)q.style.fontSize=v+'px';var l=document.getElementById('sizeLabel');if(l)l.textContent=v+'px'}
-function setTextColor(h,s){currentTextColor=h;var q=document.getElementById('quoteText'),r=document.getElementById('quoteRef');if(q)q.style.color=h;if(r)r.style.color=h;document.querySelectorAll('#textColor .color-swatch').forEach(function(s){s.classList.remove('selected')});if(s)s.classList.add('selected')}
-function setAlign(a,b){currentAlign=a;var q=document.getElementById('quoteText'),r=document.getElementById('quoteRef');if(q)q.style.textAlign=a;if(r)r.style.textAlign=a;document.querySelectorAll('#textAlign .style-btn').forEach(function(b){b.classList.remove('active')});if(b)b.classList.add('active')}
-function toggleTextShadow(){
-  textShadowEnabled=!textShadowEnabled;var q=document.getElementById('quoteText'),r=document.getElementById('quoteRef'),t=document.getElementById('shadowToggle'),k=document.getElementById('shadowKnob')
-  if(textShadowEnabled){if(q)q.classList.add('text-with-shadow');if(r)r.classList.add('text-with-shadow');if(t)t.style.background='#3d6285';if(k)k.style.transform='translateX(20px)'}
-  else{if(q)q.classList.remove('text-with-shadow');if(r)r.classList.remove('text-with-shadow');if(t)t.style.background='#b2b2ab';if(k)k.style.transform='translateX(0)'}
-  haptic('light')
-}
-
-// ═══ CAMERA/GALLERY ═══
-function openCamera(){haptic('light');document.getElementById('selfieInput').click()}
-function openGallery(){haptic('light');document.getElementById('galleryInput').click()}
-function compressImage(file){
-  return new Promise(function(resolve,reject){
-    var r=new FileReader();r.onload=function(e){
-      var img=new Image();img.onload=function(){
-        var M=1920,w=img.width,h=img.height;if(w>M||h>M){var s=Math.min(M/w,M/h);w=Math.round(w*s);h=Math.round(h*s)}
-        var c=document.createElement('canvas');c.width=w;c.height=h;var ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h)
-        try{resolve(c.toDataURL('image/jpeg',0.85))}catch(err){reject(err)}
-      };img.onerror=function(){reject(new Error('Load failed'))};img.src=e.target.result
-    };r.onerror=function(){reject(new Error('Read failed'))};r.readAsDataURL(file)
-  })
-}
-async function handleImageSelect(input){
-  var f=input.files[0];if(!f)return;showToast('Processing photo...')
-  try{var d=await compressImage(f);selectedBgType='image';selectedBgValue=d;applyBackground('image',d);document.querySelectorAll('.bg-thumb').forEach(function(t){t.classList.remove('selected')});showToast('Photo loaded');haptic('success')}catch(e){console.error(e);showToast('Could not load photo')}input.value=''
-}
-
-// ═══ CAPTION/HASHTAGS ═══
-function updateCaption(){
-  var m=document.getElementById('postCaption'),msg=m?m.value.trim():'',hs=hashtags.join(' '),p=[]
-  if(msg)p.push(msg);if(hs)p.push(hs);fullCaption=p.join('\n\n')||'#SpreadTheWord'
-  updateCharCounter()
-}
-function updateCharCounter(){
-  var c=document.getElementById('charCounter');if(!c)return;var l=fullCaption.length,L=PLATFORM_LIMITS[userDefaultPlatform]||2200
-  c.textContent=l+' / '+L
-  c.classList.remove('char-warn','char-over')
-  if(l>L)c.classList.add('char-over');else if(l>L*0.85)c.classList.add('char-warn')
-}
-function clearCaption(){
-  var m=document.getElementById('postCaption');if(m){m.value='';updateCaption()};var h=document.getElementById('captionHint');if(h){h.classList.add('hidden');h.classList.remove('flex')};showToast('Cleared')
-}
-function renderHashtags(){
-  var c = document.getElementById('hashtagsContainer')
-  if(!c) return
-  var h = ''
-  hashtags.forEach(function(t){
-    var s = t.replace(/'/g,"\\'")
-    h += '<span class="hashtag-chip">' + t + ' <button onclick="removeHashtag(\'' + s + '\')" class="opacity-50 hover:opacity-100"><span class="material-symbols-outlined text-[12px]">close</span></button></span>'
-  })
-  if(hashtags.length < MAX_TAGS){
-    h += '<button onclick="toggleHashtagInput()" class="inline-flex items-center bg-surface-chigh text-on-surface-variant px-2.5 py-1 rounded-full font-body font-medium active:scale-95 transition-transform" style="font-size:11px;"><span class="material-symbols-outlined text-[13px] mr-0.5">add</span>Add</button>'
-  }
-  c.innerHTML = h
-
-  var pillLabel = document.getElementById('hashtagPillLabel')
-  if(pillLabel){
-    pillLabel.textContent = hashtags.length + ' hashtag' + (hashtags.length !== 1 ? 's' : '')
-  }
-
-  updateCaption()
-}
-function toggleHashtagInput(){var el=document.getElementById('hashtagInput');el.classList.toggle('hidden');if(!el.classList.contains('hidden'))setTimeout(function(){document.getElementById('hashtagField').focus()},50)}
-function toggleHashtagPanel(){
-  var panel = document.getElementById('hashtagPanel')
-  var btn = document.getElementById('hashtagToggle')
-  if(!panel || !btn) return
-  var isOpen = panel.classList.contains('open')
-  if(isOpen){
-    panel.classList.remove('open')
-    btn.classList.remove('open')
-    var input = document.getElementById('hashtagInput')
-    if(input && !input.classList.contains('hidden')) input.classList.add('hidden')
-  } else {
-    panel.classList.add('open')
-    btn.classList.add('open')
-  }
-  haptic('light')
-}
-function addHashtagFromInput(){var f=document.getElementById('hashtagField'),tag=f.value.trim();if(!tag)return;if(tag.charAt(0)!=='#')tag='#'+tag;if(hashtags.indexOf(tag)>-1){return}if(hashtags.length>=MAX_TAGS){return}hashtags.push(tag);f.value='';renderHashtags();haptic('light')}
-function removeHashtag(tag){hashtags=hashtags.filter(function(h){return h!==tag});renderHashtags();haptic('light')}
-
-// ═══ KEYBOARD (iOS) ═══
-function setupKeyboardHandling(){
-  if(window.visualViewport)window.visualViewport.addEventListener('resize',function(){var vh=window.visualViewport.height,wh=window.innerHeight;if(wh-vh>150)document.body.classList.add('kb-open');else document.body.classList.remove('kb-open')})}
-function onInputFocus(el){document.body.classList.add('kb-open');setTimeout(function(){if(el&&el.scrollIntoView)el.scrollIntoView({block:'center',behavior:'smooth'})},250)}
-function onInputBlur(el){document.body.classList.remove('kb-open');scrollToImage()}
-function scrollToImage(){setTimeout(function(){window.scrollTo({top:0,behavior:'smooth'})},150)}
-
-// ═══ OVERFLOW MENU ═══
-function toggleOverflowMenu(e){if(e)e.stopPropagation();var m=document.getElementById('overflowMenu');if(m)m.classList.toggle('open')}
-function closeOverflowMenu(){var m=document.getElementById('overflowMenu');if(m)m.classList.remove('open')}
-function setupOverflowClickOutside(){document.addEventListener('click',function(e){var m=document.getElementById('overflowMenu');if(!m||!m.classList.contains('open'))return;if(!m.contains(e.target))closeOverflowMenu()})}
-
-// ═══ SURPRISE ME ═══
-function surpriseMe(){
-  var fc=fontClasses[Math.floor(Math.random()*fontClasses.length)],qt=document.getElementById('quoteText'),qr=document.getElementById('quoteRef')
-  if(qt){fontClasses.forEach(function(f){qt.classList.remove(f);if(qr)qr.classList.remove(f)});qt.classList.add(fc);if(qr)qr.classList.add(fc);qt.style.fontFamily=fontMap[fc];if(qr)qr.style.fontFamily=fontMap[fc];qt.style.textTransform=fc==='font-oswald'?'uppercase':'none'}
-  var cs=['#FFFFFF','#b0d5fe','#FDE047','#86EFAC','#fbf9f4'],col=cs[Math.floor(Math.random()*cs.length)];currentTextColor=col
-  if(qt)qt.style.color=col;if(qr)qr.style.color=col
-  document.querySelectorAll('#textColor .color-swatch').forEach(function(s){s.classList.remove('selected');if(s.style.background.toLowerCase().indexOf(col.toLowerCase())>-1)s.classList.add('selected')})
-  var als=['left','center','right'],al=als[Math.floor(Math.random()*als.length)];currentAlign=al
-  if(qt)qt.style.textAlign=al;if(qr)qr.style.textAlign=al
-  document.querySelectorAll('#textAlign .style-btn').forEach(function(b){b.classList.remove('active');if(b.textContent.trim().toLowerCase()===al)b.classList.add('active')})
-  var thumbs=document.querySelectorAll('.bg-thumb img');if(thumbs.length>0){var pick=thumbs[Math.floor(Math.random()*thumbs.length)];document.querySelectorAll('.bg-thumb').forEach(function(t){t.classList.remove('selected')});if(pick.parentElement)pick.parentElement.classList.add('selected');selectedBgValue=pick.src;applyBackground('image',pick.src)}
-  var d=20+Math.floor(Math.random()*50);setDarkness(d);var dr=document.querySelector('input[type="range"][min="0"][max="85"]');if(dr)dr.value=d
-  showToast('Shuffled ✨');haptic('success')
-}
-
-// ═══ DRAFTS ═══
-function getDrafts(){try{return JSON.parse(localStorage.getItem('gstw_drafts')||'[]')}catch(e){return []}}
-function saveDrafts(d){try{localStorage.setItem('gstw_drafts',JSON.stringify(d))}catch(e){}}
-function saveDraft(){
-  var ds=getDrafts();if(ds.length>=MAX_DRAFTS){showToast('Max '+MAX_DRAFTS+' drafts');return}
-  var m=document.getElementById('postCaption'),qt=document.getElementById('quoteText'),
-  d={id:Date.now(),savedAt:new Date().toISOString(),quoteId:currentQuoteId,caption:m?m.value:'',hashtags:hashtags.slice(),
-    fontClass:(function(){for(var i=0;i<fontClasses.length;i++)if(qt&&qt.classList.contains(fontClasses[i]))return fontClasses[i];return'font-lora'})(),
-    fontSize:qt?qt.style.fontSize:'18px',color:currentTextColor,align:currentAlign,darkness:parseInt(document.getElementById('darkLabel').textContent)||30,shadow:textShadowEnabled,
-    bgUrl:selectedBgValue&&selectedBgValue.indexOf('data:')===0?null:selectedBgValue}
-  ds.push(d);saveDrafts(ds);showToast('Saved ('+ds.length+'/'+MAX_DRAFTS+')');haptic('success')
-}
-function openDraftsSheet(){renderDraftsList();document.getElementById('draftsOverlay').classList.remove('hidden');requestAnimationFrame(function(){document.getElementById('draftsSheet').classList.add('open')})}
-function closeDraftsSheet(){document.getElementById('draftsSheet').classList.remove('open');setTimeout(function(){document.getElementById('draftsOverlay').classList.add('hidden')},300)}
-function renderDraftsList(){
-  var ds=getDrafts(),l=document.getElementById('draftsList'),c=document.getElementById('draftsCount');if(c)c.textContent=ds.length+' / '+MAX_DRAFTS;if(!l)return
-  if(!ds.length){l.innerHTML='<div class="text-center py-8"><span class="material-symbols-outlined text-outline text-[32px]">bookmark_border</span><p class="font-body text-on-surface-variant mt-2" style="font-size:13px;">No drafts</p></div>';return}
-  l.innerHTML='';ds.slice().reverse().forEach(function(d){
-    var when=new Date(d.savedAt).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}),
-    preview=(d.caption||'(no caption)').substring(0,80),
-    el=document.createElement('div');
-    el.className='flex items-center gap-3 p-3 bg-surface-clow rounded-xl';
-    el.innerHTML='<div class="flex-1 min-w-0"><p class="font-body font-semibold text-on-surface truncate" style="font-size:13px;">'+preview+'</p><p class="font-body text-on-surface-variant mt-0.5" style="font-size:11px;">'+when+'</p></div><button onclick="loadDraft('+d.id+')" class="px-3 py-1.5 bg-primary text-on-primary rounded-lg font-body font-semibold" style="font-size:12px;">Load</button><button onclick="deleteDraft('+d.id+')" class="p-1.5 text-tertiary"><span class="material-symbols-outlined text-[18px]">delete</span></button>';
-    l.appendChild(el)
-  })
-}
-function loadDraft(id){
-  var ds=getDrafts(),d=ds.find(function(x){return x.id===id});if(!d)return
-  var m=document.getElementById('postCaption');if(m)m.value=d.caption||'';hashtags=d.hashtags||[];currentTextColor=d.color||'#FFFFFF';currentAlign=d.align||'center';textShadowEnabled=d.shadow!==false
-  var qt=document.getElementById('quoteText'),qr=document.getElementById('quoteRef');if(qt){
-    fontClasses.forEach(function(f){qt.classList.remove(f);if(qr)qr.classList.remove(f)});qt.classList.add(d.fontClass||'font-lora');if(qr)qr.classList.add(d.fontClass||'font-lora')
-    qt.style.fontFamily=fontMap[d.fontClass||'font-lora'];if(qr)qr.style.fontFamily=fontMap[d.fontClass||'font-lora'];qt.style.fontSize=d.fontSize||'18px';qt.style.color=currentTextColor;if(qr)qr.style.color=currentTextColor;qt.style.textAlign=currentAlign;if(qr)qr.style.textAlign=currentAlign
-    if(textShadowEnabled){qt.classList.add('text-with-shadow');if(qr)qr.classList.add('text-with-shadow')}else{qt.classList.remove('text-with-shadow');if(qr)qr.classList.remove('text-with-shadow')}
-  }if(d.bgUrl){selectedBgValue=d.bgUrl;applyBackground('image',d.bgUrl)}setDarkness(d.darkness||30);renderHashtags();updateCaption();closeDraftsSheet();showToast('Loaded');haptic('success')
-}
-function deleteDraft(id){saveDrafts(getDrafts().filter(function(x){return x.id!==id}));renderDraftsList();haptic('light')}
-
-// ═══ CEREMONIAL SHARE FLOW ═══
-function openConfirmShare(){
-  updateCaption()
+// ═══ RESHARE FROM SUCCESS MODAL ═══
+async function reshareFromSuccess(){
   haptic('medium')
-  document.getElementById('confirmShareOverlay').classList.remove('hidden')
-  requestAnimationFrame(function(){document.getElementById('confirmShareSheet').classList.add('open')})
-  var seed=document.getElementById('seedIcon')
-  if(seed){seed.classList.remove('seed-icon-animate');void seed.offsetWidth;seed.classList.add('seed-icon-animate')}
-}
-function closeConfirmShare(){
-  document.getElementById('confirmShareSheet').classList.remove('open')
-  setTimeout(function(){document.getElementById('confirmShareOverlay').classList.add('hidden')},300)
-}
-
-async function confirmedShare(){
-  var goBtn=document.getElementById('confirmShareGoBtn')
-  goBtn.innerHTML='<span class="material-symbols-outlined text-[18px] spin">progress_activity</span> Preparing...'
-  goBtn.style.pointerEvents='none'
-  haptic('medium')
-
-  var result=await generateImage()
-  if(!result.success){
-    goBtn.innerHTML='Share now'
-    goBtn.style.pointerEvents=''
-    showToast(result.error||'Error generating image')
-    return
-  }
-
-  if(fullCaption && navigator.clipboard){
-    try{await navigator.clipboard.writeText(fullCaption)}catch(e){}
-  }
-
-  goBtn.innerHTML='Share now'
-  goBtn.style.pointerEvents=''
-
-  // MOBILE: native share
+  // On mobile: re-open native share sheet with existing image
   if(isMobileDevice()){
     if(imageFile && navigator.canShare && navigator.canShare({files:[imageFile]})){
       try{
         await navigator.share({files:[imageFile],title:'Go Spread The Word',text:fullCaption})
-        await logShare('native-share')
-        closeConfirmShare()
-        setTimeout(function(){showSuccess('shared via your device')},300)
+        await logShare('native-reshare')
         return
-      }catch(e){if(e.name==='AbortError'){showToast('Share cancelled');return}}
+      }catch(e){if(e.name==='AbortError') return}
     }
     if(navigator.share){
       try{
         await navigator.share({title:'Go Spread The Word',text:fullCaption})
-        await logShare('native-share')
-        closeConfirmShare()
-        setTimeout(function(){showSuccess('shared via your device')},300)
+        await logShare('native-reshare')
         return
-      }catch(e){if(e.name==='AbortError'){showToast('Share cancelled');return}}
+      }catch(e){if(e.name==='AbortError') return}
     }
   }
-
-  // DESKTOP: download + show platform picker
-  downloadImage()
-  await logShare('desktop-download')
-  closeConfirmShare()
-  setTimeout(function(){ openDesktopPicker() }, 300)
-}
-
-// ═══ DESKTOP PLATFORM PICKER ═══
-function openDesktopPicker(){
-  var modal = document.getElementById('desktopPickerModal')
-  if(modal) modal.classList.remove('hidden')
-  document.body.style.overflow = 'hidden'
-}
-function closeDesktopPicker(){
-  var modal = document.getElementById('desktopPickerModal')
-  if(modal) modal.classList.add('hidden')
-  document.body.style.overflow = ''
-}
-function closeDesktopPickerAndSucceed(){
-  closeDesktopPicker()
-  setTimeout(function(){ showSuccess('downloaded to your device') }, 200)
-}
-function openPlatform(platform){
-  var text = encodeURIComponent(fullCaption || '')
-  var appUrl = 'https://gospreadtheword.app'
-  var urls = {
-    twitter:  'https://twitter.com/intent/tweet?text=' + text,
-    facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(appUrl) + '&quote=' + text,
-    whatsapp: 'https://web.whatsapp.com/send?text=' + text,
-    telegram: 'https://t.me/share/url?url=' + encodeURIComponent(appUrl) + '&text=' + text,
-    threads:  'https://www.threads.net/intent/post?text=' + text,
-    linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(appUrl) + '&summary=' + text,
-    email:    'mailto:?subject=' + encodeURIComponent('A word to spread') + '&body=' + text
-  }
-  var url = urls[platform]
-  if(url){
-    window.open(url, '_blank', 'noopener,noreferrer')
-    logShare('desktop-' + platform)
-    setTimeout(function(){
-      closeDesktopPicker()
-      showSuccess('shared to ' + platform)
-    }, 500)
-  }
-}
-async function copyLinkOnly(){
-  if(navigator.clipboard){
-    try{
-      await navigator.clipboard.writeText(fullCaption)
-      showToast('Caption copied again')
-      haptic('success')
-    }catch(e){ showToast('Could not copy') }
-  }
+  // Desktop: reopen platform picker
+  closeSuccess()
+  setTimeout(function(){ openDesktopPicker() }, 200)
 }
 
 // ═══ GENERATE IMAGE ═══
@@ -1757,7 +1515,6 @@ function generateImage(){
           for(var i=0;i<lines.length;i++){var ly=startY+i*lH;ctx.fillStyle=textColor;ctx.fillText(lines[i],tXA,ly)}
           var endY=startY+lines.length*lH,refSz=Math.round(fontSize*1.5);ctx.font='bold '+refSz+'px "Plus Jakarta Sans",sans-serif';var refX=aln==='center'?tX+tW/2:aln==='right'?tX+tW-pad:cX;ctx.fillStyle=textColor;ctx.globalAlpha=0.9;ctx.fillText(qr?qr.textContent:'',refX,endY+24);ctx.globalAlpha=1
           ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0
-          // WATERMARK
           ctx.font='600 26px "Plus Jakarta Sans", sans-serif';ctx.textAlign='right';ctx.textBaseline='bottom';ctx.shadowColor='rgba(0,0,0,0.6)';ctx.shadowBlur=8;ctx.shadowOffsetY=2;ctx.fillStyle='rgba(255,255,255,0.8)';ctx.fillText('gospreadtheword.app',1080-48,1080-48);ctx.shadowColor='transparent';ctx.shadowBlur=0
           try{imageDataUrl=canvas.toDataURL('image/png')}catch(te){resolve({success:false,error:'Canvas blocked by CORS. Try a different background.'});return}
           try{
@@ -1772,8 +1529,33 @@ function generateImage(){
   })
 }
 
-// ═══ HELPERS ═══
-function downloadImage(){if(!imageDataUrl)return;var a=document.createElement('a');a.download='GSTW-'+Date.now()+'.png';a.href=imageDataUrl;a.click()}
+// ═══ IMAGE DOWNLOAD (Fixed with blob fallback for mobile) ═══
+function downloadImage(){
+  if(!imageDataUrl && !imageBlob){ showToast('Could not save — try sharing again'); return false }
+  try{
+    if(imageBlob){
+      // Blob-based download works reliably on modern browsers including iOS
+      var blobUrl = URL.createObjectURL(imageBlob)
+      var a = document.createElement('a')
+      a.download = 'GSTW-'+Date.now()+'.png'
+      a.href = blobUrl
+      a.style.display = 'none'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(function(){ URL.revokeObjectURL(blobUrl) }, 1000)
+      return true
+    } else if(imageDataUrl){
+      var a2 = document.createElement('a')
+      a2.download = 'GSTW-'+Date.now()+'.png'
+      a2.href = imageDataUrl
+      a2.click()
+      return true
+    }
+  }catch(e){ console.error(e); showToast('Save failed — try again'); return false }
+  return false
+}
+
 async function logShare(pl){if(!currentUser||!currentQuoteId)return;try{await supabaseClient.from('shares').insert({user_id:currentUser.id,quote_id:currentQuoteId,platform:pl})}catch(e){console.error(e)}}
 function showToast(msg){var ex=document.getElementById('editorToast');if(ex)ex.remove();var t=document.createElement('div');t.id='editorToast';t.className='fixed top-20 left-1/2 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-2.5 rounded-full whitespace-nowrap flex items-center gap-2 shadow-float';t.style.transform='translateX(-50%)';t.style.fontSize='13px';t.innerHTML='<span class="material-symbols-outlined text-primary-container text-[14px] filled">check_circle</span> '+msg;document.body.appendChild(t);setTimeout(function(){if(t.parentNode)t.remove()},2200)}
 
@@ -1782,26 +1564,83 @@ function showSuccess(method){
   var m=document.getElementById('successModal');if(!m)return
   var de=document.getElementById('successDesc');if(de&&method)de.textContent='Successfully '+method+'. Every share plants a seed.'
 
-  // Show tier badge if profile data + badges-config loaded
-  try {
-    if (typeof getUserSubscriptionBadge === 'function' && userProfileCache) {
-      var badge = getUserSubscriptionBadge(userProfileCache)
-      if (badge) {
-        var wrap = document.getElementById('successTierBadge')
-        if (wrap) {
-          wrap.innerHTML = '<img src="' + badge.image + '" alt="' + badge.name + '" width="36" height="36" style="border-radius:50%;" title="' + badge.name + '">'
-          wrap.classList.remove('hidden')
-          wrap.classList.add('flex')
-        }
-      }
-    }
-  } catch(e) { console.warn('Badge display skipped:', e) }
+  // Update total_shares locally & compute rank progress
+  if(userProfileCache){
+    userProfileCache.total_shares = (userProfileCache.total_shares || 0) + 1
+    renderRankProgress()
+  }
 
+  // Re-trigger logo animation
   var lg=m.querySelector('.success-logo-animate');if(lg){lg.classList.remove('success-logo-animate');void lg.offsetWidth;lg.classList.add('success-logo-animate')}
-  m.classList.remove('hidden');haptic('success')
+
+  m.classList.remove('hidden')
+  haptic('success')
+
+  // Fire confetti burst
+  setTimeout(burstConfetti, 100)
 }
+
+function renderRankProgress(){
+  var card = document.getElementById('rankProgressCard')
+  if(!card || !userProfileCache) return
+  var shares = userProfileCache.total_shares || 0
+  var currentRank = null, nextRank = null
+  for(var i=0;i<WARRIOR_RANKS.length;i++){
+    if(shares >= WARRIOR_RANKS[i].min && shares <= WARRIOR_RANKS[i].max){
+      currentRank = WARRIOR_RANKS[i]
+      nextRank = WARRIOR_RANKS[i+1] || null
+      break
+    }
+  }
+  if(!currentRank) return
+
+  var txt = document.getElementById('rankProgressText')
+  var sub = document.getElementById('rankProgressSubtext')
+  var fill = document.getElementById('rankProgressFill')
+
+  if(nextRank){
+    var remaining = nextRank.min - shares
+    var progress = ((shares - currentRank.min) / (nextRank.min - currentRank.min)) * 100
+    txt.textContent = remaining + ' more share' + (remaining !== 1 ? 's' : '') + ' to ' + nextRank.title
+    sub.textContent = 'You\'re a ' + currentRank.title + ' — level ' + currentRank.level
+    setTimeout(function(){ fill.style.width = Math.min(Math.max(progress, 0), 100) + '%' }, 300)
+  } else {
+    txt.textContent = '👑 You\'ve reached ' + currentRank.title
+    sub.textContent = 'The highest rank achieved'
+    setTimeout(function(){ fill.style.width = '100%' }, 300)
+  }
+  card.classList.remove('hidden')
+}
+
+function burstConfetti(){
+  var container = document.getElementById('confettiContainer')
+  if(!container) return
+  container.innerHTML = ''
+  var colors = ['#3d6285','#6b9bc3','#b0d5fe','#F0C55A','#D4AF37','#ffffff']
+  var pieces = 24
+  for(var i=0;i<pieces;i++){
+    var p = document.createElement('div')
+    p.className = 'confetti-piece'
+    var angle = (Math.PI * 2 * i / pieces) + (Math.random() - 0.5) * 0.5
+    var distance = 100 + Math.random() * 80
+    var tx = Math.cos(angle) * distance
+    var ty = Math.sin(angle) * distance - 40 // bias upward
+    var tr = (Math.random() - 0.5) * 720
+    p.style.background = colors[Math.floor(Math.random() * colors.length)]
+    p.style.setProperty('--tx', tx + 'px')
+    p.style.setProperty('--ty', ty + 'px')
+    p.style.setProperty('--tr', tr + 'deg')
+    container.appendChild(p)
+    setTimeout((function(el){return function(){el.classList.add('go')}})(p), 20 + i * 8)
+  }
+  setTimeout(function(){ if(container) container.innerHTML = '' }, 1500)
+}
+
 function closeSuccess(){var m=document.getElementById('successModal');if(m)m.classList.add('hidden')}
-function saveImageAndClose(){downloadImage();showToast('Image saved to device');closeSuccess();haptic('light')}
+function saveImageAndClose(){
+  var ok = downloadImage()
+  if(ok){ showToast('Image saved to device'); haptic('light') }
+}
 function goToImpact(){window.location.href='impact.html'}
 
 // ═══ RESET ═══
