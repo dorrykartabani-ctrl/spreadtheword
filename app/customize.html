@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#f2f6fa">
+  <title>Customize — Go Spread The Word</title>
+
+  <link rel="icon" type="image/x-icon" href="/images/favicon/favicon.ico">
+  <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Playfair+Display:ital,wght@0,700;1,700&family=Oswald:wght@600&family=Bebas+Neue&family=Merriweather:ital,wght@1,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'surface':'#f2f6fa','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
+            'surface-c':'#efeee7','surface-chigh':'#e9e8e1','surface-chighest':'#e3e3db',
+            'on-surface':'#31332e','on-surface-variant':'#5e6059',
+            'inverse-surface':'#0e0e0c','inverse-on-surface':'#9e9d99',
+            'outline':'#7a7b75','outline-variant':'#b2b2ab',
+            'primary':'#3d6285','on-primary':'#f7f9ff',
+            'primary-container':'#b0d5fe','on-primary-container':'#234a6c',
+            'secondary':'#41637c','secondary-container':'#cae6ff',
+            'tertiary':'#ad332b','on-tertiary':'#fff7f6',
+            'primary-dim':'#305678','secondary-dim':'#355670','tertiary-dim':'#9d2621',
+          },
+          fontFamily:{
+            'headline':['Plus Jakarta Sans','sans-serif'],
+            'body':['Manrope','sans-serif'],
+            'quote':['Lora','serif'],
+          },
+          boxShadow:{
+            'ambient':'0 20px 40px rgba(49,51,46,0.05)',
+            'float':'0 20px 40px rgba(49,51,46,0.08)',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    *{box-sizing:border-box}
+    html,body{overflow:hidden;overscroll-behavior:none}
+    body{
+      font-family:'Manrope',sans-serif;background:#f2f6fa;color:#31332e;
+      -webkit-tap-highlight-color:transparent;
+      height:100dvh;user-select:none;margin:0;letter-spacing:-0.005em;
+    }
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
+    .font-quote{font-family:'Lora',serif}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
+    .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+    .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
+
+    ::-webkit-scrollbar{display:none}
+    body{-ms-overflow-style:none;scrollbar-width:none}
+
+    button{touch-action:manipulation}
+
+    .font-lora{font-family:'Lora',serif!important}
+    .font-jakarta{font-family:'Plus Jakarta Sans',sans-serif!important}
+    .font-playfair{font-family:'Playfair Display',serif!important}
+    .font-oswald{font-family:'Oswald',sans-serif!important;text-transform:uppercase}
+    .font-bebas{font-family:'Bebas Neue',sans-serif!important;letter-spacing:0.08em}
+    .font-merri{font-family:'Merriweather',serif!important}
+
+    /* ═══ LAYOUT — Fixed structure ═══ */
+    .page-shell{
+      display:flex;
+      flex-direction:column;
+      height:100dvh;
+      max-width:430px;
+      margin:0 auto;
+      background:#f2f6fa;
+    }
+
+    /* Header — fixed height */
+    .cust-header{
+      flex-shrink:0;
+      padding-top:env(safe-area-inset-top);
+      padding-left:env(safe-area-inset-left);
+      padding-right:env(safe-area-inset-right);
+      background:rgba(242,246,250,0.92);
+      backdrop-filter:blur(20px);
+      -webkit-backdrop-filter:blur(20px);
+      border-bottom:1px solid rgba(94,96,89,0.08);
+    }
+    .cust-header-inner{
+      padding:14px 16px;
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .header-btn{
+      width:40px;height:40px;border-radius:12px;display:flex;align-items:center;
+      justify-content:center;color:#5e6059;transition:all 0.15s ease;
+      background:transparent;
+    }
+    .header-btn:active{transform:scale(0.9);background:#f5f4ed}
+    .done-btn{
+      padding:8px 18px;border-radius:12px;
+      background:#3d6285;color:#f7f9ff;
+      font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;
+      display:flex;align-items:center;gap:4px;
+      transition:all 0.15s ease;
+    }
+    .done-btn:active{transform:scale(0.96)}
+
+    /* Preview area — takes remaining space above tools */
+    .preview-area{
+      flex:1;
+      display:flex;align-items:center;justify-content:center;
+      padding:16px;
+      overflow:hidden;
+      background:#e8eff5;
+    }
+    .preview-canvas{
+      position:relative;
+      width:100%;
+      max-width:calc(100dvh - 480px);
+      aspect-ratio:1;
+      border-radius:20px;
+      overflow:hidden;
+      background:#0e0e0c;
+      box-shadow:0 12px 32px rgba(49,51,46,0.15);
+      touch-action:none;
+    }
+    /* On smaller screens, use full width */
+    @media (max-height:700px){
+      .preview-canvas{max-width:100%;max-height:calc(100dvh - 420px)}
+    }
+
+    #quoteOverlay{
+      position:absolute;z-index:10;
+      touch-action:none;cursor:grab;
+      width:80%;left:10%;top:25%;
+    }
+    #quoteOverlay:active{cursor:grabbing}
+
+    .text-with-shadow{text-shadow:0 4px 20px rgba(0,0,0,0.8),0 2px 6px rgba(0,0,0,0.5)}
+
+    /* Tools panel — fixed at bottom */
+    .tools-panel{
+      flex-shrink:0;
+      background:#ffffff;
+      border-radius:24px 24px 0 0;
+      box-shadow:0 -8px 24px rgba(49,51,46,0.06);
+      padding-bottom:env(safe-area-inset-bottom);
+      max-height:60dvh;
+      display:flex;
+      flex-direction:column;
+    }
+
+    /* Tab bar */
+    .tab-bar{
+      display:flex;
+      padding:12px 16px 0;
+      gap:8px;
+      flex-shrink:0;
+    }
+    .tab-btn{
+      flex:1;
+      padding:10px 14px;
+      border-radius:12px;
+      background:#f5f4ed;
+      color:#5e6059;
+      font-family:'Plus Jakarta Sans',sans-serif;
+      font-weight:700;font-size:13px;
+      display:flex;align-items:center;justify-content:center;gap:6px;
+      transition:all 0.15s ease;
+    }
+    .tab-btn:active{transform:scale(0.97)}
+    .tab-btn.active{
+      background:linear-gradient(135deg,#3d6285,#5478a0);
+      color:#f7f9ff;
+      box-shadow:0 4px 12px rgba(61,98,133,0.2);
+    }
+    .tab-btn.surprise-btn{
+      flex:0 0 auto;
+      background:linear-gradient(135deg,#F0C55A,#D4A24C);
+      color:#ffffff;
+      padding:10px 14px;
+    }
+
+    /* Tools content — scrollable */
+    .tools-content{
+      flex:1;
+      overflow-y:auto;
+      padding:14px 16px 20px;
+      -ms-overflow-style:none;scrollbar-width:none;
+    }
+    .tools-content::-webkit-scrollbar{display:none}
+
+    /* Sub-tabs (for text panel) */
+    .subtab-strip{
+      display:flex;
+      gap:6px;
+      overflow-x:auto;
+      padding-bottom:2px;
+      margin-bottom:14px;
+      -ms-overflow-style:none;scrollbar-width:none;
+    }
+    .subtab-strip::-webkit-scrollbar{display:none}
+    .subtab{
+      padding:7px 14px;border-radius:99px;
+      font-size:11px;font-weight:700;
+      color:#5e6059;background:#f5f4ed;
+      transition:all 0.15s ease;
+      white-space:nowrap;flex-shrink:0;
+    }
+    .subtab:active{transform:scale(0.97)}
+    .subtab.active{background:#3d6285;color:#f7f9ff}
+
+    /* Background thumbs */
+    .h-scroll{overflow-x:auto;display:flex;gap:8px;padding-bottom:4px;-ms-overflow-style:none;scrollbar-width:none}
+    .h-scroll::-webkit-scrollbar{display:none}
+    .bg-thumb{
+      width:64px;height:64px;border-radius:14px;overflow:hidden;
+      cursor:pointer;border:3px solid transparent;flex-shrink:0;
+      transition:all 0.15s;
+    }
+    .bg-thumb:active{transform:scale(0.95)}
+    .bg-thumb.selected{border-color:#3d6285;box-shadow:0 4px 12px rgba(61,98,133,0.25)}
+    .bg-skeleton{
+      width:64px;height:64px;border-radius:14px;flex-shrink:0;
+      background:linear-gradient(90deg,#e9e8e1 0%,#f5f4ed 50%,#e9e8e1 100%);
+      background-size:200% 100%;
+      animation:shimmer 1.4s ease-in-out infinite;
+    }
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+    /* Color swatches */
+    .color-swatch{
+      width:36px;height:36px;border-radius:50%;cursor:pointer;
+      transition:transform 0.15s;border:3px solid transparent;flex-shrink:0;
+    }
+    .color-swatch:active{transform:scale(0.9)}
+    .color-swatch.selected{border-color:white;transform:scale(1.12);box-shadow:0 0 0 2px #3d6285}
+
+    /* Font options */
+    .font-opt{
+      padding:8px 14px;border-radius:12px;font-size:13px;
+      background:#f5f4ed;color:#31332e;transition:all 0.15s ease;
+      white-space:nowrap;flex-shrink:0;
+    }
+    .font-opt:active{transform:scale(0.97)}
+    .font-opt.selected{background:#3d6285;color:#f7f9ff}
+
+    /* Alignment buttons */
+    .align-btn{
+      flex:1;padding:10px 8px;border-radius:12px;
+      font-size:11px;font-weight:700;
+      background:#f5f4ed;color:#5e6059;
+      transition:all 0.15s ease;
+      display:flex;align-items:center;justify-content:center;gap:5px;
+    }
+    .align-btn:active{transform:scale(0.97)}
+    .align-btn.active{background:#3d6285;color:#f7f9ff}
+
+    /* Range slider */
+    input[type="range"]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:#f5f4ed;outline:none}
+    input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#3d6285;cursor:pointer;box-shadow:0 2px 8px rgba(61,98,133,0.3)}
+    input[type="range"]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#3d6285;cursor:pointer;border:none}
+
+    /* Section label */
+    .section-lbl{
+      display:flex;align-items:center;justify-content:space-between;
+      margin-bottom:8px;
+    }
+    .section-lbl-txt{
+      font-family:'Manrope',sans-serif;font-size:11px;font-weight:600;
+      color:#5e6059;letter-spacing:0.02em;
+    }
+    .section-lbl-val{
+      font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;
+      color:#3d6285;
+    }
+
+    /* Toggle */
+    .toggle-btn{
+      position:relative;width:48px;height:28px;
+      border-radius:14px;transition:background 0.2s;
+    }
+    .toggle-btn.on{background:#3d6285}
+    .toggle-btn.off{background:#b2b2ab}
+    .toggle-knob{
+      position:absolute;top:3px;left:3px;
+      width:22px;height:22px;
+      background:#fff;border-radius:50%;
+      transition:transform 0.2s;
+      box-shadow:0 2px 4px rgba(0,0,0,0.15);
+    }
+    .toggle-btn.on .toggle-knob{transform:translateX(20px)}
+
+    /* Pinch hint */
+    .pinch-hint{
+      position:absolute;top:8px;left:50%;transform:translateX(-50%);
+      background:rgba(0,0,0,0.7);color:#fff;
+      font-size:10px;font-weight:600;
+      padding:5px 10px;border-radius:99px;
+      z-index:15;pointer-events:none;
+      display:flex;align-items:center;gap:4px;
+      animation:hintFade 4s ease-in-out forwards;
+    }
+    @keyframes hintFade{0%,100%{opacity:0}15%,85%{opacity:1}}
+
+    /* Effects row */
+    .effect-row{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:12px 0;
+    }
+    .effect-row .lbl{
+      font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;color:#31332e;
+    }
+    .effect-row .sub{
+      font-family:'Manrope',sans-serif;font-size:11px;color:#5e6059;margin-top:2px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="page-shell">
+
+  <!-- HEADER -->
+  <header class="cust-header">
+    <div class="cust-header-inner">
+      <button onclick="goBackToEditor()" class="header-btn" title="Back">
+        <span class="material-symbols-outlined text-[22px]">arrow_back</span>
+      </button>
+      <span class="font-headline font-bold text-on-surface" style="font-size:15px;">Customize</span>
+      <button onclick="goBackToEditor()" class="done-btn">
+        <span class="material-symbols-outlined text-[16px]">check</span>
+        Done
+      </button>
+    </div>
+  </header>
+
+  <!-- LIVE PREVIEW -->
+  <div class="preview-area">
+    <div class="preview-canvas" id="previewCanvas">
+      <div id="bgLayer" class="absolute inset-0 bg-cover bg-center"></div>
+      <div id="darkLayer" class="absolute inset-0" style="background:rgba(0,0,0,0.3)"></div>
+
+      <div id="quoteOverlay">
+        <div class="p-4 text-center">
+          <p id="quoteText" class="font-quote font-semibold text-white leading-snug text-with-shadow" style="font-size:18px;"></p>
+          <p id="quoteRef" class="mt-3 font-body font-bold text-white/90 tracking-wider text-with-shadow" style="font-size:11px;"></p>
+        </div>
+      </div>
+
+      <div id="pinchHint" class="pinch-hint hidden">
+        <span class="material-symbols-outlined text-[12px]">pinch</span>
+        Pinch to resize · drag to move
+      </div>
+    </div>
+  </div>
+
+  <!-- TOOLS PANEL -->
+  <div class="tools-panel">
+    <div class="tab-bar">
+      <button id="tabBackground" onclick="switchTab('background')" class="tab-btn active">
+        <span class="material-symbols-outlined text-[16px]">wallpaper</span>
+        Background
+      </button>
+      <button id="tabText" onclick="switchTab('text')" class="tab-btn">
+        <span class="material-symbols-outlined text-[16px]">text_fields</span>
+        Text
+      </button>
+      <button onclick="surpriseMe()" class="tab-btn surprise-btn" title="Surprise me">
+        <span class="material-symbols-outlined text-[16px]">shuffle</span>
+      </button>
+    </div>
+
+    <div class="tools-content">
+
+      <!-- ═══ BACKGROUND TAB ═══ -->
+      <div id="panelBackground">
+        <div class="section-lbl">
+          <span class="section-lbl-txt">CHOOSE BACKGROUND</span>
+        </div>
+        <div id="bgThumbsContainer" class="h-scroll mb-5">
+          <div class="bg-skeleton"></div><div class="bg-skeleton"></div>
+          <div class="bg-skeleton"></div><div class="bg-skeleton"></div><div class="bg-skeleton"></div>
+        </div>
+
+        <div class="section-lbl">
+          <span class="section-lbl-txt">OVERLAY DARKNESS</span>
+          <span id="darkLabel" class="section-lbl-val">30%</span>
+        </div>
+        <input id="darknessSlider" type="range" min="0" max="85" value="30" oninput="onDarknessInput(this.value)">
+      </div>
+
+      <!-- ═══ TEXT TAB ═══ -->
+      <div id="panelText" class="hidden">
+        <div class="subtab-strip">
+          <button onclick="showTextSubtab('font',this)" class="subtab active">Font</button>
+          <button onclick="showTextSubtab('size',this)" class="subtab">Size</button>
+          <button onclick="showTextSubtab('width',this)" class="subtab">Width</button>
+          <button onclick="showTextSubtab('color',this)" class="subtab">Color</button>
+          <button onclick="showTextSubtab('align',this)" class="subtab">Align</button>
+          <button onclick="showTextSubtab('effects',this)" class="subtab">Effects</button>
+        </div>
+
+        <div id="subFont">
+          <div class="h-scroll">
+            <button onclick="setFont('font-lora',this)" class="font-opt selected" style="font-family:'Lora',serif">Lora</button>
+            <button onclick="setFont('font-jakarta',this)" class="font-opt font-bold" style="font-family:'Plus Jakarta Sans'">Jakarta</button>
+            <button onclick="setFont('font-playfair',this)" class="font-opt font-bold" style="font-family:'Playfair Display',serif">Playfair</button>
+            <button onclick="setFont('font-oswald',this)" class="font-opt font-bold uppercase" style="font-family:'Oswald'">Oswald</button>
+            <button onclick="setFont('font-bebas',this)" class="font-opt" style="font-family:'Bebas Neue';letter-spacing:0.08em">BEBAS</button>
+            <button onclick="setFont('font-merri',this)" class="font-opt" style="font-family:'Merriweather',serif;font-style:italic">Merri</button>
+          </div>
+        </div>
+
+        <div id="subSize" class="hidden">
+          <div class="section-lbl">
+            <span class="section-lbl-txt">TEXT SIZE</span>
+            <span id="sizeLabel" class="section-lbl-val">18px</span>
+          </div>
+          <input id="sizeSlider" type="range" min="10" max="34" value="18" oninput="setSize(this.value)">
+        </div>
+
+        <div id="subWidth" class="hidden">
+          <div class="section-lbl">
+            <span class="section-lbl-txt">TEXT WIDTH</span>
+            <span id="widthLabel" class="section-lbl-val">80%</span>
+          </div>
+          <input id="widthSlider" type="range" min="30" max="95" value="80" oninput="setTextWidth(this.value, true)">
+          <p class="text-center mt-3 font-body text-on-surface-variant" style="font-size:11px;">💡 On mobile: pinch text · On desktop: Ctrl+scroll</p>
+        </div>
+
+        <div id="subColor" class="hidden">
+          <div class="h-scroll">
+            <div class="color-swatch" data-color="#FFFFFF" style="background:#FFFFFF" onclick="setTextColor('#FFFFFF',this)"></div>
+            <div class="color-swatch" data-color="#f7f9ff" style="background:#f7f9ff" onclick="setTextColor('#f7f9ff',this)"></div>
+            <div class="color-swatch" data-color="#b0d5fe" style="background:#b0d5fe" onclick="setTextColor('#b0d5fe',this)"></div>
+            <div class="color-swatch" data-color="#3d6285" style="background:#3d6285" onclick="setTextColor('#3d6285',this)"></div>
+            <div class="color-swatch" data-color="#31332e" style="background:#31332e" onclick="setTextColor('#31332e',this)"></div>
+            <div class="color-swatch" data-color="#0e0e0c" style="background:#0e0e0c" onclick="setTextColor('#0e0e0c',this)"></div>
+            <div class="color-swatch" data-color="#ad332b" style="background:#ad332b" onclick="setTextColor('#ad332b',this)"></div>
+            <div class="color-swatch" data-color="#fbf9f4" style="background:#fbf9f4" onclick="setTextColor('#fbf9f4',this)"></div>
+            <div class="color-swatch" data-color="#FDE047" style="background:#FDE047" onclick="setTextColor('#FDE047',this)"></div>
+            <div class="color-swatch" data-color="#86EFAC" style="background:#86EFAC" onclick="setTextColor('#86EFAC',this)"></div>
+          </div>
+        </div>
+
+        <div id="subAlign" class="hidden">
+          <div class="flex gap-2">
+            <button data-align="left" onclick="setAlign('left',this)" class="align-btn"><span class="material-symbols-outlined text-[16px]">format_align_left</span>Left</button>
+            <button data-align="center" onclick="setAlign('center',this)" class="align-btn active"><span class="material-symbols-outlined text-[16px]">format_align_center</span>Center</button>
+            <button data-align="right" onclick="setAlign('right',this)" class="align-btn"><span class="material-symbols-outlined text-[16px]">format_align_right</span>Right</button>
+          </div>
+        </div>
+
+        <div id="subEffects" class="hidden">
+          <div class="effect-row">
+            <div>
+              <p class="lbl">Text Shadow</p>
+              <p class="sub">Improves readability on busy backgrounds</p>
+            </div>
+            <button id="shadowToggle" onclick="toggleTextShadow()" class="toggle-btn on">
+              <span class="toggle-knob"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+var supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+)
+
+// ═══ STATE ═══
+var selectedBgValue = ''
+var currentAlign = 'center'
+var currentTextColor = '#FFFFFF'
+var currentFontClass = 'font-lora'
+var currentDarkness = 30
+var currentUser = null
+var currentQuoteId = null
+var textShadowEnabled = true
+var currentTextWidth = 80
+var currentTextX = 10
+var currentTextY = 25
+var currentFontSize = 18
+
+var dragActive = false, dragStartX = 0, dragStartY = 0, overlayStartX = 0, overlayStartY = 0
+var pinchActive = false
+var pinchStartDist = 0
+var pinchStartWidth = 80
+
+var fontClasses = ['font-lora','font-jakarta','font-playfair','font-oswald','font-bebas','font-merri']
+var fontMap = {
+  'font-lora':"'Lora',serif",'font-jakarta':"'Plus Jakarta Sans',sans-serif",
+  'font-playfair':"'Playfair Display',serif",'font-oswald':"'Oswald',sans-serif",
+  'font-bebas':"'Bebas Neue',sans-serif",'font-merri':"'Merriweather',serif"
+}
+
+function isMobileDevice(){return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)}
+function haptic(type){if(!navigator.vibrate)return;try{if(type==='light')navigator.vibrate(10);else if(type==='medium')navigator.vibrate(20);else if(type==='success')navigator.vibrate([15,40,15])}catch(e){}}
+
+// ═══ INIT ═══
+document.addEventListener('DOMContentLoaded', function(){
+  setupDrag()
+  setupCtrlScroll()
+  initCustomize()
+})
+
+async function initCustomize(){
+  var session = await supabaseClient.auth.getSession()
+  if(!session.data.session){window.location.href='login.html';return}
+  currentUser = session.data.session.user
+
+  var qt = document.getElementById('quoteText'), qr = document.getElementById('quoteRef')
+  var selectedText = sessionStorage.getItem('gstw_selected_quote_text')
+  var selectedSource = sessionStorage.getItem('gstw_selected_quote_source')
+  var selectedId = sessionStorage.getItem('gstw_selected_quote_id')
+  var quoteBgUrl = null
+
+  if(selectedText && selectedId){
+    var qResult = await supabaseClient.from('quotes').select('background_url').eq('id',selectedId).single()
+    if(qResult.data && qResult.data.background_url) quoteBgUrl=qResult.data.background_url
+    if(qt) qt.textContent = selectedText
+    if(qr) qr.textContent = '— '+(selectedSource||'GSTW').toUpperCase()
+    currentQuoteId=selectedId
+  }else{
+    var result = await supabaseClient.from('quotes').select('*').eq('status','live').order('published_at',{ascending:false}).limit(1)
+    if(result.data && result.data.length>0){
+      var q=result.data[0]
+      if(qt)qt.textContent=q.text
+      if(qr)qr.textContent='— '+(q.source||'GSTW').toUpperCase()
+      currentQuoteId=q.id
+      if(q.background_url)quoteBgUrl=q.background_url
+    }
+  }
+
+  // Load state from editor.html (if user made changes there)
+  loadCustomizationState(quoteBgUrl)
+
+  // Load admin backgrounds
+  await loadAdminBackgrounds(quoteBgUrl)
+
+  // Apply all state to preview
+  applyBackground(selectedBgValue)
+  setDarkness(currentDarkness)
+  applyTextStyle()
+  applyOverlayPositionAndWidth()
+
+  // Sync UI controls
+  syncControlsToState()
+
+  // Show pinch hint on mobile
+  if(isMobileDevice() && !localStorage.getItem('gstw_customize_pinch_hint')){
+    setTimeout(function(){
+      var ph=document.getElementById('pinchHint')
+      if(ph){ph.classList.remove('hidden');localStorage.setItem('gstw_customize_pinch_hint','1')}
+      setTimeout(function(){if(ph)ph.classList.add('hidden')},4500)
+    },800)
+  }
+}
+
+// ═══ STATE MANAGEMENT ═══
+function loadCustomizationState(fallbackBgUrl){
+  var bg = sessionStorage.getItem('gstw_edit_bgUrl')
+  var upl = sessionStorage.getItem('gstw_edit_uploadedPhoto')
+  var dark = sessionStorage.getItem('gstw_edit_darkness')
+  var fc = sessionStorage.getItem('gstw_edit_fontClass')
+  var fs = sessionStorage.getItem('gstw_edit_fontSize')
+  var col = sessionStorage.getItem('gstw_edit_textColor')
+  var al = sessionStorage.getItem('gstw_edit_textAlign')
+  var ts = sessionStorage.getItem('gstw_edit_textShadow')
+  var tw = sessionStorage.getItem('gstw_edit_textWidth')
+  var tx = sessionStorage.getItem('gstw_edit_textX')
+  var ty = sessionStorage.getItem('gstw_edit_textY')
+
+  if(upl) selectedBgValue = upl
+  else if(bg) selectedBgValue = bg
+  else if(fallbackBgUrl) selectedBgValue = fallbackBgUrl
+
+  if(dark) currentDarkness = parseInt(dark)
+  if(fc) currentFontClass = fc
+  if(fs) currentFontSize = parseInt(fs)
+  if(col) currentTextColor = col
+  if(al) currentAlign = al
+  if(ts) textShadowEnabled = ts === 'true'
+  if(tw) currentTextWidth = parseFloat(tw)
+  if(tx) currentTextX = parseFloat(tx)
+  if(ty) currentTextY = parseFloat(ty)
+}
+
+function saveCustomizationState(){
+  sessionStorage.setItem('gstw_edit_bgUrl', selectedBgValue)
+  sessionStorage.setItem('gstw_edit_darkness', currentDarkness)
+  sessionStorage.setItem('gstw_edit_fontClass', currentFontClass)
+  sessionStorage.setItem('gstw_edit_fontSize', currentFontSize)
+  sessionStorage.setItem('gstw_edit_textColor', currentTextColor)
+  sessionStorage.setItem('gstw_edit_textAlign', currentAlign)
+  sessionStorage.setItem('gstw_edit_textShadow', textShadowEnabled)
+  sessionStorage.setItem('gstw_edit_textWidth', currentTextWidth)
+  sessionStorage.setItem('gstw_edit_textX', currentTextX)
+  sessionStorage.setItem('gstw_edit_textY', currentTextY)
+}
+
+function syncControlsToState(){
+  // Darkness slider
+  var dSlider = document.getElementById('darknessSlider')
+  if(dSlider) dSlider.value = currentDarkness
+  var dLabel = document.getElementById('darkLabel')
+  if(dLabel) dLabel.textContent = currentDarkness + '%'
+
+  // Font size
+  var sSlider = document.getElementById('sizeSlider')
+  if(sSlider) sSlider.value = currentFontSize
+  var sLabel = document.getElementById('sizeLabel')
+  if(sLabel) sLabel.textContent = currentFontSize + 'px'
+
+  // Width
+  var wSlider = document.getElementById('widthSlider')
+  if(wSlider) wSlider.value = Math.round(currentTextWidth)
+  var wLabel = document.getElementById('widthLabel')
+  if(wLabel) wLabel.textContent = Math.round(currentTextWidth) + '%'
+
+  // Font selection
+  document.querySelectorAll('.font-opt').forEach(function(b){b.classList.remove('selected')})
+  var fontBtns = document.querySelectorAll('.font-opt')
+  fontBtns.forEach(function(b){
+    if(b.getAttribute('onclick').indexOf(currentFontClass) > -1) b.classList.add('selected')
+  })
+
+  // Color selection
+  document.querySelectorAll('.color-swatch').forEach(function(s){
+    s.classList.toggle('selected', s.dataset.color === currentTextColor)
+  })
+
+  // Alignment
+  document.querySelectorAll('.align-btn').forEach(function(b){
+    b.classList.toggle('active', b.dataset.align === currentAlign)
+  })
+
+  // Shadow toggle
+  var toggle = document.getElementById('shadowToggle')
+  if(toggle){
+    toggle.classList.toggle('on', textShadowEnabled)
+    toggle.classList.toggle('off', !textShadowEnabled)
+  }
+}
+
+function applyTextStyle(){
+  var qt=document.getElementById('quoteText'), qr=document.getElementById('quoteRef')
+  if(!qt) return
+  fontClasses.forEach(function(f){qt.classList.remove(f);if(qr)qr.classList.remove(f)})
+  qt.classList.add(currentFontClass)
+  if(qr) qr.classList.add(currentFontClass)
+  qt.style.fontFamily=fontMap[currentFontClass]
+  if(qr) qr.style.fontFamily=fontMap[currentFontClass]
+  qt.style.textTransform = currentFontClass==='font-oswald' ? 'uppercase':'none'
+  qt.style.color = currentTextColor
+  if(qr) qr.style.color = currentTextColor
+  qt.style.textAlign = currentAlign
+  if(qr) qr.style.textAlign = currentAlign
+  qt.style.fontSize = currentFontSize + 'px'
+  if(textShadowEnabled){
+    qt.classList.add('text-with-shadow')
+    if(qr) qr.classList.add('text-with-shadow')
+  }else{
+    qt.classList.remove('text-with-shadow')
+    if(qr) qr.classList.remove('text-with-shadow')
+  }
+}
+
+function applyOverlayPositionAndWidth(){
+  var overlay=document.getElementById('quoteOverlay')
+  if(!overlay) return
+  overlay.style.width = currentTextWidth + '%'
+  overlay.style.left = currentTextX + '%'
+  overlay.style.top = currentTextY + '%'
+}
+
+// ═══ ADMIN BACKGROUNDS ═══
+async function loadAdminBackgrounds(quoteBgUrl){
+  var c=document.getElementById('bgThumbsContainer');if(!c)return
+  var CACHE_KEY='gstw_bg_cache_v1',CACHE_TTL=3600000,imgs=null
+  try{var cached=sessionStorage.getItem(CACHE_KEY);if(cached){var p=JSON.parse(cached);if(p&&p.ts&&(Date.now()-p.ts<CACHE_TTL))imgs=p.data}}catch(e){}
+  if(!imgs){
+    try{
+      var r=await supabaseClient.from('media').select('*').eq('type','background').eq('is_active',true).order('sort_order',{ascending:true})
+      imgs=r.data||[]
+      sessionStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),data:imgs}))
+    }catch(e){imgs=[]}
+  }
+
+  c.innerHTML=''
+
+  // Quote's assigned background first
+  if(quoteBgUrl){
+    var t=document.createElement('div')
+    t.className='bg-thumb flex-shrink-0'+(selectedBgValue===quoteBgUrl?' selected':'')
+    var u=quoteBgUrl
+    t.onclick=function(){selectBg(this,u)}
+    t.innerHTML='<img src="'+quoteBgUrl+'" class="w-full h-full object-cover" alt="">'
+    c.appendChild(t)
+  }
+
+  // Then admin library
+  imgs.forEach(function(img){
+    if(img.url===quoteBgUrl) return
+    var t=document.createElement('div')
+    t.className='bg-thumb flex-shrink-0'+(selectedBgValue===img.url?' selected':'')
+    var u=img.url
+    t.onclick=function(){selectBg(this,u)}
+    t.innerHTML='<img src="'+(img.thumbnail_url||img.url)+'" class="w-full h-full object-cover" alt="">'
+    c.appendChild(t)
+  })
+}
+
+// ═══ TAB SWITCHING ═══
+function switchTab(name){
+  document.getElementById('tabBackground').classList.toggle('active', name==='background')
+  document.getElementById('tabText').classList.toggle('active', name==='text')
+  document.getElementById('panelBackground').classList.toggle('hidden', name!=='background')
+  document.getElementById('panelText').classList.toggle('hidden', name!=='text')
+  haptic('light')
+}
+
+function showTextSubtab(name, btn){
+  ['font','size','width','color','align','effects'].forEach(function(n){
+    var el=document.getElementById('sub'+n.charAt(0).toUpperCase()+n.slice(1))
+    if(el) el.classList.toggle('hidden', n!==name)
+  })
+  document.querySelectorAll('#panelText .subtab').forEach(function(b){b.classList.remove('active')})
+  if(btn) btn.classList.add('active')
+}
+
+// ═══ DRAG + PINCH ═══
+function setupDrag(){
+  var o=document.getElementById('quoteOverlay');if(!o)return
+  o.addEventListener('mousedown',onDragStart)
+  o.addEventListener('touchstart',onTouchStart,{passive:false})
+  document.addEventListener('mousemove',onDragMove)
+  document.addEventListener('touchmove',onTouchMove,{passive:false})
+  document.addEventListener('mouseup',onDragEnd)
+  document.addEventListener('touchend',onTouchEnd)
+}
+function onDragStart(e){
+  if(pinchActive) return
+  dragActive=true
+  var o=document.getElementById('quoteOverlay')
+  overlayStartX=o.offsetLeft;overlayStartY=o.offsetTop
+  o.style.left=overlayStartX+'px';o.style.top=overlayStartY+'px'
+  dragStartX=e.clientX;dragStartY=e.clientY
+  if(e.cancelable)e.preventDefault()
+}
+function onDragMove(e){
+  if(!dragActive || pinchActive) return
+  var o=document.getElementById('quoteOverlay'),c=document.getElementById('previewCanvas')
+  if(!o||!c) return
+  var cx=e.clientX,cy=e.clientY
+  var mX=c.offsetWidth-o.offsetWidth,mY=c.offsetHeight-o.offsetHeight
+  var nX=Math.max(0,Math.min(overlayStartX+(cx-dragStartX),mX))
+  var nY=Math.max(0,Math.min(overlayStartY+(cy-dragStartY),mY))
+  o.style.left=nX+'px';o.style.top=nY+'px'
+  currentTextX = (nX / c.offsetWidth) * 100
+  currentTextY = (nY / c.offsetHeight) * 100
+  if(e.cancelable)e.preventDefault()
+}
+function onDragEnd(){
+  if(dragActive){ dragActive=false; saveCustomizationState() }
+}
+function onTouchStart(e){
+  if(e.touches.length === 2){
+    pinchActive = true; dragActive = false
+    pinchStartDist = touchDistance(e.touches)
+    pinchStartWidth = currentTextWidth
+    if(e.cancelable) e.preventDefault()
+  } else if(e.touches.length === 1){
+    onDragStart({clientX: e.touches[0].clientX, clientY: e.touches[0].clientY, cancelable: e.cancelable, preventDefault: function(){ e.preventDefault() }})
+  }
+}
+function onTouchMove(e){
+  if(pinchActive && e.touches.length === 2){
+    var newDist = touchDistance(e.touches)
+    var ratio = newDist / pinchStartDist
+    var newWidth = Math.max(30, Math.min(95, pinchStartWidth * ratio))
+    setTextWidth(newWidth, true)
+    if(e.cancelable) e.preventDefault()
+  } else if(dragActive && e.touches.length === 1){
+    onDragMove({clientX: e.touches[0].clientX, clientY: e.touches[0].clientY, cancelable: e.cancelable, preventDefault: function(){ e.preventDefault() }})
+  }
+}
+function onTouchEnd(e){
+  if(e.touches.length === 0){
+    if(dragActive || pinchActive){
+      pinchActive = false; dragActive = false
+      saveCustomizationState()
+    }
+  }
+}
+function touchDistance(touches){
+  var dx = touches[0].clientX - touches[1].clientX
+  var dy = touches[0].clientY - touches[1].clientY
+  return Math.sqrt(dx*dx + dy*dy)
+}
+
+function setupCtrlScroll(){
+  var overlay = document.getElementById('quoteOverlay')
+  if(!overlay) return
+  overlay.addEventListener('wheel', function(e){
+    if(!(e.ctrlKey || e.metaKey)) return
+    e.preventDefault()
+    var delta = e.deltaY < 0 ? 3 : -3
+    var newWidth = Math.max(30, Math.min(95, currentTextWidth + delta))
+    setTextWidth(newWidth, true)
+    saveCustomizationState()
+  }, { passive: false })
+}
+
+// ═══ BACKGROUND ═══
+function applyBackground(v){
+  var b=document.getElementById('bgLayer');if(!b) return
+  if(v){
+    b.style.background='none'
+    b.style.backgroundImage="url('"+v+"')"
+    b.style.backgroundSize='cover';b.style.backgroundPosition='center'
+  }else{
+    b.style.backgroundImage='none';b.style.background='#305678'
+  }
+}
+function selectBg(el, url){
+  document.querySelectorAll('.bg-thumb').forEach(function(t){t.classList.remove('selected')})
+  if(el) el.classList.add('selected')
+  selectedBgValue = url
+  applyBackground(url)
+  // Clear uploaded photo since user picked from library
+  sessionStorage.removeItem('gstw_edit_uploadedPhoto')
+  saveCustomizationState()
+  haptic('light')
+}
+function onDarknessInput(v){
+  setDarkness(v)
+  saveCustomizationState()
+}
+function setDarkness(v){
+  currentDarkness = parseInt(v)
+  var d=document.getElementById('darkLayer')
+  if(d) d.style.background='rgba(0,0,0,'+(v/100)+')'
+  var l=document.getElementById('darkLabel')
+  if(l) l.textContent=v+'%'
+}
+
+// ═══ TEXT CONTROLS ═══
+function setFont(fc, btn){
+  currentFontClass = fc
+  var qt=document.getElementById('quoteText'), qr=document.getElementById('quoteRef')
+  if(qt){
+    fontClasses.forEach(function(f){qt.classList.remove(f);if(qr)qr.classList.remove(f)})
+    qt.classList.add(fc);if(qr) qr.classList.add(fc)
+    qt.style.fontFamily=fontMap[fc]
+    if(qr) qr.style.fontFamily=fontMap[fc]
+    qt.style.textTransform = fc==='font-oswald' ? 'uppercase':'none'
+  }
+  document.querySelectorAll('.font-opt').forEach(function(b){b.classList.remove('selected')})
+  if(btn) btn.classList.add('selected')
+  saveCustomizationState()
+  haptic('light')
+}
+function setSize(v){
+  currentFontSize = parseInt(v)
+  var q=document.getElementById('quoteText')
+  if(q) q.style.fontSize=v+'px'
+  var l=document.getElementById('sizeLabel')
+  if(l) l.textContent=v+'px'
+  saveCustomizationState()
+}
+function setTextWidth(pct, updateSlider){
+  currentTextWidth = pct
+  var overlay = document.getElementById('quoteOverlay')
+  if(overlay){
+    overlay.style.width = pct + '%'
+    // Keep centered when width changes from default
+    var canvas = document.getElementById('previewCanvas')
+    if(canvas && Math.abs(currentTextX - 10) < 0.5){
+      currentTextX = (100 - pct) / 2
+      overlay.style.left = currentTextX + '%'
+    }
+  }
+  var lbl = document.getElementById('widthLabel')
+  if(lbl) lbl.textContent = Math.round(pct) + '%'
+  if(updateSlider){
+    var slider = document.getElementById('widthSlider')
+    if(slider) slider.value = Math.round(pct)
+  }
+  saveCustomizationState()
+}
+function setTextColor(hex, swatch){
+  currentTextColor = hex
+  var q=document.getElementById('quoteText'), r=document.getElementById('quoteRef')
+  if(q) q.style.color=hex
+  if(r) r.style.color=hex
+  document.querySelectorAll('.color-swatch').forEach(function(s){s.classList.remove('selected')})
+  if(swatch) swatch.classList.add('selected')
+  saveCustomizationState()
+  haptic('light')
+}
+function setAlign(a, btn){
+  currentAlign = a
+  var q=document.getElementById('quoteText'), r=document.getElementById('quoteRef')
+  if(q) q.style.textAlign=a
+  if(r) r.style.textAlign=a
+  document.querySelectorAll('.align-btn').forEach(function(b){b.classList.remove('active')})
+  if(btn) btn.classList.add('active')
+  saveCustomizationState()
+  haptic('light')
+}
+function toggleTextShadow(){
+  textShadowEnabled = !textShadowEnabled
+  var q=document.getElementById('quoteText'), r=document.getElementById('quoteRef')
+  var toggle=document.getElementById('shadowToggle')
+  if(textShadowEnabled){
+    if(q) q.classList.add('text-with-shadow')
+    if(r) r.classList.add('text-with-shadow')
+    if(toggle){ toggle.classList.add('on'); toggle.classList.remove('off') }
+  }else{
+    if(q) q.classList.remove('text-with-shadow')
+    if(r) r.classList.remove('text-with-shadow')
+    if(toggle){ toggle.classList.add('off'); toggle.classList.remove('on') }
+  }
+  saveCustomizationState()
+  haptic('light')
+}
+
+// ═══ SURPRISE ME ═══
+function surpriseMe(){
+  var fc = fontClasses[Math.floor(Math.random() * fontClasses.length)]
+  currentFontClass = fc
+
+  var cs = ['#FFFFFF','#b0d5fe','#FDE047','#86EFAC','#fbf9f4']
+  var col = cs[Math.floor(Math.random() * cs.length)]
+  currentTextColor = col
+
+  var als = ['left','center','right']
+  var al = als[Math.floor(Math.random() * als.length)]
+  currentAlign = al
+
+  var thumbs = document.querySelectorAll('.bg-thumb img')
+  if(thumbs.length > 0){
+    var pick = thumbs[Math.floor(Math.random() * thumbs.length)]
+    document.querySelectorAll('.bg-thumb').forEach(function(t){t.classList.remove('selected')})
+    if(pick.parentElement) pick.parentElement.classList.add('selected')
+    selectedBgValue = pick.src
+    applyBackground(pick.src)
+    sessionStorage.removeItem('gstw_edit_uploadedPhoto')
+  }
+
+  currentDarkness = 20 + Math.floor(Math.random() * 50)
+
+  applyTextStyle()
+  setDarkness(currentDarkness)
+  syncControlsToState()
+  saveCustomizationState()
+
+  showToast('Shuffled ✨')
+  haptic('success')
+}
+
+// ═══ NAVIGATION ═══
+function goBackToEditor(){
+  saveCustomizationState()
+  haptic('medium')
+  window.location.href = 'editor.html'
+}
+
+// ═══ TOAST ═══
+function showToast(msg){
+  var ex=document.getElementById('editorToast');if(ex)ex.remove()
+  var t=document.createElement('div');t.id='editorToast'
+  t.className='fixed top-4 left-1/2 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-2.5 rounded-full whitespace-nowrap flex items-center gap-2 shadow-float'
+  t.style.transform='translateX(-50%)';t.style.fontSize='13px'
+  t.innerHTML='<span class="material-symbols-outlined text-primary-container text-[14px] filled">check_circle</span> '+msg
+  document.body.appendChild(t)
+  setTimeout(function(){if(t.parentNode)t.remove()},2200)
+}
+</script>
+</body>
+</html>
