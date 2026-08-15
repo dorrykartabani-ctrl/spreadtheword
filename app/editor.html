@@ -541,9 +541,9 @@
           Share to another platform
         </button>
         <button onclick="saveImageAndClose()" class="quick-action quick-action-secondary">
-          <span class="material-symbols-outlined text-[20px]" style="color:#3d6285">download</span>
-          Save image to device
-        </button>
+  <span class="material-symbols-outlined text-[20px]" style="color:#3d6285">save_alt</span>
+  Save image
+</button>
         <button onclick="goToImpact()" class="quick-action quick-action-tertiary">
           <span class="material-symbols-outlined text-[20px]" style="color:#3d6285">analytics</span>
           See your impact
@@ -1427,11 +1427,51 @@ function burstConfetti(){
 }
 
 function closeSuccess(){var m=document.getElementById('successModal');if(m)m.classList.add('hidden')}
-function saveImageAndClose(){
+async function saveImageAndClose(){
+  haptic('light')
+
+  // On mobile — use native share sheet (includes "Save to Photos")
+  if(isMobileDevice()){
+    if(imageFile && navigator.canShare && navigator.canShare({files:[imageFile]})){
+      try{
+        await navigator.share({
+          files:[imageFile],
+          title:'GSTW image'
+        })
+        // User made a choice — assume success
+        showToast('Done')
+        return
+      }catch(e){
+        if(e.name === 'AbortError') return  // User cancelled — silent
+        // Fall through to fallback
+      }
+    }
+    // Fallback for mobile browsers without share
+    showSaveImageFallback()
+    return
+  }
+
+  // Desktop — direct download works
   var ok = downloadImage()
-  if(ok){ showToast('Image saved to device'); haptic('light') }
+  if(ok) showToast('Image saved to device')
 }
-function goToImpact(){window.location.href='impact.html'}
+
+function showSaveImageFallback(){
+  // Open image in new tab so user can long-press to save
+  if(!imageDataUrl){ showToast('Please try sharing again'); return }
+  var w = window.open()
+  if(!w){ showToast('Popup blocked — allow popups to save'); return }
+  w.document.write(
+    '<html><head><title>Save Image</title>' +
+    '<style>body{margin:0;background:#0e0e0c;font-family:sans-serif;color:#fff;text-align:center;padding:20px}' +
+    'img{max-width:100%;height:auto;border-radius:12px;margin-top:12px}' +
+    'p{font-size:14px;line-height:1.5;padding:12px 20px;background:rgba(255,255,255,0.1);border-radius:12px;margin:0 0 16px 0}' +
+    '</style></head><body>' +
+    '<p><b>Long-press the image</b> and choose <b>Save to Photos</b></p>' +
+    '<img src="' + imageDataUrl + '" alt="GSTW">' +
+    '</body></html>'
+  )
+}function goToImpact(){window.location.href='impact.html'}
 
 // ═══ RESET ═══
 function confirmReset(){document.getElementById('resetOverlay').classList.remove('hidden');requestAnimationFrame(function(){document.getElementById('resetSheet').classList.add('open')})}
