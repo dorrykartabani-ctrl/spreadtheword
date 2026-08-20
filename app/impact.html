@@ -694,7 +694,21 @@ async function init() {
 }
 
 async function loadEverything() {
-  var results = await Promise.allSettled([
+  // ... after loading other data
+var { data: paidRecruits } = await supabaseClient
+    .from('profiles')
+    .select('country')
+    .eq('referred_by', userProfile.invite_code)
+    .neq('subscription_tier', 'free');
+
+var totalPaidCountries = 0;
+if (paidRecruits) {
+    totalPaidCountries = new Set(paidRecruits.map(r => r.country).filter(c => c)).size;
+}
+
+// When you call the trophy states, make sure you pass totalPaidCountries
+// Example inside renderTrophyShowcase:
+var state = getTrophyState(trophy, allShares.length, totalRecruits, totalPaidCountries);var results = await Promise.allSettled([
     supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single(),
     supabaseClient.from('shares').select('platform, shared_at, quote_id').eq('user_id', currentUser.id).order('shared_at', { ascending: false }),
     supabaseClient.from('project_priorities').select('*').eq('user_id', currentUser.id),

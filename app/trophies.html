@@ -285,21 +285,36 @@ async function init() {
   document.querySelectorAll('.fade-up').forEach(function(el) { observer.observe(el) })
 }
 
+var totalPaidCountries = 0; // Add this global variable
+
 async function loadData() {
   try {
     var results = await Promise.allSettled([
       supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single(),
-      supabaseClient.from('shares').select('id', { count: 'exact', head: true }).eq('user_id', currentUser.id)
-    ])
+      supabaseClient.from('shares').select('id', { count: 'exact', head: true }).eq('user_id', currentUser.id),
+      // NEW: Fetch all recruits referred by this user who are NOT on the 'free' tier
+      supabaseClient.from('profiles')
+        .select('country, subscription_tier')
+        .eq('referred_by', userProfile.invite_code)
+        .neq('subscription_tier', 'free') 
+    ]);
 
-    userProfile = (results[0].status === 'fulfilled' && results[0].value.data) ? results[0].value.data : {}
+    userProfile = (results[0].status === 'fulfilled' && results[0].value.data) ? results[0].value.data : {};
     totalShares = (results[1].status === 'fulfilled') ? (results[1].value.count || 0) : 0
-    totalRecruits = userProfile.recruit_count || 0
+    totalRecruits = userProfile.recruit_count || 0;
+
+    // Calculate unique paid countries
+    if (results[2].status === 'fulfilled' && results[2].value.data) {
+      var paidRecruits = results[2].value.data;
+      // Filter for unique country names, ignoring empty ones
+      var uniqueCountries = [...new Set(paidRecruits.map(r => r.country).filter(c => c && c.trim() !== ""))];
+      totalPaidCountries = uniqueCountries.length;
+    }
+
   } catch (err) {
-    console.error('Load error:', err)
+    console.error('Load error:', err);
   }
 }
-
 function render() {
   renderSubscriptionRoadmap()
   renderTrophies()
@@ -336,31 +351,33 @@ function renderSubscriptionRoadmap() {
 }
 
 function renderTrophies() {
-  var container = document.getElementById('achievementsGrid')
-  if (!container) return
-  container.innerHTML = ''
+  var container = document.getElementById('achievementsGrid');
+  if (!container) return;
+  container.innerHTML = '';
 
   if (typeof EVOLVING_TROPHIES !== 'undefined') {
     EVOLVING_TROPHIES.forEach(function(trophy) {
-      var state = getTrophyState(trophy, totalShares, totalRecruits)
-      var activeTier = state.activeTier
-      var colors = RARITY_COLORS[activeTier.rarity] || { bg: 'bg-primary', text: 'text-primary' }
+      // PASS ALL 4 ARGUMENTS NOW
+      var state = getTrophyState(trophy, totalShares, totalRecruits, totalPaidCountries);
+      
+      var activeTier = state.activeTier;
+      var colors = RARITY_COLORS[activeTier.rarity] || { bg: 'bg-primary', text: 'text-primary' };
 
-      var tile = document.createElement('div')
-      tile.className = 'trophy-tile ' + (state.isUnlocked ? '' : 'locked')
-      tile.onclick = function() { openDetail(trophy, state) }
+      var tile = document.createElement('div');
+      tile.className = 'trophy-tile ' + (state.isUnlocked ? '' : 'locked');
+      tile.onclick = function() { openDetail(trophy, state) };
 
       var iconWrapHtml = '<div class="icon-wrap-achievement ' + (state.isUnlocked ? colors.bg : 'bg-surface-chigh') + '">'
-      iconWrapHtml += '<span class="material-symbols-outlined text-[28px] ' + (state.isUnlocked ? 'text-white filled' : 'text-outline') + '">' + trophy.icon + '</span></div>'
+      iconWrapHtml += '<span class="material-symbols-outlined text-[28px] ' + (state.isUnlocked ? 'text-white filled' : 'text-outline') + '">' + trophy.icon + '</span></div>';
 
-      var levelLabel = state.isUnlocked ? 'Lvl ' + activeTier.level + ' · ' + activeTier.rarity : 'Locked'
+      var levelLabel = state.isUnlocked ? 'Lvl ' + activeTier.level + ' · ' + activeTier.rarity : 'Locked';
 
       tile.innerHTML = iconWrapHtml
         + '<p class="font-headline font-bold text-on-surface leading-tight mb-1" style="font-size:13px;">' + trophy.title + '</p>'
-        + '<p class="font-body font-bold uppercase tracking-widest ' + (state.isUnlocked ? colors.text : 'text-outline') + '" style="font-size:9px">' + levelLabel + '</p>'
+        + '<p class="font-body font-bold uppercase tracking-widest ' + (state.isUnlocked ? colors.text : 'text-outline') + '" style="font-size:9px">' + levelLabel + '</p>';
 
-      container.appendChild(tile)
-    })
+      container.appendChild(tile);
+    });
   }
 }
 
