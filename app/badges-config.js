@@ -38,20 +38,21 @@ var EVOLVING_TROPHIES = [
       { level: 5, req: 50, rarity: 'mythic',   name: 'Mythic Shepherd',   desc: '50 warriors leading the charge.' }
     ]
   },
-  {
-    id: 'voyager',
-    title: 'Global Voyager',
-    icon: 'public',
-    type: 'countries',
-    description: 'Spreading the Word across international borders.',
-    tiers: [
-      { level: 1, req: 2,  rarity: 'common',   name: 'International Sower', desc: 'Recruit warriors from 2 different countries.' },
-      { level: 2, req: 5,  rarity: 'uncommon', name: 'Global Envoy',        desc: 'Your circle spans 5 countries.' },
-      { level: 3, req: 10, rarity: 'rare',     name: 'Continental Bridge',  desc: 'Connecting the word across 10 countries.' },
-      { level: 4, req: 25, rarity: 'epic',     name: 'World Ambassador',    desc: 'An incredible reach across 25 nations.' },
-      { level: 5, req: 50, rarity: 'mythic',   name: 'Global Legend',       desc: 'The sun never sets on your mission. 50 countries reached.' }
-    ]
-  }
+ // Replace the voyager object in your EVOLVING_TROPHIES array:
+{
+  id: 'voyager',
+  title: 'Global Voyager',
+  icon: 'public',
+  type: 'countries',
+  description: 'Spreading the Word across international borders. (Counts paid subscribers only)',
+  tiers: [
+    { level: 1, req: 2,  rarity: 'common',   name: 'International Sower', desc: 'Recruit paid warriors from 2 different countries.' },
+    { level: 2, req: 5,  rarity: 'uncommon', name: 'Global Envoy',        desc: 'Your circle spans 5 paid countries.' },
+    { level: 3, req: 10, rarity: 'rare',     name: 'Continental Bridge',  desc: 'Connecting across 10 countries with paid warriors.' },
+    { level: 4, req: 25, rarity: 'epic',     name: 'World Ambassador',    desc: 'An incredible reach across 25 nations.' },
+    { level: 5, req: 50, rarity: 'mythic',   name: 'Global Legend',       desc: 'The sun never sets on your mission. 50 paid countries reached.' }
+  ]
+}
 ];
 
 function getUserSubscriptionBadge(profile) {
