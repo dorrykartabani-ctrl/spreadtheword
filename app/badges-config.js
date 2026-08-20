@@ -1,126 +1,86 @@
 // ═══════════════════════════════════════════════════════════════════
-// GSTW BADGES CONFIG — Single source of truth for all badge metadata
-// Update this file to change badge behavior anywhere in the app.
+// GSTW BADGES CONFIG — Master Configuration
 // ═══════════════════════════════════════════════════════════════════
 
-var BADGE_CATALOG = {
-  // ─── SUBSCRIPTION TIER BADGES ───
-  // Displayed based on profiles.subscription_tier
-  called: {
-    key: 'called',
-    type: 'subscription',
-    tier: 'free',
-    name: 'The Called',
-    tagline: 'You answered the call',
-    description: 'Welcome to the mission. You have joined thousands spreading the Word across the world.',
-    image: '/images/badges/called.svg',
-    bgColor: '#4A5560',
-    rarity: 'common'
+var SUBSCRIPTION_ROADMAP = [
+  { key: 'free',      badgeKey: 'called',    name: 'The Called',    tagline: 'Answered the call',        price: 'Free',         image: '/images/badges/called.svg',    bgColor: '#4A5560' },
+  { key: 'warrior',   badgeKey: 'warrior',   name: 'The Warrior',   tagline: 'Committed witness',        price: '$3.99/mo',     image: '/images/badges/warrior.svg',   bgColor: '#8B4513' },
+  { key: 'commander', badgeKey: 'commander', name: 'The Commander', tagline: 'Leading the mission',      price: '$5.99/mo',     image: '/images/badges/commander.svg', bgColor: '#3d6285' },
+  { key: 'legacy',    badgeKey: 'legacy',    name: 'The Anointed',  tagline: 'Pillar of the movement',   price: 'Founder/Admin',image: '/images/badges/legacy.svg',    bgColor: '#1E3A5F' }
+];
+
+var EVOLVING_TROPHIES = [
+  {
+    id: 'sower',
+    title: 'The Sower',
+    icon: 'grass',
+    type: 'shares',
+    description: 'Planting seeds of the Word through daily sharing.',
+    tiers: [
+      { level: 1, req: 1,    rarity: 'common',   name: 'Common Sower',   desc: 'You planted your first seed.' },
+      { level: 2, req: 25,   rarity: 'uncommon', name: 'Uncommon Sower', desc: '25 seeds planted in the field.' },
+      { level: 3, req: 100,  rarity: 'rare',     name: 'Rare Sower',     desc: '100 seeds sown across the land.' },
+      { level: 4, req: 500,  rarity: 'epic',     name: 'Epic Sower',     desc: '500 words spread. An abundant harvest.' },
+      { level: 5, req: 1000, rarity: 'mythic',   name: 'Mythic Sower',   desc: '1000 words spread. A champion evangelist.' }
+    ]
   },
-  warrior: {
-    key: 'warrior',
-    type: 'subscription',
-    tier: 'warrior',
-    name: 'The Warrior',
-    tagline: 'Committed to the mission',
-    description: 'You committed with your subscription. The battle is joined and your voice fuels the movement.',
-    image: '/images/badges/warrior.svg',
-    bgColor: '#8B4513',
-    rarity: 'uncommon'
-  },
-  commander: {
-    key: 'commander',
-    type: 'subscription',
-    tier: 'commander',
-    name: 'The Commander',
-    tagline: 'Leading by example',
-    description: 'Your commitment inspires and funds the movement. You lead the way for others to follow.',
-    image: '/images/badges/commander.svg',
-    bgColor: '#3d6285',
-    rarity: 'rare'
-  },
-  legacy: {
-    key: 'legacy',
-    type: 'subscription',
-    tier: 'legacy',
-    name: 'The Anointed',
-    tagline: 'A pillar of the mission',
-    description: 'You are the foundation. Your legacy will outlive the movement itself.',
-    image: '/images/badges/legacy.svg',
-    bgColor: '#1E3A5F',
-    rarity: 'legendary'
+  {
+    id: 'shepherd',
+    title: 'The Shepherd',
+    icon: 'handshake',
+    type: 'recruits',
+    description: 'Inviting new warriors into the fold.',
+    tiers: [
+      { level: 1, req: 1,  rarity: 'common',   name: 'Common Shepherd',   desc: 'Brought 1 warrior into the fold.' },
+      { level: 2, req: 5,  rarity: 'uncommon', name: 'Uncommon Shepherd', desc: '5 warriors follow your call.' },
+      { level: 3, req: 10, rarity: 'rare',     name: 'Rare Shepherd',     desc: '10 warriors guided in truth.' },
+      { level: 4, req: 25, rarity: 'epic',     name: 'Epic Shepherd',     desc: '25 warriors joined because of you.' },
+      { level: 5, req: 50, rarity: 'mythic',   name: 'Mythic Shepherd',   desc: '50 warriors leading the charge.' }
+    ]
   }
+];
 
-  // ─── MISSION BADGES (to be added) ───
-  // genesis: { ... }
-  // '1000_generals': { ... }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// HELPER FUNCTIONS
-// ═══════════════════════════════════════════════════════════════════
-
-/**
- * Get the user's current subscription badge based on their tier.
- * Falls back to 'called' if tier is missing/invalid.
- */
 function getUserSubscriptionBadge(profile) {
-  if (!profile) return BADGE_CATALOG.called
-  var tier = (profile.subscription_tier || 'free').toLowerCase()
-  if (tier === 'free') return BADGE_CATALOG.called
-  return BADGE_CATALOG[tier] || BADGE_CATALOG.called
+  if (!profile) return SUBSCRIPTION_ROADMAP[0];
+  var tier = (profile.subscription_tier || 'free').toLowerCase();
+  var found = SUBSCRIPTION_ROADMAP.find(function(t) { return t.key === tier; });
+  return found || SUBSCRIPTION_ROADMAP[0];
 }
 
-/**
- * Get all badges (subscription + missions) that a user currently holds.
- * missions param = array of user_missions rows (mission_key strings).
- */
-function getUserAllBadges(profile, missions) {
-  var badges = []
-  var subBadge = getUserSubscriptionBadge(profile)
-  if (subBadge) badges.push(subBadge)
+function getTrophyState(trophy, userShares, userRecruits) {
+  var count = trophy.type === 'shares' ? userShares : userRecruits;
+  var currentTier = null;
+  var nextTier = null;
 
-  if (missions && missions.length) {
-    missions.forEach(function(m) {
-      var key = m.mission_key || m
-      if (BADGE_CATALOG[key]) badges.push(BADGE_CATALOG[key])
-    })
+  for (var i = 0; i < trophy.tiers.length; i++) {
+    if (count >= trophy.tiers[i].req) {
+      currentTier = trophy.tiers[i];
+    } else {
+      nextTier = trophy.tiers[i];
+      break;
+    }
   }
-  return badges
-}
 
-/**
- * Render a badge as an HTML string.
- * size: 'xs' (24px) | 'sm' (32px) | 'md' (48px) | 'lg' (80px) | 'xl' (120px) | 'hero' (160px)
- * showLabel: boolean - whether to show name/tagline below
- */
-function renderBadgeHTML(badge, size, showLabel) {
-  if (!badge) return ''
-  var sizes = { xs: 24, sm: 32, md: 48, lg: 80, xl: 120, hero: 160 }
-  var px = sizes[size] || 48
+  var isUnlocked = currentTier !== null;
+  var activeTier = currentTier || trophy.tiers[0];
 
-  var img = '<img src="' + badge.image + '" alt="' + badge.name + '" width="' + px + '" height="' + px + '" style="display:block;border-radius:50%;">'
+  var progressPercent = 0;
+  if (!isUnlocked) {
+    progressPercent = Math.min(Math.round((count / trophy.tiers[0].req) * 100), 100);
+  } else if (nextTier) {
+    var prevReq = currentTier.req;
+    var range = nextTier.req - prevReq;
+    progressPercent = Math.min(Math.round(((count - prevReq) / range) * 100), 100);
+  } else {
+    progressPercent = 100;
+  }
 
-  if (!showLabel) return img
-
-  var textSize = px >= 120 ? '15px' : px >= 80 ? '14px' : '13px'
-  var subSize = px >= 120 ? '12px' : '11px'
-
-  return '<div style="display:flex;flex-direction:column;align-items:center;gap:8px;">'
-    + img
-    + '<div style="text-align:center;">'
-      + '<p style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:800;color:#31332e;font-size:' + textSize + ';margin:0;letter-spacing:-0.02em;">' + badge.name + '</p>'
-      + '<p style="font-family:\'Manrope\',sans-serif;color:#5e6059;font-size:' + subSize + ';margin:2px 0 0 0;">' + badge.tagline + '</p>'
-    + '</div>'
-  + '</div>'
-}
-
-/**
- * Render just the badge image at a specific size.
- * Convenient shortcut for inline use.
- */
-function renderBadgeImg(badgeKey, sizePx) {
-  var badge = BADGE_CATALOG[badgeKey]
-  if (!badge) return ''
-  return '<img src="' + badge.image + '" alt="' + badge.name + '" width="' + sizePx + '" height="' + sizePx + '" style="display:inline-block;border-radius:50%;vertical-align:middle;">'
+  return {
+    isUnlocked: isUnlocked,
+    currentTier: currentTier,
+    nextTier: nextTier,
+    activeTier: activeTier,
+    progressPercent: progressPercent,
+    count: count
+  };
 }
