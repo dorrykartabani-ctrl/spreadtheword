@@ -935,63 +935,69 @@ function renderThisWeeksWord() {
 }
 
 function renderTrophyShowcase() {
-  var container = document.getElementById('trophyShowcase')
-  if (!container) return
-  container.innerHTML = ''
+  var container = document.getElementById('trophyShowcase');
+  if (!container) return;
+  container.innerHTML = '';
 
-  EVOLVING_TROPHIES.forEach(function(trophy) {
-    var state = getTrophyState(trophy, allShares.length, (userProfile.recruit_count || recruits.length || 0))
-    var activeTier = state.activeTier
-    var colors = RARITY_COLORS[activeTier.rarity] || { bg: 'bg-primary' }
+  var showcaseCount = 0;
 
-    var tile = document.createElement('div')
-    tile.className = 'impact-trophy ' + (state.isUnlocked ? 'earned' : 'opacity-50')
-    tile.onclick = function() { window.location.href = 'trophies.html' }
+  // Check if EVOLVING_TROPHIES exists (from your external config)
+  if (typeof EVOLVING_TROPHIES !== 'undefined') {
+    EVOLVING_TROPHIES.forEach(function(trophy) {
+      var state = getTrophyState(trophy, allShares.length, (userProfile.recruit_count || recruits.length || 0));
+      var activeTier = state.activeTier;
+      var colors = RARITY_COLORS[activeTier.rarity] || { bg: 'bg-primary' };
 
-    tile.innerHTML =
-      '<div class="mx-auto mb-2 flex items-center justify-center w-12 h-12 rounded-[14px] ' + (state.isUnlocked ? colors.bg : 'bg-surface-chigh') + '">' +
-        '<span class="material-symbols-outlined ' + (state.isUnlocked ? 'text-white filled' : 'text-outline') + '" style="font-size:24px;">' + trophy.icon + '</span>' +
-      '</div>' +
-      '<p class="font-headline font-bold text-on-surface leading-tight text-[11px]">' + trophy.title + '</p>' +
-      '<p class="font-body text-[9px] font-semibold mt-0.5 ' + (state.isUnlocked ? colors.text : 'text-outline') + '">' + (state.isUnlocked ? 'Lvl ' + activeTier.level : 'Locked') + '</p>'
+      var tile = document.createElement('div');
+      tile.className = 'impact-trophy ' + (state.isUnlocked ? 'earned' : 'opacity-50');
+      tile.onclick = function() { window.location.href = 'trophies.html' };
 
-    container.appendChild(tile)
-  })
-}    
-    while (showcase.length < 3) {
-      var placeholder = document.createElement('div')
-      placeholder.className = 'impact-trophy'
-      placeholder.style.opacity = '0.5'
-      placeholder.innerHTML =
-        '<div class="mx-auto mb-2 flex items-center justify-center w-12 h-12 rounded-[14px] bg-surface-chigh">'
-          + '<span class="material-symbols-outlined text-outline" style="font-size:20px;">lock</span>'
-        + '</div>'
-        + '<p class="font-body text-outline" style="font-size:10px;">Locked</p>'
-      container.appendChild(placeholder)
-      showcase.push(1)
-    }
+      tile.innerHTML =
+        '<div class="mx-auto mb-2 flex items-center justify-center w-12 h-12 rounded-[14px] ' + (state.isUnlocked ? colors.bg : 'bg-surface-chigh') + '">' +
+          '<span class="material-symbols-outlined ' + (state.isUnlocked ? 'text-white filled' : 'text-outline') + '" style="font-size:24px;">' + trophy.icon + '</span>' +
+        '</div>' +
+        '<p class="font-headline font-bold text-on-surface leading-tight text-[11px]">' + trophy.title + '</p>' +
+        '<p class="font-body text-[9px] font-semibold mt-0.5 ' + (state.isUnlocked ? colors.text : 'text-outline') + '">' + (state.isUnlocked ? 'Lvl ' + activeTier.level : 'Locked') + '</p>';
+
+      container.appendChild(tile);
+      showcaseCount++;
+    });
   }
 
-  // Next up card
-  var next = getNextTrophy()
-  var nextCard = document.getElementById('nextTrophyCard')
+  // Fill empty slots if fewer than 3 trophies are shown
+  while (showcaseCount < 3) {
+    var placeholder = document.createElement('div');
+    placeholder.className = 'impact-trophy';
+    placeholder.style.opacity = '0.5';
+    placeholder.innerHTML =
+      '<div class="mx-auto mb-2 flex items-center justify-center w-12 h-12 rounded-[14px] bg-surface-chigh">' +
+        '<span class="material-symbols-outlined text-outline" style="font-size:20px;">lock</span>' +
+      '</div>' +
+      '<p class="font-body text-outline" style="font-size:10px;">Locked</p>';
+    container.appendChild(placeholder);
+    showcaseCount++;
+  }
+
+  // Handle Next Up Card
+  var next = getNextTrophy();
+  var nextCard = document.getElementById('nextTrophyCard');
   if (nextCard) {
     if (next) {
-      nextCard.classList.remove('hidden')
-      var symbolEl = document.getElementById('nextTrophyIconSymbol')
-      var titleEl = document.getElementById('nextTrophyTitle')
-      var progEl = document.getElementById('nextTrophyProgress')
-      var barEl = document.getElementById('nextTrophyBar')
+      nextCard.classList.remove('hidden');
+      var symbolEl = document.getElementById('nextTrophyIconSymbol');
+      var titleEl = document.getElementById('nextTrophyTitle');
+      var progEl = document.getElementById('nextTrophyProgress');
+      var barEl = document.getElementById('nextTrophyBar');
 
-      if (symbolEl) symbolEl.textContent = next.trophy.icon
-      if (titleEl) titleEl.textContent = next.trophy.title
-      if (progEl) progEl.textContent = next.progress.current + ' / ' + next.progress.threshold + ' · ' + (next.progress.threshold - next.progress.current) + ' to go'
-      if (barEl) setTimeout(function() { barEl.style.width = next.progress.percent + '%' }, 300)
+      if (symbolEl) symbolEl.textContent = next.trophy.icon;
+      if (titleEl) titleEl.textContent = next.trophy.title;
+      if (progEl) progEl.textContent = next.progress.current + ' / ' + next.progress.threshold + ' · ' + (next.progress.threshold - next.progress.current) + ' to go';
+      if (barEl) setTimeout(function() { barEl.style.width = next.progress.percent + '%' }, 300);
     } else {
-      nextCard.classList.add('hidden')
+      nextCard.classList.add('hidden');
     }
   }
-}
+} // End of function
 
 function renderJourney() {
   var totalUnique = 0
