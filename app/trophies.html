@@ -192,12 +192,10 @@
     </div>
 
     <div class="bg-surface-cl rounded-3xl p-5 shadow-ambient-sm space-y-4">
-      <!-- Roadmap Strip -->
       <div id="subscriptionRoadmapStrip" class="grid grid-cols-4 gap-2 text-center">
         <!-- Rendered via JS -->
       </div>
 
-      <!-- Current Status Banner -->
       <div id="activeStatusBanner" class="bg-surface-clow rounded-2xl p-4 text-center">
         <h3 id="statusBadgeName" class="font-headline font-extrabold text-on-surface" style="font-size:18px;">—</h3>
         <p id="statusBadgeTagline" class="font-body text-primary font-semibold text-[12px] mt-0.5">—</p>
@@ -215,6 +213,41 @@
   </section>
 
 </main>
+
+<!-- TROPHY DETAIL OVERLAY (Missing in your original code) -->
+<div id="detailOverlay" class="fixed inset-0 z-[100] hidden">
+  <div class="absolute inset-0 bg-on-surface/40 backdrop-blur-sm" onclick="closeDetail()"></div>
+  <div id="detailSheet" class="absolute bottom-0 inset-x-0 bg-surface-cl rounded-t-[32px] detail-sheet p-8 pt-6 max-w-[430px] mx-auto">
+    <div class="w-12 h-1.5 bg-surface-chigh rounded-full mx-auto mb-6"></div>
+    
+    <div class="text-center">
+      <p id="detailStatus" class="font-body font-bold uppercase tracking-wider mb-2 text-[10px]">—</p>
+      <div id="detailIconWrap" class="w-24 h-24 mx-auto mb-4 rounded-[24px] flex items-center justify-center">
+        <span id="detailIcon" class="material-symbols-outlined text-[48px]"></span>
+      </div>
+      <div class="flex items-center justify-center gap-2 mb-2">
+        <h2 id="detailTitle" class="font-headline font-extrabold text-on-surface text-2xl">Title</h2>
+        <span id="detailRarity" class="hidden"></span>
+      </div>
+      <p id="detailDesc" class="font-body text-on-surface-variant leading-relaxed px-4 mb-8">Description goes here.</p>
+    </div>
+
+    <div id="detailProgressWrap" class="hidden space-y-3 bg-surface-clow p-5 rounded-2xl">
+      <div class="flex justify-between items-end">
+        <span class="font-body text-[11px] font-bold text-on-surface-variant uppercase tracking-wide">Progress</span>
+        <span id="detailProgressText" class="font-headline font-bold text-primary text-sm">—</span>
+      </div>
+      <div class="progress-track">
+        <div id="detailBar" class="progress-fill" style="width: 0%"></div>
+      </div>
+      <p id="detailRemainingText" class="font-body text-[11px] text-center text-on-surface-variant">---</p>
+    </div>
+
+    <button onclick="closeDetail()" class="w-full mt-8 py-4 bg-on-surface text-surface-cl font-headline font-bold rounded-2xl active:scale-[0.98] transition-transform">
+      Got it
+    </button>
+  </div>
+</div>
 
 <script>
 var supabaseClient = supabase.createClient(
@@ -235,6 +268,11 @@ var userProfile = null
 var totalShares = 0
 var totalRecruits = 0
 
+// Added Visibility Observer
+var observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible') })
+}, { threshold: 0.1 })
+
 async function init() {
   var s = await supabaseClient.auth.getSession()
   if (!s.data.session) { window.location.href = 'login.html'; return }
@@ -242,6 +280,9 @@ async function init() {
 
   await loadData()
   render()
+  
+  // Start observing animations
+  document.querySelectorAll('.fade-up').forEach(function(el) { observer.observe(el) })
 }
 
 async function loadData() {
@@ -271,22 +312,27 @@ function renderSubscriptionRoadmap() {
 
   var userTier = (userProfile.subscription_tier || 'free').toLowerCase()
 
-  SUBSCRIPTION_ROADMAP.forEach(function(item) {
-    var isActive = item.key === userTier
-    var card = document.createElement('div')
-    card.className = 'flex flex-col items-center p-2 rounded-2xl transition-all ' + (isActive ? 'bg-primary-container/30 ring-2 ring-primary' : 'opacity-50 grayscale')
-    
-    card.innerHTML = 
-      '<img src="' + item.image + '" class="w-12 h-12 rounded-full mb-1.5 ' + (isActive ? '' : 'opacity-70') + '">' +
-      '<span class="font-headline font-bold text-[11px] ' + (isActive ? 'text-primary' : 'text-on-surface-variant') + '">' + item.name + '</span>' +
-      '<span class="font-body text-[9px] text-outline">' + (isActive ? 'Active' : item.price) + '</span>'
+  if (typeof SUBSCRIPTION_ROADMAP !== 'undefined') {
+    SUBSCRIPTION_ROADMAP.forEach(function(item) {
+      var isActive = item.key === userTier
+      var card = document.createElement('div')
+      card.className = 'flex flex-col items-center p-2 rounded-2xl transition-all ' + (isActive ? 'bg-primary-container/30 ring-2 ring-primary' : 'opacity-50 grayscale')
+      
+      card.innerHTML = 
+        '<img src="' + item.image + '" class="w-12 h-12 rounded-full mb-1.5 ' + (isActive ? '' : 'opacity-70') + '">' +
+        '<span class="font-headline font-bold text-[11px] ' + (isActive ? 'text-primary' : 'text-on-surface-variant') + '">' + item.name + '</span>' +
+        '<span class="font-body text-[9px] text-outline">' + (isActive ? 'Active' : item.price) + '</span>'
 
-    container.appendChild(card)
-  })
+      container.appendChild(card)
+    })
+  }
 
-  var activeObj = getUserSubscriptionBadge(userProfile)
-  document.getElementById('statusBadgeName').textContent = activeObj.name
-  document.getElementById('statusBadgeTagline').textContent = activeObj.tagline
+  // Safety check to ensure function exists in badges-config.js
+  if (typeof getUserSubscriptionBadge === 'function') {
+    var activeObj = getUserSubscriptionBadge(userProfile)
+    document.getElementById('statusBadgeName').textContent = activeObj.name || 'Warrior'
+    document.getElementById('statusBadgeTagline').textContent = activeObj.tagline || 'Spreading the Word'
+  }
 }
 
 function renderTrophies() {
@@ -294,34 +340,36 @@ function renderTrophies() {
   if (!container) return
   container.innerHTML = ''
 
-  EVOLVING_TROPHIES.forEach(function(trophy) {
-    var state = getTrophyState(trophy, totalShares, totalRecruits)
-    var activeTier = state.activeTier
-    var colors = RARITY_COLORS[activeTier.rarity]
+  if (typeof EVOLVING_TROPHIES !== 'undefined') {
+    EVOLVING_TROPHIES.forEach(function(trophy) {
+      var state = getTrophyState(trophy, totalShares, totalRecruits)
+      var activeTier = state.activeTier
+      var colors = RARITY_COLORS[activeTier.rarity] || { bg: 'bg-primary', text: 'text-primary' }
 
-    var tile = document.createElement('div')
-    tile.className = 'trophy-tile ' + (state.isUnlocked ? '' : 'locked')
-    tile.onclick = function() { openDetail(trophy, state) }
+      var tile = document.createElement('div')
+      tile.className = 'trophy-tile ' + (state.isUnlocked ? '' : 'locked')
+      tile.onclick = function() { openDetail(trophy, state) }
 
-    var iconWrapHtml = '<div class="icon-wrap-achievement ' + (state.isUnlocked ? colors.bg : 'bg-surface-chigh') + '">'
-    iconWrapHtml += '<span class="material-symbols-outlined text-[28px] ' + (state.isUnlocked ? 'text-white filled' : 'text-outline') + '">' + trophy.icon + '</span></div>'
+      var iconWrapHtml = '<div class="icon-wrap-achievement ' + (state.isUnlocked ? colors.bg : 'bg-surface-chigh') + '">'
+      iconWrapHtml += '<span class="material-symbols-outlined text-[28px] ' + (state.isUnlocked ? 'text-white filled' : 'text-outline') + '">' + trophy.icon + '</span></div>'
 
-    var levelLabel = state.isUnlocked ? 'Lvl ' + activeTier.level + ' · ' + activeTier.rarity : 'Locked'
+      var levelLabel = state.isUnlocked ? 'Lvl ' + activeTier.level + ' · ' + activeTier.rarity : 'Locked'
 
-    tile.innerHTML = iconWrapHtml
-      + '<p class="font-headline font-bold text-on-surface leading-tight mb-1" style="font-size:13px;">' + trophy.title + '</p>'
-      + '<p class="font-body font-bold uppercase tracking-widest ' + (state.isUnlocked ? colors.text : 'text-outline') + '" style="font-size:9px">' + levelLabel + '</p>'
+      tile.innerHTML = iconWrapHtml
+        + '<p class="font-headline font-bold text-on-surface leading-tight mb-1" style="font-size:13px;">' + trophy.title + '</p>'
+        + '<p class="font-body font-bold uppercase tracking-widest ' + (state.isUnlocked ? colors.text : 'text-outline') + '" style="font-size:9px">' + levelLabel + '</p>'
 
-    container.appendChild(tile)
-  })
+      container.appendChild(tile)
+    })
+  }
 }
 
 function openDetail(trophy, state) {
   var activeTier = state.activeTier
-  var colors = RARITY_COLORS[activeTier.rarity]
+  var colors = RARITY_COLORS[activeTier.rarity] || { bg: 'bg-primary', text: 'text-primary' }
 
   document.getElementById('detailStatus').textContent = state.isUnlocked ? 'Level ' + activeTier.level + ' Unlocked' : 'Locked'
-  document.getElementById('detailStatus').className = 'font-body font-bold uppercase tracking-wider ' + (state.isUnlocked ? colors.text : 'text-outline')
+  document.getElementById('detailStatus').className = 'font-body font-bold uppercase tracking-wider mb-2 text-[10px] ' + (state.isUnlocked ? colors.text : 'text-outline')
 
   var rarityEl = document.getElementById('detailRarity')
   rarityEl.textContent = activeTier.rarity
@@ -329,10 +377,10 @@ function openDetail(trophy, state) {
   rarityEl.classList.remove('hidden')
 
   var iconWrap = document.getElementById('detailIconWrap')
-  iconWrap.className = 'mx-auto mb-4 relative flex items-center justify-center rounded-[24px] ' + (state.isUnlocked ? colors.bg : 'bg-surface-chigh')
+  iconWrap.className = 'w-24 h-24 mx-auto mb-4 relative flex items-center justify-center rounded-[24px] ' + (state.isUnlocked ? colors.bg : 'bg-surface-chigh')
   
   var iconEl = document.getElementById('detailIcon')
-  iconEl.className = 'material-symbols-outlined text-[40px] ' + (state.isUnlocked ? 'text-white filled' : 'text-outline')
+  iconEl.className = 'material-symbols-outlined text-[48px] ' + (state.isUnlocked ? 'text-white filled' : 'text-outline')
   iconEl.textContent = trophy.icon
 
   document.getElementById('detailTitle').textContent = activeTier.name
@@ -343,20 +391,20 @@ function openDetail(trophy, state) {
 
   if (state.nextTier) {
     document.getElementById('detailProgressText').textContent = state.count + ' / ' + state.nextTier.req
-    document.getElementById('detailRemainingText').textContent = (state.nextTier.req - state.count) + ' more to evolve to ' + state.nextTier.name + ' (' + state.nextTier.rarity + ')'
+    document.getElementById('detailRemainingText').textContent = (state.nextTier.req - state.count) + ' more to evolve to ' + state.nextTier.name
     var bar = document.getElementById('detailBar')
-    bar.className = 'progress-fill ' + RARITY_COLORS[state.nextTier.rarity].bg
+    bar.className = 'progress-fill ' + (RARITY_COLORS[state.nextTier.rarity]?.bg || 'bg-primary')
     bar.style.width = state.progressPercent + '%'
   } else {
-    document.getElementById('detailProgressText').textContent = 'MAX LEVEL REACHED'
-    document.getElementById('detailRemainingText').textContent = 'You have mastered this trophy!'
+    document.getElementById('detailProgressText').textContent = 'MAX LEVEL'
+    document.getElementById('detailRemainingText').textContent = 'Mastery achieved!'
     document.getElementById('detailBar').style.width = '100%'
   }
 
   document.getElementById('detailOverlay').classList.remove('hidden')
-  requestAnimationFrame(function() {
+  setTimeout(() => {
     document.getElementById('detailSheet').classList.add('open')
-  })
+  }, 10)
 }
 
 function closeDetail() {
