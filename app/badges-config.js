@@ -37,6 +37,20 @@ var EVOLVING_TROPHIES = [
       { level: 4, req: 25, rarity: 'epic',     name: 'Epic Shepherd',     desc: '25 warriors joined because of you.' },
       { level: 5, req: 50, rarity: 'mythic',   name: 'Mythic Shepherd',   desc: '50 warriors leading the charge.' }
     ]
+  },
+  {
+    id: 'voyager',
+    title: 'Global Voyager',
+    icon: 'public',
+    type: 'countries',
+    description: 'Spreading the Word across international borders.',
+    tiers: [
+      { level: 1, req: 2,  rarity: 'common',   name: 'International Sower', desc: 'Recruit warriors from 2 different countries.' },
+      { level: 2, req: 5,  rarity: 'uncommon', name: 'Global Envoy',        desc: 'Your circle spans 5 countries.' },
+      { level: 3, req: 10, rarity: 'rare',     name: 'Continental Bridge',  desc: 'Connecting the word across 10 countries.' },
+      { level: 4, req: 25, rarity: 'epic',     name: 'World Ambassador',    desc: 'An incredible reach across 25 nations.' },
+      { level: 5, req: 50, rarity: 'mythic',   name: 'Global Legend',       desc: 'The sun never sets on your mission. 50 countries reached.' }
+    ]
   }
 ];
 
@@ -47,8 +61,19 @@ function getUserSubscriptionBadge(profile) {
   return found || SUBSCRIPTION_ROADMAP[0];
 }
 
-function getTrophyState(trophy, userShares, userRecruits) {
-  var count = trophy.type === 'shares' ? userShares : userRecruits;
+/**
+ * @param {Object} trophy - The trophy object from EVOLVING_TROPHIES
+ * @param {Number} userShares - Total shares by user
+ * @param {Number} userRecruits - Total people recruited by user
+ * @param {Number} userCountries - Unique countries recruited from
+ */
+function getTrophyState(trophy, userShares, userRecruits, userCountries) {
+  // Determine which count to use
+  var count = 0;
+  if (trophy.type === 'shares') count = userShares || 0;
+  else if (trophy.type === 'recruits') count = userRecruits || 0;
+  else if (trophy.type === 'countries') count = userCountries || 0;
+
   var currentTier = null;
   var nextTier = null;
 
