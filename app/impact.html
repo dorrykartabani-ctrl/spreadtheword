@@ -9,6 +9,7 @@
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="badges-config.js"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -101,6 +102,13 @@
       backdrop-filter:blur(20px);
       -webkit-backdrop-filter:blur(20px);
     }
+
+   /* Rarity Backgrounds */
+    .bg-common{background:#8A8C85;box-shadow:0 6px 16px rgba(138,140,133,0.25)}
+    .bg-uncommon{background:#3A8759;box-shadow:0 6px 16px rgba(58,135,89,0.25)}
+    .bg-rare{background:#3d6285;box-shadow:0 6px 16px rgba(61,98,133,0.25)}
+    .bg-epic{background:#7B3F9C;box-shadow:0 6px 16px rgba(123,63,156,0.25)}
+    .bg-mythic{background:#E38C1F;box-shadow:0 6px 16px rgba(227,140,31,0.25)}
 
     /* Hero */
     .hero-card{
@@ -248,6 +256,19 @@
 
 <!-- MAIN -->
 <main class="pt-28 pb-32 px-5 max-w-[430px] mx-auto space-y-5">
+
+  <!-- SUBSCRIPTION BADGE -->
+  <section id="tierBadgeSection" class="fade-up hidden">
+    <div class="bg-surface-cl rounded-2xl p-4 flex items-center gap-4">
+      <div id="tierBadgeImg" style="flex-shrink:0;"></div>
+      <div class="flex-1 min-w-0">
+        <p class="font-body text-on-surface-variant" style="font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Your Status</p>
+        <h3 id="tierBadgeName" class="font-headline font-extrabold text-on-surface" style="font-size:18px;line-height:1.2;">—</h3>
+        <p id="tierBadgeTagline" class="font-body text-on-surface-variant mt-0.5" style="font-size:12px;">—</p>
+      </div>
+      <a href="trophies.html" class="material-symbols-outlined text-outline" style="font-size:20px;">chevron_right</a>
+    </div>
+  </section>
 
   <!-- HERO -->
   <section class="hero-card fade-up">
@@ -557,23 +578,26 @@ var supabaseClient = supabase.createClient(
 // ═══════════════════════════════════════
 // TROPHY CATALOG (mirrors trophies.html)
 // ═══════════════════════════════════════
-var TROPHY_CATALOG = [
-  { id:'sub_free',      type:'subscription', title:'The Called',    desc:'You answered the call.',                icon:'volunteer_activism', material:'bronze', criteria:{subscription:'free'} },
-  { id:'sub_warrior',   type:'subscription', title:'The Warrior',   desc:'You committed to daily witness.',       icon:'shield',             material:'bronze', criteria:{subscription:'warrior'} },
-  { id:'sub_commander', type:'subscription', title:'The Commander', desc:'You lead by example.',                  icon:'military_tech',      material:'silver', criteria:{subscription:'commander'} },
-  { id:'sub_legacy',    type:'subscription', title:'The Anointed',  desc:'A pillar of the movement.',             icon:'workspace_premium',  material:'gold',   criteria:{subscription:'legacy'} },
-
-  { id:'mission_1000_generals', type:'mission', title:'1000 Generals · 2025', desc:'Founding force of the movement.', icon:'flag',     material:'silver', criteria:{mission:'1000_generals'} },
-  { id:'mission_genesis',       type:'mission', title:'Genesis · 2025',       desc:'A witness to how it all started.', icon:'wb_sunny', material:'bronze', criteria:{mission:'genesis'} },
-
-  { id:'sower_bronze', type:'achievement', tier:'bronze', base:'sower', title:'The Sower',          desc:'You planted your first seed.',                 icon:'grass',    material:'bronze', criteria:{shares:1} },
-  { id:'sower_silver', type:'achievement', tier:'silver', base:'sower', title:'The Sower · Silver', desc:'25 seeds planted.',                            icon:'grass',    material:'silver', criteria:{shares:25} },
-  { id:'sower_gold',   type:'achievement', tier:'gold',   base:'sower', title:'The Sower · Gold',   desc:'100 words spread.',                            icon:'grass',    material:'gold',   criteria:{shares:100} },
-
-  { id:'shepherd_bronze', type:'achievement', tier:'bronze', base:'shepherd', title:'The Shepherd',          desc:'You brought one warrior in.',        icon:'handshake', material:'bronze', criteria:{recruits:1} },
-  { id:'shepherd_silver', type:'achievement', tier:'silver', base:'shepherd', title:'The Shepherd · Silver', desc:'5 warriors follow your call.',       icon:'handshake', material:'silver', criteria:{recruits:5} },
-  { id:'shepherd_gold',   type:'achievement', tier:'gold',   base:'shepherd', title:'The Shepherd · Gold',   desc:'25 warriors joined because of you.', icon:'handshake', material:'gold',   criteria:{recruits:25} },
+var ACHIEVEMENT_CATALOG = [
+  { id:'sower_1',    type:'achievement', base:'sower', title:'The Sower', icon:'grass', rarity:'common', criteria:{shares:1} },
+  { id:'sower_25',   type:'achievement', base:'sower', title:'The Sower', icon:'grass', rarity:'uncommon', criteria:{shares:25} },
+  { id:'sower_100',  type:'achievement', base:'sower', title:'The Sower', icon:'grass', rarity:'rare', criteria:{shares:100} },
+  { id:'sower_500',  type:'achievement', base:'sower', title:'The Sower', icon:'grass', rarity:'epic', criteria:{shares:500} },
+  { id:'sower_1000', type:'achievement', base:'sower', title:'The Sower', icon:'grass', rarity:'mythic', criteria:{shares:1000} },
+  { id:'shep_1',  type:'achievement', base:'shepherd', title:'The Shepherd', icon:'handshake', rarity:'common', criteria:{recruits:1} },
+  { id:'shep_5',  type:'achievement', base:'shepherd', title:'The Shepherd', icon:'handshake', rarity:'uncommon', criteria:{recruits:5} },
+  { id:'shep_10', type:'achievement', base:'shepherd', title:'The Shepherd', icon:'handshake', rarity:'rare', criteria:{recruits:10} },
+  { id:'shep_25', type:'achievement', base:'shepherd', title:'The Shepherd', icon:'handshake', rarity:'epic', criteria:{recruits:25} },
+  { id:'shep_50', type:'achievement', base:'shepherd', title:'The Shepherd', icon:'handshake', rarity:'mythic', criteria:{recruits:50} }
 ]
+
+var RARITY_COLORS = {
+  'common':   { bg: 'bg-common' },
+  'uncommon': { bg: 'bg-uncommon' },
+  'rare':     { bg: 'bg-rare' },
+  'epic':     { bg: 'bg-epic' },
+  'mythic':   { bg: 'bg-mythic' }
+}
 
 // Country to flag emoji
 var countryFlags = {
@@ -656,6 +680,7 @@ async function init() {
   setupListeners()
   await loadEverything()
   document.querySelectorAll('.fade-up').forEach(function(el) { observer.observe(el) })
+renderTierBadge()
 }
 
 async function loadEverything() {
@@ -770,6 +795,18 @@ function getResult(settled, fallback) {
 function getCount(settled, fallback) {
   if (settled.status === 'fulfilled' && settled.value) return settled.value.count || fallback
   return fallback
+}
+function renderTierBadge() {
+  var section = document.getElementById('tierBadgeSection')
+  if (!section || !userProfile) return
+  var badge = getUserSubscriptionBadge(userProfile)
+  if (!badge) return
+
+  var imgWrap = document.getElementById('tierBadgeImg')
+  imgWrap.innerHTML = '<img src="' + badge.image + '" alt="' + badge.name + '" width="56" height="56" style="display:block;border-radius:50%;">'
+  document.getElementById('tierBadgeName').textContent = badge.name
+  document.getElementById('tierBadgeTagline').textContent = badge.tagline
+  section.classList.remove('hidden')
 }
 
 // ═══════════════════════════════════════
@@ -933,18 +970,28 @@ function renderThisWeeksWord() {
 // ═══════════════════════════════════════
 function renderTrophyShowcase() {
   var container = document.getElementById('trophyShowcase')
-  var earned = getEarnedTrophyList()
+  
+  // Find earned trophies
+  var earned = []
+  ACHIEVEMENT_CATALOG.forEach(function(t) {
+    var c = t.criteria
+    var isEarned = false
+    if (c.shares !== undefined) isEarned = allShares.length >= c.shares
+    if (c.recruits !== undefined) isEarned = (userProfile.recruit_count || recruits.length || 0) >= c.recruits
+    if (isEarned) earned.push(t)
+  })
 
-  // Show up to 3: featured first, then most recent
   var featuredIds = userProfile.featured_badges || []
   var showcase = []
 
+  // Add featured first
   featuredIds.forEach(function(id) {
-    var t = TROPHY_CATALOG.find(function(x) { return x.id === id })
-    if (t && isTrophyEarned(t) && showcase.length < 3) showcase.push(t)
+    var t = ACHIEVEMENT_CATALOG.find(function(x) { return x.id === id })
+    if (t && earned.indexOf(t) !== -1 && showcase.length < 3) showcase.push(t)
   })
 
-  earned.forEach(function(t) {
+  // Fill rest with recent earned
+  earned.reverse().forEach(function(t) {
     if (showcase.length < 3 && showcase.indexOf(t) === -1) showcase.push(t)
   })
 
@@ -962,22 +1009,25 @@ function renderTrophyShowcase() {
       var tile = document.createElement('div')
       tile.className = 'impact-trophy earned'
       tile.onclick = function() { window.location.href = 'trophies.html' }
+      
+      var colors = RARITY_COLORS[t.rarity] || {bg: 'bg-primary'}
+      
       tile.innerHTML =
-        '<div class="impact-trophy-medal ' + getMedalClass(t.material) + '">'
+        '<div class="mx-auto mb-2 flex items-center justify-center w-12 h-12 rounded-[14px] ' + colors.bg + '">'
           + '<span class="material-symbols-outlined text-white filled" style="font-size:24px;">' + t.icon + '</span>'
         + '</div>'
-        + '<p class="font-headline font-bold text-on-surface leading-tight" style="font-size:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">'
-          + t.title.replace(/ · (Bronze|Silver|Gold)/i, '')
+        + '<p class="font-headline font-bold text-on-surface leading-tight" style="font-size:11px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">'
+          + t.title
         + '</p>'
       container.appendChild(tile)
     })
-    // Fill remaining slots with locked placeholders
+    
     while (showcase.length < 3) {
       var placeholder = document.createElement('div')
       placeholder.className = 'impact-trophy'
       placeholder.style.opacity = '0.5'
       placeholder.innerHTML =
-        '<div class="impact-trophy-medal bg-surface-clow">'
+        '<div class="mx-auto mb-2 flex items-center justify-center w-12 h-12 rounded-[14px] bg-surface-chigh">'
           + '<span class="material-symbols-outlined text-outline" style="font-size:20px;">lock</span>'
         + '</div>'
         + '<p class="font-body text-outline" style="font-size:10px;">Locked</p>'
@@ -986,23 +1036,10 @@ function renderTrophyShowcase() {
     }
   }
 
-  // Next up card
-  var next = getNextTrophy()
+  // Next up card logic
   var nextCard = document.getElementById('nextTrophyCard')
-  if (next) {
-    nextCard.classList.remove('hidden')
-    document.getElementById('nextTrophyIconSymbol').textContent = next.trophy.icon
-    document.getElementById('nextTrophyTitle').textContent = next.trophy.title
-    document.getElementById('nextTrophyProgress').textContent =
-      next.progress.current + ' / ' + next.progress.threshold + ' · ' + (next.progress.threshold - next.progress.current) + ' to go'
-    setTimeout(function() {
-      document.getElementById('nextTrophyBar').style.width = next.progress.percent + '%'
-    }, 300)
-  } else {
-    nextCard.classList.add('hidden')
-  }
+  if (nextCard) nextCard.classList.add('hidden') // We can rebuild the next up logic later if needed
 }
-
 // ═══════════════════════════════════════
 // JOURNEY
 // ═══════════════════════════════════════

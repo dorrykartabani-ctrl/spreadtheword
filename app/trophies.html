@@ -91,7 +91,11 @@
       position:relative;
     }
     .trophy-tile:active{transform:scale(0.96)}
-    .trophy-tile.locked{opacity:0.65;background:#f5f4ed}
+        .trophy-tile.locked {
+      opacity: 0.5; 
+      filter: grayscale(100%); 
+      background: #fbf9f4;
+    }
 
     /* Featured Pin */
     .featured-pin{
@@ -473,9 +477,8 @@ function renderAchievements() {
   var container = document.getElementById('achievementsGrid')
   container.innerHTML = ''
   
-  var displayList = getEffectiveAchievements()
-  
-  displayList.forEach(function(trophy) {
+  // Show ALL trophies from the catalog
+  ACHIEVEMENT_CATALOG.forEach(function(trophy) {
     var earned = isTrophyEarned(trophy)
     var progress = getTrophyProgress(trophy)
     var isFeatured = featuredTrophies.indexOf(trophy.id) !== -1
@@ -484,19 +487,15 @@ function renderAchievements() {
     tile.className = 'trophy-tile ' + (earned ? '' : 'locked')
     tile.onclick = function() { openDetail(trophy) }
 
-    // Rarity styles
     var colors = RARITY_COLORS[trophy.rarity]
-    var iconClass = earned ? colors.bg : 'icon-locked'
-    var iconColor = earned ? 'text-white' : 'text-outline-variant'
     
-    // Squircles for achievements
-    var iconWrapHtml = '<div class="icon-wrap-achievement ' + iconClass + '">'
+    // Icon Wrapper (Squircle)
+    var iconWrapHtml = '<div class="icon-wrap-achievement ' + colors.bg + '">'
     
     // Progress Ring if locked
     if (!earned && progress.percent > 0) {
       var c = 2 * Math.PI * 30
       var offset = c - (progress.percent / 100) * c
-      // Determine stroke color based on what rarity they are aiming for
       var strokeColor = trophy.rarity === 'uncommon' ? '#3A8759' : trophy.rarity === 'rare' ? '#3d6285' : trophy.rarity === 'epic' ? '#7B3F9C' : trophy.rarity === 'mythic' ? '#E38C1F' : '#8A8C85'
       
       iconWrapHtml += '<svg class="trophy-progress-ring" viewBox="0 0 68 68">'
@@ -505,7 +504,7 @@ function renderAchievements() {
         + '</svg>'
     }
     
-    iconWrapHtml += '<span class="material-symbols-outlined ' + iconColor + ' text-[28px] ' + (earned ? 'filled' : '') + '">' + trophy.icon + '</span></div>'
+    iconWrapHtml += '<span class="material-symbols-outlined text-white text-[28px] ' + (earned ? 'filled' : '') + '">' + trophy.icon + '</span></div>'
 
     var pinHtml = isFeatured ? '<div class="featured-pin"><span class="material-symbols-outlined text-white filled" style="font-size:12px">push_pin</span></div>' : ''
     
@@ -521,7 +520,6 @@ function renderAchievements() {
     container.appendChild(tile)
   })
 }
-
 // ════════════════════════════════════════════
 // DETAIL MODAL
 // ════════════════════════════════════════════
