@@ -66,18 +66,19 @@ function getUserSubscriptionBadge(profile) {
  * @param {Object} trophy - The trophy object from EVOLVING_TROPHIES
  * @param {Number} userShares - Total shares by user
  * @param {Number} userRecruits - Total people recruited by user
- * @param {Number} userCountries - Unique countries recruited from
+ * @param {Number} userPaidCountries - Unique countries with paid recruits from
  */
-function getTrophyState(trophy, userShares, userRecruits, userCountries) {
-  // Determine which count to use
+function getTrophyState(trophy, userShares, userRecruits, userPaidCountries) {
+  // 1. Determine which count to use based on the trophy type
   var count = 0;
   if (trophy.type === 'shares') count = userShares || 0;
   else if (trophy.type === 'recruits') count = userRecruits || 0;
-  else if (trophy.type === 'countries') count = userCountries || 0;
+  else if (trophy.type === 'countries') count = userPaidCountries || 0;
 
   var currentTier = null;
   var nextTier = null;
 
+  // 2. Loop through tiers to find the highest one reached
   for (var i = 0; i < trophy.tiers.length; i++) {
     if (count >= trophy.tiers[i].req) {
       currentTier = trophy.tiers[i];
@@ -87,6 +88,34 @@ function getTrophyState(trophy, userShares, userRecruits, userCountries) {
     }
   }
 
+  // 3. Setup basic state
+  var isUnlocked = currentTier !== null;
+  var activeTier = currentTier || trophy.tiers[0];
+
+  // 4. Calculate progress percentage to next tier
+  var progressPercent = 0;
+  if (!isUnlocked) {
+    // Progress toward the very first tier
+    progressPercent = Math.min(Math.round((count / trophy.tiers[0].req) * 100), 100);
+  } else if (nextTier) {
+    // Progress between the current tier and the next one
+    var prevReq = currentTier.req;
+    var range = nextTier.req - prevReq;
+    progressPercent = Math.min(Math.round(((count - prevReq) / range) * 100), 100);
+  } else {
+    // Max level reached
+    progressPercent = 100;
+  }
+
+  return {
+    isUnlocked: isUnlocked,
+    currentTier: currentTier,
+    nextTier: nextTier,
+    activeTier: activeTier,
+    progressPercent: progressPercent,
+    count: count
+  };
+}
   var isUnlocked = currentTier !== null;
   var activeTier = currentTier || trophy.tiers[0];
 
