@@ -576,6 +576,63 @@ var supabaseClient = supabase.createClient(
 )
 
 // ═══════════════════════════════════════
+// DATA MAPS & CATALOGS
+// ═══════════════════════════════════════
+var countryFlags = {
+  'Australia':'🇦🇺','United States':'🇺🇸','USA':'🇺🇸','United Kingdom':'🇬🇧','UK':'🇬🇧',
+  'Canada':'🇨🇦','New Zealand':'🇳🇿','South Africa':'🇿🇦','Nigeria':'🇳🇬','Kenya':'🇰🇪',
+  'Ghana':'🇬🇭','India':'🇮🇳','Philippines':'🇵🇭','Singapore':'🇸🇬','Malaysia':'🇲🇾',
+  'Indonesia':'🇮🇩','Brazil':'🇧🇷','Mexico':'🇲🇽','Germany':'🇩🇪','France':'🇫🇷',
+  'Spain':'🇪🇸','Italy':'🇮🇹','Netherlands':'🇳🇱','Sweden':'🇸🇪','Norway':'🇳🇴',
+  'Japan':'🇯🇵','South Korea':'🇰🇷','China':'🇨🇳','UAE':'🇦🇪','Saudi Arabia':'🇸🇦',
+  'Egypt':'🇪🇬','Ethiopia':'🇪🇹','Tanzania':'🇹🇿','Uganda':'🇺🇬','Jamaica':'🇯🇲',
+  'Trinidad and Tobago':'🇹🇹','Ireland':'🇮🇪','Pakistan':'🇵🇰','Bangladesh':'🇧🇩',
+  'Colombia':'🇨🇴','Argentina':'🇦🇷','Chile':'🇨🇱','Peru':'🇵🇪','Israel':'🇮🇱',
+  'Turkey':'🇹🇷','Russia':'🇷🇺','Ukraine':'🇺🇦','Poland':'🇵🇱','Romania':'🇷🇴',
+  'Greece':'🇬🇷','Portugal':'🇵🇹','Belgium':'🇧🇪','Switzerland':'🇨🇭','Austria':'🇦🇹',
+  'Denmark':'🇩🇰','Finland':'🇫🇮','Costa Rica':'🇨🇷','Guatemala':'🇬🇹','Honduras':'🇭🇳',
+  'Cuba':'🇨🇺','Dominican Republic':'🇩🇴','Haiti':'🇭🇹','Barbados':'🇧🇧','Venezuela':'🇻🇪',
+  'Ecuador':'🇪🇨'
+}
+
+var continentMap = {
+  'United States':'North America','Canada':'North America','Mexico':'North America','Jamaica':'North America','Trinidad and Tobago':'North America','Barbados':'North America','Haiti':'North America','Dominican Republic':'North America','Costa Rica':'North America','Guatemala':'North America','Honduras':'North America','Cuba':'North America',
+  'Brazil':'South America','Argentina':'South America','Colombia':'South America','Peru':'South America','Chile':'South America','Ecuador':'South America','Venezuela':'South America',
+  'United Kingdom':'Europe','France':'Europe','Germany':'Europe','Spain':'Europe','Italy':'Europe','Netherlands':'Europe','Sweden':'Europe','Norway':'Europe','Poland':'Europe','Portugal':'Europe','Ireland':'Europe','Belgium':'Europe','Switzerland':'Europe','Austria':'Europe','Czech Republic':'Europe','Romania':'Europe','Greece':'Europe','Finland':'Europe','Denmark':'Europe','Russia':'Europe','Ukraine':'Europe','Turkey':'Europe',
+  'Nigeria':'Africa','South Africa':'Africa','Kenya':'Africa','Ghana':'Africa','Egypt':'Africa','Ethiopia':'Africa','Tanzania':'Africa','Uganda':'Africa',
+  'India':'Asia','Pakistan':'Asia','Bangladesh':'Asia','Philippines':'Asia','Indonesia':'Asia','Japan':'Asia','South Korea':'Asia','China':'Asia','Singapore':'Asia',
+  'UAE':'Middle East','Saudi Arabia':'Middle East','Israel':'Middle East',
+  'Australia':'Oceania','New Zealand':'Oceania'
+}
+
+function getFlag(country) {
+  if (!country) return '🌍'
+  return countryFlags[country] || '🌍'
+}
+
+var SHARE_MILESTONES = [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
+
+var SCRIPTURES = [
+  { min:0,    text:'"You will be my witnesses to the ends of the earth."', ref:'Acts 1:8' },
+  { min:1,    text:'"Let your light shine before others."',                 ref:'Matthew 5:16' },
+  { min:10,   text:'"Sow to yourselves in righteousness, reap in mercy."', ref:'Hosea 10:12' },
+  { min:50,   text:'"How beautiful are the feet of those who bring good news."', ref:'Romans 10:15' },
+  { min:100,  text:'"Well done, good and faithful servant."',              ref:'Matthew 25:21' },
+  { min:500,  text:'"You are the light of the world."',                    ref:'Matthew 5:14' },
+  { min:1000, text:'"The harvest is plentiful, but the workers are few."', ref:'Matthew 9:37' }
+]
+
+var narratives = [
+  'Every share plants a seed that could change a life.',
+  'Your voice is echoing farther than you know.',
+  'You have been faithful. Keep going.',
+  'Someone needed exactly what you shared today.',
+  'The Word travels through you.',
+  'You are part of something eternal.',
+  'Small acts of witness build kingdoms.'
+]
+
+// ═══════════════════════════════════════
 // TROPHY CATALOG (Fortnite Rarity system)
 // ═══════════════════════════════════════
 var TROPHY_CATALOG = [
@@ -598,16 +655,136 @@ var TROPHY_CATALOG = [
 ];
 
 var RARITY_COLORS = {
-  'common':   { bg: 'bg-common' },
-  'uncommon': { bg: 'bg-uncommon' },
-  'rare':     { bg: 'bg-rare' },
-  'epic':     { bg: 'bg-epic' },
-  'mythic':   { bg: 'bg-mythic' }
+  'common':   { bg: 'bg-[#8A8C85]' },
+  'uncommon': { bg: 'bg-[#3A8759]' },
+  'rare':     { bg: 'bg-[#3d6285]' },
+  'epic':     { bg: 'bg-[#7B3F9C]' },
+  'mythic':   { bg: 'bg-[#E38C1F]' }
 };
 
-// Alias for backwards compatibility
 var ACHIEVEMENT_CATALOG = TROPHY_CATALOG;
 
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+var currentUser = null
+var userProfile = null
+var allShares = []
+var allProjects = []
+var userPriorities = {}
+var recruits = []
+var thisWeeksQuoteId = null
+var thisWeeksQuoteShared = false
+var state = { timeframe: 'all' }
+
+var observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible') })
+}, { threshold: 0.1 })
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+async function init() {
+  var s = await supabaseClient.auth.getSession()
+  if (!s.data.session) { window.location.href = 'login.html'; return }
+  currentUser = s.data.session.user
+  setupListeners()
+  await loadEverything()
+  document.querySelectorAll('.fade-up').forEach(function(el) { observer.observe(el) })
+}
+
+async function loadEverything() {
+  var results = await Promise.allSettled([
+    supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single(),
+    supabaseClient.from('shares').select('platform, shared_at, quote_id').eq('user_id', currentUser.id).order('shared_at', { ascending: false }),
+    supabaseClient.from('project_priorities').select('*').eq('user_id', currentUser.id),
+    supabaseClient.from('projects').select('*').eq('is_visible', true),
+    supabaseClient.from('profiles').select('id, total_shares').order('total_shares', { ascending: false }),
+    supabaseClient.from('profiles').select('country'),
+    supabaseClient.from('profiles').select('*', { count: 'exact', head: true }),
+    supabaseClient.from('shares').select('*', { count: 'exact', head: true }),
+    supabaseClient.from('projects').select('raised_amount, status'),
+    supabaseClient.from('projects').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
+    supabaseClient.from('quotes').select('id, published_at').eq('status', 'live').order('published_at', { ascending: false }).limit(1)
+  ])
+
+  userProfile         = getData(results[0], {})
+  allShares           = getData(results[1], [])
+  var priorityRows    = getData(results[2], [])
+  allProjects         = getData(results[3], [])
+  var allProfilesRank = getData(results[4], [])
+  var countryRows     = getData(results[5], [])
+  var totalWarriors   = getCount(results[6], 0)
+  var totalGlobalShares = getCount(results[7], 0)
+  var allProjectAmounts = getData(results[8], [])
+  var completedCount  = getCount(results[9], 0)
+  var latestQuote     = getData(results[10], [])
+
+  priorityRows.forEach(function(p) { userPriorities[p.project_id] = p.priority })
+
+  var countryCounts = {}
+  countryRows.forEach(function(r) {
+    if (r.country) { var c = r.country.trim(); countryCounts[c] = (countryCounts[c] || 0) + 1 }
+  })
+  var continents = {}
+  Object.keys(countryCounts).forEach(function(c) {
+    var cont = continentMap[c] || 'Other'
+    continents[cont] = true
+  })
+
+  var userRank = 1
+  for (var i = 0; i < allProfilesRank.length; i++) {
+    if (allProfilesRank[i].id === currentUser.id) { userRank = i + 1; break }
+  }
+  var percentile = totalWarriors > 0 ? Math.round(((totalWarriors - userRank + 1) / totalWarriors) * 100) : 0
+
+  var totalRaised = 0
+  allProjectAmounts.forEach(function(p) {
+    if (p.status === 'completed' || p.status === 'active') totalRaised += Number(p.raised_amount || 0)
+  })
+
+  if (latestQuote.length > 0) {
+    thisWeeksQuoteId = latestQuote[0].id
+    thisWeeksQuoteShared = allShares.some(function(s) { return s.quote_id === thisWeeksQuoteId })
+  }
+
+  await loadRecruits()
+
+  renderHero(percentile, Object.keys(countryCounts).length)
+  renderStats()
+  renderThisWeeksWord()
+  renderTrophyShowcase()
+  renderJourney()
+  renderMissions()
+  renderRipples()
+  renderWarriorsCircle()
+  renderGeographic(countryCounts, continents)
+  renderCollective(totalWarriors, totalGlobalShares, Object.keys(countryCounts).length, totalRaised, completedCount, userRank)
+  renderScripture()
+}
+
+async function loadRecruits() {
+  if (!userProfile || !userProfile.invite_code) { recruits = []; return }
+  try {
+    var res = await supabaseClient.from('profiles').select('id, nickname, full_name, country, created_at')
+      .eq('referred_by', userProfile.invite_code).order('created_at', { ascending: false })
+    if (res.data) recruits = res.data
+    else recruits = []
+  } catch (e) { recruits = [] }
+}
+
+function getData(settled, fallback) {
+  if (settled && settled.status === 'fulfilled' && settled.value && settled.value.data !== undefined) return settled.value.data || fallback
+  return fallback
+}
+function getCount(settled, fallback) {
+  if (settled && settled.status === 'fulfilled' && settled.value) return settled.value.count || fallback
+  return fallback
+}
+
+// ═══════════════════════════════════════
+// TROPHY HELPERS
+// ═══════════════════════════════════════
 function isTrophyEarned(trophy) {
   var c = trophy.criteria
   if (c.shares !== undefined) return allShares.length >= c.shares
@@ -663,6 +840,98 @@ function getNextTrophy() {
     return a.progress.threshold - b.progress.threshold
   })
   return candidates.length > 0 ? candidates[0] : null
+}
+
+// ═══════════════════════════════════════
+// RENDERS
+// ═══════════════════════════════════════
+function renderHero(percentile, countries) {
+  var hNarrative = document.getElementById('heroNarrative')
+  if(hNarrative) hNarrative.textContent = narratives[Math.floor(Math.random() * narratives.length)]
+  animateNumber(document.getElementById('heroNumber'), 0, allShares.length, 1200)
+
+  if (percentile > 0 && allShares.length > 0) {
+    var topPct = 100 - percentile
+    var hPct = document.getElementById('heroPercentileText')
+    if(hPct) hPct.textContent = topPct <= 0 ? 'Top 1%' : 'Top ' + topPct + '%'
+  } else {
+    var hPct2 = document.getElementById('heroPercentileText')
+    if(hPct2) hPct2.textContent = 'Just getting started'
+  }
+
+  if (countries > 0) {
+    var hCountries = document.getElementById('heroCountries')
+    var hCountriesTxt = document.getElementById('heroCountriesText')
+    if(hCountries) hCountries.classList.remove('hidden')
+    if(hCountriesTxt) hCountriesTxt.textContent = countries + ' countries reached'
+  }
+
+  var currentShares = allShares.length
+  var next = SHARE_MILESTONES.find(function(m) { return m > currentShares })
+  if (next) {
+    var nextMilestone = document.getElementById('nextMilestone')
+    var milestoneText = document.getElementById('milestoneText')
+    var milestoneBar = document.getElementById('milestoneBar')
+    if(nextMilestone) nextMilestone.classList.remove('hidden')
+    if(milestoneText) milestoneText.textContent = currentShares + ' / ' + next + ' shares'
+    var pct = Math.round((currentShares / next) * 100)
+    if(milestoneBar) setTimeout(function() { milestoneBar.style.width = pct + '%' }, 400)
+  }
+}
+
+function renderStats() {
+  var filtered = getFilteredShares()
+  var sShares = document.getElementById('statShares')
+  var sRecruits = document.getElementById('statRecruits')
+  var sTrophies = document.getElementById('statTrophies')
+  var sBadges = document.getElementById('statBadges')
+  
+  if(sShares) sShares.textContent = filtered.length
+  if(sRecruits) sRecruits.textContent = userProfile.recruit_count || recruits.length || 0
+  if(sTrophies) sTrophies.textContent = countEarnedTrophies()
+  if(sBadges) sBadges.textContent = (userProfile.badges || []).length
+}
+
+function getFilteredShares() {
+  var now = new Date()
+  if (state.timeframe === 'week') {
+    var sw = new Date(now); sw.setDate(now.getDate() - now.getDay()); sw.setHours(0, 0, 0, 0)
+    return allShares.filter(function(s) { return new Date(s.shared_at) >= sw })
+  }
+  if (state.timeframe === 'month') {
+    var sm = new Date(now.getFullYear(), now.getMonth(), 1)
+    return allShares.filter(function(s) { return new Date(s.shared_at) >= sm })
+  }
+  return allShares
+}
+
+function setTimeframe(tf) {
+  state.timeframe = tf
+  document.getElementById('timeAll').classList.toggle('active', tf === 'all')
+  document.getElementById('timeMonth').classList.toggle('active', tf === 'month')
+  document.getElementById('timeWeek').classList.toggle('active', tf === 'week')
+  renderStats()
+}
+
+function renderThisWeeksWord() {
+  var section = document.getElementById('weeksWordSection')
+  var status = document.getElementById('weeksWordStatus')
+  var cta = document.getElementById('weeksWordCta')
+  var icon = document.getElementById('weeksWordIcon')
+
+  if (!thisWeeksQuoteId || !section) return
+  section.classList.remove('hidden')
+
+  if (thisWeeksQuoteShared) {
+    status.textContent = '✓ You shared this week — thank you!'
+    icon.className = 'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 signature-gradient'
+    cta.classList.add('hidden')
+  } else {
+    status.textContent = 'Waiting for you to spread it'
+    icon.className = 'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-surface-clow'
+    icon.innerHTML = '<span class="material-symbols-outlined text-primary text-[24px]">schedule</span>'
+    cta.classList.remove('hidden')
+  }
 }
 
 function renderTrophyShowcase() {
@@ -727,7 +996,7 @@ function renderTrophyShowcase() {
     }
   }
 
-  // Next up card logic
+  // Next up card
   var next = getNextTrophy()
   var nextCard = document.getElementById('nextTrophyCard')
   if (nextCard) {
@@ -741,93 +1010,13 @@ function renderTrophyShowcase() {
       if (symbolEl) symbolEl.textContent = next.trophy.icon
       if (titleEl) titleEl.textContent = next.trophy.title
       if (progEl) progEl.textContent = next.progress.current + ' / ' + next.progress.threshold + ' · ' + (next.progress.threshold - next.progress.current) + ' to go'
-      if (barEl) {
-        setTimeout(function() { barEl.style.width = next.progress.percent + '%' }, 300)
-      }
+      if (barEl) setTimeout(function() { barEl.style.width = next.progress.percent + '%' }, 300)
     } else {
       nextCard.classList.add('hidden')
     }
   }
 }
 
-// ═══════════════════════════════════════
-// TROPHY SHOWCASE
-// ═══════════════════════════════════════
-function renderTrophyShowcase() {
-  var container = document.getElementById('trophyShowcase')
-  
-  // Find earned trophies
-  var earned = []
-  ACHIEVEMENT_CATALOG.forEach(function(t) {
-    var c = t.criteria
-    var isEarned = false
-    if (c.shares !== undefined) isEarned = allShares.length >= c.shares
-    if (c.recruits !== undefined) isEarned = (userProfile.recruit_count || recruits.length || 0) >= c.recruits
-    if (isEarned) earned.push(t)
-  })
-
-  var featuredIds = userProfile.featured_badges || []
-  var showcase = []
-
-  // Add featured first
-  featuredIds.forEach(function(id) {
-    var t = ACHIEVEMENT_CATALOG.find(function(x) { return x.id === id })
-    if (t && earned.indexOf(t) !== -1 && showcase.length < 3) showcase.push(t)
-  })
-
-  // Fill rest with recent earned
-  earned.reverse().forEach(function(t) {
-    if (showcase.length < 3 && showcase.indexOf(t) === -1) showcase.push(t)
-  })
-
-  container.innerHTML = ''
-
-  if (showcase.length === 0) {
-    container.innerHTML =
-      '<div class="w-full bg-surface-cl rounded-xl p-6 text-center">'
-        + '<span class="material-symbols-outlined text-outline text-[32px] block mb-2">emoji_events</span>'
-        + '<p class="font-body text-on-surface-variant" style="font-size:13px;">Your first trophy is waiting</p>'
-        + '<a href="index.html" class="font-body font-bold text-primary mt-2 inline-block" style="font-size:12px;">Share to unlock →</a>'
-      + '</div>'
-  } else {
-    showcase.forEach(function(t) {
-      var tile = document.createElement('div')
-      tile.className = 'impact-trophy earned'
-      tile.onclick = function() { window.location.href = 'trophies.html' }
-      
-      var colors = RARITY_COLORS[t.rarity] || {bg: 'bg-primary'}
-      
-      tile.innerHTML =
-        '<div class="mx-auto mb-2 flex items-center justify-center w-12 h-12 rounded-[14px] ' + colors.bg + '">'
-          + '<span class="material-symbols-outlined text-white filled" style="font-size:24px;">' + t.icon + '</span>'
-        + '</div>'
-        + '<p class="font-headline font-bold text-on-surface leading-tight" style="font-size:11px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">'
-          + t.title
-        + '</p>'
-      container.appendChild(tile)
-    })
-    
-    while (showcase.length < 3) {
-      var placeholder = document.createElement('div')
-      placeholder.className = 'impact-trophy'
-      placeholder.style.opacity = '0.5'
-      placeholder.innerHTML =
-        '<div class="mx-auto mb-2 flex items-center justify-center w-12 h-12 rounded-[14px] bg-surface-chigh">'
-          + '<span class="material-symbols-outlined text-outline" style="font-size:20px;">lock</span>'
-        + '</div>'
-        + '<p class="font-body text-outline" style="font-size:10px;">Locked</p>'
-      container.appendChild(placeholder)
-      showcase.push(1)
-    }
-  }
-
-  // Next up card logic
-  var nextCard = document.getElementById('nextTrophyCard')
-  if (nextCard) nextCard.classList.add('hidden') // We can rebuild the next up logic later if needed
-}
-// ═══════════════════════════════════════
-// JOURNEY
-// ═══════════════════════════════════════
 function renderJourney() {
   var totalUnique = 0
   var seenBases = {}
@@ -839,9 +1028,14 @@ function renderJourney() {
   var earnedUnique = Object.keys(seenBases).filter(function(k) { return seenBases[k] }).length
   var percent = totalUnique > 0 ? Math.round((earnedUnique / totalUnique) * 100) : 0
 
-  document.getElementById('journeyPercent').textContent = percent + '%'
-  document.getElementById('journeyEarned').textContent = earnedUnique + ' / ' + totalUnique
-  setTimeout(function() { document.getElementById('journeyBar').style.width = percent + '%' }, 300)
+  var jp = document.getElementById('journeyPercent')
+  var je = document.getElementById('journeyEarned')
+  var jb = document.getElementById('journeyBar')
+  var jm = document.getElementById('journeyMessage')
+
+  if(jp) jp.textContent = percent + '%'
+  if(je) je.textContent = earnedUnique + ' / ' + totalUnique
+  if(jb) setTimeout(function() { jb.style.width = percent + '%' }, 300)
 
   var message = ''
   if (percent === 0) message = 'Your journey begins with a single share'
@@ -851,14 +1045,12 @@ function renderJourney() {
   else if (percent <= 75) message = 'A faithful warrior — the Word is spreading through you'
   else if (percent < 100) message = 'Almost legendary — so close to completing them all'
   else message = 'All trophies earned — you are a champion of the Word'
-  document.getElementById('journeyMessage').textContent = message
+  if(jm) jm.textContent = message
 }
 
-// ═══════════════════════════════════════
-// MISSIONS (upgraded)
-// ═══════════════════════════════════════
 function renderMissions() {
   var container = document.getElementById('missionsContainer')
+  if(!container) return
   container.innerHTML = ''
 
   var prioritizedIds = Object.keys(userPriorities)
@@ -920,20 +1112,17 @@ function renderMissions() {
   }, 400)
 }
 
-// ═══════════════════════════════════════
-// YOUR RIPPLES
-// ═══════════════════════════════════════
 function renderRipples() {
-  var reach = allShares.length * 50 // 50 people per share (avg)
-  animateNumber(document.getElementById('ripplesReach'), 0, reach, 1400)
+  var reach = allShares.length * 50
+  var r = document.getElementById('ripplesReach')
+  if(r) animateNumber(r, 0, reach, 1400)
 }
 
-// ═══════════════════════════════════════
-// WARRIORS CIRCLE
-// ═══════════════════════════════════════
 function renderWarriorsCircle() {
   var container = document.getElementById('warriorsCircle')
   var count = document.getElementById('warriorsCount')
+  if(!container || !count) return
+
   count.textContent = recruits.length + ' recruited'
 
   if (recruits.length === 0) {
@@ -1004,17 +1193,18 @@ function shareInvite() {
   }
 }
 
-// ═══════════════════════════════════════
-// GEOGRAPHIC REACH
-// ═══════════════════════════════════════
 function renderGeographic(countryCounts, continents) {
   var container = document.getElementById('countryList')
   var countryCount = Object.keys(countryCounts).length
   var continentCount = Object.keys(continents).length
+  
+  var gH = document.getElementById('geoHeadline')
+  var gS = document.getElementById('geoSubline')
 
-  document.getElementById('geoHeadline').textContent = 'Warriors sharing from ' + countryCount + ' countr' + (countryCount !== 1 ? 'ies' : 'y')
-  document.getElementById('geoSubline').textContent = 'across ' + continentCount + ' continent' + (continentCount !== 1 ? 's' : '')
+  if(gH) gH.textContent = 'Warriors sharing from ' + countryCount + ' countr' + (countryCount !== 1 ? 'ies' : 'y')
+  if(gS) gS.textContent = 'across ' + continentCount + ' continent' + (continentCount !== 1 ? 's' : '')
 
+  if(!container) return
   container.innerHTML = ''
   var sorted = Object.keys(countryCounts).sort(function(a, b) { return countryCounts[b] - countryCounts[a] })
   var total = 0
@@ -1048,29 +1238,32 @@ function renderGeographic(countryCounts, continents) {
   }
 }
 
-// ═══════════════════════════════════════
-// COLLECTIVE
-// ═══════════════════════════════════════
 function renderCollective(warriors, shares, countries, raised, missionsCompleted, rank) {
-  document.getElementById('collectiveWarriors').textContent = warriors.toLocaleString()
-  document.getElementById('collectiveShares').textContent = shares.toLocaleString()
-  document.getElementById('collectiveCountries').textContent = countries
-  document.getElementById('collectiveRaised').textContent = '$' + raised.toLocaleString()
-  document.getElementById('collectiveMissions').textContent = missionsCompleted
-  document.getElementById('collectiveRank').textContent = '#' + rank
+  var cw = document.getElementById('collectiveWarriors')
+  var cs = document.getElementById('collectiveShares')
+  var cc = document.getElementById('collectiveCountries')
+  var cr = document.getElementById('collectiveRaised')
+  var cm = document.getElementById('collectiveMissions')
+  var ck = document.getElementById('collectiveRank')
+
+  if(cw) cw.textContent = warriors.toLocaleString()
+  if(cs) cs.textContent = shares.toLocaleString()
+  if(cc) cc.textContent = countries
+  if(cr) cr.textContent = '$' + raised.toLocaleString()
+  if(cm) cm.textContent = missionsCompleted
+  if(ck) ck.textContent = '#' + rank
 }
 
-// ═══════════════════════════════════════
-// PERSONALIZED SCRIPTURE
-// ═══════════════════════════════════════
 function renderScripture() {
   var shareCount = allShares.length
   var verse = SCRIPTURES[0]
   for (var i = SCRIPTURES.length - 1; i >= 0; i--) {
     if (shareCount >= SCRIPTURES[i].min) { verse = SCRIPTURES[i]; break }
   }
-  document.getElementById('scriptureText').textContent = verse.text
-  document.getElementById('scriptureRef').textContent = verse.ref
+  var st = document.getElementById('scriptureText')
+  var sr = document.getElementById('scriptureRef')
+  if(st) st.textContent = verse.text
+  if(sr) sr.textContent = verse.ref
 }
 
 // ═══════════════════════════════════════
@@ -1110,11 +1303,11 @@ function showToast(msg) {
 
 function setupListeners() {
   window.addEventListener('scroll', function() {
-    document.getElementById('pageHeader').classList.toggle('header-scrolled', window.scrollY > 8)
+    var h = document.getElementById('pageHeader')
+    if(h) h.classList.toggle('header-scrolled', window.scrollY > 8)
   })
 }
 
+// Start
 init()
 </script>
-</body>
-</html>
