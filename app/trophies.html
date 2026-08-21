@@ -270,176 +270,180 @@
 var supabaseClient = supabase.createClient(
   'https://nhymadutuhpjgkiurify.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
-)
+);
 
-var RARITY_COLORS = {
-  'common':   { bg: 'bg-common',   text: 'text-common' },
-  'uncommon': { bg: 'bg-uncommon', text: 'text-uncommon' },
-  'rare':     { bg: 'bg-rare',     text: 'text-rare' },
-  'epic':     { bg: 'bg-epic',     text: 'text-epic' },
-  'mythic':   { bg: 'bg-mythic',   text: 'text-mythic' }
-}
+var currentUser = null;
+var userProfile = null;
+var trophyDefinitions = [];
+var userStats = {
+  shares: 0,
+  recruits_paid: 0,
+  countries_paid: 0,
+  recruits: 0
+};
 
-var currentUser = null
-var userProfile = null
-var totalShares = 0
-var totalRecruits = 0
-
-// Added Visibility Observer
 var observer = new IntersectionObserver(function(entries) {
-  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible') })
-}, { threshold: 0.1 })
+  entries.forEach(function(e) { 
+    if (e.isIntersecting) e.target.classList.add('visible'); 
+  });
+}, { threshold: 0.1 });
 
 async function init() {
-  var s = await supabaseClient.auth.getSession()
-  if (!s.data.session) { window.location.href = 'login.html'; return }
-  currentUser = s.data.session.user
+  var s = await supabaseClient.auth.getSession();
+  if (!s.data.session) { window.location.href = 'login.html'; return; }
+  currentUser = s.data.session.user;
 
-  await loadData()
-  render()
+  await loadData();
+  render();
   
-  // Start observing animations
-  document.querySelectorAll('.fade-up').forEach(function(el) { observer.observe(el) })
+  document.querySelectorAll('.fade-up').forEach(function(el) { 
+    observer.observe(el); 
+  });
 }
-
-var totalPaidCountries = 0; // Add this global variable
 
 async function loadData() {
   try {
+    // 1. Load Profile
+    var profileRes = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+    if (profileRes.error || !profileRes.data) return;
+    userProfile = profileRes.data;
+
+    // 2. Parallel Load: Trophy Definitions + User Stats
     var results = await Promise.allSettled([
-      supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single(),
+      supabaseClient.from('trophy_definitions').select('*').eq('is_active', true).order('sort_order'),
       supabaseClient.from('shares').select('id', { count: 'exact', head: true }).eq('user_id', currentUser.id),
-      // NEW: Fetch all recruits referred by this user who are NOT on the 'free' tier
-      supabaseClient.from('profiles')
-        .select('country, subscription_tier')
-        .eq('referred_by', userProfile.invite_code)
-        .neq('subscription_tier', 'free') 
+      supabaseClient.from('profiles').select('id, country, subscription_tier').eq('referred_by', userProfile.invite_code)
     ]);
 
-    userProfile = (results[0].status === 'fulfilled' && results[0].value.data) ? results[0].value.data : {};
-    totalShares = (results[1].status === 'fulfilled') ? (results[1].value.count || 0) : 0
-    totalRecruits = userProfile.recruit_count || 0;
-
-    // Calculate unique paid countries
+    trophyDefinitions = (results[0].status === 'fulfilled') ? (results[0].value.data || []) : [];
+    
+    // Process Shares
+    userStats.shares = (results[1].status === 'fulfilled') ? (results[1].value.count || 0) : 0;
+    
+    // Process Recruits
     if (results[2].status === 'fulfilled' && results[2].value.data) {
-      var paidRecruits = results[2].value.data;
-      // Filter for unique country names, ignoring empty ones
-      var uniqueCountries = [...new Set(paidRecruits.map(r => r.country).filter(c => c && c.trim() !== ""))];
-      totalPaidCountries = uniqueCountries.length;
+      var allRecruits = results[2].value.data;
+      var paidRecruits = allRecruits.filter(function(r) { return r.subscription_tier !== 'free'; });
+      
+      userStats.recruits = allRecruits.length;
+      userStats.recruits_paid = paidRecruits.length;
+      userStats.countries_paid = new Set(paidRecruits.map(function(r) { return r.country; }).filter(Boolean)).size;
     }
-
   } catch (err) {
     console.error('Load error:', err);
   }
 }
+
 function render() {
-  renderSubscriptionRoadmap()
-  renderTrophies()
+  renderSubscriptionRoadmap();
+  renderTrophies();
 }
 
 function renderSubscriptionRoadmap() {
-  var container = document.getElementById('subscriptionRoadmapStrip')
-  if (!container) return
-  container.innerHTML = ''
+  var container = document.getElementById('subscriptionRoadmapStrip');
+  if (!container) return;
+  container.innerHTML = '';
 
-  var userTier = (userProfile.subscription_tier || 'free').toLowerCase()
+  var userTier = (userProfile.subscription_tier || 'free').toLowerCase();
 
   if (typeof SUBSCRIPTION_ROADMAP !== 'undefined') {
     SUBSCRIPTION_ROADMAP.forEach(function(item) {
-      var isActive = item.key === userTier
-      var card = document.createElement('div')
-      card.className = 'flex flex-col items-center p-2 rounded-2xl transition-all ' + (isActive ? 'bg-primary-container/30 ring-2 ring-primary' : 'opacity-50 grayscale')
+      var isActive = item.key === userTier;
+      var card = document.createElement('div');
+      card.className = 'flex flex-col items-center p-2 rounded-2xl transition-all ' + (isActive ? 'bg-primary-container/30 ring-2 ring-primary' : 'opacity-50 grayscale');
       
       card.innerHTML = 
         '<img src="' + item.image + '" class="w-12 h-12 rounded-full mb-1.5 ' + (isActive ? '' : 'opacity-70') + '">' +
         '<span class="font-headline font-bold text-[11px] ' + (isActive ? 'text-primary' : 'text-on-surface-variant') + '">' + item.name + '</span>' +
-        '<span class="font-body text-[9px] text-outline">' + (isActive ? 'Active' : item.price) + '</span>'
+        '<span class="font-body text-[9px] text-outline">' + (isActive ? 'Active' : (item.price || '')) + '</span>';
 
-      container.appendChild(card)
-    })
+      container.appendChild(card);
+    });
   }
 
-  // Safety check to ensure function exists in badges-config.js
   if (typeof getUserSubscriptionBadge === 'function') {
-    var activeObj = getUserSubscriptionBadge(userProfile)
-    document.getElementById('statusBadgeName').textContent = activeObj.name || 'Warrior'
-    document.getElementById('statusBadgeTagline').textContent = activeObj.tagline || 'Spreading the Word'
+    var activeObj = getUserSubscriptionBadge(userProfile);
+    document.getElementById('statusBadgeName').textContent = activeObj.name;
+    document.getElementById('statusBadgeTagline').textContent = activeObj.tagline;
   }
 }
 
-function renderTrophies(trophyDefs, stats) {
-  const container = document.getElementById('achievementsGrid');
+function renderTrophies() {
+  var container = document.getElementById('achievementsGrid');
+  if (!container) return;
   container.innerHTML = '';
 
-  trophyDefs.forEach(trophy => {
-    const state = getTrophyState(trophy, stats);
-    const colors = RARITY_COLORS[state.activeTier.rarity];
+  trophyDefinitions.forEach(function(trophy) {
+    var state = getTrophyState(trophy, userStats);
+    var activeTier = state.activeTier;
+    var colors = RARITY_COLORS[activeTier.rarity] || { bg: 'bg-primary', text: 'text-primary' };
 
-    const tile = document.createElement('div');
-    tile.className = `trophy-tile ${state.isUnlocked ? '' : 'locked'}`;
-    tile.innerHTML = `
-      <div class="icon-wrap-achievement ${state.isUnlocked ? colors.bg : 'bg-surface-chigh'}">
-        <span class="material-symbols-outlined text-white">${trophy.icon}</span>
-      </div>
-      <p class="font-headline font-bold text-sm">${trophy.title}</p>
-      <p class="text-[10px] font-bold ${colors.text}">${state.isUnlocked ? state.activeTier.rarity.toUpperCase() : 'LOCKED'}</p>
-    `;
-    tile.onclick = () => openDetail(trophy, state);
+    var tile = document.createElement('div');
+    tile.className = 'trophy-tile ' + (state.isUnlocked ? '' : 'locked');
+    tile.onclick = function() { openDetail(trophy, state); };
+
+    var iconWrapHtml = '<div class="icon-wrap-achievement ' + (state.isUnlocked ? colors.bg : 'bg-surface-chigh') + '">' +
+                       '<span class="material-symbols-outlined text-[28px] ' + (state.isUnlocked ? 'text-white filled' : 'text-outline') + '">' + trophy.icon + '</span></div>';
+
+    var levelLabel = state.isUnlocked ? 'Lvl ' + activeTier.level + ' · ' + activeTier.rarity : 'Locked';
+
+    tile.innerHTML = iconWrapHtml +
+      '<p class="font-headline font-bold text-on-surface leading-tight mb-1" style="font-size:13px;">' + trophy.title + '</p>' +
+      '<p class="font-body font-bold uppercase tracking-widest ' + (state.isUnlocked ? colors.text : 'text-outline') + '" style="font-size:9px">' + levelLabel + '</p>';
+
     container.appendChild(tile);
   });
 }
-}
 
 function openDetail(trophy, state) {
-  var activeTier = state.activeTier
-  var colors = RARITY_COLORS[activeTier.rarity] || { bg: 'bg-primary', text: 'text-primary' }
+  var activeTier = state.activeTier;
+  var colors = RARITY_COLORS[activeTier.rarity] || { bg: 'bg-primary', text: 'text-primary' };
 
-  document.getElementById('detailStatus').textContent = state.isUnlocked ? 'Level ' + activeTier.level + ' Unlocked' : 'Locked'
-  document.getElementById('detailStatus').className = 'font-body font-bold uppercase tracking-wider mb-2 text-[10px] ' + (state.isUnlocked ? colors.text : 'text-outline')
+  document.getElementById('detailStatus').textContent = state.isUnlocked ? 'Level ' + activeTier.level + ' Unlocked' : 'Locked';
+  document.getElementById('detailStatus').className = 'font-body font-bold uppercase tracking-wider mb-2 text-[10px] ' + (state.isUnlocked ? colors.text : 'text-outline');
 
-  var rarityEl = document.getElementById('detailRarity')
-  rarityEl.textContent = activeTier.rarity
-  rarityEl.className = 'px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider text-white ' + colors.bg
-  rarityEl.classList.remove('hidden')
+  var rarityEl = document.getElementById('detailRarity');
+  rarityEl.textContent = activeTier.rarity;
+  rarityEl.className = 'px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider text-white ' + colors.bg;
+  rarityEl.classList.remove('hidden');
 
-  var iconWrap = document.getElementById('detailIconWrap')
-  iconWrap.className = 'w-24 h-24 mx-auto mb-4 relative flex items-center justify-center rounded-[24px] ' + (state.isUnlocked ? colors.bg : 'bg-surface-chigh')
+  var iconWrap = document.getElementById('detailIconWrap');
+  iconWrap.className = 'w-24 h-24 mx-auto mb-4 relative flex items-center justify-center rounded-[24px] ' + (state.isUnlocked ? colors.bg : 'bg-surface-chigh');
   
-  var iconEl = document.getElementById('detailIcon')
-  iconEl.className = 'material-symbols-outlined text-[48px] ' + (state.isUnlocked ? 'text-white filled' : 'text-outline')
-  iconEl.textContent = trophy.icon
+  var iconEl = document.getElementById('detailIcon');
+  iconEl.className = 'material-symbols-outlined text-[48px] ' + (state.isUnlocked ? 'text-white filled' : 'text-outline');
+  iconEl.textContent = trophy.icon;
 
-  document.getElementById('detailTitle').textContent = activeTier.name
-  document.getElementById('detailDesc').textContent = activeTier.desc
+  document.getElementById('detailTitle').textContent = activeTier.name || trophy.title;
+  document.getElementById('detailDesc').textContent = activeTier.desc || trophy.description;
 
-  var progWrap = document.getElementById('detailProgressWrap')
-  progWrap.classList.remove('hidden')
+  var progWrap = document.getElementById('detailProgressWrap');
+  progWrap.classList.remove('hidden');
 
   if (state.nextTier) {
-    document.getElementById('detailProgressText').textContent = state.count + ' / ' + state.nextTier.req
-    document.getElementById('detailRemainingText').textContent = (state.nextTier.req - state.count) + ' more to evolve to ' + state.nextTier.name
-    var bar = document.getElementById('detailBar')
-    bar.className = 'progress-fill ' + (RARITY_COLORS[state.nextTier.rarity]?.bg || 'bg-primary')
-    bar.style.width = state.progressPercent + '%'
+    document.getElementById('detailProgressText').textContent = state.count + ' / ' + state.nextTier.req;
+    document.getElementById('detailRemainingText').textContent = (state.nextTier.req - state.count) + ' more to evolve.';
+    var bar = document.getElementById('detailBar');
+    bar.className = 'progress-fill ' + (RARITY_COLORS[state.nextTier.rarity].bg || 'bg-primary');
+    bar.style.width = state.progressPercent + '%';
   } else {
-    document.getElementById('detailProgressText').textContent = 'MAX LEVEL'
-    document.getElementById('detailRemainingText').textContent = 'Mastery achieved!'
-    document.getElementById('detailBar').style.width = '100%'
+    document.getElementById('detailProgressText').textContent = 'MAX LEVEL';
+    document.getElementById('detailRemainingText').textContent = 'Mastery achieved!';
+    document.getElementById('detailBar').style.width = '100%';
   }
 
-  document.getElementById('detailOverlay').classList.remove('hidden')
-  setTimeout(() => {
-    document.getElementById('detailSheet').classList.add('open')
-  }, 10)
+  document.getElementById('detailOverlay').classList.remove('hidden');
+  setTimeout(function() {
+    document.getElementById('detailSheet').classList.add('open');
+  }, 10);
 }
 
 function closeDetail() {
-  document.getElementById('detailSheet').classList.remove('open')
+  document.getElementById('detailSheet').classList.remove('open');
   setTimeout(function() {
-    document.getElementById('detailOverlay').classList.add('hidden')
-  }, 300)
+    document.getElementById('detailOverlay').classList.add('hidden');
+  }, 300);
 }
 
-init()
-</script></body>
+init();</script></body>
 </html>
