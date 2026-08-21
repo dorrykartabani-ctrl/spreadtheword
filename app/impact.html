@@ -108,7 +108,37 @@
     .bg-uncommon{background:#3A8759;box-shadow:0 6px 16px rgba(58,135,89,0.25)}
     .bg-rare{background:#3d6285;box-shadow:0 6px 16px rgba(61,98,133,0.25)}
     .bg-epic{background:#7B3F9C;box-shadow:0 6px 16px rgba(123,63,156,0.25)}
-    .bg-mythic{background:#E38C1F;box-shadow:0 6px 16px rgba(227,140,31,0.25)}
+   /* Universal Mythic Glow - Applies to any Mythic Trophy */
+/* Add to impact.html styles */
+.bg-mythic {
+  background: linear-gradient(135deg, #E38C1F 0%, #FFD700 50%, #E38C1F 100%) !important;
+  background-size: 200% auto !important;
+  animation: mythic-shimmer 3s linear infinite !important;
+  box-shadow: 0 0 20px rgba(227, 140, 31, 0.6) !important;
+}
+@keyframes mythic-shimmer {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+.avatar-card {
+  background: white;
+  border-radius: 32px;
+  padding: 32px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.03);
+  position: relative;
+  overflow: hidden;
+}
+/* Icons inside Mythics are brighter */
+.bg-mythic .material-symbols-outlined {
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+/* Epic (Purple) Glow - Just for extra polish */
+.bg-epic {
+  background: linear-gradient(135deg, #7B3F9C 0%, #A35FD1 100%);
+  box-shadow: 0 0 12px rgba(123, 63, 156, 0.3);
+}
 
     /* Hero */
     .hero-card{
@@ -575,115 +605,38 @@ var supabaseClient = supabase.createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
 )
 
-// ═══════════════════════════════════════
-// DATA MAPS & CATALOGS
-// ═══════════════════════════════════════
-var countryFlags = {
-  'Australia':'🇦🇺','United States':'🇺🇸','USA':'🇺🇸','United Kingdom':'🇬🇧','UK':'🇬🇧',
-  'Canada':'🇨🇦','New Zealand':'🇳🇿','South Africa':'🇿🇦','Nigeria':'🇳🇬','Kenya':'🇰🇪',
-  'Ghana':'🇬🇭','India':'🇮🇳','Philippines':'🇵🇭','Singapore':'🇸🇬','Malaysia':'🇲🇾',
-  'Indonesia':'🇮🇩','Brazil':'🇧🇷','Mexico':'🇲🇽','Germany':'🇩🇪','France':'🇫🇷',
-  'Spain':'🇪🇸','Italy':'🇮🇹','Netherlands':'🇳🇱','Sweden':'🇸🇪','Norway':'🇳🇴',
-  'Japan':'🇯🇵','South Korea':'🇰🇷','China':'🇨🇳','UAE':'🇦🇪','Saudi Arabia':'🇸🇦',
-  'Egypt':'🇪🇬','Ethiopia':'🇪🇹','Tanzania':'🇹🇿','Uganda':'🇺🇬','Jamaica':'🇯🇲',
-  'Trinidad and Tobago':'🇹🇹','Ireland':'🇮🇪','Pakistan':'🇵🇰','Bangladesh':'🇧🇩',
-  'Colombia':'🇨🇴','Argentina':'🇦🇷','Chile':'🇨🇱','Peru':'🇵🇪','Israel':'🇮🇱',
-  'Turkey':'🇹🇷','Russia':'🇷🇺','Ukraine':'🇺🇦','Poland':'🇵🇱','Romania':'🇷🇴',
-  'Greece':'🇬🇷','Portugal':'🇵🇹','Belgium':'🇧🇪','Switzerland':'🇨🇭','Austria':'🇦🇹',
-  'Denmark':'🇩🇰','Finland':'🇫🇮','Costa Rica':'🇨🇷','Guatemala':'🇬🇹','Honduras':'🇭🇳',
-  'Cuba':'🇨🇺','Dominican Republic':'🇩🇴','Haiti':'🇭🇹','Barbados':'🇧🇧','Venezuela':'🇻🇪',
-  'Ecuador':'🇪🇨'
-}
-
-var continentMap = {
-  'United States':'North America','Canada':'North America','Mexico':'North America','Jamaica':'North America','Trinidad and Tobago':'North America','Barbados':'North America','Haiti':'North America','Dominican Republic':'North America','Costa Rica':'North America','Guatemala':'North America','Honduras':'North America','Cuba':'North America',
-  'Brazil':'South America','Argentina':'South America','Colombia':'South America','Peru':'South America','Chile':'South America','Ecuador':'South America','Venezuela':'South America',
-  'United Kingdom':'Europe','France':'Europe','Germany':'Europe','Spain':'Europe','Italy':'Europe','Netherlands':'Europe','Sweden':'Europe','Norway':'Europe','Poland':'Europe','Portugal':'Europe','Ireland':'Europe','Belgium':'Europe','Switzerland':'Europe','Austria':'Europe','Czech Republic':'Europe','Romania':'Europe','Greece':'Europe','Finland':'Europe','Denmark':'Europe','Russia':'Europe','Ukraine':'Europe','Turkey':'Europe',
-  'Nigeria':'Africa','South Africa':'Africa','Kenya':'Africa','Ghana':'Africa','Egypt':'Africa','Ethiopia':'Africa','Tanzania':'Africa','Uganda':'Africa',
-  'India':'Asia','Pakistan':'Asia','Bangladesh':'Asia','Philippines':'Asia','Indonesia':'Asia','Japan':'Asia','South Korea':'Asia','China':'Asia','Singapore':'Asia',
-  'UAE':'Middle East','Saudi Arabia':'Middle East','Israel':'Middle East',
-  'Australia':'Oceania','New Zealand':'Oceania'
-}
-
-function getFlag(country) {
-  if (!country) return '🌍'
-  return countryFlags[country] || '🌍'
-}
-
-var SHARE_MILESTONES = [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
-
-var SCRIPTURES = [
-  { min:0,    text:'"You will be my witnesses to the ends of the earth."', ref:'Acts 1:8' },
-  { min:1,    text:'"Let your light shine before others."',                 ref:'Matthew 5:16' },
-  { min:10,   text:'"Sow to yourselves in righteousness, reap in mercy."', ref:'Hosea 10:12' },
-  { min:50,   text:'"How beautiful are the feet of those who bring good news."', ref:'Romans 10:15' },
-  { min:100,  text:'"Well done, good and faithful servant."',              ref:'Matthew 25:21' },
-  { min:500,  text:'"You are the light of the world."',                    ref:'Matthew 5:14' },
-  { min:1000, text:'"The harvest is plentiful, but the workers are few."', ref:'Matthew 9:37' }
-]
-
-var narratives = [
-  'Every share plants a seed that could change a life.',
-  'Your voice is echoing farther than you know.',
-  'You have been faithful. Keep going.',
-  'Someone needed exactly what you shared today.',
-  'The Word travels through you.',
-  'You are part of something eternal.',
-  'Small acts of witness build kingdoms.'
-]
-
-// ═══════════════════════════════════════
-// TROPHY CATALOG (Fortnite Rarity system)
-// ═══════════════════════════════════════
-var TROPHY_CATALOG = [
-  { id:'sub_free',      type:'subscription', title:'The Called',    desc:'You answered the call.', icon:'volunteer_activism', material:'bronze', criteria:{subscription:'free'} },
-  { id:'sub_warrior',   type:'subscription', title:'The Warrior',   desc:'You committed to daily witness.', icon:'shield', material:'bronze', criteria:{subscription:'warrior'} },
-  { id:'sub_commander', type:'subscription', title:'The Commander', desc:'You lead by example.', icon:'military_tech', material:'silver', criteria:{subscription:'commander'} },
-  { id:'sub_legacy',    type:'subscription', title:'The Anointed',  desc:'A pillar of the movement.', icon:'workspace_premium', material:'gold', criteria:{subscription:'legacy'} },
-
-  { id:'sower_1',    type:'achievement', base:'sower', title:'The Sower', desc:'You planted your first seed.', icon:'grass', rarity:'common', criteria:{shares:1} },
-  { id:'sower_25',   type:'achievement', base:'sower', title:'The Sower', desc:'25 seeds planted.', icon:'grass', rarity:'uncommon', criteria:{shares:25} },
-  { id:'sower_100',  type:'achievement', base:'sower', title:'The Sower', desc:'100 words spread.', icon:'grass', rarity:'rare', criteria:{shares:100} },
-  { id:'sower_500',  type:'achievement', base:'sower', title:'The Sower', desc:'500 words spread.', icon:'grass', rarity:'epic', criteria:{shares:500} },
-  { id:'sower_1000', type:'achievement', base:'sower', title:'The Sower', desc:'1000 words spread.', icon:'grass', rarity:'mythic', criteria:{shares:1000} },
-
-  { id:'shep_1',  type:'achievement', base:'shepherd', title:'The Shepherd', desc:'You brought one warrior in.', icon:'handshake', rarity:'common', criteria:{recruits:1} },
-  { id:'shep_5',  type:'achievement', base:'shepherd', title:'The Shepherd', desc:'5 warriors follow your call.', icon:'handshake', rarity:'uncommon', criteria:{recruits:5} },
-  { id:'shep_10', type:'achievement', base:'shepherd', title:'The Shepherd', desc:'10 warriors guided.', icon:'handshake', rarity:'rare', criteria:{recruits:10} },
-  { id:'shep_25', type:'achievement', base:'shepherd', title:'The Shepherd', desc:'25 warriors joined because of you.', icon:'handshake', rarity:'epic', criteria:{recruits:25} },
-  { id:'shep_50', type:'achievement', base:'shepherd', title:'The Shepherd', desc:'50 warriors leading the charge.', icon:'handshake', rarity:'mythic', criteria:{recruits:50} }
-];
-
-var RARITY_COLORS = {
-  'common':   { bg: 'bg-[#8A8C85]' },
-  'uncommon': { bg: 'bg-[#3A8759]' },
-  'rare':     { bg: 'bg-[#3d6285]' },
-  'epic':     { bg: 'bg-[#7B3F9C]' },
-  'mythic':   { bg: 'bg-[#E38C1F]' }
-};
-
-var ACHIEVEMENT_CATALOG = TROPHY_CATALOG;
-
-// ═══════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════
 var currentUser = null
 var userProfile = null
 var allShares = []
 var allProjects = []
 var userPriorities = {}
 var recruits = []
+var totalPaidCountries = 0
 var thisWeeksQuoteId = null
 var thisWeeksQuoteShared = false
 var state = { timeframe: 'all' }
+
+var continentMap = {
+  'United States':'North America','Canada':'North America','Mexico':'North America','Jamaica':'North America',
+  'Brazil':'South America','Argentina':'South America','Colombia':'South America',
+  'United Kingdom':'Europe','France':'Europe','Germany':'Europe','Spain':'Europe','Italy':'Europe',
+  'Nigeria':'Africa','South Africa':'Africa','Kenya':'Africa','Ghana':'Africa',
+  'India':'Asia','Pakistan':'Asia','Philippines':'Asia','Indonesia':'Asia','Japan':'Asia',
+  'Australia':'Oceania','New Zealand':'Oceania'
+}
+
+var narratives = [
+  'Every share plants a seed that could change a life.',
+  'Your voice is echoing farther than you know.',
+  'You have been faithful. Keep going.',
+  'Someone needed exactly what you shared today.',
+  'The Word travels through you.'
+]
 
 var observer = new IntersectionObserver(function(entries) {
   entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible') })
 }, { threshold: 0.1 })
 
-// ═══════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════
 async function init() {
   var s = await supabaseClient.auth.getSession()
   if (!s.data.session) { window.location.href = 'login.html'; return }
@@ -694,616 +647,104 @@ async function init() {
 }
 
 async function loadEverything() {
-  // ... after loading other data
-var { data: paidRecruits } = await supabaseClient
-    .from('profiles')
-    .select('country')
-    .eq('referred_by', userProfile.invite_code)
-    .neq('subscription_tier', 'free');
+  // 1. Profile First
+  const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+  userProfile = profile;
 
-var totalPaidCountries = 0;
-if (paidRecruits) {
-    totalPaidCountries = new Set(paidRecruits.map(r => r.country).filter(c => c)).size;
-}
+  // 2. Parallel Load
+  const results = await Promise.allSettled([
+    supabaseClient.from('trophy_definitions').select('*').eq('is_active', true).order('sort_order'),
+    supabaseClient.from('avatar_stages').select('*').order('stage'),
+    supabaseClient.from('shares').select('*').eq('user_id', currentUser.id),
+    supabaseClient.from('profiles').select('country, subscription_tier').eq('referred_by', userProfile.invite_code)
+  ]);
 
-// When you call the trophy states, make sure you pass totalPaidCountries
-// Example inside renderTrophyShowcase:
-var state = getTrophyState(trophy, allShares.length, totalRecruits, totalPaidCountries);var results = await Promise.allSettled([
-    supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single(),
-    supabaseClient.from('shares').select('platform, shared_at, quote_id').eq('user_id', currentUser.id).order('shared_at', { ascending: false }),
-    supabaseClient.from('project_priorities').select('*').eq('user_id', currentUser.id),
-    supabaseClient.from('projects').select('*').eq('is_visible', true),
-    supabaseClient.from('profiles').select('id, total_shares').order('total_shares', { ascending: false }),
-    supabaseClient.from('profiles').select('country'),
-    supabaseClient.from('profiles').select('*', { count: 'exact', head: true }),
-    supabaseClient.from('shares').select('*', { count: 'exact', head: true }),
-    supabaseClient.from('projects').select('raised_amount, status'),
-    supabaseClient.from('projects').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
-    supabaseClient.from('quotes').select('id, published_at').eq('status', 'live').order('published_at', { ascending: false }).limit(1)
-  ])
+  const trophyDefs = results[0].value.data;
+  const avatarStages = results[1].value.data;
+  const shares = results[2].value.data;
+  const recruits = results[3].value.data;
 
-  userProfile         = getData(results[0], {})
-  allShares           = getData(results[1], [])
-  var priorityRows    = getData(results[2], [])
-  allProjects         = getData(results[3], [])
-  var allProfilesRank = getData(results[4], [])
-  var countryRows     = getData(results[5], [])
-  var totalWarriors   = getCount(results[6], 0)
-  var totalGlobalShares = getCount(results[7], 0)
-  var allProjectAmounts = getData(results[8], [])
-  var completedCount  = getCount(results[9], 0)
-  var latestQuote     = getData(results[10], [])
+  // 3. Process Stats
+  const paidRecruits = recruits.filter(r => r.subscription_tier !== 'free');
+  const stats = {
+    shares: shares.length,
+    recruits_paid: paidRecruits.length,
+    countries_paid: new Set(paidRecruits.map(r => r.country).filter(c => c)).size,
+    streak: calculateStreak(shares)
+    // loyalty calculated via profile.created_at
+  };
 
-  priorityRows.forEach(function(p) { userPriorities[p.project_id] = p.priority })
+  // 4. Update Avatar UI
+  const avatar = calculateAvatarStage(trophyDefs, stats, avatarStages);
+  document.getElementById('avatarRankName').textContent = avatar.name;
+  document.getElementById('avatarDisplayImg').src = avatar.image_url;
+  if (avatar.stage > 0) document.getElementById('avatarDisplayImg').classList.remove('grayscale', 'opacity-30');
 
-  var countryCounts = {}
-  countryRows.forEach(function(r) {
-    if (r.country) { var c = r.country.trim(); countryCounts[c] = (countryCounts[c] || 0) + 1 }
-  })
-  var continents = {}
-  Object.keys(countryCounts).forEach(function(c) {
-    var cont = continentMap[c] || 'Other'
-    continents[cont] = true
-  })
-
-  var userRank = 1
-  for (var i = 0; i < allProfilesRank.length; i++) {
-    if (allProfilesRank[i].id === currentUser.id) { userRank = i + 1; break }
-  }
-  var percentile = totalWarriors > 0 ? Math.round(((totalWarriors - userRank + 1) / totalWarriors) * 100) : 0
-
-  var totalRaised = 0
-  allProjectAmounts.forEach(function(p) {
-    if (p.status === 'completed' || p.status === 'active') totalRaised += Number(p.raised_amount || 0)
-  })
-
-  if (latestQuote.length > 0) {
-    thisWeeksQuoteId = latestQuote[0].id
-    thisWeeksQuoteShared = allShares.some(function(s) { return s.quote_id === thisWeeksQuoteId })
-  }
-
-  await loadRecruits()
-
-  renderHero(percentile, Object.keys(countryCounts).length)
-  renderStats()
-  renderThisWeeksWord()
-  renderTrophyShowcase()
-  renderJourney()
-  renderMissions()
-  renderRipples()
-  renderWarriorsCircle()
-  renderGeographic(countryCounts, continents)
-  renderCollective(totalWarriors, totalGlobalShares, Object.keys(countryCounts).length, totalRaised, completedCount, userRank)
-  renderScripture()
-}
-
-async function loadRecruits() {
-  if (!userProfile || !userProfile.invite_code) { recruits = []; return }
-  try {
-    var res = await supabaseClient.from('profiles').select('id, nickname, full_name, country, created_at')
-      .eq('referred_by', userProfile.invite_code).order('created_at', { ascending: false })
-    if (res.data) recruits = res.data
-    else recruits = []
-  } catch (e) { recruits = [] }
-}
-
-function getData(settled, fallback) {
-  if (settled && settled.status === 'fulfilled' && settled.value && settled.value.data !== undefined) return settled.value.data || fallback
-  return fallback
-}
-function getCount(settled, fallback) {
-  if (settled && settled.status === 'fulfilled' && settled.value) return settled.value.count || fallback
-  return fallback
-}
-
-// ═══════════════════════════════════════
-// TROPHY HELPERS
-// ═══════════════════════════════════════
-function isTrophyEarned(trophy) {
-  var c = trophy.criteria
-  if (c.shares !== undefined) return allShares.length >= c.shares
-  if (c.recruits !== undefined) return (userProfile.recruit_count || recruits.length || 0) >= c.recruits
-  if (c.subscription !== undefined) {
-    var userTier = (userProfile.subscription_tier || 'free').toLowerCase()
-    return userTier === c.subscription
-  }
-  if (c.mission !== undefined) return allShares.length > 0
-  return false
-}
-
-function getTrophyProgress(trophy) {
-  var c = trophy.criteria
-  var current = 0, threshold = 1
-  if (c.shares !== undefined) { current = allShares.length; threshold = c.shares }
-  else if (c.recruits !== undefined) { current = userProfile.recruit_count || recruits.length || 0; threshold = c.recruits }
-  else return { current: 0, threshold: 1, percent: 0 }
-  return { current: current, threshold: threshold, percent: Math.min(Math.round((current / threshold) * 100), 100) }
-}
-
-function countEarnedTrophies() {
-  var seenBases = {}
-  var earnedCount = 0
-  TROPHY_CATALOG.forEach(function(t) {
-    var key = t.base || t.id
-    if (!seenBases[key]) seenBases[key] = false
-    if (isTrophyEarned(t)) seenBases[key] = true
-  })
-  Object.keys(seenBases).forEach(function(k) { if (seenBases[k]) earnedCount++ })
-  return earnedCount
-}
-
-function getEarnedTrophyList() {
-  var earned = []
-  TROPHY_CATALOG.forEach(function(t) { if (isTrophyEarned(t)) earned.push(t) })
-  return earned
-}
-
-function getNextTrophy() {
-  var candidates = []
-  TROPHY_CATALOG.forEach(function(t) {
-    if (isTrophyEarned(t)) return
-    var c = t.criteria
-    if (c.shares === undefined && c.recruits === undefined) return
-    var progress = getTrophyProgress(t)
-    if (progress.percent > 0 || progress.threshold <= 10) {
-      candidates.push({ trophy: t, progress: progress })
-    }
-  })
-  candidates.sort(function(a, b) {
-    if (b.progress.percent !== a.progress.percent) return b.progress.percent - a.progress.percent
-    return a.progress.threshold - b.progress.threshold
-  })
-  return candidates.length > 0 ? candidates[0] : null
-}
-
-// ═══════════════════════════════════════
+  // 5. Render Trophies
+  renderTrophyShowcase(trophyDefs, stats);
+}// ═══════════════════════════════════════
 // RENDERS
 // ═══════════════════════════════════════
-function renderHero(percentile, countries) {
-  var hNarrative = document.getElementById('heroNarrative')
-  if(hNarrative) hNarrative.textContent = narratives[Math.floor(Math.random() * narratives.length)]
-  animateNumber(document.getElementById('heroNumber'), 0, allShares.length, 1200)
-
-  if (percentile > 0 && allShares.length > 0) {
-    var topPct = 100 - percentile
-    var hPct = document.getElementById('heroPercentileText')
-    if(hPct) hPct.textContent = topPct <= 0 ? 'Top 1%' : 'Top ' + topPct + '%'
-  } else {
-    var hPct2 = document.getElementById('heroPercentileText')
-    if(hPct2) hPct2.textContent = 'Just getting started'
-  }
-
-  if (countries > 0) {
-    var hCountries = document.getElementById('heroCountries')
-    var hCountriesTxt = document.getElementById('heroCountriesText')
-    if(hCountries) hCountries.classList.remove('hidden')
-    if(hCountriesTxt) hCountriesTxt.textContent = countries + ' countries reached'
-  }
-
-  var currentShares = allShares.length
-  var next = SHARE_MILESTONES.find(function(m) { return m > currentShares })
-  if (next) {
-    var nextMilestone = document.getElementById('nextMilestone')
-    var milestoneText = document.getElementById('milestoneText')
-    var milestoneBar = document.getElementById('milestoneBar')
-    if(nextMilestone) nextMilestone.classList.remove('hidden')
-    if(milestoneText) milestoneText.textContent = currentShares + ' / ' + next + ' shares'
-    var pct = Math.round((currentShares / next) * 100)
-    if(milestoneBar) setTimeout(function() { milestoneBar.style.width = pct + '%' }, 400)
-  }
-}
-
-function renderStats() {
-  var filtered = getFilteredShares()
-  var sShares = document.getElementById('statShares')
-  var sRecruits = document.getElementById('statRecruits')
-  var sTrophies = document.getElementById('statTrophies')
-  var sBadges = document.getElementById('statBadges')
-  
-  if(sShares) sShares.textContent = filtered.length
-  if(sRecruits) sRecruits.textContent = userProfile.recruit_count || recruits.length || 0
-  if(sTrophies) sTrophies.textContent = countEarnedTrophies()
-  if(sBadges) sBadges.textContent = (userProfile.badges || []).length
-}
-
-function getFilteredShares() {
-  var now = new Date()
-  if (state.timeframe === 'week') {
-    var sw = new Date(now); sw.setDate(now.getDate() - now.getDay()); sw.setHours(0, 0, 0, 0)
-    return allShares.filter(function(s) { return new Date(s.shared_at) >= sw })
-  }
-  if (state.timeframe === 'month') {
-    var sm = new Date(now.getFullYear(), now.getMonth(), 1)
-    return allShares.filter(function(s) { return new Date(s.shared_at) >= sm })
-  }
-  return allShares
-}
-
-function setTimeframe(tf) {
-  state.timeframe = tf
-  document.getElementById('timeAll').classList.toggle('active', tf === 'all')
-  document.getElementById('timeMonth').classList.toggle('active', tf === 'month')
-  document.getElementById('timeWeek').classList.toggle('active', tf === 'week')
-  renderStats()
-}
-
-function renderThisWeeksWord() {
-  var section = document.getElementById('weeksWordSection')
-  var status = document.getElementById('weeksWordStatus')
-  var cta = document.getElementById('weeksWordCta')
-  var icon = document.getElementById('weeksWordIcon')
-
-  if (!thisWeeksQuoteId || !section) return
-  section.classList.remove('hidden')
-
-  if (thisWeeksQuoteShared) {
-    status.textContent = '✓ You shared this week — thank you!'
-    icon.className = 'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 signature-gradient'
-    cta.classList.add('hidden')
-  } else {
-    status.textContent = 'Waiting for you to spread it'
-    icon.className = 'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-surface-clow'
-    icon.innerHTML = '<span class="material-symbols-outlined text-primary text-[24px]">schedule</span>'
-    cta.classList.remove('hidden')
-  }
-}
 
 function renderTrophyShowcase() {
-  var container = document.getElementById('trophyShowcase');
-  if (!container) return;
-  container.innerHTML = '';
+  var container = document.getElementById('trophyShowcase')
+  if (!container) return
+  container.innerHTML = ''
+  var showcaseCount = 0
 
-  var showcaseCount = 0;
-
-  // Check if EVOLVING_TROPHIES exists (from your external config)
   if (typeof EVOLVING_TROPHIES !== 'undefined') {
     EVOLVING_TROPHIES.forEach(function(trophy) {
-      var state = getTrophyState(trophy, allShares.length, (userProfile.recruit_count || recruits.length || 0));
-      var activeTier = state.activeTier;
-      var colors = RARITY_COLORS[activeTier.rarity] || { bg: 'bg-primary' };
+      // Corrected call with 4 arguments
+      var state = getTrophyState(trophy, allShares.length, recruits.length, totalPaidCountries)
+      var activeTier = state.activeTier
+      var colors = RARITY_COLORS[activeTier.rarity] || { bg: 'bg-primary' }
 
-      var tile = document.createElement('div');
-      tile.className = 'impact-trophy ' + (state.isUnlocked ? 'earned' : 'opacity-50');
-      tile.onclick = function() { window.location.href = 'trophies.html' };
-
-      tile.innerHTML =
-        '<div class="mx-auto mb-2 flex items-center justify-center w-12 h-12 rounded-[14px] ' + (state.isUnlocked ? colors.bg : 'bg-surface-chigh') + '">' +
-          '<span class="material-symbols-outlined ' + (state.isUnlocked ? 'text-white filled' : 'text-outline') + '" style="font-size:24px;">' + trophy.icon + '</span>' +
-        '</div>' +
-        '<p class="font-headline font-bold text-on-surface leading-tight text-[11px]">' + trophy.title + '</p>' +
-        '<p class="font-body text-[9px] font-semibold mt-0.5 ' + (state.isUnlocked ? colors.text : 'text-outline') + '">' + (state.isUnlocked ? 'Lvl ' + activeTier.level : 'Locked') + '</p>';
-
-      container.appendChild(tile);
-      showcaseCount++;
-    });
+      var tile = document.createElement('div')
+      tile.className = 'impact-trophy ' + (state.isUnlocked ? 'earned' : 'opacity-50')
+      tile.onclick = function() { window.location.href = 'trophies.html' }
+      tile.innerHTML = `
+        <div class="mx-auto mb-2 flex items-center justify-center w-12 h-12 rounded-[14px] ${state.isUnlocked ? colors.bg : 'bg-surface-chigh'}">
+          <span class="material-symbols-outlined ${state.isUnlocked ? 'text-white filled' : 'text-outline'}" style="font-size:24px;">${trophy.icon}</span>
+        </div>
+        <p class="font-headline font-bold text-on-surface leading-tight text-[11px]">${trophy.title}</p>
+        <p class="font-body text-[9px] font-semibold mt-0.5 ${state.isUnlocked ? colors.text : 'text-outline'}">${state.isUnlocked ? 'Lvl ' + activeTier.level : 'Locked'}</p>`
+      
+      container.appendChild(tile)
+      showcaseCount++
+    })
   }
 
-  // Fill empty slots if fewer than 3 trophies are shown
   while (showcaseCount < 3) {
-    var placeholder = document.createElement('div');
-    placeholder.className = 'impact-trophy';
-    placeholder.style.opacity = '0.5';
-    placeholder.innerHTML =
-      '<div class="mx-auto mb-2 flex items-center justify-center w-12 h-12 rounded-[14px] bg-surface-chigh">' +
-        '<span class="material-symbols-outlined text-outline" style="font-size:20px;">lock</span>' +
-      '</div>' +
-      '<p class="font-body text-outline" style="font-size:10px;">Locked</p>';
-    container.appendChild(placeholder);
-    showcaseCount++;
+    var placeholder = document.createElement('div')
+    placeholder.className = 'impact-trophy opacity-50'
+    placeholder.innerHTML = '<div class="mx-auto mb-2 flex items-center justify-center w-12 h-12 rounded-[14px] bg-surface-chigh"><span class="material-symbols-outlined text-outline">lock</span></div>'
+    container.appendChild(placeholder)
+    showcaseCount++
   }
-
-  // Handle Next Up Card
-  var next = getNextTrophy();
-  var nextCard = document.getElementById('nextTrophyCard');
-  if (nextCard) {
-    if (next) {
-      nextCard.classList.remove('hidden');
-      var symbolEl = document.getElementById('nextTrophyIconSymbol');
-      var titleEl = document.getElementById('nextTrophyTitle');
-      var progEl = document.getElementById('nextTrophyProgress');
-      var barEl = document.getElementById('nextTrophyBar');
-
-      if (symbolEl) symbolEl.textContent = next.trophy.icon;
-      if (titleEl) titleEl.textContent = next.trophy.title;
-      if (progEl) progEl.textContent = next.progress.current + ' / ' + next.progress.threshold + ' · ' + (next.progress.threshold - next.progress.current) + ' to go';
-      if (barEl) setTimeout(function() { barEl.style.width = next.progress.percent + '%' }, 300);
-    } else {
-      nextCard.classList.add('hidden');
-    }
-  }
-} // End of function
+}
 
 function renderJourney() {
-  var totalUnique = 0
-  var seenBases = {}
-  TROPHY_CATALOG.forEach(function(t) {
-    var key = t.base || t.id
-    if (!seenBases[key]) { seenBases[key] = false; totalUnique++ }
-    if (isTrophyEarned(t)) seenBases[key] = true
-  })
-  var earnedUnique = Object.keys(seenBases).filter(function(k) { return seenBases[k] }).length
-  var percent = totalUnique > 0 ? Math.round((earnedUnique / totalUnique) * 100) : 0
-
-  var jp = document.getElementById('journeyPercent')
-  var je = document.getElementById('journeyEarned')
-  var jb = document.getElementById('journeyBar')
-  var jm = document.getElementById('journeyMessage')
-
-  if(jp) jp.textContent = percent + '%'
-  if(je) je.textContent = earnedUnique + ' / ' + totalUnique
-  if(jb) setTimeout(function() { jb.style.width = percent + '%' }, 300)
-
-  var message = ''
-  if (percent === 0) message = 'Your journey begins with a single share'
-  else if (percent <= 15) message = "You're just getting started — keep spreading the Word"
-  else if (percent <= 30) message = 'Building momentum — every share matters'
-  else if (percent <= 50) message = "You're making real impact — halfway there"
-  else if (percent <= 75) message = 'A faithful warrior — the Word is spreading through you'
-  else if (percent < 100) message = 'Almost legendary — so close to completing them all'
-  else message = 'All trophies earned — you are a champion of the Word'
-  if(jm) jm.textContent = message
-}
-
-function renderMissions() {
-  var container = document.getElementById('missionsContainer')
-  if(!container) return
-  container.innerHTML = ''
-
-  var prioritizedIds = Object.keys(userPriorities)
-  if (prioritizedIds.length === 0) {
-    container.innerHTML =
-      '<div class="bg-surface-cl rounded-2xl text-center py-8 px-4">'
-        + '<span class="material-symbols-outlined text-outline text-[36px] block mb-2">flag</span>'
-        + '<p class="font-body text-on-surface-variant mb-3" style="font-size:14px;">You haven\'t chosen a mission yet</p>'
-        + '<a href="cause.html" class="font-body font-semibold text-primary" style="font-size:13px;">Choose a mission →</a>'
-      + '</div>'
-    return
-  }
-
-  var prioritized = allProjects
-    .filter(function(p) { return userPriorities[p.id] && p.status === 'active' })
-    .sort(function(a, b) { return userPriorities[a.id] - userPriorities[b.id] })
-
-  prioritized.forEach(function(project) {
-    var goalType = project.goal_type || 'monetary'
-    var raised = Number(project.raised_amount || 0)
-    var goal = Number(project.goal_amount || 0)
-    var pct = goal > 0 ? Math.min(Math.round((raised / goal) * 100), 100) : 0
-    var progressText = goalType === 'monetary'
-      ? '$' + raised.toLocaleString() + ' / $' + goal.toLocaleString()
-      : raised.toLocaleString() + ' / ' + goal.toLocaleString()
-
-    var card = document.createElement('div')
-    card.className = 'contribution-card'
-    card.onclick = function() { window.location.href = 'cause.html' }
-
-    var visualHtml = ''
-    if (project.image_url) {
-      visualHtml =
-        '<div class="mission-visual mb-3">'
-          + '<img src="' + escapeAttr(project.image_url) + '" alt="' + escapeAttr(project.title) + '">'
-          + '<div class="mission-percent-overlay">' + pct + '%</div>'
-        + '</div>'
-    }
-
-    card.innerHTML =
-      visualHtml
-      + '<div class="flex items-center gap-3 mb-2">'
-        + '<div>'
-          + '<p class="font-body text-on-surface-variant" style="font-size:10px;font-weight:600;letter-spacing:0.03em;">PRIORITY #' + userPriorities[project.id] + '</p>'
-          + '<h4 class="font-headline font-bold text-on-surface" style="font-size:14px;line-height:1.3;">' + escapeHtml(project.title) + '</h4>'
-        + '</div>'
-        + (!project.image_url ? '<span class="ml-auto font-headline font-bold text-primary" style="font-size:16px;">' + pct + '%</span>' : '')
-      + '</div>'
-      + '<div class="progress-track">'
-        + '<div class="progress-fill progress-primary" style="width:0%" data-w="' + pct + '"></div>'
-      + '</div>'
-      + '<p class="font-body text-on-surface-variant mt-2" style="font-size:11px;">' + progressText + '</p>'
-
-    container.appendChild(card)
-  })
-
-  setTimeout(function() {
-    container.querySelectorAll('.progress-fill').forEach(function(bar) { bar.style.width = bar.dataset.w + '%' })
-  }, 400)
-}
-
-function renderRipples() {
-  var reach = allShares.length * 50
-  var r = document.getElementById('ripplesReach')
-  if(r) animateNumber(r, 0, reach, 1400)
-}
-
-function renderWarriorsCircle() {
-  var container = document.getElementById('warriorsCircle')
-  var count = document.getElementById('warriorsCount')
-  if(!container || !count) return
-
-  count.textContent = recruits.length + ' recruited'
-
-  if (recruits.length === 0) {
-    container.innerHTML =
-      '<div class="text-center py-2">'
-        + '<span class="material-symbols-outlined text-outline text-[32px] block mb-2">group_add</span>'
-        + '<p class="font-body text-on-surface-variant mb-3" style="font-size:13px;">Share your invite code to grow your circle</p>'
-        + '<button onclick="shareInvite()" class="py-2.5 px-5 signature-gradient text-on-primary font-headline font-bold rounded-xl active:scale-95 transition-transform" style="font-size:12px;">Get invite link</button>'
-      + '</div>'
-    return
-  }
-
-  var displayList = recruits.slice(0, 5)
-  var html = '<div class="space-y-3">'
-  displayList.forEach(function(r) {
-    var name = r.nickname || (r.full_name ? r.full_name.split(' ')[0] : 'Warrior')
-    var initials = name.substring(0, 2).toUpperCase()
-    var country = r.country ? getFlag(r.country) + ' ' + r.country : ''
-    var joined = r.created_at ? timeSince(new Date(r.created_at)) + ' ago' : ''
-
-    html += '<div class="flex items-center gap-3">'
-      + '<div class="warrior-avatar">' + initials + '</div>'
-      + '<div class="flex-1 min-w-0">'
-        + '<p class="font-body font-semibold text-on-surface truncate" style="font-size:13px;">' + escapeHtml(name) + '</p>'
-        + '<p class="font-body text-on-surface-variant" style="font-size:11px;">' + escapeHtml(country) + (country && joined ? ' · ' : '') + joined + '</p>'
-      + '</div>'
-    + '</div>'
-  })
-  html += '</div>'
-
-  if (recruits.length > 5) {
-    html += '<p class="font-body text-on-surface-variant text-center mt-3 pt-3 border-t border-outline-variant/20" style="font-size:11px;">+ ' + (recruits.length - 5) + ' more warriors in your circle</p>'
-  }
-
-  html += '<button onclick="shareInvite()" class="w-full mt-4 py-2.5 bg-surface-clow text-primary font-headline font-bold rounded-xl active:scale-95 transition-transform" style="font-size:12px;"><span class="material-symbols-outlined text-[14px] align-middle mr-1">group_add</span>Invite more warriors</button>'
-
-  container.innerHTML = html
-}
-
-function timeSince(date) {
-  var seconds = Math.floor((new Date() - date) / 1000)
-  var intervals = [
-    { label: 'year', s: 31536000 },
-    { label: 'month', s: 2592000 },
-    { label: 'week', s: 604800 },
-    { label: 'day', s: 86400 },
-    { label: 'hour', s: 3600 },
-    { label: 'min', s: 60 }
-  ]
-  for (var i = 0; i < intervals.length; i++) {
-    var count = Math.floor(seconds / intervals[i].s)
-    if (count >= 1) return count + ' ' + intervals[i].label + (count !== 1 ? 's' : '')
-  }
-  return 'just now'
-}
-
-function shareInvite() {
-  if (!userProfile || !userProfile.invite_code) {
-    window.location.href = 'profile.html'
-    return
-  }
-  var link = window.location.origin + '/app/signup.html?ref=' + userProfile.invite_code
-  if (navigator.share) {
-    navigator.share({ title:'Join Go Spread The Word', text:'Join me in spreading the Word.', url:link }).catch(function() {})
-  } else {
-    navigator.clipboard.writeText(link)
-    showToast('Invite link copied')
-  }
-}
-
-function renderGeographic(countryCounts, continents) {
-  var container = document.getElementById('countryList')
-  var countryCount = Object.keys(countryCounts).length
-  var continentCount = Object.keys(continents).length
+  var totalTiers = 0
+  var earnedTiers = 0
   
-  var gH = document.getElementById('geoHeadline')
-  var gS = document.getElementById('geoSubline')
-
-  if(gH) gH.textContent = 'Warriors sharing from ' + countryCount + ' countr' + (countryCount !== 1 ? 'ies' : 'y')
-  if(gS) gS.textContent = 'across ' + continentCount + ' continent' + (continentCount !== 1 ? 's' : '')
-
-  if(!container) return
-  container.innerHTML = ''
-  var sorted = Object.keys(countryCounts).sort(function(a, b) { return countryCounts[b] - countryCounts[a] })
-  var total = 0
-  Object.keys(countryCounts).forEach(function(c) { total += countryCounts[c] })
-
-  if (sorted.length === 0) {
-    container.innerHTML = '<p class="font-body text-outline text-center py-4" style="font-size:13px;">Geographic data building...</p>'
-    return
+  if (typeof EVOLVING_TROPHIES !== 'undefined') {
+    EVOLVING_TROPHIES.forEach(function(t) {
+      var state = getTrophyState(t, allShares.length, recruits.length, totalPaidCountries)
+      totalTiers += t.tiers.length
+      if (state.isUnlocked) {
+        // Count how many tiers were passed
+        t.tiers.forEach(tier => { if(state.count >= tier.req) earnedTiers++ })
+      }
+    })
   }
 
-  var top = sorted.slice(0, 8)
-  top.forEach(function(country) {
-    var count = countryCounts[country]
-    var pct = total > 0 ? Math.round((count / total) * 100) : 0
-    var el = document.createElement('div')
-    el.className = 'flex items-center gap-3 py-1.5'
-    el.innerHTML =
-      '<span style="font-size:18px;">' + getFlag(country) + '</span>'
-      + '<span class="font-body font-semibold text-on-surface flex-1 truncate" style="font-size:13px;">' + escapeHtml(country) + '</span>'
-      + '<span class="font-body text-on-surface-variant" style="font-size:12px;font-weight:500;">' + count + '</span>'
-      + '<div class="w-16 progress-track"><div class="progress-fill progress-primary" style="width:' + pct + '%"></div></div>'
-    container.appendChild(el)
-  })
-
-  if (sorted.length > 8) {
-    var more = document.createElement('p')
-    more.className = 'font-body text-on-surface-variant text-center pt-2'
-    more.style.fontSize = '11px'
-    more.textContent = '+ ' + (sorted.length - 8) + ' more countr' + ((sorted.length - 8) !== 1 ? 'ies' : 'y')
-    container.appendChild(more)
-  }
+  var percent = totalTiers > 0 ? Math.round((earnedTiers / totalTiers) * 100) : 0
+  document.getElementById('journeyPercent').textContent = percent + '%'
+  document.getElementById('journeyEarned').textContent = earnedTiers + ' / ' + totalTiers
+  document.getElementById('journeyBar').style.width = percent + '%'
 }
 
-function renderCollective(warriors, shares, countries, raised, missionsCompleted, rank) {
-  var cw = document.getElementById('collectiveWarriors')
-  var cs = document.getElementById('collectiveShares')
-  var cc = document.getElementById('collectiveCountries')
-  var cr = document.getElementById('collectiveRaised')
-  var cm = document.getElementById('collectiveMissions')
-  var ck = document.getElementById('collectiveRank')
+// ... include your other helper functions like renderHero, renderStats, etc.
 
-  if(cw) cw.textContent = warriors.toLocaleString()
-  if(cs) cs.textContent = shares.toLocaleString()
-  if(cc) cc.textContent = countries
-  if(cr) cr.textContent = '$' + raised.toLocaleString()
-  if(cm) cm.textContent = missionsCompleted
-  if(ck) ck.textContent = '#' + rank
-}
-
-function renderScripture() {
-  var shareCount = allShares.length
-  var verse = SCRIPTURES[0]
-  for (var i = SCRIPTURES.length - 1; i >= 0; i--) {
-    if (shareCount >= SCRIPTURES[i].min) { verse = SCRIPTURES[i]; break }
-  }
-  var st = document.getElementById('scriptureText')
-  var sr = document.getElementById('scriptureRef')
-  if(st) st.textContent = verse.text
-  if(sr) sr.textContent = verse.ref
-}
-
-// ═══════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════
-function animateNumber(el, from, to, duration) {
-  if (!el) return
-  var start = performance.now()
-  function step(now) {
-    var p = Math.min((now - start) / duration, 1)
-    var eased = 1 - Math.pow(1 - p, 3)
-    var val = Math.floor(from + (to - from) * eased)
-    el.textContent = val.toLocaleString()
-    if (p < 1) requestAnimationFrame(step)
-    else el.textContent = to.toLocaleString()
-  }
-  requestAnimationFrame(step)
-}
-
-function escapeHtml(str) {
-  if (!str) return ''
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')
-}
-function escapeAttr(str) { return escapeHtml(str) }
-
-function showToast(msg) {
-  var existing = document.getElementById('impactToast')
-  if (existing) existing.remove()
-  var t = document.createElement('div')
-  t.id = 'impactToast'
-  t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-2.5 rounded-full shadow-float whitespace-nowrap flex items-center gap-2'
-  t.style.fontSize = '13px'
-  t.innerHTML = '<span class="material-symbols-outlined text-primary-container text-[14px] filled">check_circle</span> ' + msg
-  document.body.appendChild(t)
-  setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
-}
-
-function setupListeners() {
-  window.addEventListener('scroll', function() {
-    var h = document.getElementById('pageHeader')
-    if(h) h.classList.toggle('header-scrolled', window.scrollY > 8)
-  })
-}
-
-// Start
 init()
 </script>
