@@ -373,28 +373,39 @@ function renderTrophies() {
   if (!container) return;
   container.innerHTML = '';
 
+  // If no trophies are found in DB, show a message for debugging
+  if (trophyDefinitions.length === 0) {
+    container.innerHTML = '<div class="col-span-2 text-center py-8 text-outline text-sm">Loading trophies from database...</div>';
+    return;
+  }
+
   trophyDefinitions.forEach(function(trophy) {
     var state = getTrophyState(trophy, userStats);
     var activeTier = state.activeTier;
-    var colors = RARITY_COLORS[activeTier.rarity] || { bg: 'bg-primary', text: 'text-primary' };
+    
+    // We use common colors for locked trophies, and rarity colors for unlocked ones
+    var colors = state.isUnlocked 
+      ? (RARITY_COLORS[activeTier.rarity] || { bg: 'bg-primary', text: 'text-primary' })
+      : { bg: 'bg-surface-chigh', text: 'text-outline' };
 
     var tile = document.createElement('div');
+    // The .locked class in your CSS handles the grayscale/opacity
     tile.className = 'trophy-tile ' + (state.isUnlocked ? '' : 'locked');
     tile.onclick = function() { openDetail(trophy, state); };
 
-    var iconWrapHtml = '<div class="icon-wrap-achievement ' + (state.isUnlocked ? colors.bg : 'bg-surface-chigh') + '">' +
+    var iconWrapHtml = '<div class="icon-wrap-achievement ' + colors.bg + '">' +
                        '<span class="material-symbols-outlined text-[28px] ' + (state.isUnlocked ? 'text-white filled' : 'text-outline') + '">' + trophy.icon + '</span></div>';
 
+    // Show "Locked" if progress is 0, otherwise show the current level
     var levelLabel = state.isUnlocked ? 'Lvl ' + activeTier.level + ' · ' + activeTier.rarity : 'Locked';
 
     tile.innerHTML = iconWrapHtml +
       '<p class="font-headline font-bold text-on-surface leading-tight mb-1" style="font-size:13px;">' + trophy.title + '</p>' +
-      '<p class="font-body font-bold uppercase tracking-widest ' + (state.isUnlocked ? colors.text : 'text-outline') + '" style="font-size:9px">' + levelLabel + '</p>';
+      '<p class="font-body font-bold uppercase tracking-widest ' + colors.text + '" style="font-size:9px">' + levelLabel + '</p>';
 
     container.appendChild(tile);
   });
 }
-
 function openDetail(trophy, state) {
   var activeTier = state.activeTier;
   var colors = RARITY_COLORS[activeTier.rarity] || { bg: 'bg-primary', text: 'text-primary' };
