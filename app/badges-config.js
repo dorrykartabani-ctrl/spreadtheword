@@ -26,43 +26,23 @@ var SUBSCRIPTION_ROADMAP = [
  */
 function getTrophyState(trophy, stats) {
   var count = stats[trophy.type] || 0;
-  var tiers = trophy.tiers; // This is the JSONB from Supabase
-
+  var tiers = trophy.tiers;
   var currentTier = null;
   var nextTier = null;
 
   for (var i = 0; i < tiers.length; i++) {
-    if (count >= tiers[i].req) {
-      currentTier = tiers[i];
-    } else {
-      nextTier = tiers[i];
-      break;
-    }
-  }
-
-  var isUnlocked = currentTier !== null;
-  var activeTier = currentTier || tiers[0];
-
-  var progressPercent = 0;
-  if (!isUnlocked) {
-    progressPercent = Math.min(Math.round((count / tiers[0].req) * 100), 100);
-  } else if (nextTier) {
-    var prevReq = currentTier.req;
-    var range = nextTier.req - prevReq;
-    progressPercent = Math.min(Math.round(((count - prevReq) / range) * 100), 100);
-  } else {
-    progressPercent = 100;
+    if (count >= tiers[i].req) { currentTier = tiers[i]; } 
+    else { nextTier = tiers[i]; break; }
   }
 
   return {
-    isUnlocked: isUnlocked,
-    activeTier: activeTier,
+    isUnlocked: currentTier !== null,
+    activeTier: currentTier || tiers[0],
     nextTier: nextTier,
-    progressPercent: progressPercent,
-    count: count
+    count: count,
+    progressPercent: currentTier ? (nextTier ? Math.round(((count - currentTier.req) / (nextTier.req - currentTier.req)) * 100) : 100) : Math.round((count / tiers[0].req) * 100)
   };
 }
-
 /**
  * Calculates which Era/Avatar stage the user is in
  */
