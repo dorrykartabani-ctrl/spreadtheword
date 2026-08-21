@@ -201,13 +201,19 @@ async function loadData() {
   const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
   userProfile = profile || {};
 
+  // We remove the .eq('is_active', true) filter temporarily to see if the 3rd one appears
+  // If it does, you know the issue was the is_active flag in the database
   const res = await Promise.allSettled([
-    supabaseClient.from('trophy_definitions').select('*').eq('is_active', true).order('sort_order'),
+    supabaseClient.from('trophy_definitions').select('*').order('sort_order'),
     supabaseClient.from('shares').select('id', { count: 'exact' }).eq('user_id', currentUser.id),
     supabaseClient.from('profiles').select('country, subscription_tier').eq('referred_by', userProfile.invite_code)
   ]);
 
   trophyDefinitions = res[0].value.data || [];
+  
+  // DEBUG: Look at your browser console (F12) to see exactly what Supabase sent back
+  console.log("Trophies loaded from DB:", trophyDefinitions.length, trophyDefinitions);
+
   userStats.shares = res[1].value.count || 0;
   
   const recs = res[2].value.data || [];
