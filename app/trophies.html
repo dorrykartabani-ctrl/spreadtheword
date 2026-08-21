@@ -137,6 +137,37 @@
   border: 1px solid rgba(255, 215, 0, 0.4) !important;
 }
 
+/* Card Rarity Backgrounds */
+.card-common { background: linear-gradient(180deg, #ffffff 0%, #f0f0f0 100%); border: 1px solid #e0e0e0; }
+.card-uncommon { background: linear-gradient(180deg, #ffffff 0%, #ecfdf5 100%); border: 1px solid #a7f3d0; }
+.card-rare { background: linear-gradient(180deg, #ffffff 0%, #eff6ff 100%); border: 1px solid #bfdbfe; }
+.card-epic { background: linear-gradient(180deg, #ffffff 0%, #faf5ff 100%); border: 1px solid #e9d5ff; }
+.card-mythic { background: linear-gradient(180deg, #ffffff 0%, #fffbeb 100%); border: 1px solid #fde68a; }
+
+.trophy-tile {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.trophy-tile:hover { transform: translateY(-5px); }
+
+/* The "New" badge pulse */
+.new-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
+    border-radius: 50%;
+    animation: pulse-red 2s infinite;
+}
+@keyframes pulse-red {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
 @keyframes mythic-shimmer {
   0% { background-position: 0% center; }
   100% { background-position: 200% center; }
@@ -373,40 +404,43 @@ function renderTrophies() {
   if (!container) return;
   container.innerHTML = '';
 
-  // If no trophies are found in DB, show a message for debugging
-  if (trophyDefinitions.length === 0) {
-    container.innerHTML = '<div class="col-span-2 text-center py-8 text-outline text-sm">Loading trophies from database...</div>';
-    return;
-  }
+  // 1. Calculate Collection Mastery
+  var totalMythics = trophyDefinitions.length;
+  var earnedMythics = trophyDefinitions.filter(t => {
+      var s = getTrophyState(t, userStats);
+      return s.isUnlocked && s.activeTier.rarity === 'mythic';
+  }).length;
+  
+  // Update a Mastery bar (add this ID to your HTML)
+  var masteryText = document.getElementById('collectionMasteryText');
+  if (masteryText) masteryText.textContent = `Mastery: ${earnedMythics}/${totalMythics} Mythics`;
 
+  // 2. Render the Cards
   trophyDefinitions.forEach(function(trophy) {
     var state = getTrophyState(trophy, userStats);
-    var activeTier = state.activeTier;
-    
-    // We use common colors for locked trophies, and rarity colors for unlocked ones
-    var colors = state.isUnlocked 
-      ? (RARITY_COLORS[activeTier.rarity] || { bg: 'bg-primary', text: 'text-primary' })
-      : { bg: 'bg-surface-chigh', text: 'text-outline' };
+    var rarity = state.activeTier.rarity;
+    var colors = RARITY_COLORS[rarity];
 
     var tile = document.createElement('div');
-    // The .locked class in your CSS handles the grayscale/opacity
-    tile.className = 'trophy-tile ' + (state.isUnlocked ? '' : 'locked');
+    // Assign rarity-based card class
+    tile.className = `trophy-tile p-4 rounded-[24px] text-center shadow-sm cursor-pointer ${state.isUnlocked ? 'card-' + rarity : 'bg-surface-chigh opacity-50 grayscale'}`;
+    
     tile.onclick = function() { openDetail(trophy, state); };
 
-    var iconWrapHtml = '<div class="icon-wrap-achievement ' + colors.bg + '">' +
-                       '<span class="material-symbols-outlined text-[28px] ' + (state.isUnlocked ? 'text-white filled' : 'text-outline') + '">' + trophy.icon + '</span></div>';
-
-    // Show "Locked" if progress is 0, otherwise show the current level
-    var levelLabel = state.isUnlocked ? 'Lvl ' + activeTier.level + ' · ' + activeTier.rarity : 'Locked';
-
-    tile.innerHTML = iconWrapHtml +
-      '<p class="font-headline font-bold text-on-surface leading-tight mb-1" style="font-size:13px;">' + trophy.title + '</p>' +
-      '<p class="font-body font-bold uppercase tracking-widest ' + colors.text + '" style="font-size:9px">' + levelLabel + '</p>';
+    tile.innerHTML = `
+      ${state.isUnlocked && state.count === state.activeTier.req ? '<div class="new-badge"></div>' : ''}
+      <div class="w-14 h-14 mx-auto mb-3 rounded-2xl flex items-center justify-center ${state.isUnlocked ? colors.bg : 'bg-surface-variant'}">
+        <span class="material-symbols-outlined text-white text-[32px] ${state.isUnlocked ? 'filled' : ''}">${trophy.icon}</span>
+      </div>
+      <h4 class="font-headline font-extrabold text-on-surface text-[13px] leading-tight">${trophy.title}</h4>
+      <p class="font-body font-black uppercase tracking-widest text-[8px] mt-1 ${state.isUnlocked ? colors.text : 'text-outline'}">
+        ${state.isUnlocked ? rarity : 'Locked'}
+      </p>
+    `;
 
     container.appendChild(tile);
   });
-}
-function openDetail(trophy, state) {
+}function openDetail(trophy, state) {
   var activeTier = state.activeTier;
   var colors = RARITY_COLORS[activeTier.rarity] || { bg: 'bg-primary', text: 'text-primary' };
 
