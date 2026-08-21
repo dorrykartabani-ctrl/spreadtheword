@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>The Grand Sanctum — Trophy Room</title>
+  <title>The Exhibition — Trophy Vault</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="badges-config.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
   <link rel="stylesheet" href="nav.css">
 
@@ -16,11 +16,10 @@
       theme: {
         extend: {
           colors: {
-            'dark-bg': '#0f172a',
-            'glass': 'rgba(255, 255, 255, 0.03)',
-            'glass-edge': 'rgba(255, 255, 255, 0.1)',
-            'mythic-gold': '#FFD700',
-            'epic-purple': '#A35FD1'
+            'museum-bg': '#f8fafc',
+            'museum-card': '#ffffff',
+            'museum-text': '#0f172a',
+            'common':'#64748b', 'uncommon':'#16a34a', 'rare':'#2563eb', 'epic':'#9333ea', 'mythic':'#d97706'
           }
         }
       }
@@ -28,152 +27,154 @@
   </script>
 
   <style>
-    body { font-family: 'Manrope', sans-serif; background: #0f172a; color: #f8fafc; overflow-x: hidden; }
+    body { font-family: 'Manrope', sans-serif; background: #f8fafc; color: #0f172a; }
     
-    /* The Cabinet Look */
-    .cabinet-shelf {
-      background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 100%);
-      border-top: 1px solid rgba(255,255,255,0.1);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    /* High-Contrast Legend */
+    .legend-pill {
+      display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 99px;
+      background: white; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* The Marble & Glass Cabinet */
+    .museum-cabinet {
+      background: white;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.05);
+      border-radius: 32px;
       position: relative;
     }
     
-    .trophy-pedestal {
-      perspective: 1000px;
-      transition: all 0.4s ease;
+    .glass-shelf {
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.5);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+    }
+
+    /* Trophy Tiles */
+    .trophy-plaque {
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+    }
+    .trophy-plaque:active { transform: scale(0.92); }
+    .trophy-plaque.locked { opacity: 0.3; filter: grayscale(1); }
+
+    /* Rarity Icons */
+    .icon-container {
+      width: 64px; height: 80px; border-radius: 16px; margin: 0 auto 12px;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; transition: all 0.3s ease;
     }
     
-    .trophy-item {
-      transform-style: preserve-3d;
-      transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-      position: relative;
+    /* The Modal Roadmap */
+    .modal-overlay { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px); z-index: 100; }
+    .modal-sheet { 
+        transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1); 
+        background: white; box-shadow: 0 -20px 40px rgba(0,0,0,0.1);
     }
+    .modal-sheet.open { transform: translateY(0); }
+
+    .roadmap-step {
+      display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 16px;
+      border: 1px solid #f1f5f9; background: #f8fafc;
+    }
+    .roadmap-step.active { border-color: #e2e8f0; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
     
-    .trophy-item:hover { transform: rotateY(10deg) translateY(-10px); }
-
-    /* Rarity Glows (God Rays) */
-    .glow-common { filter: drop-shadow(0 0 5px rgba(255,255,255,0.1)); }
-    .glow-rare { filter: drop-shadow(0 0 15px rgba(59,130,246,0.3)); }
-    .glow-epic { filter: drop-shadow(0 0 20px rgba(163,95,209,0.4)); }
-    .glow-mythic { 
-      filter: drop-shadow(0 0 25px rgba(255,215,0,0.5));
-      animation: mythic-float 3s ease-in-out infinite alternate;
-    }
-
-    @keyframes mythic-float {
-      from { transform: translateY(0); }
-      to { transform: translateY(-8px); }
-    }
-
-    /* Glass Panels */
-    .glass-panel {
-      background: rgba(255, 255, 255, 0.03);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 24px;
-    }
-
-    /* Sub Badges (Hanging Medals) */
-    .hanging-medal {
-      position: relative;
-      transition: all 0.3s ease;
-    }
-    .hanging-medal::before {
-      content: ''; position: absolute; top: -20px; left: 50%; width: 2px; height: 20px;
-      background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.2));
-    }
-
-    .fade-up { opacity: 0; transform: translateY(30px); transition: 0.8s all ease; }
+    .fade-up { opacity: 0; transform: translateY(20px); transition: 0.5s ease-out; }
     .fade-up.visible { opacity: 1; transform: translateY(0); }
   </style>
 </head>
 <body class="pb-32">
 
-<!-- TOP HEADER -->
-<header class="fixed top-0 w-full z-50 bg-dark-bg/80 backdrop-blur-lg border-b border-white/5">
-  <div class="max-w-lg mx-auto px-6 py-5 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <div class="w-2 h-2 rounded-full bg-mythic-gold animate-pulse"></div>
-      <h1 class="font-headline font-extrabold text-xl tracking-tight">The Sanctum</h1>
+<!-- TOP NAV -->
+<header class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
+  <div class="max-w-lg mx-auto px-6 py-4 flex items-center justify-between">
+    <h1 class="font-headline font-extrabold text-xl text-slate-900">Trophy Hall</h1>
+    <div class="flex flex-col items-end">
+        <span id="masteryPct" class="text-[10px] font-black text-primary uppercase">Mastery 0%</span>
+        <div class="w-20 h-1 bg-slate-100 rounded-full mt-1"><div id="masteryBar" class="h-full bg-primary transition-all duration-1000" style="width:0%"></div></div>
     </div>
-    <span id="masteryHUD" class="text-[9px] font-black border border-white/20 px-3 py-1 rounded-full uppercase tracking-widest text-white/60">
-      Mastery: 0%
-    </span>
   </div>
 </header>
 
-<main class="pt-28 px-6 max-w-lg mx-auto space-y-12">
+<main class="pt-24 px-6 max-w-lg mx-auto space-y-10">
 
-  <!-- 1. HANGING SUBSCRIPTION MEDALS -->
+  <!-- 1. COLOR LEGEND (CLEAR & VISIBLE) -->
   <section class="fade-up">
-    <p class="text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mb-8 text-center">Your Covenant Rank</p>
-    <div id="subscriptionMedals" class="flex justify-around items-start gap-4 h-32">
-      <!-- Injected via JS -->
+    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Trophy Rarity Guide</p>
+    <div class="flex flex-wrap gap-2">
+      <div class="legend-pill"><div class="legend-dot bg-common"></div><span class="text-[10px] font-bold text-slate-600">Common</span></div>
+      <div class="legend-pill"><div class="legend-dot bg-uncommon"></div><span class="text-[10px] font-bold text-slate-600">Uncommon</span></div>
+      <div class="legend-pill"><div class="legend-dot bg-rare"></div><span class="text-[10px] font-bold text-slate-600">Rare</span></div>
+      <div class="legend-pill"><div class="legend-dot bg-epic"></div><span class="text-[10px] font-bold text-slate-600">Epic</span></div>
+      <div class="legend-pill"><div class="legend-dot bg-mythic"></div><span class="text-[10px] font-bold text-amber-700">Mythic</span></div>
     </div>
   </section>
 
-  <!-- 2. THE MAIN CABINET (Evolving Trophies) -->
-  <section class="fade-up">
-    <div class="flex justify-between items-center mb-6">
-      <h3 class="font-headline font-bold text-lg text-white/90">Trophy Cabinet</h3>
-      <span class="text-[10px] text-white/30 font-bold uppercase tracking-widest">Glass Shelving V.1</span>
-    </div>
-
-    <div id="achievementsGrid" class="cabinet-shelf rounded-3xl p-8 grid grid-cols-2 gap-8">
-      <!-- Injected via JS -->
+  <!-- 2. SUBSCRIPTION COVENANT (HANGING BADGES) -->
+  <section class="fade-up text-center bg-white rounded-[32px] p-8 border border-slate-200">
+    <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Your Subscription Status</p>
+    <div id="subMedals" class="flex justify-between items-start">
+      <!-- Injected JS -->
     </div>
   </section>
 
-  <!-- 3. EXPEDITIONS (New Missions Section) -->
+  <!-- 3. THE CABINET (ALL TROPHIES) -->
   <section class="fade-up">
-    <div class="glass-panel p-6 border-mythic-gold/20">
-      <div class="flex items-start justify-between mb-6">
-        <div>
-          <h3 class="font-headline font-bold text-lg text-white">Scout Expeditions</h3>
-          <p class="text-xs text-white/50 mt-1">Deploy on new missions to upgrade your armor.</p>
-        </div>
-        <span class="material-symbols-outlined text-mythic-gold filled">explore</span>
-      </div>
-      
-      <div id="expeditionList" class="space-y-3">
-        <!-- New Mission CTA -->
-        <a href="cause.html" class="flex items-center gap-4 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors group">
-          <div class="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-            <span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">add_task</span>
-          </div>
-          <div class="flex-1">
-            <p class="text-sm font-bold">Search Active Missions</p>
-            <p class="text-[10px] text-white/40">Find new territories to reach.</p>
-          </div>
-          <span class="material-symbols-outlined text-white/20 text-sm">chevron_right</span>
-        </a>
-      </div>
+    <div class="flex justify-between items-center mb-4 px-1">
+      <h3 class="font-headline font-extrabold text-lg text-slate-900">Evolving Trophies</h3>
+      <span class="text-[10px] font-bold text-slate-400 uppercase">Interactive Display</span>
     </div>
+    <div id="trophyGrid" class="museum-cabinet p-8 grid grid-cols-2 gap-x-8 gap-y-10">
+      <!-- Injected JS -->
+    </div>
+  </section>
+
+  <!-- 4. EXPEDITION HUB -->
+  <section class="fade-up">
+    <a href="cause.html" class="flex items-center gap-4 p-5 rounded-[24px] bg-slate-900 text-white shadow-xl shadow-slate-200">
+      <div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center">
+        <span class="material-symbols-outlined text-mythic">explore</span>
+      </div>
+      <div class="flex-1">
+        <h4 class="font-headline font-bold text-sm">Deploy on Missions</h4>
+        <p class="text-[11px] text-white/50">Complete tasks to level up your rarities.</p>
+      </div>
+      <span class="material-symbols-outlined">arrow_forward</span>
+    </a>
   </section>
 
 </main>
 
-<!-- DETAIL VIEW (Museum Placard style) -->
-<div id="detailOverlay" class="fixed inset-0 z-[100] hidden">
-  <div class="absolute inset-0 bg-dark-bg/90 backdrop-blur-md" onclick="closeDetail()"></div>
-  <div id="detailSheet" class="absolute bottom-0 inset-x-0 bg-slate-900 rounded-t-[40px] detail-sheet p-10 max-w-lg mx-auto border-t border-white/10 shadow-2xl">
-    <div class="w-16 h-1 bg-white/10 rounded-full mx-auto mb-10"></div>
+<!-- DETAIL MODAL (CLEAR ROADMAP) -->
+<div id="detailOverlay" class="fixed inset-0 modal-overlay hidden">
+  <div class="absolute inset-0" onclick="closeDetail()"></div>
+  <div id="detailSheet" class="absolute bottom-0 inset-x-0 modal-sheet p-10 max-w-lg mx-auto rounded-t-[40px]">
+    <div class="w-12 h-1.5 bg-slate-100 rounded-full mx-auto mb-8"></div>
     
-    <div class="text-center mb-10">
-      <div id="detailIconWrap" class="w-28 h-28 mx-auto mb-6 rounded-3xl flex items-center justify-center shadow-inner relative overflow-hidden">
-        <div class="absolute inset-0 bg-white/5 animate-pulse"></div>
-        <span id="detailIcon" class="material-symbols-outlined text-[56px] text-white z-10"></span>
+    <div class="text-center mb-8">
+      <div id="modalIconWrap" class="w-20 h-28 mx-auto mb-4 rounded-2xl flex items-center justify-center">
+        <span id="modalIcon" class="material-symbols-outlined text-[48px] text-white filled"></span>
       </div>
-      <h2 id="detailTitle" class="font-headline font-black text-3xl mb-2 tracking-tight text-white">---</h2>
-      <p id="detailDesc" class="text-sm text-white/50 leading-relaxed px-6">---</p>
+      <h2 id="modalTitle" class="font-headline font-black text-2xl text-slate-900">---</h2>
+      <p id="modalDesc" class="text-sm text-slate-500 mt-2 px-4">---</p>
     </div>
 
-    <div id="detailTierList" class="space-y-3 mb-10">
-      <!-- Roadmap -->
+    <div class="space-y-4">
+        <div class="flex justify-between items-end mb-2">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Progress to Next Color</p>
+            <span id="modalProgressLabel" class="text-xs font-bold text-primary">0 / 0</span>
+        </div>
+        <div class="progress-track"><div id="modalProgressBar" class="progress-fill bg-primary" style="width:0%"></div></div>
+        
+        <div id="modalRoadmap" class="pt-4 space-y-2">
+          <!-- Roadmap tiers -->
+        </div>
     </div>
 
-    <button onclick="closeDetail()" class="w-full py-5 bg-white text-dark-bg font-headline font-black rounded-2xl shadow-xl active:scale-95 transition-all">
-      CLOSE VAULT
+    <button onclick="closeDetail()" class="w-full mt-8 py-4 bg-slate-900 text-white font-headline font-bold rounded-2xl active:scale-95">
+      Return to Hall
     </button>
   </div>
 </div>
@@ -198,111 +199,109 @@ async function init() {
 
 async function loadData() {
   const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-  userProfile = profile;
+  userProfile = profile || {};
 
-  const results = await Promise.allSettled([
+  const res = await Promise.allSettled([
     supabaseClient.from('trophy_definitions').select('*').eq('is_active', true).order('sort_order'),
     supabaseClient.from('shares').select('id', { count: 'exact' }).eq('user_id', currentUser.id),
     supabaseClient.from('profiles').select('country, subscription_tier').eq('referred_by', userProfile.invite_code)
   ]);
 
-  trophyDefinitions = results[0].value.data || [];
-  userStats.shares = results[1].value.count || 0;
+  trophyDefinitions = res[0].value.data || [];
+  userStats.shares = res[1].value.count || 0;
   
-  const recruits = results[2].value.data || [];
-  const paidRecruits = recruits.filter(r => r.subscription_tier !== 'free');
-  userStats.recruits_paid = paidRecruits.length;
-  userStats.countries_paid = new Set(paidRecruits.map(r => r.country).filter(c => c)).size;
+  const recs = res[2].value.data || [];
+  const paid = recs.filter(r => r.subscription_tier !== 'free');
+  userStats.recruits_paid = paid.length;
+  userStats.countries_paid = new Set(paid.map(r => r.country).filter(c => c)).size;
 
   render();
 }
 
 function render() {
-  renderSubscriptionMedals();
-  renderCabinet();
-}
-
-function renderSubscriptionMedals() {
-  const container = document.getElementById('subscriptionMedals');
-  const userTier = (userProfile.subscription_tier || 'free').toLowerCase();
-  container.innerHTML = '';
-
+  // 1. Subscription Badges
+  const subCont = document.getElementById('subMedals');
+  subCont.innerHTML = '';
+  const currentTier = (userProfile.subscription_tier || 'free').toLowerCase();
+  
   SUBSCRIPTION_ROADMAP.forEach(badge => {
-    const isActive = badge.key === userTier;
+    const active = badge.key === currentTier;
     const div = document.createElement('div');
-    div.className = `hanging-medal flex flex-col items-center transition-all ${isActive ? 'scale-110 opacity-100' : 'opacity-20 grayscale scale-90'}`;
+    div.className = `flex flex-col items-center transition-all ${active ? 'scale-110' : 'opacity-20 grayscale'}`;
     div.innerHTML = `
-      <div class="w-14 h-14 rounded-full border-2 ${isActive ? 'border-mythic-gold shadow-lg shadow-mythic-gold/20' : 'border-white/10'} mb-2 p-1">
+      <div class="w-14 h-14 rounded-full border-2 ${active ? 'border-primary shadow-lg shadow-primary/20' : 'border-slate-100'} p-1 mb-2">
         <img src="${badge.image}" class="w-full h-full object-contain">
       </div>
-      <p class="text-[8px] font-black uppercase tracking-widest ${isActive ? 'text-mythic-gold' : 'text-white/40'}">${badge.name}</p>
+      <p class="text-[8px] font-black uppercase tracking-widest text-slate-400">${badge.name}</p>
     `;
-    container.appendChild(div);
+    subCont.appendChild(div);
   });
-}
 
-function renderCabinet() {
-  const container = document.getElementById('achievementsGrid');
-  container.innerHTML = '';
-  
-  let totalTiers = trophyDefinitions.length * 5;
-  let earnedTiers = 0;
+  // 2. Trophy Cabinet
+  const grid = document.getElementById('trophyGrid');
+  grid.innerHTML = '';
+  let earnedCount = 0;
 
   trophyDefinitions.forEach(trophy => {
     const state = getTrophyState(trophy, userStats);
-    const rarity = state.activeTier.rarity;
-    
-    // Progress calculation for Mastery HUD
-    trophy.tiers.forEach(t => { if(state.count >= t.req) earnedTiers++; });
+    const color = RARITY_COLORS[state.activeTier.rarity].bg;
+    if(state.isUnlocked && state.activeTier.rarity === 'mythic') earnedCount++;
 
-    const tile = document.createElement('div');
-    tile.className = `trophy-pedestal text-center cursor-pointer group`;
-    tile.innerHTML = `
-      <div class="trophy-item relative mb-4">
-        <div class="w-20 h-28 mx-auto bg-white/5 rounded-xl border border-white/10 flex items-center justify-center glow-${state.isUnlocked ? rarity : 'common'} ${!state.isUnlocked ? 'opacity-20 grayscale' : ''}">
-           <span class="material-symbols-outlined text-[48px] ${state.isUnlocked ? 'text-white' : 'text-white/20'}">${trophy.icon}</span>
-           <!-- Rarity Shine -->
-           <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        </div>
+    const div = document.createElement('div');
+    div.className = `trophy-plaque text-center ${state.isUnlocked ? '' : 'locked'}`;
+    div.innerHTML = `
+      <div class="icon-container ${color} shadow-lg">
+        <span class="material-symbols-outlined text-white text-[32px]">${trophy.icon}</span>
+        <div class="absolute inset-0 bg-white/10 rounded-2xl"></div>
       </div>
-      <h4 class="font-headline font-extrabold text-xs tracking-tight text-white/90">${trophy.title}</h4>
-      <p class="text-[8px] font-black uppercase tracking-[0.2em] mt-1 ${state.isUnlocked ? 'text-mythic-gold' : 'text-white/20'}">
-        ${state.isUnlocked ? rarity : 'Locked'}
-      </p>
+      <h4 class="text-xs font-bold text-slate-900 leading-tight">${trophy.title}</h4>
+      <p class="text-[9px] font-black uppercase tracking-widest mt-1 text-primary">${state.isUnlocked ? state.activeTier.rarity : 'LOCKED'}</p>
     `;
-    tile.onclick = () => openDetail(trophy, state);
-    container.appendChild(tile);
+    div.onclick = () => openDetail(trophy, state);
+    grid.appendChild(div);
   });
 
-  const masteryPct = Math.round((earnedTiers / totalTiers) * 100);
-  document.getElementById('masteryHUD').textContent = `Mastery: ${masteryPct}%`;
+  const mastery = Math.round((earnedCount / trophyDefinitions.length) * 100);
+  document.getElementById('masteryPct').textContent = `Mastery ${mastery}%`;
+  document.getElementById('masteryBar').style.width = mastery + '%';
 }
 
 function openDetail(trophy, state) {
   const colors = RARITY_COLORS[state.activeTier.rarity];
   
-  document.getElementById('detailIcon').textContent = trophy.icon;
-  document.getElementById('detailIconWrap').className = `w-28 h-28 mx-auto mb-6 rounded-3xl flex items-center justify-center ${colors.bg} shadow-2xl`;
-  document.getElementById('detailTitle').textContent = trophy.title;
-  document.getElementById('detailDesc').textContent = trophy.description;
+  document.getElementById('modalIcon').textContent = trophy.icon;
+  document.getElementById('modalIconWrap').className = `w-20 h-28 mx-auto mb-4 rounded-2xl flex items-center justify-center ${colors.bg} shadow-xl`;
+  document.getElementById('modalTitle').textContent = trophy.title;
+  document.getElementById('modalDesc').textContent = trophy.description;
 
-  const tierList = document.getElementById('detailTierList');
-  tierList.innerHTML = '';
+  // Roadmap & Logic
+  const roadmap = document.getElementById('modalRoadmap');
+  roadmap.innerHTML = '';
 
   trophy.tiers.forEach(tier => {
     const isDone = state.count >= tier.req;
+    const tierColor = RARITY_COLORS[tier.rarity].bg;
+    
     const div = document.createElement('div');
-    div.className = `tier-item ${isDone ? 'completed bg-white/5' : 'opacity-20'}`;
+    div.className = `roadmap-step ${isDone ? 'active' : 'opacity-40'}`;
     div.innerHTML = `
-      <div class="w-3 h-3 rounded-full ${RARITY_COLORS[tier.rarity].bg}"></div>
+      <div class="w-3 h-3 rounded-full ${tierColor}"></div>
       <div class="flex-1 text-left">
-        <p class="text-[11px] font-black text-white">${tier.name}</p>
-        <p class="text-[9px] text-white/40">${tier.desc || ''}</p>
+        <p class="text-xs font-bold text-slate-900">${tier.name}</p>
+        <p class="text-[10px] text-slate-400">Target: ${tier.req} ${trophy.type.split('_')[0].toUpperCase()}</p>
       </div>
-      <p class="text-[9px] font-black text-white/60">${tier.req} ${trophy.type.split('_')[0].toUpperCase()}</p>
+      ${isDone ? '<span class="material-symbols-outlined text-green-500 text-sm">check_circle</span>' : ''}
     `;
-    tierList.appendChild(div);
+    roadmap.appendChild(div);
   });
+
+  if (state.nextTier) {
+    document.getElementById('modalProgressLabel').textContent = `${state.count} / ${state.nextTier.req}`;
+    document.getElementById('modalProgressBar').style.width = state.progressPercent + '%';
+  } else {
+    document.getElementById('modalProgressLabel').textContent = 'MASTERED';
+    document.getElementById('modalProgressBar').style.width = '100%';
+  }
 
   document.getElementById('detailOverlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('detailSheet').classList.add('open'), 10);
