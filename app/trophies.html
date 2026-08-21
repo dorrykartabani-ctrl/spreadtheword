@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Trophy Locker — Go Spread The Word</title>
+  <title>The Grand Sanctum — Trophy Room</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="badges-config.js"></script>
@@ -16,8 +16,11 @@
       theme: {
         extend: {
           colors: {
-            'surface':'#f2f6fa', 'on-surface':'#31332e', 'primary':'#3d6285', 'gold':'#D4A24C',
-            'common':'#8A8C85', 'uncommon':'#3A8759', 'rare':'#3d6285', 'epic':'#7B3F9C', 'mythic':'#E38C1F'
+            'dark-bg': '#0f172a',
+            'glass': 'rgba(255, 255, 255, 0.03)',
+            'glass-edge': 'rgba(255, 255, 255, 0.1)',
+            'mythic-gold': '#FFD700',
+            'epic-purple': '#A35FD1'
           }
         }
       }
@@ -25,94 +28,152 @@
   </script>
 
   <style>
-    body { font-family: 'Manrope', sans-serif; background: #f2f6fa; color: #31332e; }
-    .glass-header { background: rgba(242,246,250,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+    body { font-family: 'Manrope', sans-serif; background: #0f172a; color: #f8fafc; overflow-x: hidden; }
     
-    /* Rarity Legend */
-    .rarity-pill { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 99px; background: white; border: 1px solid #eef2f6; }
-    .rarity-dot { width: 8px; height: 8px; border-radius: 50%; }
+    /* The Cabinet Look */
+    .cabinet-shelf {
+      background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      position: relative;
+    }
+    
+    .trophy-pedestal {
+      perspective: 1000px;
+      transition: all 0.4s ease;
+    }
+    
+    .trophy-item {
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+      position: relative;
+    }
+    
+    .trophy-item:hover { transform: rotateY(10deg) translateY(-10px); }
 
-    /* Locker Cards */
-    .card-common { background: linear-gradient(180deg, #fff 0%, #f9fafb 100%); border: 1px solid #e5e7eb; }
-    .card-uncommon { background: linear-gradient(180deg, #fff 0%, #f0fdf4 100%); border: 1px solid #bbf7d0; }
-    .card-rare { background: linear-gradient(180deg, #fff 0%, #eff6ff 100%); border: 1px solid #bfdbfe; }
-    .card-epic { background: linear-gradient(180deg, #fff 0%, #faf5ff 100%); border: 1px solid #e9d5ff; }
-    .card-mythic { background: linear-gradient(180deg, #fff 0%, #fffbeb 100%); border: 1px solid #fde68a; }
+    /* Rarity Glows (God Rays) */
+    .glow-common { filter: drop-shadow(0 0 5px rgba(255,255,255,0.1)); }
+    .glow-rare { filter: drop-shadow(0 0 15px rgba(59,130,246,0.3)); }
+    .glow-epic { filter: drop-shadow(0 0 20px rgba(163,95,209,0.4)); }
+    .glow-mythic { 
+      filter: drop-shadow(0 0 25px rgba(255,215,0,0.5));
+      animation: mythic-float 3s ease-in-out infinite alternate;
+    }
 
-    .trophy-tile { transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-    .trophy-tile:active { transform: scale(0.95); }
+    @keyframes mythic-float {
+      from { transform: translateY(0); }
+      to { transform: translateY(-8px); }
+    }
 
-    /* Roadmap Modal */
-    .detail-sheet { transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1); }
-    .detail-sheet.open { transform: translateY(0); }
-    .tier-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 16px; background: #f8f9fa; border: 1px solid transparent; }
-    .tier-item.completed { background: white; border-color: #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+    /* Glass Panels */
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+    }
 
-    .fade-up { opacity: 0; transform: translateY(16px); transition: 0.6s all ease; }
+    /* Sub Badges (Hanging Medals) */
+    .hanging-medal {
+      position: relative;
+      transition: all 0.3s ease;
+    }
+    .hanging-medal::before {
+      content: ''; position: absolute; top: -20px; left: 50%; width: 2px; height: 20px;
+      background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.2));
+    }
+
+    .fade-up { opacity: 0; transform: translateY(30px); transition: 0.8s all ease; }
     .fade-up.visible { opacity: 1; transform: translateY(0); }
-
-    .mythic-glow-border { animation: mythic-pulse 2s infinite alternate; }
-    @keyframes mythic-pulse { from { box-shadow: 0 0 5px #E38C1F; } to { box-shadow: 0 0 15px #FFD700; } }
   </style>
 </head>
 <body class="pb-32">
 
-<header class="fixed top-0 w-full z-50 glass-header border-b border-black/5">
-  <div class="max-w-[430px] mx-auto px-6 py-4 flex items-center justify-between">
-    <h1 class="font-headline font-extrabold text-xl">Trophy Locker</h1>
-    <span id="masteryCount" class="text-[10px] font-black bg-primary/10 text-primary px-3 py-1 rounded-full uppercase tracking-tighter">Mastery: 0/0</span>
+<!-- TOP HEADER -->
+<header class="fixed top-0 w-full z-50 bg-dark-bg/80 backdrop-blur-lg border-b border-white/5">
+  <div class="max-w-lg mx-auto px-6 py-5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-2 h-2 rounded-full bg-mythic-gold animate-pulse"></div>
+      <h1 class="font-headline font-extrabold text-xl tracking-tight">The Sanctum</h1>
+    </div>
+    <span id="masteryHUD" class="text-[9px] font-black border border-white/20 px-3 py-1 rounded-full uppercase tracking-widest text-white/60">
+      Mastery: 0%
+    </span>
   </div>
 </header>
 
-<main class="pt-24 px-5 max-w-[430px] mx-auto space-y-8">
+<main class="pt-28 px-6 max-w-lg mx-auto space-y-12">
 
-  <!-- 1. RARITY GUIDE -->
+  <!-- 1. HANGING SUBSCRIPTION MEDALS -->
   <section class="fade-up">
-    <p class="text-[10px] font-bold text-outline uppercase tracking-widest mb-3 pl-1">Rarity Hierarchy</p>
-    <div class="flex flex-wrap gap-2">
-      <div class="rarity-pill"><div class="rarity-dot bg-common"></div><span class="text-[9px] font-bold">Common</span></div>
-      <div class="rarity-pill"><div class="rarity-dot bg-uncommon"></div><span class="text-[9px] font-bold">Uncommon</span></div>
-      <div class="rarity-pill"><div class="rarity-dot bg-rare"></div><span class="text-[9px] font-bold">Rare</span></div>
-      <div class="rarity-pill"><div class="rarity-dot bg-epic"></div><span class="text-[9px] font-bold">Epic</span></div>
-      <div class="rarity-pill"><div class="rarity-dot bg-mythic mythic-glow-border"></div><span class="text-[9px] font-bold text-mythic">Mythic</span></div>
+    <p class="text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mb-8 text-center">Your Covenant Rank</p>
+    <div id="subscriptionMedals" class="flex justify-around items-start gap-4 h-32">
+      <!-- Injected via JS -->
     </div>
   </section>
 
-  <!-- 2. TROPHY GRID -->
+  <!-- 2. THE MAIN CABINET (Evolving Trophies) -->
   <section class="fade-up">
-    <div class="flex justify-between items-center mb-4 pl-1">
-      <h3 class="font-headline font-extrabold text-lg">Evolving Trophies</h3>
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="font-headline font-bold text-lg text-white/90">Trophy Cabinet</h3>
+      <span class="text-[10px] text-white/30 font-bold uppercase tracking-widest">Glass Shelving V.1</span>
     </div>
-    <div id="achievementsGrid" class="grid grid-cols-2 gap-3">
+
+    <div id="achievementsGrid" class="cabinet-shelf rounded-3xl p-8 grid grid-cols-2 gap-8">
       <!-- Injected via JS -->
+    </div>
+  </section>
+
+  <!-- 3. EXPEDITIONS (New Missions Section) -->
+  <section class="fade-up">
+    <div class="glass-panel p-6 border-mythic-gold/20">
+      <div class="flex items-start justify-between mb-6">
+        <div>
+          <h3 class="font-headline font-bold text-lg text-white">Scout Expeditions</h3>
+          <p class="text-xs text-white/50 mt-1">Deploy on new missions to upgrade your armor.</p>
+        </div>
+        <span class="material-symbols-outlined text-mythic-gold filled">explore</span>
+      </div>
+      
+      <div id="expeditionList" class="space-y-3">
+        <!-- New Mission CTA -->
+        <a href="cause.html" class="flex items-center gap-4 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors group">
+          <div class="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+            <span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">add_task</span>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-bold">Search Active Missions</p>
+            <p class="text-[10px] text-white/40">Find new territories to reach.</p>
+          </div>
+          <span class="material-symbols-outlined text-white/20 text-sm">chevron_right</span>
+        </a>
+      </div>
     </div>
   </section>
 
 </main>
 
-<!-- DETAIL MODAL -->
+<!-- DETAIL VIEW (Museum Placard style) -->
 <div id="detailOverlay" class="fixed inset-0 z-[100] hidden">
-  <div class="absolute inset-0 bg-on-surface/40 backdrop-blur-sm" onclick="closeDetail()"></div>
-  <div id="detailSheet" class="absolute bottom-0 inset-x-0 bg-surface rounded-t-[40px] detail-sheet p-8 max-w-[430px] mx-auto overflow-y-auto max-h-[90vh]">
-    <div class="w-12 h-1.5 bg-outline-variant/20 rounded-full mx-auto mb-8"></div>
+  <div class="absolute inset-0 bg-dark-bg/90 backdrop-blur-md" onclick="closeDetail()"></div>
+  <div id="detailSheet" class="absolute bottom-0 inset-x-0 bg-slate-900 rounded-t-[40px] detail-sheet p-10 max-w-lg mx-auto border-t border-white/10 shadow-2xl">
+    <div class="w-16 h-1 bg-white/10 rounded-full mx-auto mb-10"></div>
     
-    <div class="text-center mb-8">
-      <div id="detailIconWrap" class="w-24 h-24 mx-auto mb-4 rounded-[28px] flex items-center justify-center">
-        <span id="detailIcon" class="material-symbols-outlined text-[48px] text-white filled"></span>
+    <div class="text-center mb-10">
+      <div id="detailIconWrap" class="w-28 h-28 mx-auto mb-6 rounded-3xl flex items-center justify-center shadow-inner relative overflow-hidden">
+        <div class="absolute inset-0 bg-white/5 animate-pulse"></div>
+        <span id="detailIcon" class="material-symbols-outlined text-[56px] text-white z-10"></span>
       </div>
-      <h2 id="detailTitle" class="font-headline font-black text-2xl mb-2">Trophy Name</h2>
-      <p id="detailDesc" class="text-sm text-on-surface-variant px-4">Description of the warrior's path.</p>
+      <h2 id="detailTitle" class="font-headline font-black text-3xl mb-2 tracking-tight text-white">---</h2>
+      <p id="detailDesc" class="text-sm text-white/50 leading-relaxed px-6">---</p>
     </div>
 
-    <div class="space-y-4">
-      <p class="text-[10px] font-black text-outline uppercase tracking-[0.2em] text-center">Trophy Roadmap</p>
-      <div id="detailTierList" class="space-y-2">
-        <!-- Tiers injected here -->
-      </div>
+    <div id="detailTierList" class="space-y-3 mb-10">
+      <!-- Roadmap -->
     </div>
 
-    <button onclick="closeDetail()" class="w-full mt-8 py-4 bg-on-surface text-white font-headline font-bold rounded-2xl active:scale-95 transition-transform">
-      Return to Locker
+    <button onclick="closeDetail()" class="w-full py-5 bg-white text-dark-bg font-headline font-black rounded-2xl shadow-xl active:scale-95 transition-all">
+      CLOSE VAULT
     </button>
   </div>
 </div>
@@ -131,7 +192,6 @@ async function init() {
   const s = await supabaseClient.auth.getSession();
   if (!s.data.session) { window.location.href = 'login.html'; return; }
   currentUser = s.data.session.user;
-
   await loadData();
   document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
 }
@@ -158,39 +218,71 @@ async function loadData() {
 }
 
 function render() {
+  renderSubscriptionMedals();
+  renderCabinet();
+}
+
+function renderSubscriptionMedals() {
+  const container = document.getElementById('subscriptionMedals');
+  const userTier = (userProfile.subscription_tier || 'free').toLowerCase();
+  container.innerHTML = '';
+
+  SUBSCRIPTION_ROADMAP.forEach(badge => {
+    const isActive = badge.key === userTier;
+    const div = document.createElement('div');
+    div.className = `hanging-medal flex flex-col items-center transition-all ${isActive ? 'scale-110 opacity-100' : 'opacity-20 grayscale scale-90'}`;
+    div.innerHTML = `
+      <div class="w-14 h-14 rounded-full border-2 ${isActive ? 'border-mythic-gold shadow-lg shadow-mythic-gold/20' : 'border-white/10'} mb-2 p-1">
+        <img src="${badge.image}" class="w-full h-full object-contain">
+      </div>
+      <p class="text-[8px] font-black uppercase tracking-widest ${isActive ? 'text-mythic-gold' : 'text-white/40'}">${badge.name}</p>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function renderCabinet() {
   const container = document.getElementById('achievementsGrid');
   container.innerHTML = '';
   
-  let earnedMythics = 0;
+  let totalTiers = trophyDefinitions.length * 5;
+  let earnedTiers = 0;
 
   trophyDefinitions.forEach(trophy => {
     const state = getTrophyState(trophy, userStats);
-    if (state.isUnlocked && state.activeTier.rarity === 'mythic') earnedMythics++;
-
     const rarity = state.activeTier.rarity;
-    const colors = RARITY_COLORS[rarity];
     
+    // Progress calculation for Mastery HUD
+    trophy.tiers.forEach(t => { if(state.count >= t.req) earnedTiers++; });
+
     const tile = document.createElement('div');
-    tile.className = `trophy-tile p-5 rounded-[32px] text-center shadow-sm ${state.isUnlocked ? 'card-' + rarity : 'bg-surface-chigh opacity-40 grayscale'}`;
+    tile.className = `trophy-pedestal text-center cursor-pointer group`;
     tile.innerHTML = `
-      <div class="w-14 h-14 mx-auto mb-3 rounded-[20px] flex items-center justify-center ${state.isUnlocked ? colors.bg : 'bg-surface-variant'}">
-        <span class="material-symbols-outlined text-white text-[32px] ${state.isUnlocked ? 'filled' : ''}">${trophy.icon}</span>
+      <div class="trophy-item relative mb-4">
+        <div class="w-20 h-28 mx-auto bg-white/5 rounded-xl border border-white/10 flex items-center justify-center glow-${state.isUnlocked ? rarity : 'common'} ${!state.isUnlocked ? 'opacity-20 grayscale' : ''}">
+           <span class="material-symbols-outlined text-[48px] ${state.isUnlocked ? 'text-white' : 'text-white/20'}">${trophy.icon}</span>
+           <!-- Rarity Shine -->
+           <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        </div>
       </div>
-      <h4 class="font-headline font-black text-on-surface text-[14px] leading-tight">${trophy.title}</h4>
-      <p class="text-[9px] font-black uppercase tracking-widest mt-1 ${state.isUnlocked ? colors.text : 'text-outline'}">${state.isUnlocked ? rarity : 'Locked'}</p>
+      <h4 class="font-headline font-extrabold text-xs tracking-tight text-white/90">${trophy.title}</h4>
+      <p class="text-[8px] font-black uppercase tracking-[0.2em] mt-1 ${state.isUnlocked ? 'text-mythic-gold' : 'text-white/20'}">
+        ${state.isUnlocked ? rarity : 'Locked'}
+      </p>
     `;
     tile.onclick = () => openDetail(trophy, state);
     container.appendChild(tile);
   });
 
-  document.getElementById('masteryCount').textContent = `Mastery: ${earnedMythics}/${trophyDefinitions.length}`;
+  const masteryPct = Math.round((earnedTiers / totalTiers) * 100);
+  document.getElementById('masteryHUD').textContent = `Mastery: ${masteryPct}%`;
 }
 
 function openDetail(trophy, state) {
   const colors = RARITY_COLORS[state.activeTier.rarity];
   
   document.getElementById('detailIcon').textContent = trophy.icon;
-  document.getElementById('detailIconWrap').className = `w-24 h-24 mx-auto mb-4 rounded-[28px] flex items-center justify-center ${colors.bg}`;
+  document.getElementById('detailIconWrap').className = `w-28 h-28 mx-auto mb-6 rounded-3xl flex items-center justify-center ${colors.bg} shadow-2xl`;
   document.getElementById('detailTitle').textContent = trophy.title;
   document.getElementById('detailDesc').textContent = trophy.description;
 
@@ -199,19 +291,15 @@ function openDetail(trophy, state) {
 
   trophy.tiers.forEach(tier => {
     const isDone = state.count >= tier.req;
-    const tierColor = RARITY_COLORS[tier.rarity];
-    
     const div = document.createElement('div');
-    div.className = `tier-item ${isDone ? 'completed' : 'opacity-50'}`;
+    div.className = `tier-item ${isDone ? 'completed bg-white/5' : 'opacity-20'}`;
     div.innerHTML = `
-      <div class="w-3 h-3 rounded-full ${tierColor.bg}"></div>
+      <div class="w-3 h-3 rounded-full ${RARITY_COLORS[tier.rarity].bg}"></div>
       <div class="flex-1 text-left">
-        <p class="text-[12px] font-black ${isDone ? 'text-on-surface' : 'text-outline'}">${tier.name}</p>
-        <p class="text-[10px] text-on-surface-variant">${tier.desc || ''}</p>
+        <p class="text-[11px] font-black text-white">${tier.name}</p>
+        <p class="text-[9px] text-white/40">${tier.desc || ''}</p>
       </div>
-      <div class="text-right">
-        <p class="text-[10px] font-black ${isDone ? 'text-primary' : 'text-outline'}">${tier.req} ${trophy.type.split('_')[0].toUpperCase()}</p>
-      </div>
+      <p class="text-[9px] font-black text-white/60">${tier.req} ${trophy.type.split('_')[0].toUpperCase()}</p>
     `;
     tierList.appendChild(div);
   });
