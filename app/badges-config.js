@@ -67,20 +67,25 @@ function getTrophyState(trophy, stats) {
  * Calculates which Era/Avatar stage the user is in
  */
 function calculateAvatarStage(trophyDefinitions, stats, avatarStages) {
+  if (!avatarStages || avatarStages.length === 0) return null;
+
   var mythicCount = 0;
   
-  trophyDefinitions.forEach(trophy => {
-    var state = getTrophyState(trophy, stats);
-    if (state.isUnlocked && state.activeTier.rarity === 'mythic') {
-      mythicCount++;
-    }
-  });
+  if (trophyDefinitions && trophyDefinitions.length > 0) {
+    trophyDefinitions.forEach(trophy => {
+      var state = getTrophyState(trophy, stats);
+      if (state.isUnlocked && state.activeTier.rarity === 'mythic') {
+        mythicCount++;
+      }
+    });
+  }
 
-  // Level up stage for every Mythic earned (capped at max stage available)
+  // Find the stage that matches the mythicCount, or default to stage 0
   var stageIndex = Math.min(mythicCount, avatarStages.length - 1);
-  return avatarStages.find(s => s.stage === stageIndex) || avatarStages[0];
+  var found = avatarStages.find(s => s.stage === stageIndex);
+  
+  return found || avatarStages[0];
 }
-
 /**
  * Helper to calculate sharing streak
  */

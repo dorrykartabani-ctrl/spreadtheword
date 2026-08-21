@@ -214,20 +214,35 @@ function updateHUD(stats) {
 }
 
 function updateAvatar(stats) {
-  const avatar = calculateAvatarStage(trophyDefs, stats, avatarStages);
-  const img = document.getElementById('warriorDisplayImg');
-  
-  img.src = avatar.image_url;
-  document.getElementById('eraName').textContent = avatar.era;
-  document.getElementById('rankTitle').textContent = avatar.name;
-  document.getElementById('rankDesc').textContent = avatar.description;
+  // 1. Safety Check: If avatarStages didn't load, use a hardcoded fallback
+  if (!avatarStages || avatarStages.length === 0) {
+    console.warn("Avatar stages not loaded from Supabase.");
+    return;
+  }
 
-  if (avatar.stage > 0) {
+  const avatar = calculateAvatarStage(trophyDefs, stats, avatarStages);
+  
+  // 2. Safety Check: If calculateAvatarStage returned undefined
+  if (!avatar) {
+    console.error("Could not determine avatar stage.");
+    return;
+  }
+
+  const img = document.getElementById('warriorDisplayImg');
+  const eraEl = document.getElementById('eraName');
+  const rankEl = document.getElementById('rankTitle');
+  const descEl = document.getElementById('rankDesc');
+
+  if (img) img.src = avatar.image_url || '/images/avatars/silhouette.png';
+  if (eraEl) eraEl.textContent = avatar.era || 'Unknown';
+  if (rankEl) rankEl.textContent = avatar.name || 'The Seeker';
+  if (descEl) descEl.textContent = avatar.description || '';
+
+  if (img && avatar.stage > 0) {
     img.classList.remove('grayscale', 'opacity-40');
     if (avatar.stage === 5) img.classList.add('mythic-glow');
   }
 }
-
 function updateTrophies(stats) {
   const container = document.getElementById('trophyShowcase');
   container.innerHTML = '';
