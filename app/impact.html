@@ -605,146 +605,221 @@ var supabaseClient = supabase.createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
 )
 
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
 var currentUser = null
 var userProfile = null
 var allShares = []
 var allProjects = []
 var userPriorities = {}
 var recruits = []
-var totalPaidCountries = 0
-var thisWeeksQuoteId = null
-var thisWeeksQuoteShared = false
 var state = { timeframe: 'all' }
-
-var continentMap = {
-  'United States':'North America','Canada':'North America','Mexico':'North America','Jamaica':'North America',
-  'Brazil':'South America','Argentina':'South America','Colombia':'South America',
-  'United Kingdom':'Europe','France':'Europe','Germany':'Europe','Spain':'Europe','Italy':'Europe',
-  'Nigeria':'Africa','South Africa':'Africa','Kenya':'Africa','Ghana':'Africa',
-  'India':'Asia','Pakistan':'Asia','Philippines':'Asia','Indonesia':'Asia','Japan':'Asia',
-  'Australia':'Oceania','New Zealand':'Oceania'
-}
-
-var narratives = [
-  'Every share plants a seed that could change a life.',
-  'Your voice is echoing farther than you know.',
-  'You have been faithful. Keep going.',
-  'Someone needed exactly what you shared today.',
-  'The Word travels through you.'
-]
 
 var observer = new IntersectionObserver(function(entries) {
   entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible') })
 }, { threshold: 0.1 })
 
+// ═══════════════════════════════════════
+// INIT & DATA LOADING
+// ═══════════════════════════════════════
 async function init() {
   var s = await supabaseClient.auth.getSession()
   if (!s.data.session) { window.location.href = 'login.html'; return }
   currentUser = s.data.session.user
-  setupListeners()
+  
+  setupListeners() // Now defined below
   await loadEverything()
+  
   document.querySelectorAll('.fade-up').forEach(function(el) { observer.observe(el) })
+}
+
+function setupListeners() {
+  window.addEventListener('scroll', function() {
+    var h = document.getElementById('pageHeader')
+    if(h) h.classList.toggle('header-scrolled', window.scrollY > 8)
+  })
 }
 
 async function loadEverything() {
   // 1. Profile First
   const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+  if (!profile) return;
   userProfile = profile;
 
-  // 2. Parallel Load
+  // 2. Parallel Load from Supabase (Dynamic Trophies & Stats)
   const results = await Promise.allSettled([
     supabaseClient.from('trophy_definitions').select('*').eq('is_active', true).order('sort_order'),
     supabaseClient.from('avatar_stages').select('*').order('stage'),
-    supabaseClient.from('shares').select('*').eq('user_id', currentUser.id),
-    supabaseClient.from('profiles').select('country, subscription_tier').eq('referred_by', userProfile.invite_code)
+    supabaseClient.from('shares').select('*').eq('user_id', currentUser.id).order('shared_at', { ascending: false }),
+    supabaseClient.from('profiles').select('*').eq('referred_by', userProfile.invite_code),
+    supabaseClient.from('projects').select('*').eq('is_visible', true),
+    supabaseClient.from('profiles').select('id, total_shares').order('total_shares', { ascending: false }),
+    supabaseClient.from('projects').select('raised_amount, status')
   ]);
 
-  const trophyDefs = results[0].value.data;
-  const avatarStages = results[1].value.data;
-  const shares = results[2].value.data;
-  const recruits = results[3].value.data;
+  const trophyDefs = getData(results[0], []);
+  const avatarStages = getData(results[1], []);
+  allShares = getData(results[2], []);
+  recruits = getData(results[3], []);
+  allProjects = getData(results[4], []);
+  const allProfilesRank = getData(results[5], []);
+  const allProjectAmounts = getData(results[6], []);
 
-  // 3. Process Stats
-  const paidRecruits = recruits.filter(r => r.subscription_tier !== 'free');
+  // 3. Process Paid Stats
+  const paidRecruits = recruits.filter(r => r.subscription_tier && r.subscription_tier !== 'free');
   const stats = {
-    shares: shares.length,
+    shares: allShares.length,
     recruits_paid: paidRecruits.length,
     countries_paid: new Set(paidRecruits.map(r => r.country).filter(c => c)).size,
-    streak: calculateStreak(shares)
-    // loyalty calculated via profile.created_at
+    streak: typeof calculateStreak === 'function' ? calculateStreak(allShares) : 0
   };
 
-  // 4. Update Avatar UI
-  const avatar = calculateAvatarStage(trophyDefs, stats, avatarStages);
-  document.getElementById('avatarRankName').textContent = avatar.name;
-  document.getElementById('avatarDisplayImg').src = avatar.image_url;
-  if (avatar.stage > 0) document.getElementById('avatarDisplayImg').classList.remove('grayscale', 'opacity-30');
+  // 4. Rank & Percentile
+  var userRank = 1;
+  for (var i = 0; i < allProfilesRank.length; i++) {
+    if (allProfilesRank[i].id === currentUser.id) { userRank = i + 1; break; }
+  }
+  const totalWarriors = allProfilesRank.length;
+  const percentile = totalWarriors > 0 ? Math.round(((totalWarriors - userRank + 1) / totalWarriors) * 100) : 0;
 
-  // 5. Render Trophies
+  // 5. Update Avatar UI
+  if (typeof calculateAvatarStage === 'function') {
+    const avatar = calculateAvatarStage(trophyDefs, stats, avatarStages);
+    const imgEl = document.getElementById('avatarDisplayImg');
+    if (imgEl) {
+        imgEl.src = avatar.image_url;
+        if (avatar.stage > 0) imgEl.classList.remove('grayscale', 'opacity-30');
+    }
+    const nameEl = document.getElementById('avatarRankName');
+    if (nameEl) nameEl.textContent = avatar.name;
+    const eraEl = document.getElementById('avatarEra');
+    if (eraEl) eraEl.textContent = 'Age: ' + avatar.era;
+  }
+
+  // 6. Renders
+  renderHero(percentile, stats.countries_paid);
+  renderStats(stats);
   renderTrophyShowcase(trophyDefs, stats);
-}// ═══════════════════════════════════════
-// RENDERS
+  renderJourney(trophyDefs, stats);
+  renderWarriorsCircle();
+  renderRipples();
+}
+
+// ═══════════════════════════════════════
+// RENDER HELPERS
 // ═══════════════════════════════════════
 
-function renderTrophyShowcase() {
-  var container = document.getElementById('trophyShowcase')
-  if (!container) return
-  container.innerHTML = ''
-  var showcaseCount = 0
-
-  if (typeof EVOLVING_TROPHIES !== 'undefined') {
-    EVOLVING_TROPHIES.forEach(function(trophy) {
-      // Corrected call with 4 arguments
-      var state = getTrophyState(trophy, allShares.length, recruits.length, totalPaidCountries)
-      var activeTier = state.activeTier
-      var colors = RARITY_COLORS[activeTier.rarity] || { bg: 'bg-primary' }
-
-      var tile = document.createElement('div')
-      tile.className = 'impact-trophy ' + (state.isUnlocked ? 'earned' : 'opacity-50')
-      tile.onclick = function() { window.location.href = 'trophies.html' }
-      tile.innerHTML = `
-        <div class="mx-auto mb-2 flex items-center justify-center w-12 h-12 rounded-[14px] ${state.isUnlocked ? colors.bg : 'bg-surface-chigh'}">
-          <span class="material-symbols-outlined ${state.isUnlocked ? 'text-white filled' : 'text-outline'}" style="font-size:24px;">${trophy.icon}</span>
-        </div>
-        <p class="font-headline font-bold text-on-surface leading-tight text-[11px]">${trophy.title}</p>
-        <p class="font-body text-[9px] font-semibold mt-0.5 ${state.isUnlocked ? colors.text : 'text-outline'}">${state.isUnlocked ? 'Lvl ' + activeTier.level : 'Locked'}</p>`
-      
-      container.appendChild(tile)
-      showcaseCount++
-    })
-  }
-
-  while (showcaseCount < 3) {
-    var placeholder = document.createElement('div')
-    placeholder.className = 'impact-trophy opacity-50'
-    placeholder.innerHTML = '<div class="mx-auto mb-2 flex items-center justify-center w-12 h-12 rounded-[14px] bg-surface-chigh"><span class="material-symbols-outlined text-outline">lock</span></div>'
-    container.appendChild(placeholder)
-    showcaseCount++
-  }
-}
-
-function renderJourney() {
-  var totalTiers = 0
-  var earnedTiers = 0
+function renderTrophyShowcase(trophyDefs, stats) {
+  var container = document.getElementById('trophyShowcase');
+  if (!container) return;
+  container.innerHTML = '';
   
-  if (typeof EVOLVING_TROPHIES !== 'undefined') {
-    EVOLVING_TROPHIES.forEach(function(t) {
-      var state = getTrophyState(t, allShares.length, recruits.length, totalPaidCountries)
-      totalTiers += t.tiers.length
-      if (state.isUnlocked) {
-        // Count how many tiers were passed
-        t.tiers.forEach(tier => { if(state.count >= tier.req) earnedTiers++ })
-      }
-    })
-  }
+  // Show top 3 active trophies
+  trophyDefs.slice(0, 3).forEach(function(trophy) {
+    var state = getTrophyState(trophy, stats);
+    var colors = RARITY_COLORS[state.activeTier.rarity] || { bg: 'bg-primary' };
 
-  var percent = totalTiers > 0 ? Math.round((earnedTiers / totalTiers) * 100) : 0
-  document.getElementById('journeyPercent').textContent = percent + '%'
-  document.getElementById('journeyEarned').textContent = earnedTiers + ' / ' + totalTiers
-  document.getElementById('journeyBar').style.width = percent + '%'
+    var tile = document.createElement('div');
+    tile.className = 'impact-trophy ' + (state.isUnlocked ? 'earned' : 'opacity-50');
+    tile.onclick = function() { window.location.href = 'trophies.html' };
+    tile.innerHTML = `
+      <div class="mx-auto mb-2 flex items-center justify-center w-12 h-12 rounded-[14px] ${state.isUnlocked ? colors.bg : 'bg-surface-chigh'}">
+        <span class="material-symbols-outlined ${state.isUnlocked ? 'text-white filled' : 'text-outline'}" style="font-size:24px;">${trophy.icon}</span>
+      </div>
+      <p class="font-headline font-bold text-on-surface leading-tight text-[11px]">${trophy.title}</p>
+      <p class="font-body text-[9px] font-semibold mt-0.5 ${state.isUnlocked ? colors.text : 'text-outline'}">${state.isUnlocked ? 'Lvl ' + state.activeTier.level : 'Locked'}</p>`;
+    
+    container.appendChild(tile);
+  });
 }
 
-// ... include your other helper functions like renderHero, renderStats, etc.
+function renderJourney(trophyDefs, stats) {
+  var totalMythics = trophyDefs.length;
+  var earnedMythics = 0;
 
-init()
-</script>
+  trophyDefs.forEach(t => {
+    var state = getTrophyState(t, stats);
+    if (state.isUnlocked && state.activeTier.rarity === 'mythic') earnedMythics++;
+  });
+
+  var percent = totalMythics > 0 ? Math.round((earnedMythics / totalMythics) * 100) : 0;
+  
+  const jp = document.getElementById('journeyPercent');
+  const jb = document.getElementById('journeyBar');
+  const je = document.getElementById('journeyEarned');
+
+  if(jp) jp.textContent = percent + '%';
+  if(je) je.textContent = earnedMythics + ' / ' + totalMythics;
+  if(jb) setTimeout(() => { jb.style.width = percent + '%' }, 400);
+}
+
+function renderHero(percentile, countries) {
+  var hNumber = document.getElementById('heroNumber');
+  if (hNumber) animateNumber(hNumber, 0, allShares.length, 1200);
+  
+  var hPct = document.getElementById('heroPercentileText');
+  if (hPct) hPct.textContent = percentile > 0 ? 'Top ' + (100 - percentile) + '%' : 'New Recruit';
+  
+  var hCountries = document.getElementById('heroCountriesText');
+  if (hCountries && countries > 0) {
+      document.getElementById('heroCountries').classList.remove('hidden');
+      hCountries.textContent = countries + ' countries reached';
+  }
+}
+
+function renderStats(stats) {
+    document.getElementById('statShares').textContent = stats.shares;
+    document.getElementById('statRecruits').textContent = recruits.length;
+    // Trophies count logic
+    var earnedCount = 0;
+    // ... logic to count earned ...
+    document.getElementById('statTrophies').textContent = earnedCount;
+}
+
+function renderWarriorsCircle() {
+  var container = document.getElementById('warriorsCircle');
+  if (!container) return;
+  
+  if (recruits.length === 0) {
+    container.innerHTML = `<p class="text-center text-outline text-sm py-4">No warriors in your circle yet.</p>`;
+    return;
+  }
+
+  var html = '<div class="flex -space-x-2 overflow-hidden justify-center py-2">';
+  recruits.slice(0, 5).forEach(r => {
+    var initials = (r.full_name || 'W').substring(0, 1);
+    html += `<div class="w-10 h-10 rounded-full border-2 border-white bg-primary flex items-center justify-center text-white font-bold text-xs">${initials}</div>`;
+  });
+  if (recruits.length > 5) html += `<div class="w-10 h-10 rounded-full border-2 border-white bg-surface-chigh flex items-center justify-center text-outline font-bold text-xs">+${recruits.length - 5}</div>`;
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function renderRipples() {
+  var reach = allShares.length * 50; // Estimated 50 people per share
+  var r = document.getElementById('ripplesReach');
+  if (r) animateNumber(r, 0, reach, 1400);
+}
+
+// ═══════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════
+function getData(settled, fallback) {
+  return (settled.status === 'fulfilled' && settled.value.data) ? settled.value.data : fallback;
+}
+
+function animateNumber(el, from, to, duration) {
+  var start = performance.now();
+  function step(now) {
+    var p = Math.min((now - start) / duration, 1);
+    var val = Math.floor(from + (to - from) * (1 - Math.pow(1 - p, 3)));
+    el.textContent = val.toLocaleString();
+    if (p < 1) requestAnimationFrame(step);
+    else el.textContent = to.toLocaleString();
+  }
+  requestAnimationFrame(step);
+}
+
+// Start
+init()</script>
