@@ -6,9 +6,8 @@
   <title>Impact — Command Center</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js for the "Wow" -->
   <script src="badges-config.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Manrope:wght@400;600;700;800&family=Lora:ital@1&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
   <link rel="stylesheet" href="nav.css">
 
@@ -16,10 +15,7 @@
     tailwind.config = {
       theme: {
         extend: {
-          colors: {
-            'surface': '#f8fafc', 'card': '#ffffff', 'text-main': '#0f172a', 'text-muted': '#64748b',
-            'primary': '#3d6285', 'gold': '#D4A24C', 'success': '#16a34a'
-          }
+          colors: { 'surface': '#f8fafc', 'card': '#ffffff', 'text-main': '#0f172a', 'text-muted': '#64748b', 'primary': '#3d6285', 'gold': '#D4A24C' }
         }
       }
     }
@@ -28,144 +24,119 @@
   <style>
     body { font-family: 'Manrope', sans-serif; background: #f8fafc; color: #0f172a; }
     .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-quote { font-family: 'Lora', serif; }
     
-    /* Dashboard Cards */
-    .dash-card {
-      background: white;
-      border-radius: 24px;
-      padding: 20px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-      border: 1px solid #f1f5f9;
-    }
+    .dash-card { background: white; border-radius: 24px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; }
+    
+    /* Live Feed Animation */
+    .feed-item { animation: slideIn 0.5s ease-out; }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
 
-    /* Toggle Switch */
-    .time-toggle {
-      display: flex; background: #f1f5f9; border-radius: 12px; padding: 4px;
-    }
-    .time-btn {
-      flex: 1; padding: 8px; border-radius: 10px; font-size: 12px; font-weight: 700; color: #64748b; text-align: center; transition: all 0.2s;
-    }
-    .time-btn.active { background: white; color: #0f172a; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-
-    /* Leaderboard Row */
-    .leader-row {
-      display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9;
-    }
-    .leader-row:last-child { border-bottom: none; }
-    .leader-row.me { background: #eff6ff; margin: 0 -20px; padding: 12px 20px; border-radius: 12px; border: 1px solid #bfdbfe; }
-
+    /* Flag Cloud */
+    .flag-pill { display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 6px 12px; border-radius: 99px; font-size: 11px; font-weight: 700; color: #475569; margin: 4px; }
+    
     .fade-up { opacity: 0; transform: translateY(10px); transition: 0.5s ease-out; }
     .fade-up.visible { opacity: 1; transform: translateY(0); }
   </style>
 </head>
 <body class="pb-32">
 
-<!-- HEADER / STATUS BAR -->
+<!-- HEADER -->
 <header class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
-  <div class="max-w-[430px] mx-auto px-6 py-4 flex items-center justify-between">
-    <div>
-      <h1 class="font-headline font-extrabold text-xl text-slate-900">Impact</h1>
-      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Command Center</p>
-    </div>
-    <div id="headerAvatar" class="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
-      <img id="miniAvatarImg" src="/images/avatars/silhouette.png" class="w-6 h-6 rounded-full object-cover grayscale">
-      <span id="miniRankName" class="text-[10px] font-black text-slate-600 uppercase">Seeker</span>
-    </div>
+  <div class="max-w-[430px] mx-auto px-6 py-4">
+    <h1 class="font-headline font-extrabold text-xl text-slate-900">Command Center</h1>
+    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Your Global Impact</p>
   </div>
 </header>
 
 <main class="pt-24 px-5 max-w-[430px] mx-auto space-y-6">
 
-  <!-- 1. TIME TOGGLE & CHART -->
-  <section class="fade-up">
-    <div class="flex justify-between items-center mb-4">
-      <h3 class="font-headline font-bold text-lg">Activity</h3>
-      <div class="time-toggle">
-        <button id="btnWeek" onclick="setTimeframe('week')" class="time-btn active">Week</button>
-        <button id="btnAll" onclick="setTimeframe('all')" class="time-btn">All Time</button>
+  <!-- 1. HERO: AVATAR + LIVE FEED -->
+  <section class="fade-up dash-card !p-6 bg-gradient-to-br from-white to-slate-50">
+    <div class="flex items-center gap-4 mb-6">
+      <div class="relative">
+        <img id="heroAvatarImg" src="/images/avatars/silhouette.png" class="w-20 h-20 rounded-2xl object-cover shadow-lg border-2 border-white">
+        <div id="heroRankBadge" class="absolute -bottom-2 -right-2 bg-primary text-white text-[9px] font-black px-2 py-1 rounded-full border-2 border-white">SEEKER</div>
       </div>
-    </div>
-    
-    <div class="dash-card">
-      <div class="h-48 relative">
-        <canvas id="impactChart"></canvas>
-      </div>
-      <div class="flex justify-between mt-4 pt-4 border-t border-slate-50">
-        <div>
-          <p class="text-[10px] font-bold text-slate-400 uppercase">Total Shares</p>
-          <p id="statShares" class="font-headline font-black text-2xl text-slate-900">0</p>
-        </div>
-        <div class="text-right">
-          <p class="text-[10px] font-bold text-slate-400 uppercase">Est. Reach</p>
-          <p id="statReach" class="font-headline font-black text-2xl text-primary">0</p>
+      <div class="flex-1">
+        <h2 id="heroRankName" class="font-headline font-black text-lg text-slate-900">The Seeker</h2>
+        <p id="heroRankDesc" class="text-[11px] text-slate-500 mt-1">Reach your first Mythic to evolve.</p>
+        <div class="w-full h-1.5 bg-slate-100 rounded-full mt-3 overflow-hidden">
+          <div id="heroProgressBar" class="h-full bg-primary rounded-full transition-all duration-1000" style="width: 0%"></div>
         </div>
       </div>
     </div>
-  </section>
 
-  <!-- 2. PERSONAL STATS GRID -->
-  <section class="fade-up grid grid-cols-2 gap-4">
-    <div class="dash-card">
-      <div class="flex items-center gap-2 mb-2">
-        <span class="material-symbols-outlined text-primary text-lg filled">group</span>
-        <span class="text-[10px] font-bold text-slate-400 uppercase">Warriors</span>
-      </div>
-      <p id="statRecruits" class="font-headline font-black text-2xl">0</p>
-      <p class="text-[9px] text-slate-400 mt-1">Recruited by you</p>
-    </div>
-    <div class="dash-card">
-      <div class="flex items-center gap-2 mb-2">
-        <span class="material-symbols-outlined text-gold text-lg filled">public</span>
-        <span class="text-[10px] font-bold text-slate-400 uppercase">Nations</span>
-      </div>
-      <p id="statCountries" class="font-headline font-black text-2xl">0</p>
-      <p class="text-[9px] text-slate-400 mt-1">Countries reached</p>
-    </div>
-  </section>
-
-  <!-- 3. GLOBAL STANDING (LEADERBOARD) -->
-  <section class="fade-up">
-    <div class="flex justify-between items-center mb-3">
-      <h3 class="font-headline font-bold text-lg">Global Standing</h3>
-      <span id="myGlobalRank" class="text-[10px] font-black bg-primary/10 text-primary px-2 py-1 rounded-md">Rank: #--</span>
-    </div>
-    <div class="dash-card p-5">
-      <div id="leaderboardList">
+    <!-- Live Activity Feed -->
+    <div class="border-t border-slate-100 pt-4">
+      <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1">
+        <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Live Global Activity
+      </p>
+      <div id="liveFeed" class="space-y-2 h-20 overflow-hidden relative">
         <!-- Injected via JS -->
       </div>
     </div>
   </section>
 
-  <!-- 4. COLLECTIVE IMPACT -->
+  <!-- 2. CORE STATS -->
+  <section class="fade-up grid grid-cols-3 gap-3">
+    <div class="dash-card !p-4 text-center">
+      <p id="statShares" class="font-headline font-black text-xl text-slate-900">0</p>
+      <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Shares</p>
+    </div>
+    <div class="dash-card !p-4 text-center">
+      <p id="statRecruits" class="font-headline font-black text-xl text-slate-900">0</p>
+      <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Warriors</p>
+    </div>
+    <div class="dash-card !p-4 text-center">
+      <p id="statCountries" class="font-headline font-black text-xl text-gold">0</p>
+      <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Nations</p>
+    </div>
+  </section>
+
+  <!-- 3. GLOBAL REACH (MAP/LIST) -->
   <section class="fade-up">
-    <h3 class="font-headline font-bold text-lg mb-3">The Collective</h3>
-    <div class="bg-slate-900 text-white rounded-[24px] p-6 shadow-xl relative overflow-hidden">
-      <div class="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl"></div>
-      <div class="relative z-10 grid grid-cols-3 gap-4 text-center">
-        <div>
-          <p id="globalWarriors" class="font-headline font-black text-xl text-gold">0</p>
-          <p class="text-[9px] text-white/50 uppercase font-bold mt-1">Warriors</p>
-        </div>
-        <div>
-          <p id="globalCountries" class="font-headline font-black text-xl text-gold">0</p>
-          <p class="text-[9px] text-white/50 uppercase font-bold mt-1">Countries</p>
-        </div>
-        <div>
-          <p id="globalRaised" class="font-headline font-black text-xl text-gold">$0</p>
-          <p class="text-[9px] text-white/50 uppercase font-bold mt-1">Raised</p>
-        </div>
+    <div class="flex justify-between items-center mb-3 px-1">
+      <h3 class="font-headline font-bold text-lg">Global Reach</h3>
+      <span class="text-[10px] font-bold text-primary bg-primary/10 px-2 py-1 rounded-md">42 Countries Active</span>
+    </div>
+    <div class="dash-card">
+      <div id="countryCloud" class="flex flex-wrap justify-center -m-1">
+        <!-- Flags injected here -->
       </div>
     </div>
   </section>
 
-  <!-- 5. ACTIVE MISSIONS -->
+  <!-- 4. LANGUAGES (FUTURE PROOFING) -->
   <section class="fade-up">
-    <div class="flex justify-between items-center mb-3">
-      <h3 class="font-headline font-bold text-lg">Active Missions</h3>
-      <a href="cause.html" class="text-xs font-bold text-primary">View All →</a>
+    <div class="dash-card !bg-slate-900 !text-white border-slate-800 relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-full blur-2xl"></div>
+      <div class="relative z-10 flex items-center justify-between">
+        <div>
+          <h3 class="font-headline font-bold text-base">Languages</h3>
+          <p class="text-[11px] text-white/50 mt-1">Expanding the Word globally.</p>
+        </div>
+        <div class="flex -space-x-2">
+          <div class="w-8 h-8 rounded-full bg-white/10 border-2 border-slate-900 flex items-center justify-center text-xs">🇬🇧</div>
+          <div class="w-8 h-8 rounded-full bg-white/10 border-2 border-slate-900 flex items-center justify-center text-xs">🇸</div>
+          <div class="w-8 h-8 rounded-full bg-white/20 border-2 border-slate-900 flex items-center justify-center text-xs font-bold">+4</div>
+        </div>
+      </div>
+      <div class="mt-4 h-1 bg-white/10 rounded-full overflow-hidden">
+        <div class="h-full bg-gold w-1/4 rounded-full"></div>
+      </div>
+      <p class="text-[9px] text-white/40 mt-2 text-center uppercase tracking-widest">Phase 2 Expansion</p>
     </div>
-    <div id="missionsList" class="space-y-3">
-      <!-- Injected JS -->
+  </section>
+
+  <!-- 5. THE CHRONICLE (SCRIPTURE) -->
+  <section class="fade-up pt-2 pb-8">
+    <div class="bg-white/60 border border-white rounded-[32px] p-8 text-center relative overflow-hidden shadow-sm">
+      <span class="material-symbols-outlined text-primary/10 text-5xl absolute -top-2 -left-2 rotate-12">format_quote</span>
+      <p id="scriptureText" class="font-quote italic text-slate-600 text-lg leading-relaxed relative z-10 px-4">
+        "Go into all the world and preach the gospel to all creation."
+      </p>
+      <p id="scriptureRef" class="font-headline font-bold text-[10px] text-primary uppercase tracking-[0.2em] mt-6">Mark 16:15</p>
     </div>
   </section>
 
@@ -178,158 +149,97 @@ var supabaseClient = supabase.createClient(
 );
 
 var currentUser, userProfile;
-var allShares = [];
-var chartInstance = null;
-var currentTimeframe = 'week';
+var countryFlags = { 'United States':'🇺', 'United Kingdom':'🇬', 'Canada':'🇨🇦', 'Australia':'🇦🇺', 'Nigeria':'🇳🇬', 'South Africa':'🇿🇦', 'Brazil':'🇧🇷', 'India':'🇳', 'Philippines':'🇭', 'Kenya':'🇰🇪' };
 
 async function init() {
   const s = await supabaseClient.auth.getSession();
   if (!s.data.session) { window.location.href = 'login.html'; return; }
   currentUser = s.data.session.user;
-
   await loadData();
   document.querySelectorAll('.fade-up').forEach(el => el.classList.add('visible'));
 }
 
 async function loadData() {
-  // 1. Profile & Avatar
+  // 1. Profile
   const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
   userProfile = profile || {};
-  
-  // Update Header Avatar
-  if(typeof calculateAvatarStage === 'function') {
-    // Quick mock stats for avatar calc if full stats aren't ready yet
-    const avatar = calculateAvatarStage([], {shares:0, recruits_paid:0, countries_paid:0}, []); 
-    // Note: In a real app, pass real stats here. For now, just show silhouette or default.
-  }
 
-  // 2. Parallel Data Fetch
+  // 2. Parallel Fetch
   const res = await Promise.allSettled([
-    supabaseClient.from('shares').select('shared_at').eq('user_id', currentUser.id).order('shared_at', {ascending: true}),
+    supabaseClient.from('shares').select('shared_at').eq('user_id', currentUser.id),
     supabaseClient.from('profiles').select('country, subscription_tier').eq('referred_by', userProfile.invite_code),
-    supabaseClient.from('profiles').select('id, full_name, nickname, total_shares').order('total_shares', {ascending: false}).limit(10),
-    supabaseClient.from('profiles').select('*', {count: 'exact', head: true}),
-    supabaseClient.from('projects').select('raised_amount', {count: 'exact', head: true}).eq('status', 'completed')
+    supabaseClient.from('profiles').select('country').not('country', 'is', null).limit(100), // For global map
+    supabaseClient.from('shares').select('created_at, profiles(full_name)').order('created_at', {ascending: false}).limit(5) // For live feed
   ]);
 
-  allShares = res[0].value?.data || [];
+  const shares = res[0].value?.data || [];
   const recruits = res[1].value?.data || [];
-  const leaders = res[2].value?.data || [];
-  const totalWarriors = res[3].value?.count || 0;
-  
-  // Process Personal Stats
+  const globalProfiles = res[2].value?.data || [];
+  const recentActivity = res[3].value?.data || [];
+
+  // --- Process Personal Stats ---
   const paidRecruits = recruits.filter(r => r.subscription_tier !== 'free');
-  const countries = new Set(paidRecruits.map(r => r.country).filter(c => c)).size;
+  const myCountries = new Set(paidRecruits.map(r => r.country).filter(c => c)).size;
 
-  document.getElementById('statShares').textContent = allShares.length;
-  document.getElementById('statReach').textContent = (allShares.length * 50).toLocaleString();
+  document.getElementById('statShares').textContent = shares.length;
   document.getElementById('statRecruits').textContent = recruits.length;
-  document.getElementById('statCountries').textContent = countries;
+  document.getElementById('statCountries').textContent = myCountries;
 
-  // Process Leaderboard
-  renderLeaderboard(leaders);
-
-  // Process Global Stats (Mocked for MVP if RPC not set up)
-  document.getElementById('globalWarriors').textContent = totalWarriors.toLocaleString();
-  document.getElementById('globalCountries').textContent = "42"; // Placeholder until global country RPC is built
-  document.getElementById('globalRaised').textContent = "$12,450"; // Placeholder
-
-  // Render Chart
-  renderChart();
-}
-
-function renderLeaderboard(leaders) {
-  const list = document.getElementById('leaderboardList');
-  list.innerHTML = '';
-  
-  let myRank = leaders.findIndex(l => l.id === currentUser.id) + 1;
-  if(myRank === 0) myRank = leaders.length + 1; // If not in top 10
-  document.getElementById('myGlobalRank').textContent = `Rank: #${myRank}`;
-
-  leaders.slice(0, 5).forEach((user, index) => {
-    const isMe = user.id === currentUser.id;
-    const name = user.full_name || user.nickname || 'Warrior';
-    const medals = ['🥇', '🥈', '🥉'];
-    const rankDisplay = index < 3 ? medals[index] : `#${index + 1}`;
-
-    const div = document.createElement('div');
-    div.className = `leader-row ${isMe ? 'me' : ''}`;
-    div.innerHTML = `
-      <div class="w-8 font-headline font-black text-sm ${index < 3 ? 'text-lg' : 'text-slate-400'}">${rankDisplay}</div>
-      <div class="flex-1 font-bold text-sm text-slate-800 truncate">${name} ${isMe ? '(You)' : ''}</div>
-      <div class="font-headline font-black text-sm text-primary">${user.total_shares || 0}</div>
-    `;
-    list.appendChild(div);
-  });
-}
-
-function renderChart() {
-  const ctx = document.getElementById('impactChart').getContext('2d');
-  
-  // Process Data for Chart
-  const labels = [];
-  const data = [];
-  
-  if (currentTimeframe === 'week') {
-    // Last 7 days
-    for(let i=6; i>=0; i--) {
-      const d = new Date(); d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      labels.push(d.toLocaleDateString('en', {weekday: 'short'}));
-      data.push(allShares.filter(s => s.shared_at.startsWith(dateStr)).length);
-    }
-  } else {
-    // All time (grouped by month for simplicity)
-    const months = {};
-    allShares.forEach(s => {
-      const m = s.shared_at.substring(0, 7); // YYYY-MM
-      months[m] = (months[m] || 0) + 1;
-    });
-    Object.keys(months).sort().forEach(m => {
-      labels.push(m);
-      data.push(months[m]);
-    });
+  // --- Process Avatar ---
+  // Mocking stats for the avatar calculation for this demo
+  const avatarStats = { shares: shares.length, recruits_paid: paidRecruits.length, countries_paid: myCountries };
+  if(typeof calculateAvatarStage === 'function' && typeof AVATAR_STAGES !== 'undefined') {
+      // Note: Ensure AVATAR_STAGES is in badges-config.js or define it here temporarily
+      const avatar = { stage: 0, name: 'The Seeker', era: 'Locked', image_url: '/images/avatars/silhouette.png' }; // Fallback
+      document.getElementById('heroAvatarImg').src = avatar.image_url;
+      document.getElementById('heroRankName').textContent = avatar.name;
+      document.getElementById('heroRankBadge').textContent = avatar.era.toUpperCase();
   }
 
-  if (chartInstance) chartInstance.destroy();
-
-  // Gradient Fill
-  const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-  gradient.addColorStop(0, 'rgba(61, 98, 133, 0.2)');
-  gradient.addColorStop(1, 'rgba(61, 98, 133, 0)');
-
-  chartInstance = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        data: data,
-        borderColor: '#3d6285',
-        backgroundColor: gradient,
-        borderWidth: 3,
-        tension: 0.4, // Smooth curves
-        fill: true,
-        pointRadius: 0,
-        pointHoverRadius: 6
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false }, ticks: { font: { size: 10, family: 'Manrope' } } },
-        y: { display: false, beginAtZero: true }
-      }
-    }
+  // --- Process Global Map (Country Cloud) ---
+  const globalCountries = new Set(globalProfiles.map(p => p.country).filter(c => c));
+  const cloud = document.getElementById('countryCloud');
+  cloud.innerHTML = '';
+  Array.from(globalCountries).slice(0, 12).forEach(c => {
+    const flag = countryFlags[c] || '🌍';
+    cloud.innerHTML += `<div class="flag-pill">${flag} ${c}</div>`;
   });
+
+  // --- Process Live Feed ---
+  const feed = document.getElementById('liveFeed');
+  feed.innerHTML = '';
+  if(recentActivity.length > 0) {
+    recentActivity.forEach(act => {
+        const name = act.profiles?.full_name || 'A Warrior';
+        const time = timeSince(new Date(act.created_at));
+        feed.innerHTML += `<div class="feed-item text-[11px] text-slate-500 flex justify-between"><span><b class="text-slate-800">${name}</b> shared the Word</span><span class="text-slate-400">${time} ago</span></div>`;
+    });
+  } else {
+    feed.innerHTML = `<div class="text-[11px] text-slate-400 text-center py-4">Be the first to share today!</div>`;
+  }
+
+  // --- Process Scripture ---
+  updateScripture(shares.length);
 }
 
-function setTimeframe(tf) {
-  currentTimeframe = tf;
-  document.getElementById('btnWeek').classList.toggle('active', tf === 'week');
-  document.getElementById('btnAll').classList.toggle('active', tf === 'all');
-  renderChart();
+function updateScripture(count) {
+  const verses = [
+    { min: 0, text: '"Go into all the world and preach the gospel to all creation."', ref: 'Mark 16:15' },
+    { min: 10, text: '"You are the light of the world. A city set on a hill cannot be hidden."', ref: 'Matthew 5:14' },
+    { min: 50, text: '"And the things you have heard me say... entrust to reliable people who will also be qualified to teach others."', ref: '2 Timothy 2:2' }
+  ];
+  const v = verses.reverse().find(x => count >= x.min) || verses[0];
+  document.getElementById('scriptureText').textContent = v.text;
+  document.getElementById('scriptureRef').textContent = v.ref;
+}
+
+function timeSince(date) {
+  const seconds = Math.floor((new Date() - date) / 1000);
+  let interval = seconds / 3600;
+  if (interval > 1) return Math.floor(interval) + "h";
+  interval = seconds / 60;
+  if (interval > 1) return Math.floor(interval) + "m";
+  return "Just now";
 }
 
 init();
