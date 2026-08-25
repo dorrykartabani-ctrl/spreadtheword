@@ -442,7 +442,24 @@ async function handleSignup(e) {
 
     var profileResult = await supabaseClient.from('profiles').upsert(profileData)
     if (profileResult.error) console.error('Profile creation error:', profileResult.error)
-
+// ══════════════════════════════════════════════════════════
+    // GENESIS BADGE & WARRIOR TIER AUTOMATION
+    // ══════════════════════════════════════════════════════════
+    const ADMIN_GENESIS_CODE = 'c35ac11b';
+    if (referralCode === ADMIN_GENESIS_CODE) {
+      try {
+        await supabaseClient.from('profiles').update({
+          badges: ['genesis'],
+          subscription_tier: 'warrior',
+          subscription_status: 'active' // Ensures they get full paid access immediately
+        }).eq('id', userId);
+        console.log('Genesis badge and Warrior tier awarded automatically!');
+      } catch (genesisErr) {
+        console.error('Genesis award error:', genesisErr);
+      }
+    }
+    // ════════════════════════════════════════════════
+    
     // Handle referral
     if (referralCode) {
       try {
