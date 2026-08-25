@@ -159,15 +159,22 @@ async function loadData() {
   const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
   userProfile = profile || {};
 
+  // FIX FOR 400 ERROR: Only query recruits if the user actually has an invite code
+  const inviteCode = userProfile.invite_code;
+  const recruitsQuery = inviteCode 
+    ? supabaseClient.from('profiles').select('country, subscription_tier').eq('referred_by', inviteCode) 
+    : Promise.resolve({ data: [] }); 
+
   const res = await Promise.allSettled([
     supabaseClient.from('shares').select('shared_at', { count: 'exact' }).eq('user_id', currentUser.id),
-    supabaseClient.from('profiles').select('country, subscription_tier').eq('referred_by', userProfile.invite_code),
+    recruitsQuery,
     supabaseClient.from('trophy_definitions').select('*').eq('is_active', true)
   ]);
 
-  const sharesCount = res[0].value?.count || 0;
-  const recruits = res[1].value?.data || [];
-  allTrophyDefs = res[2].value?.data || [];
+  // Safe data extraction
+  const sharesCount = res[0].status === 'fulfilled' ? (res[0].value.count || 0) : 0;
+  const recruits = res[1].status === 'fulfilled' ? (res[1].value.data || []) : [];
+  allTrophyDefs = res[2].status === 'fulfilled' ? (res[2].value.data || []) : []; // Variable renamed correctly
 
   const paidRecruits = recruits.filter(r => r.subscription_tier !== 'free');
   userStats = { 
@@ -178,7 +185,7 @@ async function loadData() {
 
   renderCovenant();
   renderBadges();
-  renderTrophies(trophyDefs);
+  renderTrophies(allTrophyDefs); // FIX FOR REFERENCE ERROR: Updated to use the new variable name
   renderCampaigns();
 }
 
