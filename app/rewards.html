@@ -135,6 +135,7 @@ var supabaseClient = supabase.createClient(
 
 var currentUser, userProfile;
 var userStats = { shares: 0, recruits_paid: 0, countries_paid: 0 };
+var allTrophyDefs = [];
 
 // MOCK DATA FOR CAMPAIGNS & BADGES (Replace with Supabase calls later)
 const MOCK_CAMPAIGNS = [
@@ -166,7 +167,7 @@ async function loadData() {
 
   const sharesCount = res[0].value?.count || 0;
   const recruits = res[1].value?.data || [];
-  const trophyDefs = res[2].value?.data || [];
+  allTrophyDefs = res[2].value?.data || [];
 
   const paidRecruits = recruits.filter(r => r.subscription_tier !== 'free');
   userStats = { 
@@ -364,8 +365,42 @@ function openCampaignModal(id) {
 }
 
 function openUnclaimedModal() {
-  // In a real app, fetch all trophies and filter out the earned ones
-  openModal(`<div class="text-center py-10"><p class="text-slate-500">Full list of unclaimed trophies will appear here.</p></div>`);
+  // Find trophies the user hasn't started yet (count === 0)
+  const unclaimed = allTrophyDefs.filter(t => {
+    const state = getTrophyState(t, userStats);
+    return state.count === 0; 
+  });
+
+  let html = `
+    <div class="text-center mb-6">
+      <h2 class="font-headline font-black text-2xl text-slate-900">Trophy Paths</h2>
+      <p class="text-sm text-slate-500 mt-2 px-4">Here is what you can unlock next. Keep sharing and recruiting to claim them.</p>
+    </div>
+    <div class="space-y-3">
+  `;
+
+  if (unclaimed.length === 0) {
+    html += `<div class="text-center py-8 text-slate-500 font-bold">🏆 You have started every available trophy path!</div>`;
+  } else {
+    unclaimed.forEach(trophy => {
+      const firstTier = trophy.tiers[0];
+      html += `
+        <div class="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 opacity-70">
+          <div class="w-12 h-12 rounded-xl bg-slate-200 flex items-center justify-center flex-shrink-0">
+            <span class="material-symbols-outlined text-slate-400 text-2xl">${trophy.icon}</span>
+          </div>
+          <div class="flex-1">
+            <p class="font-headline font-bold text-sm text-slate-800">${trophy.title}</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Requires: ${firstTier.req} ${trophy.type.replace('_', ' ')}</p>
+          </div>
+          <span class="material-symbols-outlined text-slate-300 text-xl">lock</span>
+        </div>
+      `;
+    });
+  }
+
+  html += `</div>`;
+  openModal(html);
 }
 
 init();
