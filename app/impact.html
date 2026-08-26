@@ -227,23 +227,29 @@ async function loadData() {
   document.getElementById('statRecruits').textContent = recruits.length;
   document.getElementById('statCountries').textContent = myCountries;
 
-  // --- Process Avatar ---
-  const avatarStats = { shares: sharesCount, recruits_paid: paidRecruits.length, countries_paid: myCountries };
-  
-  if (typeof calculateAvatarStage === 'function' && avatarStages.length > 0) {
-    const avatar = calculateAvatarStage(trophyDefs, avatarStats, avatarStages);
-    document.getElementById('heroAvatarImg').src = avatar.image_url || '/images/avatars/silhouette.png';
-    document.getElementById('heroRankName').textContent = avatar.name || 'The Seeker';
-    document.getElementById('heroRankBadge').textContent = (avatar.era || 'Locked').toUpperCase();
-    document.getElementById('heroRankDesc').textContent = avatar.description || 'Reach your first Mythic to evolve.';
-    
-    // Simple progress bar logic: 10% per mythic earned
-    const mythics = trophyDefs.filter(t => {
-        // Mocking state check for progress bar visual
-        return false; // Keep it simple for now, or implement full check
-    }).length;
-    document.getElementById('heroProgressBar').style.width = '10%'; // Placeholder until full logic
-  }
+    // --- Process Avatar ---
+    if (typeof calculateAvatarStage === 'function' && avatarStages.length > 0) {
+      const avatar = calculateAvatarStage(trophyDefs, {
+        shares: sharesCount,
+        recruits_paid: paidRecruits.length,
+        countries_paid: myCountries
+      }, avatarStages);
+
+      const img = document.getElementById('heroAvatarImg');
+      if (img) {
+        img.src = avatar.image_url || '/images/avatars/maleseeker.svg';
+        // Ensure no grayscale is applied so they are the Seeker in full color
+        img.classList.remove('grayscale', 'opacity-60', 'opacity-40');
+        
+        // Add a glow only if they reach the highest stage
+        if (avatar.stage >= 5) img.classList.add('mythic-glow');
+        else img.classList.remove('mythic-glow');
+      }
+
+      document.getElementById('heroRankName').textContent = avatar.name || 'The Seeker';
+      document.getElementById('heroRankBadge').textContent = (avatar.era || 'The Beginning').toUpperCase();
+      document.getElementById('heroRankDesc').textContent = avatar.description || 'Take your first steps. Earn a Mythic to evolve through the ages.';
+    }
 
   // --- Process Global Map (Country Cloud) ---
   const globalCountries = new Set(globalProfiles.map(p => p.country).filter(c => c));
