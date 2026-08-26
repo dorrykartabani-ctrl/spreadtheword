@@ -85,20 +85,18 @@ function calculateAvatarStage(trophyDefinitions, stats, avatarStages) {
   if (!avatarStages || avatarStages.length === 0) return null;
 
   var mythicCount = 0;
-  
   if (trophyDefinitions && trophyDefinitions.length > 0) {
-    trophyDefinitions.forEach(trophy => {
+    trophyDefinitions.forEach(function(trophy) {
       var state = getTrophyState(trophy, stats);
-      if (state.isUnlocked && state.activeTier.rarity === 'mythic') {
+      if (state.isUnlocked && state.activeTier && state.activeTier.rarity === 'mythic') {
         mythicCount++;
       }
     });
   }
 
-  var stageIndex = Math.min(mythicCount, avatarStages.length - 1);
-  var found = avatarStages.find(s => s.stage === stageIndex);
-  
-  return found || avatarStages[0];
+  var maxStage = avatarStages.length - 1;
+  var stageIndex = Math.min(mythicCount, maxStage);
+  return avatarStages.find(function(s) { return s.stage === stageIndex; }) || avatarStages[0];
 }
 
 /**
