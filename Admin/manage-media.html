@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manage Tiers — GSTW Admin</title>
+  <title>Media Library — GSTW Admin</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -27,9 +27,8 @@
             'secondary':'#41637c','on-secondary':'#f6f9ff',
             'secondary-container':'#cae6ff',
             'tertiary':'#ad332b','on-tertiary':'#fff7f6',
-            'tertiary-container':'#fe6d60',
             'primary-dim':'#305678','secondary-dim':'#355670','tertiary-dim':'#9d2621',
-            'sidebar-bg':'#0e0e0c','sidebar-hover':'#1a1a18','sidebar-active':'#3d6285',
+            'sidebar-bg':'#0e0e0c','sidebar-hover':'#1a1a18',
           },
           fontFamily:{
             'headline':['Plus Jakarta Sans','sans-serif'],
@@ -51,12 +50,14 @@
     .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
     .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
     .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
-    
+
     ::-webkit-scrollbar{width:6px;height:6px}
     ::-webkit-scrollbar-track{background:transparent}
     ::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:3px}
-    ::-webkit-scrollbar-thumb:hover{background:rgba(49,51,46,0.3)}
+    .no-scrollbar::-webkit-scrollbar{display:none}
+    .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
 
+    /* Sidebar */
     .sidebar{background:#0e0e0c;color:#f7f9ff}
     .sidebar-item{
       display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;
@@ -66,45 +67,166 @@
     .sidebar-item:hover{background:#1a1a18;color:#f7f9ff}
     .sidebar-item.active{background:#3d6285;color:#f7f9ff}
     .sidebar-item .material-symbols-outlined{font-size:20px}
+    .sidebar-item .soon-tag{
+      margin-left:auto;font-size:9px;font-weight:700;
+      background:rgba(247,249,255,0.08);color:rgba(247,249,255,0.5);
+      padding:2px 6px;border-radius:99px;letter-spacing:0.05em;
+    }
 
-    .tier-card{
-      background:#ffffff;border-radius:16px;padding:20px;
-      border:2px solid transparent;transition:all 0.2s ease;
-      position: relative;
+    /* Type tabs */
+    .type-tab{
+      padding:8px 14px;border-radius:99px;font-size:12px;font-weight:700;
+      color:#5e6059;background:#ffffff;transition:all 0.15s ease;
+      white-space:nowrap;flex-shrink:0;cursor:pointer;
+      display:inline-flex;align-items:center;gap:6px;
     }
-    .tier-card:hover{transform:translateY(-2px);box-shadow:0 20px 40px rgba(49,51,46,0.08)}
-    .tier-card.inactive{opacity:0.6;border-color:#e3e3db}
+    .type-tab:hover:not(.active){background:#f5f4ed}
+    .type-tab.active{background:#3d6285;color:#f7f9ff}
+    .type-tab .count{
+      background:rgba(94,96,89,0.15);color:#5e6059;
+      padding:1px 6px;border-radius:99px;font-size:10px;
+    }
+    .type-tab.active .count{background:rgba(255,255,255,0.2);color:#f7f9ff}
 
-    .badge-preview {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      background: #f5f4ed;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    /* Media card */
+    .media-card{
+      background:#ffffff;border-radius:14px;
+      overflow:hidden;position:relative;
+      transition:all 0.2s ease;cursor:pointer;
     }
-    .badge-preview img { width: 32px; height: 32px; object-fit: contain; }
+    .media-card:hover{box-shadow:0 20px 40px rgba(49,51,46,0.08)}
+    .media-card.inactive{opacity:0.55}
+    .media-card.dragging{opacity:0.4;transform:scale(0.98)}
+    .media-card.drag-over{outline:2px dashed #3d6285;outline-offset:-2px}
 
-    .feature-item{
-      display:flex;align-items:center;gap:8px;padding:8px;
-      background:#f5f4ed;border-radius:8px;
+    .media-thumb{
+      width:100%;aspect-ratio:1;
+      background:#efeee7;
+      display:flex;align-items:center;justify-content:center;
+      overflow:hidden;
     }
-    .feature-item input[type="checkbox"]{
-      width:16px;height:16px;cursor:pointer;
+    .media-thumb img{width:100%;height:100%;object-fit:cover}
+
+    .media-badge-row{
+      position:absolute;top:8px;left:8px;right:8px;
+      display:flex;justify-content:space-between;align-items:flex-start;gap:6px;
+      pointer-events:none;
     }
+
+    .badge-pill{
+      display:inline-flex;align-items:center;gap:3px;
+      padding:2px 7px;border-radius:99px;
+      font-size:9px;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;
+      backdrop-filter:blur(6px);
+      -webkit-backdrop-filter:blur(6px);
+    }
+    .badge-default{background:rgba(61,98,133,0.85);color:#f7f9ff}
+    .badge-inactive{background:rgba(122,123,117,0.85);color:#f7f9ff}
+
+    .media-actions{
+      position:absolute;bottom:0;left:0;right:0;
+      background:linear-gradient(180deg,transparent,rgba(14,14,12,0.85));
+      padding:16px 10px 10px;
+      opacity:0;transition:opacity 0.2s ease;
+      display:flex;gap:4px;justify-content:flex-end;
+    }
+    .media-card:hover .media-actions{opacity:1}
+
+    .action-btn{
+      width:32px;height:32px;border-radius:8px;
+      background:rgba(255,255,255,0.9);color:#31332e;
+      display:flex;align-items:center;justify-content:center;
+      transition:all 0.15s ease;
+    }
+    .action-btn:hover{background:#ffffff}
+    .action-btn.danger{color:#ad332b}
+    .action-btn.primary{background:rgba(61,98,133,0.9);color:#f7f9ff}
+
+    .media-label-area{padding:10px 12px}
+
+    /* Form input */
+    .form-input{
+      background:#f5f4ed;border:1px solid transparent;
+      transition:all 0.2s ease;
+      color:#31332e;
+    }
+    .form-input:focus{background:#ffffff;border-color:rgba(61,98,133,0.3);outline:none}
+
+    /* Drop zone */
+    .drop-zone{
+      border:2px dashed rgba(122,123,117,0.3);
+      border-radius:16px;padding:32px;text-align:center;
+      background:#f5f4ed;
+      transition:all 0.2s ease;cursor:pointer;
+    }
+    .drop-zone:hover, .drop-zone.dragover{
+      border-color:#3d6285;background:rgba(176,213,254,0.1);
+    }
+
+    /* Toggle */
+    .toggle-pill{
+      width:44px;height:24px;background:#b2b2ab;border-radius:12px;
+      position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;
+    }
+    .toggle-pill.on{background:#3d6285}
+    .toggle-pill .toggle-dot{
+      width:18px;height:18px;background:white;border-radius:50%;
+      position:absolute;top:3px;left:3px;transition:left 0.2s;
+      box-shadow:0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle-pill.on .toggle-dot{left:23px}
+
+    /* Chip */
+    .chip{
+      display:inline-flex;align-items:center;gap:4px;
+      background:#efeee7;color:#5e6059;
+      padding:3px 8px;border-radius:99px;
+      font-size:11px;font-weight:600;
+    }
+
+    /* Skeleton */
+    .skeleton{
+      background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%);
+      background-size:200% 100%;
+      animation:shimmer 1.5s infinite;
+      border-radius:14px;
+    }
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
     @keyframes spin{to{transform:rotate(360deg)}}
     .spin{animation:spin 1s linear infinite;display:inline-block}
+
+    @keyframes fadeUp{
+      from{opacity:0;transform:translateY(8px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+    .fade-up{animation:fadeUp 0.3s ease-out both}
+
+    /* Section label */
+    .sect-label{
+      display:flex;align-items:center;gap:8px;
+      font-size:11px;font-weight:600;
+      color:#5e6059;letter-spacing:0.05em;text-transform:uppercase;
+    }
+
+    /* Preview modal */
+    .preview-img-container{
+      background:#0e0e0c;border-radius:16px;overflow:hidden;
+      display:flex;align-items:center;justify-content:center;
+      max-height:60vh;
+    }
+    .preview-img-container img{max-width:100%;max-height:60vh;object-fit:contain}
   </style>
 </head>
 
 <body class="min-h-screen flex">
 
+<!-- Hidden file input -->
+<input type="file" id="fileInput" accept="image/*" multiple class="hidden" onchange="handleFileSelect(this)">
+
+<!-- ═══════════════════════════════════════════ -->
 <!-- SIDEBAR -->
+<!-- ═══════════════════════════════════════════ -->
 <aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 hidden md:flex">
   <div class="mb-6 px-2 pt-2">
     <div class="flex items-center gap-2.5">
@@ -124,9 +246,8 @@
     <a href="schedule.html" class="sidebar-item"><span class="material-symbols-outlined">calendar_today</span>Schedule</a>
     <a href="campaigns.html" class="sidebar-item"><span class="material-symbols-outlined">campaign</span>Campaigns</a>
     <a href="projects.html" class="sidebar-item"><span class="material-symbols-outlined">volunteer_activism</span>Missions</a>
-    <a href="manage-media.html" class="sidebar-item"><span class="material-symbols-outlined">perm_media</span>Media</a>
+    <a href="manage-media.html" class="sidebar-item active"><span class="material-symbols-outlined">perm_media</span>Media</a>
     <a href="warriors.html" class="sidebar-item"><span class="material-symbols-outlined">group</span>Users</a>
-    <a href="manage-tiers.html" class="sidebar-item active"><span class="material-symbols-outlined">workspace_premium</span>Tiers</a>
     <a href="notifications.html" class="sidebar-item"><span class="material-symbols-outlined">notifications</span>Notifications</a>
     <a href="ai-generator.html" class="sidebar-item"><span class="material-symbols-outlined">auto_awesome</span>AI Generator</a>
     <a href="analytics.html" class="sidebar-item"><span class="material-symbols-outlined">analytics</span>Analytics</a>
@@ -147,185 +268,319 @@
   </div>
 </aside>
 
+<div id="sidebarOverlay" class="fixed inset-0 bg-inverse-surface/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<!-- ═══════════════════════════════════════════ -->
 <!-- MAIN -->
-<main class="flex-1 md:ml-64 min-h-screen">
+<!-- ═══════════════════════════════════════════ -->
+<div class="flex-1 md:ml-64 flex flex-col min-h-screen">
+
+  <!-- HEADER -->
   <header class="sticky top-0 z-20 bg-surface/85 backdrop-blur-xl">
-    <div class="flex items-center gap-4 px-6 lg:px-8 py-4">
-      <button onclick="toggleSidebar()" class="md:hidden text-on-surface">
-        <span class="material-symbols-outlined">menu</span>
-      </button>
-      <h2 class="font-headline font-bold text-on-surface" style="font-size:22px;line-height:28px;">Manage Subscription Tiers</h2>
-      <button onclick="openNewTierModal()" class="ml-auto px-4 py-2 signature-gradient text-on-primary font-headline font-semibold rounded-lg active:scale-95 transition-transform" style="font-size:13px;">
-        <span class="material-symbols-outlined text-[16px] mr-1">add</span>
-        New Tier
+    <div class="flex items-center justify-between gap-4 px-6 lg:px-8 py-4">
+      <div class="flex items-center gap-4">
+        <button onclick="toggleSidebar()" class="md:hidden text-on-surface">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+        <h2 class="font-headline font-bold text-on-surface" style="font-size:22px;line-height:28px;">Media Library</h2>
+      </div>
+      <button onclick="openUpload()" class="signature-gradient text-on-primary font-headline font-semibold rounded-xl px-4 py-2.5 flex items-center gap-2 active:scale-[0.98] transition-transform" style="font-size:13px;">
+        <span class="material-symbols-outlined" style="font-size:18px;">upload</span>
+        <span class="hidden sm:inline">Upload</span>
       </button>
     </div>
   </header>
 
-  <div class="p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+  <!-- CONTENT -->
+  <main class="p-6 lg:p-8 flex-1">
+    <div class="max-w-7xl mx-auto space-y-6">
 
-    <section>
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h3 class="font-headline font-bold text-on-surface" style="font-size:16px;">Active Tiers</h3>
-          <p class="font-body text-on-surface-variant" style="font-size:12px;">Changes reflect immediately on the app</p>
+      <!-- STATS -->
+      <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-surface-cl p-5 rounded-2xl">
+          <p class="font-body text-on-surface-variant mb-1" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Total</p>
+          <h3 id="statTotal" class="font-headline font-bold text-on-surface" style="font-size:24px;">—</h3>
         </div>
-      </div>
-      <div id="tiersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div class="tier-card flex items-center justify-center h-40">
-          <span class="material-symbols-outlined text-primary spin" style="font-size:32px;">progress_activity</span>
+        <div class="bg-surface-cl p-5 rounded-2xl">
+          <p class="font-body text-on-surface-variant mb-1" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Active</p>
+          <h3 id="statActive" class="font-headline font-bold text-primary" style="font-size:24px;">—</h3>
         </div>
-      </div>
-    </section>
+        <div class="bg-surface-cl p-5 rounded-2xl">
+          <p class="font-body text-on-surface-variant mb-1" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Inactive</p>
+          <h3 id="statInactive" class="font-headline font-bold text-on-surface" style="font-size:24px;">—</h3>
+        </div>
+        <div class="bg-surface-cl p-5 rounded-2xl">
+          <p class="font-body text-on-surface-variant mb-1" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">This Month</p>
+          <h3 id="statMonth" class="font-headline font-bold text-on-surface" style="font-size:24px;">—</h3>
+        </div>
+      </section>
 
-    <!-- ALLOCATION CONFIG -->
-    <section class="bg-surface-cl rounded-2xl p-6">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h3 class="font-headline font-bold text-on-surface mb-1" style="font-size:16px;">Fund Allocation</h3>
-          <p class="font-body text-on-surface-variant" style="font-size:12px;">Configure how subscription fees are allocated</p>
+      <!-- TYPE TABS + SEARCH -->
+      <section class="space-y-3">
+        <div class="flex flex-wrap gap-2 overflow-x-auto no-scrollbar pb-1" id="typeTabs">
+          <!-- Populated by JS -->
         </div>
-        <button onclick="openAllocationModal()" class="px-4 py-2 bg-primary-container/20 text-primary font-body font-semibold rounded-lg hover:bg-primary-container/30 transition-colors" style="font-size:12px;">
-          <span class="material-symbols-outlined text-[16px] mr-1">edit</span>
-          Edit
+
+        <div class="flex flex-wrap gap-2 items-center">
+          <div class="relative flex-1 min-w-[200px]">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" style="font-size:16px;">search</span>
+            <input id="searchInput" type="text" oninput="applyFilters()" placeholder="Search by label or tag..."
+              class="form-input w-full pl-9 pr-3 py-2 rounded-lg font-body placeholder:text-outline-variant" style="font-size:13px;">
+          </div>
+          <label class="flex items-center gap-2 bg-surface-cl px-3 py-2 rounded-lg cursor-pointer" style="font-size:12px;">
+            <input type="checkbox" id="showInactive" onchange="applyFilters()" class="accent-primary">
+            <span class="font-body font-semibold text-on-surface-variant">Show inactive</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- HELPER NOTE -->
+      <div id="reorderHint" class="hidden bg-primary-container/15 rounded-lg p-3 flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary" style="font-size:16px;">drag_indicator</span>
+        <p class="font-body text-primary" style="font-size:12px;">Drag any card to reorder within this type</p>
+      </div>
+
+      <!-- MEDIA GRID -->
+      <section id="mediaGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div class="skeleton aspect-square"></div>
+        <div class="skeleton aspect-square"></div>
+        <div class="skeleton aspect-square"></div>
+        <div class="skeleton aspect-square"></div>
+      </section>
+
+      <!-- Empty state -->
+      <div id="emptyState" class="hidden text-center py-16">
+        <div class="w-16 h-16 rounded-2xl bg-surface-clow flex items-center justify-center mx-auto mb-4">
+          <span class="material-symbols-outlined text-outline" style="font-size:32px;">image_not_supported</span>
+        </div>
+        <h3 class="font-headline font-bold text-on-surface mb-2" style="font-size:18px;">No media yet</h3>
+        <p class="font-body text-on-surface-variant mb-4" style="font-size:14px;">Upload your first image to get started.</p>
+        <button onclick="openUpload()" class="signature-gradient text-on-primary font-headline font-semibold px-5 py-2.5 rounded-xl inline-flex items-center gap-2" style="font-size:13px;">
+          <span class="material-symbols-outlined" style="font-size:16px;">upload</span>Upload Media
         </button>
       </div>
-      <div id="allocationPreview" class="space-y-3">
-        <div class="h-3 bg-surface-clow rounded-full overflow-hidden">
-          <div class="h-full bg-outline" style="width:100%"></div>
-        </div>
-        <p class="text-center font-body text-outline" style="font-size:12px;">Loading...</p>
-      </div>
-    </section>
 
-  </div>
-</main>
+    </div>
+  </main>
+</div>
 
-<!-- TIER EDIT MODAL -->
-<div id="tierModal" class="hidden fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm z-[100] flex items-center justify-center px-5 overflow-y-auto" onclick="if(event.target===this)closeTierModal()">
-  <div class="bg-surface-cl rounded-2xl p-6 w-full max-w-2xl shadow-float my-8">
-    <div class="flex items-center justify-between mb-6">
-      <h3 id="tierModalTitle" class="font-headline font-bold text-on-surface" style="font-size:20px;">Edit Tier</h3>
-      <button onclick="closeTierModal()" class="w-8 h-8 rounded-lg hover:bg-surface-clow flex items-center justify-center text-on-surface-variant transition-colors">
-        <span class="material-symbols-outlined">close</span>
+<!-- ═══════════════════════════════════════════ -->
+<!-- UPLOAD MODAL -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="uploadModal" class="hidden fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm z-[100] flex items-center justify-center px-4 py-6" onclick="if(event.target===this)closeUpload()">
+  <div class="bg-surface-cl rounded-2xl max-w-lg w-full" style="max-height:90vh;overflow-y:auto;">
+    <div class="sticky top-0 bg-surface-cl p-5 flex items-center justify-between rounded-t-2xl">
+      <h3 class="font-headline font-bold text-on-surface" style="font-size:18px;">Upload Media</h3>
+      <button onclick="closeUpload()" class="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:bg-surface-clow rounded-lg transition-colors">
+        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
       </button>
     </div>
 
-    <form id="tierForm" class="space-y-5" onsubmit="saveTier(event)">
-      <input type="hidden" id="tierId" name="id">
+    <div class="p-6 pt-0 space-y-4">
 
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Tier ID</label>
-          <input type="text" id="tierIdInput" name="id_input" required class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30" style="font-size:14px;" placeholder="e.g. warrior">
-          <p class="font-body text-outline mt-1" style="font-size:10px;">Lowercase, no spaces</p>
-        </div>
-        <div>
-          <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Display Name</label>
-          <input type="text" id="tierName" name="name" required class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30" style="font-size:14px;" placeholder="e.g. Warrior">
-        </div>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Price (USD)</label>
-          <input type="number" id="tierPrice" name="price" step="0.01" min="0" required class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30" style="font-size:14px;" placeholder="3.99">
-        </div>
-        <div>
-          <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Billing Interval</label>
-          <select id="tierInterval" name="billing_interval" class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30" style="font-size:14px;">
-            <option value="monthly">Monthly</option>
-            <option value="yearly">Yearly</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Description</label>
-          <input type="text" id="tierDescription" name="description" class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30" style="font-size:14px;" placeholder="Full mission access">
-        </div>
-        
-        <!-- NEW BADGE DROPDOWN -->
-        <div>
-          <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Badge Icon</label>
-          <select id="tierBadge" name="badge_url" class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30" style="font-size:14px;">
-            <option value="">Default (Auto-match ID)</option>
-            <!-- Injected by loadBadges() -->
-          </select>
-          <p class="font-body text-outline mt-1" style="font-size:10px;">Upload more in the Media tab</p>
-        </div>
-      </div>
-
+      <!-- Type -->
       <div>
-        <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Features</label>
-        <div id="featuresList" class="space-y-2 mb-2"></div>
-        <button type="button" onclick="addFeature()" class="text-primary font-body font-semibold hover:underline" style="font-size:12px;">
-          + Add Feature
-        </button>
+        <label class="font-body text-on-surface-variant block mb-1.5" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Type <span class="text-tertiary">*</span></label>
+       <select id="uploadType" onchange="updateTypeGuide()" class="form-input w-full rounded-lg px-3 py-2.5 font-body cursor-pointer" style="font-size:13px;">
+          <option value="background">Background</option>
+          <option value="mission">Mission</option>
+          <option value="badge">Badge</option>
+          <option value="landing_hero">Landing Hero</option>
+          <option value="landing_feature">Landing Feature</option>
+          <option value="social">Social Icon</option>
+          <option value="campaign">Campaign Icon</option>
+          <option value="category">Category Icon</option>
+          <option value="ministry">Ministry Logo</option>
+          <option value="other">Other</option>
+        </select>
       </div>
 
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Stripe Price ID</label>
-          <input type="text" id="tierStripePriceId" name="stripe_price_id" class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30" style="font-size:14px;" placeholder="price_...">
-        </div>
-        <div>
-          <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Stripe Product ID</label>
-          <input type="text" id="tierStripeProductId" name="stripe_product_id" class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30" style="font-size:14px;" placeholder="prod_...">
-        </div>
-      </div>
-
-      <div class="flex gap-3">
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" id="tierActive" name="is_active" class="w-4 h-4">
-          <span class="font-body text-on-surface" style="font-size:13px;">Active</span>
-        </label>
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" id="tierPublic" name="is_public" class="w-4 h-4">
-          <span class="font-body text-on-surface" style="font-size:13px;">Public</span>
-        </label>
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" id="tierComingSoon" name="coming_soon" class="w-4 h-4">
-          <span class="font-body text-on-surface" style="font-size:13px;">Coming Soon</span>
-        </label>
-      </div>
-
-      <div class="flex gap-3 pt-4">
-        <button type="submit" class="flex-1 py-3 signature-gradient text-on-primary font-headline font-semibold rounded-xl active:scale-95 transition-transform" style="font-size:14px;">
-          Save Tier
-        </button>
-        <button type="button" onclick="closeTierModal()" class="px-6 py-3 bg-surface-clow text-on-surface-variant font-body font-semibold rounded-xl active:scale-95 transition-transform" style="font-size:14px;">
-          Cancel
-        </button>
-      </div>
-    </form>
+      <!-- Guidance for selected type -->
+<div id="typeGuide" class="bg-primary-container/15 rounded-xl p-3 flex items-start gap-2">
+  <span class="material-symbols-outlined text-primary flex-shrink-0" style="font-size:16px;">tips_and_updates</span>
+  <div class="flex-1 min-w-0">
+    <p class="font-body font-semibold text-primary" style="font-size:12px;">
+      <span id="typeGuideName">Background</span> · Recommended:
+      <span id="typeGuideDims" class="font-body font-bold">1200×1200</span>
+    </p>
+    <p id="typeGuideNote" class="font-body text-primary/80 mt-0.5" style="font-size:11px;">Square aspect ratio works best</p>
   </div>
 </div>
 
-<!-- ALLOCATION MODAL (Unchanged) -->
-<div id="allocationModal" class="hidden fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm z-[100] flex items-center justify-center px-5 overflow-y-auto" onclick="if(event.target===this)closeAllocationModal()">
-  <div class="bg-surface-cl rounded-2xl p-6 w-full max-w-2xl shadow-float my-8">
-    <div class="flex items-center justify-between mb-6">
-      <h3 class="font-headline font-bold text-on-surface" style="font-size:20px;">Edit Fund Allocation</h3>
-      <button onclick="closeAllocationModal()" class="w-8 h-8 rounded-lg hover:bg-surface-clow flex items-center justify-center text-on-surface-variant transition-colors">
-        <span class="material-symbols-outlined">close</span>
+<!-- Drop zone -->
+<div id="dropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()">
+  <span class="material-symbols-outlined text-outline block mb-2" style="font-size:48px;">cloud_upload</span>
+  <p class="font-body font-semibold text-on-surface mb-1" style="font-size:14px;">Click or drag images here</p>
+  <p class="font-body text-outline" style="font-size:11px;">JPG, PNG, WebP · Max 10MB per file · Multiple allowed</p>
+</div>
+
+      <!-- Selected files list -->
+      <div id="fileList" class="hidden space-y-2">
+        <p class="font-body text-on-surface-variant" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Selected Files</p>
+        <div id="filesContainer" class="space-y-2"></div>
+      </div>
+
+      <!-- Upload progress -->
+      <div id="uploadProgress" class="hidden bg-primary-container/20 rounded-lg p-3">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="material-symbols-outlined spin text-primary" style="font-size:16px;">progress_activity</span>
+          <span id="uploadProgressText" class="font-body font-semibold text-primary" style="font-size:12px;">Uploading...</span>
+        </div>
+        <div class="h-1.5 bg-white/50 rounded-full overflow-hidden">
+          <div id="uploadProgressBar" class="h-full signature-gradient rounded-full transition-all" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div id="uploadError" class="hidden bg-tertiary/10 rounded-lg p-3 flex items-center gap-2">
+        <span class="material-symbols-outlined text-tertiary" style="font-size:16px;">error</span>
+        <p id="uploadErrorMsg" class="font-body font-semibold text-tertiary" style="font-size:12px;"></p>
+      </div>
+    </div>
+
+    <div class="sticky bottom-0 bg-surface-cl p-5 rounded-b-2xl flex gap-3">
+      <button onclick="closeUpload()" class="flex-1 py-3 bg-surface-clow text-on-surface-variant font-body font-semibold rounded-xl" style="font-size:13px;">Cancel</button>
+      <button onclick="startUpload()" id="uploadSubmitBtn" class="flex-1 py-3 signature-gradient text-on-primary font-headline font-bold rounded-xl active:scale-[0.98] transition-transform" style="font-size:13px;" disabled>Upload</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- EDIT MODAL -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="editModal" class="hidden fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm z-[100] flex items-center justify-center px-4 py-6" onclick="if(event.target===this)closeEdit()">
+  <div class="bg-surface-cl rounded-2xl max-w-md w-full" style="max-height:90vh;overflow-y:auto;">
+    <div class="sticky top-0 bg-surface-cl p-5 flex items-center justify-between rounded-t-2xl">
+      <h3 class="font-headline font-bold text-on-surface" style="font-size:18px;">Edit Media</h3>
+      <button onclick="closeEdit()" class="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:bg-surface-clow rounded-lg transition-colors">
+        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
       </button>
     </div>
 
-    <form id="allocationForm" class="space-y-5" onsubmit="saveAllocation(event)">
-      <div id="allocationSegments" class="space-y-4"></div>
-      <button type="button" onclick="addSegment()" class="text-primary font-body font-semibold hover:underline" style="font-size:12px;">+ Add Segment</button>
+    <div class="p-6 pt-0 space-y-4">
+
+      <div id="editPreview" class="preview-img-container"></div>
+
       <div>
-        <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Admin Note</label>
-        <textarea id="allocationNote" rows="2" class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30" style="font-size:14px;" placeholder="Built as a PWA — no app store fees..."></textarea>
+        <label class="font-body text-on-surface-variant block mb-1.5" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Label</label>
+        <input id="editLabel" type="text" placeholder="Descriptive name" class="form-input w-full rounded-lg px-3 py-2.5 font-body" style="font-size:13px;">
       </div>
-      <div class="flex gap-3 pt-4">
-        <button type="submit" class="flex-1 py-3 signature-gradient text-on-primary font-headline font-semibold rounded-xl active:scale-95 transition-transform" style="font-size:14px;">Save Allocation</button>
-        <button type="button" onclick="closeAllocationModal()" class="px-6 py-3 bg-surface-clow text-on-surface-variant font-body font-semibold rounded-xl active:scale-95 transition-transform" style="font-size:14px;">Cancel</button>
+
+      <div>
+        <label class="font-body text-on-surface-variant block mb-1.5" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Alt Text</label>
+        <input id="editAlt" type="text" placeholder="For accessibility" class="form-input w-full rounded-lg px-3 py-2.5 font-body" style="font-size:13px;">
       </div>
-    </form>
+
+      <div>
+        <label class="font-body text-on-surface-variant block mb-1.5" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Type</label>
+        <select id="editType" class="form-input w-full rounded-lg px-3 py-2.5 font-body cursor-pointer" style="font-size:13px;">
+          <option value="background">Background</option>
+          <option value="mission">Mission</option>
+          <option value="badge">Badge</option>
+          <option value="landing_hero">Landing Hero</option>
+          <option value="landing_feature">Landing Feature</option>
+          <option value="social">Social Icon</option>
+          <option value="campaign">Campaign Icon</option>
+          <option value="category">Category Icon</option>
+          <option value="ministry">Ministry Logo</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="font-body text-on-surface-variant block mb-1.5" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Tags</label>
+        <div id="tagsContainer" class="flex flex-wrap gap-2 mb-2 min-h-[24px]"></div>
+        <div class="flex gap-2">
+          <input id="tagInput" type="text" placeholder="Add tag..." onkeydown="if(event.key==='Enter'){event.preventDefault();addTag()}" class="form-input flex-1 rounded-lg px-3 py-2 font-body" style="font-size:12px;">
+          <button type="button" onclick="addTag()" class="signature-gradient text-on-primary font-headline font-semibold px-3 py-2 rounded-lg" style="font-size:12px;">Add</button>
+        </div>
+      </div>
+
+      <div class="space-y-3 pt-2 border-t border-surface-clow">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-body font-semibold text-on-surface" style="font-size:13px;">Active</p>
+            <p class="font-body text-on-surface-variant mt-0.5" style="font-size:11px;">Available for use in the app</p>
+          </div>
+          <div id="editActiveToggle" class="toggle-pill on" onclick="toggleEditActive()">
+            <div class="toggle-dot"></div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-body font-semibold text-on-surface" style="font-size:13px;">Default for this type</p>
+            <p class="font-body text-on-surface-variant mt-0.5" style="font-size:11px;">Fallback when nothing is selected</p>
+          </div>
+          <div id="editDefaultToggle" class="toggle-pill" onclick="toggleEditDefault()">
+            <div class="toggle-dot"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="editError" class="hidden bg-tertiary/10 rounded-lg p-3 flex items-center gap-2">
+        <span class="material-symbols-outlined text-tertiary" style="font-size:16px;">error</span>
+        <p id="editErrorMsg" class="font-body font-semibold text-tertiary" style="font-size:12px;"></p>
+      </div>
+    </div>
+
+    <div class="sticky bottom-0 bg-surface-cl p-5 rounded-b-2xl flex gap-3">
+      <button onclick="closeEdit()" class="flex-1 py-3 bg-surface-clow text-on-surface-variant font-body font-semibold rounded-xl" style="font-size:13px;">Cancel</button>
+      <button onclick="saveEdit()" id="editSaveBtn" class="flex-1 py-3 signature-gradient text-on-primary font-headline font-bold rounded-xl active:scale-[0.98] transition-transform" style="font-size:13px;">Save Changes</button>
+    </div>
   </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PREVIEW MODAL -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="previewModal" class="hidden fixed inset-0 bg-inverse-surface/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onclick="if(event.target===this)closePreview()">
+  <div class="bg-surface-cl rounded-2xl max-w-2xl w-full">
+    <div class="p-5 flex items-center justify-between">
+      <div class="min-w-0 flex-1">
+        <h3 id="previewLabel" class="font-headline font-bold text-on-surface truncate" style="font-size:16px;">—</h3>
+        <p id="previewInfo" class="font-body text-on-surface-variant mt-0.5" style="font-size:11px;">—</p>
+      </div>
+      <button onclick="closePreview()" class="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:bg-surface-clow rounded-lg transition-colors ml-3">
+        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+      </button>
+    </div>
+    <div class="px-5 pb-5">
+      <div class="preview-img-container">
+        <img id="previewImg" src="" alt="">
+      </div>
+      <div class="mt-4 flex items-center justify-between">
+        <div id="previewUrl" class="font-body text-outline truncate mr-4" style="font-size:11px;">—</div>
+        <button onclick="copyUrl()" class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-clow text-on-surface-variant font-body font-semibold rounded-lg" style="font-size:12px;">
+          <span class="material-symbols-outlined" style="font-size:14px;">content_copy</span>Copy URL
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- CONFIRM MODAL -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="confirmModal" class="hidden fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm z-[110] flex items-center justify-center px-5" onclick="if(event.target===this)closeConfirm()">
+  <div class="bg-surface-cl rounded-2xl p-6 w-full max-w-sm">
+    <div class="text-center">
+      <div class="w-14 h-14 rounded-full bg-tertiary-container/15 flex items-center justify-center mx-auto mb-4">
+        <span class="material-symbols-outlined text-tertiary" style="font-size:28px;">warning</span>
+      </div>
+      <h3 id="confirmTitle" class="font-headline font-bold text-on-surface mb-2" style="font-size:18px;">Delete?</h3>
+      <p id="confirmMsg" class="font-body text-on-surface-variant mb-5 leading-relaxed" style="font-size:14px;">This cannot be undone.</p>
+      <div class="flex gap-3">
+        <button onclick="closeConfirm()" class="flex-1 py-3 bg-surface-clow text-on-surface-variant font-body font-semibold rounded-xl active:scale-95 transition-transform" style="font-size:14px;">Cancel</button>
+        <button id="confirmBtn" onclick="executeConfirm()" class="flex-1 py-3 bg-tertiary text-on-tertiary font-headline font-bold rounded-xl active:scale-[0.98] transition-transform" style="font-size:14px;">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-3 rounded-full shadow-float items-center gap-2" style="font-size:13px;">
+  <span class="material-symbols-outlined text-primary-container" style="font-size:16px;">check_circle</span>
+  <span id="toastMsg"></span>
 </div>
 
 <script>
@@ -335,248 +590,874 @@ var supabaseClient = supabase.createClient(
 )
 
 var currentUser = null
-var tiers = []
-var allocation = null
-var editingTier = null
-var featureCounter = 0
-var availableBadges = []
+var allMedia = []
+var filteredMedia = []
+var currentType = 'all'
+var selectedFiles = []
+var editingMedia = null
+var editingTags = []
+var editingActive = true
+var editingDefault = false
+var confirmAction = null
+var draggedItemId = null
 
-async function checkAdminAuth() {
-  try {
-    var result = await supabaseClient.auth.getSession()
-    if (!result.data.session) return false
-    currentUser = result.data.session.user
-    var p = await supabaseClient.from('profiles').select('role').eq('id', currentUser.id).single()
-    return p.data && p.data.role === 'admin'
-  } catch(e) { return false }
+var TYPE_CONFIG = {
+  all:              { label: 'All',            icon: 'apps',                short: 'All' },
+  background:       { label: 'Backgrounds',    icon: 'wallpaper',            short: 'Backgrounds' },
+  mission:          { label: 'Missions',       icon: 'volunteer_activism',   short: 'Missions' },
+  badge:            { label: 'Badges',         icon: 'military_tech',        short: 'Badges' },
+  landing_hero:     { label: 'Landing Hero',   icon: 'photo_camera',         short: 'Landing Hero' },
+  landing_feature:  { label: 'Landing Features',icon: 'auto_awesome',        short: 'Landing Features' },
+  social:           { label: 'Social Icons',   icon: 'share',                short: 'Social' },
+  campaign:         { label: 'Campaign Icons', icon: 'campaign',             short: 'Campaigns' },
+  category:         { label: 'Category Icons', icon: 'category',             short: 'Categories' },
+  ministry:         { label: 'Ministry',       icon: 'church',               short: 'Ministry' },
+  other:            { label: 'Other',          icon: 'more_horiz',           short: 'Other' }
+}
+
+// Optimal dimensions and guidance per type
+var TYPE_GUIDANCE = {
+  background:       { name:'Background',      dims:'1200×1200', ratio:1,      note:'Square aspect ratio · used on home screen and editor' },
+  mission:          { name:'Mission',         dims:'1200×630',  ratio:1.905,  note:'Landscape (approx 2:1) · used as mission card cover' },
+  badge:            { name:'Badge',           dims:'512×512',   ratio:1,      note:'Square · icon-style with transparent background (PNG)' },
+  landing_hero:     { name:'Landing Hero',    dims:'1920×1080', ratio:1.778,  note:'16:9 widescreen · large hero banner' },
+  landing_feature:  { name:'Landing Feature', dims:'800×600',   ratio:1.333,  note:'4:3 landscape · feature illustration' },
+  social:           { name:'Social Icon',     dims:'128×128',   ratio:1,      note:'Square · platform logo with transparent background (PNG)' },
+  campaign:         { name:'Campaign Icon',   dims:'256×256',   ratio:1,      note:'Square · icon for campaign identification' },
+  category:         { name:'Category Icon',   dims:'256×256',   ratio:1,      note:'Square · icon for quote category' },
+  ministry:         { name:'Ministry Logo',   dims:'800×800',   ratio:1,      note:'Square · works best for ministry branding' },
+  other:            { name:'Other',           dims:'No restriction', ratio:0, note:'No specific size requirement' }
 }
 
 // ════════════════════════════════════════════
-// LOAD DATA
+// TYPE GUIDANCE
 // ════════════════════════════════════════════
-async function loadTiers() {
-  var result = await supabaseClient.from('subscription_tiers').select('*').order('sort_order', { ascending: true })
-  tiers = result.data || []
-  renderTiers()
+function updateTypeGuide() {
+  var type = document.getElementById('uploadType').value
+  var guide = TYPE_GUIDANCE[type] || TYPE_GUIDANCE.other
+
+  var nameEl = document.getElementById('typeGuideName')
+  var dimsEl = document.getElementById('typeGuideDims')
+  var noteEl = document.getElementById('typeGuideNote')
+
+  if (nameEl) nameEl.textContent = guide.name
+  if (dimsEl) dimsEl.textContent = guide.dims
+  if (noteEl) noteEl.textContent = guide.note
+
+  // Re-check any selected files against new type
+  if (selectedFiles.length > 0) renderFileList()
 }
 
-async function loadBadges() {
-  // Fetch available badges from the media catalog
-  var result = await supabaseClient
-    .from('media')
-    .select('label, url')
-    .eq('type', 'badge')
-    .eq('is_active', true)
-    
-  availableBadges = result.data || []
-  
-  // Populate dropdown
-  var select = document.getElementById('tierBadge')
-  select.innerHTML = '<option value="">Default (Auto-match ID)</option>'
-  
-  availableBadges.forEach(function(b) {
-    var opt = document.createElement('option')
-    opt.value = b.url
-    opt.textContent = b.label || 'Unnamed Badge'
-    select.appendChild(opt)
+// Check file dimensions and provide warning
+function checkFileDimensions(file) {
+  return new Promise(function(resolve) {
+    var reader = new FileReader()
+    reader.onload = function(e) {
+      var img = new Image()
+      img.onload = function() {
+        resolve({ width: img.width, height: img.height, ratio: img.width / img.height })
+      }
+      img.onerror = function() { resolve(null) }
+      img.src = e.target.result
+    }
+    reader.onerror = function() { resolve(null) }
+    reader.readAsDataURL(file)
   })
 }
 
-async function loadAllocation() {
-  var result = await supabaseClient.from('subscription_allocation').select('*').eq('is_active', true).single()
-  allocation = result.data || null
-  renderAllocationPreview()
+// ════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════
+async function checkAdminAuth() {
+  try {
+    var result = null
+    for (var attempt = 0; attempt < 3; attempt++) {
+      result = await supabaseClient.auth.getSession()
+      if (result.data && result.data.session) break
+      await new Promise(function(r) { setTimeout(r, 300) })
+    }
+    if (!result.data || !result.data.session) {
+      try {
+        var refreshed = await supabaseClient.auth.refreshSession()
+        if (refreshed.data && refreshed.data.session) result = refreshed
+      } catch(e) {}
+    }
+    if (!result.data || !result.data.session) { window.location.href = 'login.html'; return false }
+
+    currentUser = result.data.session.user
+    var p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single()
+    if (p.error) { showToast('Connection error'); setTimeout(function() { window.location.reload() }, 1500); return false }
+    if (!p.data) { window.location.href = 'login.html'; return false }
+    if (p.data.role !== 'admin') { window.location.href = '../app/index.html'; return false }
+
+    var email = currentUser.email || ''
+    var initials = '?'
+    if (p.data.full_name) {
+      var parts = p.data.full_name.trim().split(' ')
+      initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : parts[0].substring(0,2).toUpperCase()
+    } else if (email) { initials = email.substring(0,2).toUpperCase() }
+    document.querySelectorAll('.admin-initials').forEach(function(el) { el.textContent = initials })
+    document.querySelectorAll('.admin-name').forEach(function(el) { el.textContent = p.data.full_name || email })
+    return true
+  } catch(e) {
+    console.error('Auth error:', e)
+    showToast('Error')
+    setTimeout(function() { window.location.reload() }, 1500)
+    return false
+  }
+}
+
+function toggleSidebar() {
+  var s = document.getElementById('sidebar'), o = document.getElementById('sidebarOverlay')
+  s.classList.toggle('hidden'); s.classList.toggle('flex'); o.classList.toggle('hidden')
+}
+
+async function handleLogout() {
+  try { await supabaseClient.auth.signOut() } catch(e) {}
+  window.location.href = 'login.html'
 }
 
 // ════════════════════════════════════════════
-// RENDER TIERS
+// LOAD MEDIA
 // ════════════════════════════════════════════
-function renderTiers() {
-  var container = document.getElementById('tiersList')
+async function loadMedia() {
+  var result = await supabaseClient.from('media').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: false })
+  if (result.error) { showToast('Failed to load media'); console.error(result.error); return }
+  allMedia = result.data || []
+  renderStats()
+  renderTypeTabs()
+  applyFilters()
+}
+
+function renderStats() {
+  var active = allMedia.filter(function(m) { return m.is_active })
+  var inactive = allMedia.filter(function(m) { return !m.is_active })
+  var now = new Date()
+  var monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  var thisMonth = allMedia.filter(function(m) { return new Date(m.created_at) >= monthStart })
+
+  document.getElementById('statTotal').textContent = allMedia.length
+  document.getElementById('statActive').textContent = active.length
+  document.getElementById('statInactive').textContent = inactive.length
+  document.getElementById('statMonth').textContent = thisMonth.length
+}
+
+function renderTypeTabs() {
+  var container = document.getElementById('typeTabs')
   container.innerHTML = ''
 
-  if (tiers.length === 0) {
-    container.innerHTML = '<div class="col-span-full text-center py-12"><p class="font-body text-outline" style="font-size:14px;">No tiers yet. Create one!</p></div>'
+  var typeCounts = {}
+  allMedia.forEach(function(m) {
+    var t = m.type || 'other'
+    typeCounts[t] = (typeCounts[t] || 0) + 1
+  })
+
+  Object.keys(TYPE_CONFIG).forEach(function(key) {
+    var config = TYPE_CONFIG[key]
+    var count = key === 'all' ? allMedia.length : (typeCounts[key] || 0)
+
+    var btn = document.createElement('button')
+    btn.className = 'type-tab' + (currentType === key ? ' active' : '')
+    btn.onclick = function() { setType(key) }
+    btn.innerHTML =
+      '<span class="material-symbols-outlined" style="font-size:14px;">' + config.icon + '</span>'
+      + config.short
+      + '<span class="count">' + count + '</span>'
+
+    container.appendChild(btn)
+  })
+}
+
+function setType(type) {
+  currentType = type
+  renderTypeTabs()
+  applyFilters()
+
+  // Show reorder hint only for specific types
+  var hint = document.getElementById('reorderHint')
+  hint.classList.toggle('hidden', type === 'all')
+}
+
+function applyFilters() {
+  var q = document.getElementById('searchInput').value.trim().toLowerCase()
+  var showInactive = document.getElementById('showInactive').checked
+
+  filteredMedia = allMedia.filter(function(m) {
+    // Type filter
+    if (currentType !== 'all' && (m.type || 'other') !== currentType) return false
+
+    // Active filter
+    if (!showInactive && !m.is_active) return false
+
+    // Search
+    if (q) {
+      var haystack = ((m.label || '') + ' ' + (m.alt_text || '') + ' ' + (m.tags || []).join(' ')).toLowerCase()
+      if (haystack.indexOf(q) === -1) return false
+    }
+
+    return true
+  })
+
+  renderGrid()
+}
+
+function renderGrid() {
+  var grid = document.getElementById('mediaGrid')
+  var empty = document.getElementById('emptyState')
+
+  if (filteredMedia.length === 0) {
+    grid.innerHTML = ''
+    empty.classList.remove('hidden')
+    return
+  }
+  empty.classList.add('hidden')
+
+  grid.innerHTML = ''
+  filteredMedia.forEach(function(m) { grid.appendChild(buildMediaCard(m)) })
+}
+
+function buildMediaCard(m) {
+  var card = document.createElement('div')
+  card.className = 'media-card fade-up' + (m.is_active ? '' : ' inactive')
+  card.setAttribute('data-id', m.id)
+  card.setAttribute('draggable', currentType !== 'all' ? 'true' : 'false')
+
+  // Drag events (only when filtered to a single type)
+  if (currentType !== 'all') {
+    card.addEventListener('dragstart', function(e) { onDragStart(e, m.id) })
+    card.addEventListener('dragover', onDragOver)
+    card.addEventListener('dragleave', onDragLeave)
+    card.addEventListener('drop', function(e) { onDrop(e, m.id) })
+    card.addEventListener('dragend', onDragEnd)
+  }
+
+  var typeConfig = TYPE_CONFIG[m.type || 'other'] || TYPE_CONFIG.other
+
+  var badgesLeft = ''
+  if (m.is_default) badgesLeft += '<span class="badge-pill badge-default"><span class="material-symbols-outlined filled" style="font-size:9px;">star</span>Default</span>'
+
+  var badgesRight = ''
+  if (!m.is_active) badgesRight += '<span class="badge-pill badge-inactive">Inactive</span>'
+
+  card.innerHTML =
+    '<div class="media-thumb">'
+      + '<img src="' + (m.thumbnail_url || m.url) + '" alt="' + escapeAttr(m.alt_text || m.label || '') + '" loading="lazy">'
+    + '</div>'
+    + '<div class="media-badge-row">'
+      + '<div>' + badgesLeft + '</div>'
+      + '<div>' + badgesRight + '</div>'
+    + '</div>'
+    + '<div class="media-actions">'
+      + '<button class="action-btn" onclick="event.stopPropagation();openPreview(\'' + m.id + '\')" title="Preview"><span class="material-symbols-outlined" style="font-size:16px;">visibility</span></button>'
+      + '<button class="action-btn primary" onclick="event.stopPropagation();openEdit(\'' + m.id + '\')" title="Edit"><span class="material-symbols-outlined" style="font-size:16px;">edit</span></button>'
+      + '<button class="action-btn danger" onclick="event.stopPropagation();confirmDelete(\'' + m.id + '\')" title="Delete"><span class="material-symbols-outlined" style="font-size:16px;">delete</span></button>'
+    + '</div>'
+    + '<div class="media-label-area">'
+      + '<p class="font-body font-semibold text-on-surface truncate" style="font-size:12px;">' + escapeHtml(m.label || 'Untitled') + '</p>'
+      + '<p class="font-body text-outline truncate" style="font-size:10px;">' + typeConfig.short + '</p>'
+    + '</div>'
+
+  card.onclick = function() { openPreview(m.id) }
+
+  return card
+}
+
+// ════════════════════════════════════════════
+// DRAG & DROP REORDERING
+// ════════════════════════════════════════════
+function onDragStart(e, id) {
+  draggedItemId = id
+  e.currentTarget.classList.add('dragging')
+  e.dataTransfer.effectAllowed = 'move'
+}
+
+function onDragOver(e) {
+  e.preventDefault()
+  e.dataTransfer.dropEffect = 'move'
+  e.currentTarget.classList.add('drag-over')
+}
+
+function onDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over')
+}
+
+async function onDrop(e, targetId) {
+  e.preventDefault()
+  e.currentTarget.classList.remove('drag-over')
+  if (!draggedItemId || draggedItemId === targetId) return
+
+  // Find items in filteredMedia
+  var draggedIdx = filteredMedia.findIndex(function(m) { return m.id === draggedItemId })
+  var targetIdx = filteredMedia.findIndex(function(m) { return m.id === targetId })
+  if (draggedIdx === -1 || targetIdx === -1) return
+
+  // Reorder in memory
+  var moved = filteredMedia.splice(draggedIdx, 1)[0]
+  filteredMedia.splice(targetIdx, 0, moved)
+
+  // Reassign sort_order and save
+  var updates = []
+  filteredMedia.forEach(function(m, i) {
+    m.sort_order = i
+    updates.push(supabaseClient.from('media').update({ sort_order: i }).eq('id', m.id))
+  })
+
+  renderGrid()
+
+  await Promise.all(updates)
+
+  // Sync back to allMedia
+  filteredMedia.forEach(function(m) {
+    var idx = allMedia.findIndex(function(am) { return am.id === m.id })
+    if (idx > -1) allMedia[idx].sort_order = m.sort_order
+  })
+
+  showToast('Order updated')
+}
+
+function onDragEnd(e) {
+  e.currentTarget.classList.remove('dragging')
+  document.querySelectorAll('.media-card').forEach(function(c) { c.classList.remove('drag-over') })
+  draggedItemId = null
+}
+
+// ════════════════════════════════════════════
+// UPLOAD MODAL
+// ════════════════════════════════════════════
+function openUpload() {
+  document.getElementById('uploadModal').classList.remove('hidden')
+  document.body.style.overflow = 'hidden'
+  selectedFiles = []
+  document.getElementById('fileList').classList.add('hidden')
+  document.getElementById('filesContainer').innerHTML = ''
+  document.getElementById('uploadError').classList.add('hidden')
+  document.getElementById('uploadProgress').classList.add('hidden')
+  document.getElementById('uploadSubmitBtn').disabled = true
+
+  // Default type to current filter (if not 'all')
+  if (currentType !== 'all') {
+    document.getElementById('uploadType').value = currentType
+  }
+
+
+  updateTypeGuide()
+}
+
+function closeUpload() {
+  document.getElementById('uploadModal').classList.add('hidden')
+  document.body.style.overflow = ''
+  selectedFiles = []
+}
+
+function handleFileSelect(input) {
+  var files = Array.from(input.files || [])
+  addFiles(files)
+  input.value = ''
+}
+
+function addFiles(files) {
+  files.forEach(function(f) {
+    if (!f.type.startsWith('image/')) return
+    if (f.size > 10 * 1024 * 1024) { showToast(f.name + ' is too large (max 10MB)'); return }
+    selectedFiles.push(f)
+  })
+  renderFileList()
+}
+
+async function renderFileList() {
+  var container = document.getElementById('filesContainer')
+  var wrapper = document.getElementById('fileList')
+
+  if (selectedFiles.length === 0) {
+    wrapper.classList.add('hidden')
+    document.getElementById('uploadSubmitBtn').disabled = true
     return
   }
 
-  tiers.forEach(function(tier) {
-    var card = document.createElement('div')
-    card.className = 'tier-card' + (tier.is_active ? '' : ' inactive')
+  wrapper.classList.remove('hidden')
+  document.getElementById('uploadSubmitBtn').disabled = false
+  container.innerHTML = ''
 
-    // Determine which badge to show in the UI card
-    var badgeUrl = tier.badge_url || ('/images/badges/' + tier.id + '.svg')
-    
-    var statusBadge = ''
-    if (!tier.is_active) statusBadge = '<span class="bg-outline-variant/30 text-outline px-2 py-0.5 rounded-full font-body font-bold" style="font-size:9px;">INACTIVE</span>'
-    else if (tier.coming_soon) statusBadge = '<span class="bg-secondary-container/30 text-secondary px-2 py-0.5 rounded-full font-body font-bold" style="font-size:9px;">COMING SOON</span>'
-    else statusBadge = '<span class="bg-primary-container/30 text-primary px-2 py-0.5 rounded-full font-body font-bold" style="font-size:9px;">LIVE</span>'
+  var type = document.getElementById('uploadType').value
+  var guide = TYPE_GUIDANCE[type] || TYPE_GUIDANCE.other
 
-    var features = tier.features || []
-    var featuresHtml = features.slice(0, 3).map(function(f) {
-      var icon = f.available ? 'check_circle' : 'radio_button_unchecked'
-      var color = f.available ? 'text-primary' : 'text-outline'
-      return '<div class="flex items-center gap-2"><span class="material-symbols-outlined ' + color + '" style="font-size:14px;">' + icon + '</span><span class="font-body text-on-surface-variant" style="font-size:11px;">' + escapeHtml(f.label || '') + '</span></div>'
-    }).join('')
+  for (var i = 0; i < selectedFiles.length; i++) {
+    var f = selectedFiles[i]
+    var kb = Math.round(f.size / 1024)
 
-    card.innerHTML =
-      '<div class="badge-preview"><img src="' + escapeHtml(badgeUrl) + '" onerror="this.style.display=\'none\'"></div>'
-      + '<div class="flex items-start justify-between mb-4 pr-14">'
-        + '<div>'
-          + '<h4 class="font-headline font-bold text-on-surface mb-1" style="font-size:16px;">' + escapeHtml(tier.name || 'Unnamed') + '</h4>'
-          + '<p class="font-body text-on-surface-variant" style="font-size:12px;">' + escapeHtml(tier.description || '') + '</p>'
-        + '</div>'
-      + '</div>'
-      + '<div class="mb-4">' + statusBadge + '</div>'
-      + '<div class="flex items-baseline gap-1 mb-4">'
-        + '<span class="font-headline font-bold text-primary" style="font-size:24px;">$' + Number(tier.price || 0).toFixed(2) + '</span>'
-        + '<span class="font-body text-on-surface-variant" style="font-size:12px;">/' + (tier.billing_interval || 'month') + '</span>'
-      + '</div>'
-      + '<div class="space-y-2 mb-4">' + featuresHtml + '</div>'
-      + '<div class="flex gap-2">'
-        + '<button onclick="editTier(\'' + tier.id + '\')" class="flex-1 py-2 bg-primary-container/20 text-primary font-body font-semibold rounded-lg hover:bg-primary-container/30 transition-colors" style="font-size:12px;">Edit</button>'
-        + '<button onclick="deleteTier(\'' + tier.id + '\')" class="px-3 py-2 bg-tertiary-container/20 text-tertiary font-body font-semibold rounded-lg hover:bg-tertiary-container/30 transition-colors" style="font-size:12px;"><span class="material-symbols-outlined" style="font-size:16px;">delete</span></button>'
-      + '</div>'
+    // Check dimensions
+    var dims = await checkFileDimensions(f)
+    var dimText = ''
+    var warningHtml = ''
 
-    container.appendChild(card)
-  })
-}
+    if (dims) {
+      dimText = dims.width + '×' + dims.height
 
-// ════════════════════════════════════════════
-// TIER MODAL
-// ════════════════════════════════════════════
-function openNewTierModal() {
-  editingTier = null
-  document.getElementById('tierModalTitle').textContent = 'New Tier'
-  document.getElementById('tierForm').reset()
-  document.getElementById('tierId').value = ''
-  document.getElementById('tierIdInput').disabled = false
-  document.getElementById('featuresList').innerHTML = ''
-  featureCounter = 0
-  document.getElementById('tierBadge').value = ''
-  document.getElementById('tierModal').classList.remove('hidden')
-}
-
-function editTier(tierId) {
-  editingTier = tiers.find(function(t) { return t.id === tierId })
-  if (!editingTier) return
-
-  document.getElementById('tierModalTitle').textContent = 'Edit Tier: ' + editingTier.name
-  document.getElementById('tierId').value = editingTier.id
-  document.getElementById('tierIdInput').value = editingTier.id
-  document.getElementById('tierIdInput').disabled = true
-  document.getElementById('tierName').value = editingTier.name || ''
-  document.getElementById('tierPrice').value = editingTier.price || 0
-  document.getElementById('tierInterval').value = editingTier.billing_interval || 'monthly'
-  document.getElementById('tierDescription').value = editingTier.description || ''
-  document.getElementById('tierStripePriceId').value = editingTier.stripe_price_id || ''
-  document.getElementById('tierStripeProductId').value = editingTier.stripe_product_id || ''
-  document.getElementById('tierActive').checked = editingTier.is_active !== false
-  document.getElementById('tierPublic').checked = editingTier.is_public !== false
-  document.getElementById('tierComingSoon').checked = editingTier.coming_soon === true
-  
-  document.getElementById('tierBadge').value = editingTier.badge_url || ''
-
-  var featuresList = document.getElementById('featuresList')
-  featuresList.innerHTML = ''
-  featureCounter = 0
-  var features = editingTier.features || []
-  features.forEach(function(f) { addFeature(f.label, f.available, f.soon) })
-
-  document.getElementById('tierModal').classList.remove('hidden')
-}
-
-function closeTierModal() {
-  document.getElementById('tierModal').classList.add('hidden')
-}
-
-function addFeature(label, available, soon) {
-  var container = document.getElementById('featuresList')
-  var idx = featureCounter++
-  var div = document.createElement('div')
-  div.className = 'feature-item'
-  div.id = 'feature-' + idx
-  div.innerHTML =
-    '<input type="checkbox" id="available-' + idx + '" ' + (available !== false ? 'checked' : '') + '>'
-    + '<input type="text" id="label-' + idx + '" value="' + escapeHtml(label||'') + '" placeholder="Feature name" class="flex-1 px-2 py-1 bg-surface-cl rounded font-body text-on-surface" style="font-size:12px;">'
-    + '<label class="flex items-center gap-1 text-on-surface-variant" style="font-size:10px;"><input type="checkbox" id="soon-' + idx + '" ' + (soon ? 'checked' : '') + '> Soon</label>'
-    + '<button type="button" onclick="document.getElementById(\'feature-' + idx + '\').remove()" class="text-tertiary hover:underline" style="font-size:10px;">Remove</button>'
-  container.appendChild(div)
-}
-
-async function saveTier(e) {
-  e.preventDefault()
-  var form = document.getElementById('tierForm')
-  var id = form.id_input.value.trim().toLowerCase().replace(/\s+/g, '-')
-  
-  var features = []
-  document.getElementById('featuresList').querySelectorAll('.feature-item').forEach(function(item) {
-    var idx = item.id.replace('feature-', '')
-    var lEl = document.getElementById('label-' + idx)
-    if (lEl && lEl.value.trim()) {
-      features.push({
-        label: lEl.value.trim(),
-        available: document.getElementById('available-' + idx).checked,
-        soon: document.getElementById('soon-' + idx).checked
-      })
+      // Warn if aspect ratio is off (skip 'other' which has no ratio)
+      if (guide.ratio > 0) {
+        var ratioDiff = Math.abs(dims.ratio - guide.ratio) / guide.ratio
+        if (ratioDiff > 0.15) {
+          // More than 15% off ideal ratio
+          warningHtml = '<div class="flex items-center gap-1.5 mt-1"><span class="material-symbols-outlined text-tertiary" style="font-size:12px;">warning</span><span class="font-body text-tertiary" style="font-size:10px;">Aspect ratio doesn\'t match ideal (' + guide.dims + '). Image may look stretched or cropped.</span></div>'
+        }
+      }
     }
-  })
 
-  var data = {
-    id: id,
-    name: form.name.value.trim(),
-    price: parseFloat(form.price.value) || 0,
-    billing_interval: form.billing_interval.value,
-    description: form.description.value.trim(),
-    badge_url: form.badge_url.value || null, // Saves the badge URL
-    features: features,
-    is_active: form.is_active.checked,
-    is_public: form.is_public.checked,
-    coming_soon: form.coming_soon.checked,
-    stripe_price_id: form.stripe_price_id.value.trim() || null,
-    stripe_product_id: form.stripe_product_id.value.trim() || null
+    var row = document.createElement('div')
+    row.className = 'flex items-start gap-3 bg-surface-clow rounded-lg p-2.5'
+    row.innerHTML =
+      '<div class="w-10 h-10 rounded bg-surface-cl flex items-center justify-center flex-shrink-0">'
+        + '<span class="material-symbols-outlined text-outline" style="font-size:18px;">image</span>'
+      + '</div>'
+      + '<div class="flex-1 min-w-0">'
+        + '<p class="font-body font-semibold text-on-surface truncate" style="font-size:12px;">' + escapeHtml(f.name) + '</p>'
+        + '<p class="font-body text-outline" style="font-size:10px;">' + kb + ' KB' + (dimText ? ' · ' + dimText : '') + '</p>'
+        + warningHtml
+      + '</div>'
+      + '<button onclick="removeFile(' + i + ')" class="w-7 h-7 flex items-center justify-center text-on-surface-variant hover:bg-surface-cl rounded transition-colors flex-shrink-0">'
+        + '<span class="material-symbols-outlined" style="font-size:14px;">close</span>'
+      + '</button>'
+    container.appendChild(row)
   }
-
-  if (editingTier && editingTier.id === id) {
-    await supabaseClient.from('subscription_tiers').update(data).eq('id', id)
-  } else {
-    data.sort_order = Math.max(...tiers.map(t => t.sort_order || 0), 0) + 1
-    await supabaseClient.from('subscription_tiers').insert([data])
-  }
-
-  showToast('Tier saved successfully')
-  closeTierModal()
-  await loadTiers()
 }
 
-async function deleteTier(tierId) {
-  if (!confirm('Delete tier? This cannot be undone.')) return
-  await supabaseClient.from('subscription_tiers').delete().eq('id', tierId)
-  await loadTiers()
+  wrapper.classList.remove('hidden')
+  document.getElementById('uploadSubmitBtn').disabled = false
+  container.innerHTML = ''
+
+  selectedFiles.forEach(function(f, i) {
+    var kb = Math.round(f.size / 1024)
+    var row = document.createElement('div')
+    row.className = 'flex items-center gap-3 bg-surface-clow rounded-lg p-2.5'
+    row.innerHTML =
+      '<div class="w-10 h-10 rounded bg-surface-cl flex items-center justify-center flex-shrink-0">'
+        + '<span class="material-symbols-outlined text-outline" style="font-size:18px;">image</span>'
+      + '</div>'
+      + '<div class="flex-1 min-w-0">'
+        + '<p class="font-body font-semibold text-on-surface truncate" style="font-size:12px;">' + escapeHtml(f.name) + '</p>'
+        + '<p class="font-body text-outline" style="font-size:10px;">' + kb + ' KB</p>'
+      + '</div>'
+      + '<button onclick="removeFile(' + i + ')" class="w-7 h-7 flex items-center justify-center text-on-surface-variant hover:bg-surface-cl rounded transition-colors">'
+        + '<span class="material-symbols-outlined" style="font-size:14px;">close</span>'
+      + '</button>'
+    container.appendChild(row)
+  })
+}
+
+function removeFile(i) {
+  selectedFiles.splice(i, 1)
+  renderFileList()
+}
+
+// Drop zone drag events
+document.addEventListener('DOMContentLoaded', function() {
+  var dropZone = document.getElementById('dropZone')
+  if (!dropZone) return
+
+  ;['dragenter', 'dragover'].forEach(function(ev) {
+    dropZone.addEventListener(ev, function(e) {
+      e.preventDefault()
+      e.stopPropagation()
+      dropZone.classList.add('dragover')
+    })
+  })
+
+  ;['dragleave', 'drop'].forEach(function(ev) {
+    dropZone.addEventListener(ev, function(e) {
+      e.preventDefault()
+      e.stopPropagation()
+      dropZone.classList.remove('dragover')
+    })
+  })
+
+  dropZone.addEventListener('drop', function(e) {
+    var files = Array.from(e.dataTransfer.files || [])
+    addFiles(files)
+  })
+})
+
+async function startUpload() {
+  if (selectedFiles.length === 0) return
+
+  var type = document.getElementById('uploadType').value
+  var errorEl = document.getElementById('uploadError')
+  var errorMsg = document.getElementById('uploadErrorMsg')
+  var progressEl = document.getElementById('uploadProgress')
+  var progressText = document.getElementById('uploadProgressText')
+  var progressBar = document.getElementById('uploadProgressBar')
+
+  errorEl.classList.add('hidden')
+  progressEl.classList.remove('hidden')
+
+  var btn = document.getElementById('uploadSubmitBtn')
+  btn.disabled = true
+  btn.textContent = 'Uploading...'
+
+  var uploaded = 0
+  var total = selectedFiles.length
+  var errors = []
+
+  for (var i = 0; i < selectedFiles.length; i++) {
+    var f = selectedFiles[i]
+    progressText.textContent = 'Uploading ' + (i + 1) + ' of ' + total + '... (' + f.name + ')'
+
+    try {
+      // Resize based on type
+      var resized = await resizeImage(f, getMaxWidthForType(type), getFormatForType(type, f.type))
+
+      var timestamp = Date.now()
+      var randStr = Math.random().toString(36).substring(2, 8)
+      var ext = getExtForType(type, f.type)
+      var filePath = type + '/' + timestamp + '-' + randStr + '.' + ext
+
+      var uploadResult = await supabaseClient.storage
+        .from('media')
+        .upload(filePath, resized.blob, { upsert: false, contentType: resized.mimeType })
+
+      if (uploadResult.error) throw uploadResult.error
+
+      var urlResult = supabaseClient.storage.from('media').getPublicUrl(filePath)
+      var publicUrl = urlResult.data.publicUrl
+
+      // Get max sort_order for this type
+      var maxSort = 0
+      allMedia.filter(function(m) { return m.type === type }).forEach(function(m) {
+        if (m.sort_order > maxSort) maxSort = m.sort_order
+      })
+
+      // Auto-generate label from filename
+      var label = f.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase() })
+
+      var insertResult = await supabaseClient.from('media').insert({
+        type: type,
+        url: publicUrl,
+        label: label,
+        alt_text: label,
+        sort_order: maxSort + 1,
+        width: resized.width,
+        height: resized.height,
+        file_size: resized.size,
+        uploaded_by: currentUser.id
+      })
+
+      if (insertResult.error) throw insertResult.error
+
+      uploaded++
+      progressBar.style.width = Math.round((uploaded / total) * 100) + '%'
+    } catch(e) {
+      console.error('Upload error:', e)
+      errors.push(f.name + ': ' + (e.message || 'Failed'))
+    }
+  }
+
+  progressText.textContent = uploaded + ' of ' + total + ' uploaded'
+
+  if (errors.length > 0) {
+    errorMsg.textContent = errors.join(', ')
+    errorEl.classList.remove('hidden')
+  }
+
+  if (uploaded > 0) {
+    showToast(uploaded + ' image' + (uploaded !== 1 ? 's' : '') + ' uploaded')
+    await loadMedia()
+    // Switch to type filter to show uploads
+    setType(type)
+    setTimeout(function() { closeUpload() }, 1000)
+  }
+
+  btn.disabled = false
+  btn.textContent = 'Upload'
+}
+
+function getMaxWidthForType(type) {
+  if (type === 'background' || type === 'landing_hero') return 1600
+  if (type === 'mission' || type === 'landing_feature') return 1200
+  if (type === 'badge' || type === 'social' || type === 'campaign' || type === 'category') return 512
+  if (type === 'ministry') return 800
+  return 1200
+}
+
+function getFormatForType(type, originalMime) {
+  // Icons keep transparency
+  if (type === 'badge' || type === 'social' || type === 'campaign' || type === 'category') {
+    return 'image/png'
+  }
+  // Photos as JPEG
+  if (originalMime === 'image/png' && (type === 'background' || type === 'mission' || type === 'landing_hero' || type === 'landing_feature')) {
+    return 'image/jpeg'
+  }
+  return originalMime === 'image/jpeg' ? 'image/jpeg' : 'image/png'
+}
+
+function getExtForType(type, originalMime) {
+  var mime = getFormatForType(type, originalMime)
+  if (mime === 'image/jpeg') return 'jpg'
+  if (mime === 'image/png') return 'png'
+  return 'jpg'
+}
+
+function resizeImage(file, maxWidth, targetMime) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader()
+    reader.onload = function(e) {
+      var img = new Image()
+      img.onload = function() {
+        var scale = Math.min(1, maxWidth / img.width)
+        var canvas = document.createElement('canvas')
+        canvas.width = Math.round(img.width * scale)
+        canvas.height = Math.round(img.height * scale)
+        var ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+
+        var quality = targetMime === 'image/jpeg' ? 0.85 : 0.92
+        canvas.toBlob(function(blob) {
+          if (blob) resolve({ blob: blob, width: canvas.width, height: canvas.height, size: blob.size, mimeType: targetMime })
+          else reject(new Error('Blob creation failed'))
+        }, targetMime, quality)
+      }
+      img.onerror = reject
+      img.src = e.target.result
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
 }
 
 // ════════════════════════════════════════════
-// ALLOCATION
+// EDIT MODAL
 // ════════════════════════════════════════════
-function renderAllocationPreview() {
-  var container = document.getElementById('allocationPreview')
-  if (!allocation || !allocation.segments) return
-  var html = '<div class="h-3 w-full flex rounded-full overflow-hidden mb-4">'
-  allocation.segments.forEach(function(seg, i) {
-    var c = seg.color==='primary'?'#3d6285':seg.color==='secondary'?'#6b9bc3':'#b2b2ab'
-    html += '<div style="width:'+seg.percent+'%;background:'+c+'"></div>'
-  })
-  container.innerHTML = html + '</div>'
+function openEdit(id) {
+  var m = null
+  for (var i = 0; i < allMedia.length; i++) { if (allMedia[i].id === id) { m = allMedia[i]; break } }
+  if (!m) return
+
+  editingMedia = m
+  editingTags = m.tags ? m.tags.slice() : []
+  editingActive = m.is_active !== false
+  editingDefault = m.is_default === true
+
+  var preview = document.getElementById('editPreview')
+  preview.innerHTML = '<img src="' + escapeAttr(m.url) + '" alt="">'
+
+  document.getElementById('editLabel').value = m.label || ''
+  document.getElementById('editAlt').value = m.alt_text || ''
+  document.getElementById('editType').value = m.type || 'other'
+  document.getElementById('editError').classList.add('hidden')
+
+  renderEditTags()
+  updateEditToggles()
+
+  document.getElementById('editModal').classList.remove('hidden')
+  document.body.style.overflow = 'hidden'
 }
-function openAllocationModal() { document.getElementById('allocationModal').classList.remove('hidden') }
-function closeAllocationModal() { document.getElementById('allocationModal').classList.add('hidden') }
 
-function showToast(msg) { alert(msg) } // Simplified for brevity in this snippet
-function escapeHtml(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;') }
+function closeEdit() {
+  document.getElementById('editModal').classList.add('hidden')
+  document.body.style.overflow = ''
+  editingMedia = null
+}
 
+function addTag() {
+  var input = document.getElementById('tagInput')
+  var val = input.value.trim().toLowerCase()
+  if (!val) return
+  if (editingTags.indexOf(val) === -1) {
+    editingTags.push(val)
+    renderEditTags()
+  }
+  input.value = ''
+}
+
+function removeTag(i) {
+  editingTags.splice(i, 1)
+  renderEditTags()
+}
+
+function renderEditTags() {
+  var container = document.getElementById('tagsContainer')
+  container.innerHTML = ''
+  editingTags.forEach(function(t, i) {
+    var chip = document.createElement('span')
+    chip.className = 'chip'
+    chip.innerHTML = escapeHtml(t) + ' <button onclick="removeTag(' + i + ')" type="button" style="opacity:0.5;cursor:pointer;"><span class="material-symbols-outlined" style="font-size:12px;">close</span></button>'
+    container.appendChild(chip)
+  })
+}
+
+function toggleEditActive() {
+  editingActive = !editingActive
+  updateEditToggles()
+}
+
+function toggleEditDefault() {
+  editingDefault = !editingDefault
+  updateEditToggles()
+}
+
+function updateEditToggles() {
+  document.getElementById('editActiveToggle').classList.toggle('on', editingActive)
+  document.getElementById('editDefaultToggle').classList.toggle('on', editingDefault)
+}
+
+async function saveEdit() {
+  if (!editingMedia) return
+
+  var label = document.getElementById('editLabel').value.trim()
+  var alt = document.getElementById('editAlt').value.trim()
+  var type = document.getElementById('editType').value
+  var errorEl = document.getElementById('editError')
+  var errorMsg = document.getElementById('editErrorMsg')
+
+  errorEl.classList.add('hidden')
+
+  var btn = document.getElementById('editSaveBtn')
+  btn.disabled = true
+  btn.textContent = 'Saving...'
+
+  // If setting as default, clear any existing default for this type
+  if (editingDefault) {
+    await supabaseClient.from('media').update({ is_default: false }).eq('type', type).neq('id', editingMedia.id)
+  }
+
+  var result = await supabaseClient.from('media').update({
+    label: label || null,
+    alt_text: alt || null,
+    type: type,
+    tags: editingTags,
+    is_active: editingActive,
+    is_default: editingDefault,
+    updated_at: new Date().toISOString()
+  }).eq('id', editingMedia.id)
+
+  btn.disabled = false
+  btn.textContent = 'Save Changes'
+
+  if (result.error) {
+    errorMsg.textContent = 'Error: ' + result.error.message
+    errorEl.classList.remove('hidden')
+    return
+  }
+
+  showToast('Saved')
+  closeEdit()
+  await loadMedia()
+}
+
+// ════════════════════════════════════════════
+// PREVIEW MODAL
+// ════════════════════════════════════════════
+var currentPreviewUrl = ''
+
+function openPreview(id) {
+  var m = null
+  for (var i = 0; i < allMedia.length; i++) { if (allMedia[i].id === id) { m = allMedia[i]; break } }
+  if (!m) return
+
+  currentPreviewUrl = m.url
+  var typeConfig = TYPE_CONFIG[m.type || 'other'] || TYPE_CONFIG.other
+
+  document.getElementById('previewImg').src = m.url
+  document.getElementById('previewLabel').textContent = m.label || 'Untitled'
+
+  var info = typeConfig.short
+  if (m.width && m.height) info += ' · ' + m.width + '×' + m.height
+  if (m.file_size) info += ' · ' + Math.round(m.file_size / 1024) + ' KB'
+  document.getElementById('previewInfo').textContent = info
+  document.getElementById('previewUrl').textContent = m.url
+
+  document.getElementById('previewModal').classList.remove('hidden')
+  document.body.style.overflow = 'hidden'
+}
+
+function closePreview() {
+  document.getElementById('previewModal').classList.add('hidden')
+  document.body.style.overflow = ''
+}
+
+function copyUrl() {
+  if (!currentPreviewUrl) return
+  navigator.clipboard.writeText(currentPreviewUrl).then(function() {
+    showToast('URL copied')
+  })
+}
+
+// ════════════════════════════════════════════
+// DELETE
+// ════════════════════════════════════════════
+function confirmDelete(id) {
+  var m = null
+  for (var i = 0; i < allMedia.length; i++) { if (allMedia[i].id === id) { m = allMedia[i]; break } }
+  if (!m) return
+
+  confirmAction = { type: 'delete', id: id, media: m }
+  document.getElementById('confirmTitle').textContent = 'Delete this media?'
+  document.getElementById('confirmMsg').textContent = 'The file will be removed from storage and the database. This cannot be undone.'
+  document.getElementById('confirmBtn').textContent = 'Delete'
+  document.getElementById('confirmModal').classList.remove('hidden')
+  document.body.style.overflow = 'hidden'
+}
+
+function closeConfirm() {
+  document.getElementById('confirmModal').classList.add('hidden')
+  document.body.style.overflow = ''
+}
+
+async function executeConfirm() {
+  if (!confirmAction) return
+  closeConfirm()
+
+  if (confirmAction.type === 'delete') {
+    var m = confirmAction.media
+
+    // Delete from storage — extract path from URL
+    try {
+      var urlParts = m.url.split('/media/')
+      if (urlParts.length > 1) {
+        var storagePath = urlParts[1]
+        await supabaseClient.storage.from('media').remove([storagePath])
+      }
+    } catch(e) { console.warn('Storage delete failed:', e) }
+
+    // Delete DB row
+    var r = await supabaseClient.from('media').delete().eq('id', confirmAction.id)
+    if (r.error) { showToast('Error: ' + r.error.message); return }
+    showToast('Media deleted')
+    await loadMedia()
+  }
+  confirmAction = null
+}
+
+// ════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════
+function escapeHtml(str) {
+  if (!str) return ''
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')
+}
+function escapeAttr(str) { return escapeHtml(str) }
+
+var toastTimer
+function showToast(msg) {
+  var toast = document.getElementById('toast')
+  var toastMsg = document.getElementById('toastMsg')
+  if (!toast || !toastMsg) return
+  toastMsg.textContent = msg
+  toast.classList.remove('hidden')
+  toast.classList.add('flex')
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(function() {
+    toast.classList.add('hidden')
+    toast.classList.remove('flex')
+  }, 2500)
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
 async function init() {
-  if (!(await checkAdminAuth())) return
-  await Promise.all([loadTiers(), loadAllocation(), loadBadges()])
+  var isAdmin = await checkAdminAuth()
+  if (!isAdmin) return
+  await loadMedia()
 }
 
 init()
