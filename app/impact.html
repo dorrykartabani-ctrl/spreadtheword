@@ -66,14 +66,18 @@
 
   <!-- 1. HERO: AVATAR + LIVE FEED -->
   <section class="fade-up dash-card !p-6 bg-gradient-to-br from-white to-slate-50">
-    <div class="flex items-center gap-4 mb-6">
-      <div class="relative">
-        <img id="heroAvatarImg" src="/images/avatar/maleseeker.svg" class="w-20 h-20 rounded-2xl object-cover shadow-lg border-2 border-white bg-slate-100">
-        <div id="heroRankBadge" class="absolute -bottom-2 -right-2 bg-primary text-white text-[9px] font-black px-2 py-1 rounded-full border-2 border-white">THE BEGINNING</div>
+    <div class="flex items-center gap-5 mb-6">
+      <div class="relative flex-shrink-0">
+        <!-- Portrait Card Frame for Full Body Avatar -->
+        <div class="w-20 h-24 rounded-2xl bg-gradient-to-b from-slate-100 to-slate-200 flex items-end justify-center overflow-hidden border border-white shadow-md">
+          <img id="heroAvatarImg" src="/images/avatars/maleseeker.svg" class="w-full h-full object-contain p-1">
+        </div>
+        <!-- Era Badge (Hidden by default, only shows when they evolve) -->
+        <div id="heroRankBadge" class="hidden absolute -bottom-2 left-1/2 -translate-x-1/2 bg-primary text-white text-[8px] font-black px-2 py-0.5 rounded-full border-2 border-white shadow-sm">STAGE 1</div>
       </div>
       <div class="flex-1">
-        <h2 id="heroRankName" class="font-headline font-black text-lg text-slate-900">The Seeker</h2>
-        <p id="heroRankDesc" class="text-[11px] text-slate-500 mt-1">Take your first steps. Earn a Mythic to evolve through the ages.</p>
+        <h2 id="heroRankName" class="font-headline font-black text-xl text-slate-900">The Seeker</h2>
+        <p id="heroRankDesc" class="text-[12px] text-slate-500 mt-1 leading-snug">Take your first steps. Earn a Mythic to evolve through the ages.</p>
       </div>
     </div>
 
@@ -231,7 +235,7 @@ async function loadData() {
   document.getElementById('statRecruits').textContent = recruits.length;
   document.getElementById('statCountries').textContent = myCountries;
 
-  // --- Process Avatar ---
+   // --- Process Avatar ---
   if (typeof calculateAvatarStage === 'function' && avatarStages.length > 0) {
     const avatar = calculateAvatarStage(trophyDefs, {
       shares: sharesCount,
@@ -240,21 +244,27 @@ async function loadData() {
     }, avatarStages);
 
     const img = document.getElementById('heroAvatarImg');
+    const badgeEl = document.getElementById('heroRankBadge'); 
+
     if (img) {
-      // FIX: Updated path to match your singular 'avatar' folder
-      img.src = avatar.image_url || '/images/avatar/maleseeker.svg'; 
-      
-      // Ensure no grayscale is applied so they are the Seeker in full color
+      img.src = avatar.image_url || '/images/avatars/maleseeker.svg'; 
       img.classList.remove('grayscale', 'opacity-60', 'opacity-40');
       
-      // Add a glow only if they reach the highest stage
       if (avatar.stage >= 5) img.classList.add('mythic-glow');
       else img.classList.remove('mythic-glow');
     }
 
+    // Update Text
     document.getElementById('heroRankName').textContent = avatar.name || 'The Seeker';
-    document.getElementById('heroRankBadge').textContent = (avatar.era || 'The Beginning').toUpperCase();
     document.getElementById('heroRankDesc').textContent = avatar.description || 'Take your first steps. Earn a Mythic to evolve through the ages.';
+
+    // Only show the Era badge if they have evolved past Stage 0
+    if (avatar.stage > 0) {
+        badgeEl.textContent = (avatar.era || '').toUpperCase();
+        badgeEl.classList.remove('hidden');
+    } else {
+        badgeEl.classList.add('hidden'); 
+    }
   }
 
   // --- Process Global Map (Country Cloud) ---
