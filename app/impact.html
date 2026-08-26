@@ -203,7 +203,10 @@ async function loadData() {
   // 2. Parallel Fetch for ALL real data
   const res = await Promise.allSettled([
     supabaseClient.from('shares').select('shared_at', { count: 'exact' }).eq('user_id', currentUser.id),
-    supabaseClient.from('profiles').select('country, subscription_tier').eq('referred_by', userProfile.invite_code),
+    
+    // FIX 1: Use currentUser.id instead of invite_code for the referred_by query
+    supabaseClient.from('profiles').select('country, subscription_tier').eq('referred_by', currentUser.id),
+    
     supabaseClient.from('profiles').select('country').not('country', 'is', null).limit(500),
     supabaseClient.from('profiles').select('*', { count: 'exact', head: true }),
     supabaseClient.from('projects').select('raised_amount').eq('status', 'completed'),
@@ -227,29 +230,28 @@ async function loadData() {
   document.getElementById('statRecruits').textContent = recruits.length;
   document.getElementById('statCountries').textContent = myCountries;
 
-    // --- Process Avatar ---
-    if (typeof calculateAvatarStage === 'function' && avatarStages.length > 0) {
-      const avatar = calculateAvatarStage(trophyDefs, {
-        shares: sharesCount,
-        recruits_paid: paidRecruits.length,
-        countries_paid: myCountries
-      }, avatarStages);
+  // --- Process Avatar ---
+  if (typeof calculateAvatarStage === 'function' && avatarStages.length > 0) {
+    const avatar = calculateAvatarStage(trophyDefs, {
+      shares: sharesCount,
+      recruits_paid: paidRecruits.length,
+      countries_paid: myCountries
+    }, avatarStages);
 
-      const img = document.getElementById('heroAvatarImg');
-      if (img) {
-        img.src = avatar.image_url || '/images/avatars/maleseeker.svg';
-        // Ensure no grayscale is applied so they are the Seeker in full color
-        img.classList.remove('grayscale', 'opacity-60', 'opacity-40');
-        
-        // Add a glow only if they reach the highest stage
-        if (avatar.stage >= 5) img.classList.add('mythic-glow');
-        else img.classList.remove('mythic-glow');
-      }
-
-      document.getElementById('heroRankName').textContent = avatar.name || 'The Seeker';
-      document.getElementById('heroRankBadge').textContent = (avatar.era || 'The Beginning').toUpperCase();
-      document.getElementById('heroRankDesc').textContent = avatar.description || 'Take your first steps. Earn a Mythic to evolve through the ages.';
+    const img = document.getElementById('heroAvatarImg');
+    if (img) {
+      // FIX 2: Updated path to match your singular 'avatar' folder
+      img.src = avatar.image_url || '/images/avatar/maleseeker.svg'; 
+      
+      img.classList.remove('grayscale', 'opacity-60', 'opacity-40');
+      if (avatar.stage >= 5) img.classList.add('mythic-glow');
+      else img.classList.remove('mythic-glow');
     }
+
+    document.getElementById('heroRankName').textContent = avatar.name || 'The Seeker';
+    document.getElementById('heroRankBadge').textContent = (avatar.era || 'The Beginning').toUpperCase();
+    document.getElementById('heroRankDesc').textContent = avatar.description || 'Take your first steps. Earn a Mythic to evolve through the ages.';
+  }
 
   // --- Process Global Map (Country Cloud) ---
   const globalCountries = new Set(globalProfiles.map(p => p.country).filter(c => c));
@@ -258,14 +260,10 @@ async function loadData() {
   const cloud = document.getElementById('countryCloud');
   cloud.innerHTML = '';
   Array.from(globalCountries).slice(0, 15).forEach(c => {
-    const flag = countryFlags[c] || '🌍';
+    // You can expand this list of flags later
+    const flag = '🌍'; 
     cloud.innerHTML += `<div class="flag-pill">${flag} ${c}</div>`;
   });
-
-  // --- Process Global Raised ---
-  let totalRaised = 0;
-  projects.forEach(p => totalRaised += Number(p.raised_amount || 0));
-  // Note: You can add this to a new stat card if you want, or keep it in the collective section
 
   // --- Process Scripture ---
   updateScripture(sharesCount);
