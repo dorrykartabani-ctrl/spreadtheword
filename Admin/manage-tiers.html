@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Tiers — GSTW Admin</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
+            'surface-c':'#efeee7','surface-chigh':'#e9e8e1','surface-chighest':'#e3e3db',
+            'on-surface':'#31332e','on-surface-variant':'#5e6059',
+            'inverse-surface':'#0e0e0c','inverse-on-surface':'#9e9d99',
+            'outline':'#7a7b75','outline-variant':'#b2b2ab',
+            'primary':'#3d6285','on-primary':'#f7f9ff',
+            'primary-container':'#b0d5fe','on-primary-container':'#234a6c',
+            'secondary':'#41637c','on-secondary':'#f6f9ff',
+            'secondary-container':'#cae6ff',
+            'tertiary':'#ad332b','on-tertiary':'#fff7f6',
+            'tertiary-container':'#fe6d60',
+            'primary-dim':'#305678','secondary-dim':'#355670','tertiary-dim':'#9d2621',
+            'sidebar-bg':'#0e0e0c','sidebar-hover':'#1a1a18','sidebar-active':'#3d6285',
+          },
+          fontFamily:{
+            'headline':['Plus Jakarta Sans','sans-serif'],
+            'body':['Manrope','sans-serif'],
+          },
+          boxShadow:{
+            'ambient':'0 20px 40px rgba(49,51,46,0.05)',
+            'ambient-sm':'0 8px 24px rgba(49,51,46,0.04)',
+            'float':'0 20px 40px rgba(49,51,46,0.08)',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;letter-spacing:-0.005em}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
+    .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+    .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
+    
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:3px}
+    ::-webkit-scrollbar-thumb:hover{background:rgba(49,51,46,0.3)}
+
+    .sidebar{background:#0e0e0c;color:#f7f9ff}
+    .sidebar-item{
+      display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;
+      color:rgba(247,249,255,0.6);font-size:13px;font-weight:600;
+      transition:all 0.15s ease;text-decoration:none;
+    }
+    .sidebar-item:hover{background:#1a1a18;color:#f7f9ff}
+    .sidebar-item.active{background:#3d6285;color:#f7f9ff}
+    .sidebar-item .material-symbols-outlined{font-size:20px}
+
+    .tier-card{
+      background:#ffffff;border-radius:16px;padding:20px;
+      border:2px solid transparent;transition:all 0.2s ease;
+    }
+    .tier-card:hover{transform:translateY(-2px);box-shadow:0 20px 40px rgba(49,51,46,0.08)}
+    .tier-card.inactive{opacity:0.6;border-color:#e3e3db}
+
+    .feature-item{
+      display:flex;align-items:center;gap:8px;padding:8px;
+      background:#f5f4ed;border-radius:8px;
+    }
+    .feature-item input[type="checkbox"]{
+      width:16px;height:16px;cursor:pointer;
+    }
+
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spin{animation:spin 1s linear infinite;display:inline-block}
+  </style>
+</head>
+
+<body class="min-h-screen flex">
+
+<!-- SIDEBAR -->
+<aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 hidden md:flex">
+  <div class="mb-6 px-2 pt-2">
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center">
+        <span class="font-headline font-bold text-on-primary" style="font-size:10px;">GSTW</span>
+      </div>
+      <div>
+        <h1 class="font-headline font-bold text-white" style="font-size:15px;letter-spacing:-0.02em;">Command</h1>
+        <p class="text-white/40 font-body" style="font-size:9px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">Admin Panel</p>
+      </div>
+    </div>
+  </div>
+
+  <nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
+    <a href="index.html" class="sidebar-item"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
+    <a href="manage-quotes.html" class="sidebar-item"><span class="material-symbols-outlined">format_quote</span>Quotes</a>
+    <a href="schedule.html" class="sidebar-item"><span class="material-symbols-outlined">calendar_today</span>Schedule</a>
+    <a href="campaigns.html" class="sidebar-item"><span class="material-symbols-outlined">campaign</span>Campaigns</a>
+    <a href="projects.html" class="sidebar-item"><span class="material-symbols-outlined">volunteer_activism</span>Missions</a>
+    <a href="manage-media.html" class="sidebar-item"><span class="material-symbols-outlined">perm_media</span>Media</a>
+    <a href="warriors.html" class="sidebar-item"><span class="material-symbols-outlined">group</span>Users</a>
+    <a href="manage-tiers.html" class="sidebar-item active"><span class="material-symbols-outlined">workspace_premium</span>Tiers</a>
+    <a href="notifications.html" class="sidebar-item"><span class="material-symbols-outlined">notifications</span>Notifications</a>
+    <a href="ai-generator.html" class="sidebar-item"><span class="material-symbols-outlined">auto_awesome</span>AI Generator</a>
+    <a href="analytics.html" class="sidebar-item"><span class="material-symbols-outlined">analytics</span>Analytics</a>
+  </nav>
+
+  <div class="mt-4 pt-4 border-t border-white/10 space-y-2">
+    <a href="settings.html" class="sidebar-item"><span class="material-symbols-outlined">settings</span>Settings</a>
+    <div class="flex items-center gap-3 px-2 py-2">
+      <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center text-on-primary font-headline font-bold flex-shrink-0 admin-initials" style="font-size:13px;">AD</div>
+      <div class="flex-1 min-w-0">
+        <p class="font-body font-semibold text-white truncate admin-name" style="font-size:12px;">Admin</p>
+        <p class="text-white/40 font-body" style="font-size:10px;">Super Admin</p>
+      </div>
+      <button onclick="handleLogout()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-all flex-shrink-0" title="Log out">
+        <span class="material-symbols-outlined" style="font-size:16px;">logout</span>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="flex-1 md:ml-64 min-h-screen">
+
+  <!-- HEADER -->
+  <header class="sticky top-0 z-20 bg-surface/85 backdrop-blur-xl">
+    <div class="flex items-center gap-4 px-6 lg:px-8 py-4">
+      <button onclick="toggleSidebar()" class="md:hidden text-on-surface">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+      <h2 class="font-headline font-bold text-on-surface" style="font-size:22px;line-height:28px;">Manage Subscription Tiers</h2>
+      <button onclick="openNewTierModal()" class="ml-auto px-4 py-2 signature-gradient text-on-primary font-headline font-semibold rounded-lg active:scale-95 transition-transform" style="font-size:13px;">
+        <span class="material-symbols-outlined text-[16px] mr-1">add</span>
+        New Tier
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <div class="p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+
+    <!-- TIERS LIST -->
+    <section>
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="font-headline font-bold text-on-surface" style="font-size:16px;">Active Tiers</h3>
+          <p class="font-body text-on-surface-variant" style="font-size:12px;">Changes reflect immediately on the app</p>
+        </div>
+      </div>
+      <div id="tiersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="tier-card">
+          <div class="flex items-center justify-center h-40">
+            <span class="material-symbols-outlined text-primary spin" style="font-size:32px;">progress_activity</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ALLOCATION CONFIG -->
+    <section class="bg-surface-cl rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="font-headline font-bold text-on-surface mb-1" style="font-size:16px;">Fund Allocation</h3>
+          <p class="font-body text-on-surface-variant" style="font-size:12px;">Configure how subscription fees are allocated</p>
+        </div>
+        <button onclick="openAllocationModal()" class="px-4 py-2 bg-primary-container/20 text-primary font-body font-semibold rounded-lg hover:bg-primary-container/30 transition-colors" style="font-size:12px;">
+          <span class="material-symbols-outlined text-[16px] mr-1">edit</span>
+          Edit
+        </button>
+      </div>
+      <div id="allocationPreview" class="space-y-3">
+        <div class="h-3 bg-surface-clow rounded-full overflow-hidden">
+          <div class="h-full bg-outline" style="width:100%"></div>
+        </div>
+        <p class="text-center font-body text-outline" style="font-size:12px;">Loading...</p>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- TIER EDIT MODAL -->
+<div id="tierModal" class="hidden fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm z-[100] flex items-center justify-center px-5 overflow-y-auto" onclick="if(event.target===this)closeTierModal()">
+  <div class="bg-surface-cl rounded-2xl p-6 w-full max-w-2xl shadow-float my-8">
+    <div class="flex items-center justify-between mb-6">
+      <h3 id="tierModalTitle" class="font-headline font-bold text-on-surface" style="font-size:20px;">Edit Tier</h3>
+      <button onclick="closeTierModal()" class="w-8 h-8 rounded-lg hover:bg-surface-clow flex items-center justify-center text-on-surface-variant transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <form id="tierForm" class="space-y-5" onsubmit="saveTier(event)">
+      <input type="hidden" id="tierId" name="id">
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Tier ID</label>
+          <input type="text" id="tierIdInput" name="id_input" required
+            class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+            style="font-size:14px;" placeholder="e.g. warrior">
+          <p class="font-body text-outline mt-1" style="font-size:10px;">Lowercase, no spaces</p>
+        </div>
+        <div>
+          <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Display Name</label>
+          <input type="text" id="tierName" name="name" required
+            class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+            style="font-size:14px;" placeholder="e.g. Warrior">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Price (USD)</label>
+          <input type="number" id="tierPrice" name="price" step="0.01" min="0" required
+            class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+            style="font-size:14px;" placeholder="3.99">
+        </div>
+        <div>
+          <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Billing Interval</label>
+          <select id="tierInterval" name="billing_interval"
+            class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+            style="font-size:14px;">
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Description</label>
+        <input type="text" id="tierDescription" name="description"
+          class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+          style="font-size:14px;" placeholder="Full mission access">
+      </div>
+
+      <div>
+        <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Features</label>
+        <div id="featuresList" class="space-y-2 mb-2"></div>
+        <button type="button" onclick="addFeature()" class="text-primary font-body font-semibold hover:underline" style="font-size:12px;">
+          + Add Feature
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Stripe Price ID</label>
+          <input type="text" id="tierStripePriceId" name="stripe_price_id"
+            class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+            style="font-size:14px;" placeholder="price_...">
+        </div>
+        <div>
+          <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Stripe Product ID</label>
+          <input type="text" id="tierStripeProductId" name="stripe_product_id"
+            class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+            style="font-size:14px;" placeholder="prod_...">
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="tierActive" name="is_active" class="w-4 h-4">
+          <span class="font-body text-on-surface" style="font-size:13px;">Active</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="tierPublic" name="is_public" class="w-4 h-4">
+          <span class="font-body text-on-surface" style="font-size:13px;">Public</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="tierComingSoon" name="coming_soon" class="w-4 h-4">
+          <span class="font-body text-on-surface" style="font-size:13px;">Coming Soon</span>
+        </label>
+      </div>
+
+      <div class="flex gap-3 pt-4">
+        <button type="submit" class="flex-1 py-3 signature-gradient text-on-primary font-headline font-semibold rounded-xl active:scale-95 transition-transform" style="font-size:14px;">
+          Save Tier
+        </button>
+        <button type="button" onclick="closeTierModal()" class="px-6 py-3 bg-surface-clow text-on-surface-variant font-body font-semibold rounded-xl active:scale-95 transition-transform" style="font-size:14px;">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ALLOCATION MODAL -->
+<div id="allocationModal" class="hidden fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm z-[100] flex items-center justify-center px-5 overflow-y-auto" onclick="if(event.target===this)closeAllocationModal()">
+  <div class="bg-surface-cl rounded-2xl p-6 w-full max-w-2xl shadow-float my-8">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="font-headline font-bold text-on-surface" style="font-size:20px;">Edit Fund Allocation</h3>
+      <button onclick="closeAllocationModal()" class="w-8 h-8 rounded-lg hover:bg-surface-clow flex items-center justify-center text-on-surface-variant transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <form id="allocationForm" class="space-y-5" onsubmit="saveAllocation(event)">
+      <div id="allocationSegments" class="space-y-4"></div>
+      
+      <button type="button" onclick="addSegment()" class="text-primary font-body font-semibold hover:underline" style="font-size:12px;">
+        + Add Segment
+      </button>
+
+      <div>
+        <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Admin Note</label>
+        <textarea id="allocationNote" rows="2"
+          class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+          style="font-size:14px;" placeholder="Built as a PWA — no app store fees..."></textarea>
+      </div>
+
+      <div class="flex gap-3 pt-4">
+        <button type="submit" class="flex-1 py-3 signature-gradient text-on-primary font-headline font-semibold rounded-xl active:scale-95 transition-transform" style="font-size:14px;">
+          Save Allocation
+        </button>
+        <button type="button" onclick="closeAllocationModal()" class="px-6 py-3 bg-surface-clow text-on-surface-variant font-body font-semibold rounded-xl active:scale-95 transition-transform" style="font-size:14px;">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+var supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+)
+
+var currentUser = null
+var tiers = []
+var allocation = null
+var editingTier = null
+var featureCounter = 0
+
+// ════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════
+async function checkAdminAuth() {
+  try {
+    var result = await supabaseClient.auth.getSession()
+    if (!result.data.session) {
+      await new Promise(function(r) { setTimeout(r, 500) })
+      result = await supabaseClient.auth.getSession()
+    }
+    if (!result.data.session) {
+      try {
+        var refreshed = await supabaseClient.auth.refreshSession()
+        if (!refreshed.data.session) {
+          window.location.href = 'login.html'
+          return false
+        }
+        result = refreshed
+      } catch(e) {
+        window.location.href = 'login.html'
+        return false
+      }
+    }
+
+    currentUser = result.data.session.user
+
+    var profileResult = await supabaseClient
+      .from('profiles')
+      .select('role, full_name, nickname')
+      .eq('id', currentUser.id)
+      .single()
+
+    if (profileResult.error || !profileResult.data) {
+      window.location.href = 'login.html'
+      return false
+    }
+
+    if (profileResult.data.role !== 'admin') {
+      window.location.href = '../app/index.html'
+      return false
+    }
+
+    var name = profileResult.data.nickname || profileResult.data.full_name || currentUser.email
+    var initials = '?'
+    if (profileResult.data.full_name) {
+      var parts = profileResult.data.full_name.trim().split(' ')
+      initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : parts[0].substring(0,2).toUpperCase()
+    } else if (currentUser.email) {
+      initials = currentUser.email.substring(0,2).toUpperCase()
+    }
+
+    document.querySelectorAll('.admin-initials').forEach(function(el) { el.textContent = initials })
+    document.querySelectorAll('.admin-name').forEach(function(el) { el.textContent = name })
+
+    return true
+  } catch(e) {
+    console.error('checkAdminAuth error:', e)
+    return false
+  }
+}
+
+function toggleSidebar() {
+  var s = document.getElementById('sidebar')
+  s.classList.toggle('hidden')
+  s.classList.toggle('flex')
+}
+
+async function handleLogout() {
+  try { await supabaseClient.auth.signOut() } catch(e) {}
+  window.location.href = 'login.html'
+}
+
+// ════════════════════════════════════════════
+// LOAD DATA
+// ════════════════════════════════════════════
+async function loadTiers() {
+  var result = await supabaseClient
+    .from('subscription_tiers')
+    .select('*')
+    .order('sort_order', { ascending: true })
+
+  tiers = result.data || []
+  renderTiers()
+}
+
+async function loadAllocation() {
+  var result = await supabaseClient
+    .from('subscription_allocation')
+    .select('*')
+    .eq('is_active', true)
+    .single()
+
+  allocation = result.data || null
+  renderAllocationPreview()
+}
+
+// ════════════════════════════════════════════
+// RENDER TIERS
+// ════════════════════════════════════════════
+function renderTiers() {
+  var container = document.getElementById('tiersList')
+  container.innerHTML = ''
+
+  if (tiers.length === 0) {
+    container.innerHTML = '<div class="col-span-full text-center py-12"><p class="font-body text-outline" style="font-size:14px;">No tiers yet. Create one!</p></div>'
+    return
+  }
+
+  tiers.forEach(function(tier) {
+    var card = document.createElement('div')
+    card.className = 'tier-card' + (tier.is_active ? '' : ' inactive')
+
+    var statusBadge = ''
+    if (!tier.is_active) {
+      statusBadge = '<span class="bg-outline-variant/30 text-outline px-2 py-0.5 rounded-full font-body font-bold" style="font-size:9px;">INACTIVE</span>'
+    } else if (tier.coming_soon) {
+      statusBadge = '<span class="bg-secondary-container/30 text-secondary px-2 py-0.5 rounded-full font-body font-bold" style="font-size:9px;">COMING SOON</span>'
+    } else {
+      statusBadge = '<span class="bg-primary-container/30 text-primary px-2 py-0.5 rounded-full font-body font-bold" style="font-size:9px;">LIVE</span>'
+    }
+
+    var features = tier.features || []
+    var featuresHtml = features.slice(0, 3).map(function(f) {
+      var icon = f.available ? 'check_circle' : 'radio_button_unchecked'
+      var color = f.available ? 'text-primary' : 'text-outline'
+      return '<div class="flex items-center gap-2"><span class="material-symbols-outlined ' + color + '" style="font-size:14px;">' + icon + '</span><span class="font-body text-on-surface-variant" style="font-size:11px;">' + escapeHtml(f.label || '') + '</span></div>'
+    }).join('')
+    
+    if (features.length > 3) {
+      featuresHtml += '<p class="font-body text-outline" style="font-size:10px;">+' + (features.length - 3) + ' more</p>'
+    }
+
+    card.innerHTML =
+      '<div class="flex items-start justify-between mb-4">'
+        + '<div>'
+          + '<h4 class="font-headline font-bold text-on-surface mb-1" style="font-size:16px;">' + escapeHtml(tier.name || 'Unnamed') + '</h4>'
+          + '<p class="font-body text-on-surface-variant" style="font-size:12px;">' + escapeHtml(tier.description || '') + '</p>'
+        + '</div>'
+        + statusBadge
+      + '</div>'
+      + '<div class="flex items-baseline gap-1 mb-4">'
+        + '<span class="font-headline font-bold text-primary" style="font-size:24px;">$' + Number(tier.price || 0).toFixed(2) + '</span>'
+        + '<span class="font-body text-on-surface-variant" style="font-size:12px;">/' + (tier.billing_interval || 'month') + '</span>'
+      + '</div>'
+      + '<div class="space-y-2 mb-4">' + featuresHtml + '</div>'
+      + '<div class="flex gap-2">'
+        + '<button onclick="editTier(\'' + tier.id + '\')" class="flex-1 py-2 bg-primary-container/20 text-primary font-body font-semibold rounded-lg hover:bg-primary-container/30 transition-colors" style="font-size:12px;">Edit</button>'
+        + '<button onclick="deleteTier(\'' + tier.id + '\')" class="px-3 py-2 bg-tertiary-container/20 text-tertiary font-body font-semibold rounded-lg hover:bg-tertiary-container/30 transition-colors" style="font-size:12px;"><span class="material-symbols-outlined" style="font-size:16px;">delete</span></button>'
+      + '</div>'
+
+    container.appendChild(card)
+  })
+}
+
+// ════════════════════════════════════════════
+// TIER MODAL
+// ════════════════════════════════════════════
+function openNewTierModal() {
+  editingTier = null
+  document.getElementById('tierModalTitle').textContent = 'New Tier'
+  document.getElementById('tierForm').reset()
+  document.getElementById('tierId').value = ''
+  document.getElementById('tierIdInput').value = ''
+  document.getElementById('tierIdInput').disabled = false
+  document.getElementById('tierActive').checked = true
+  document.getElementById('tierPublic').checked = true
+  document.getElementById('tierComingSoon').checked = false
+  document.getElementById('featuresList').innerHTML = ''
+  featureCounter = 0
+  document.getElementById('tierModal').classList.remove('hidden')
+  document.body.style.overflow = 'hidden'
+}
+
+function editTier(tierId) {
+  editingTier = tiers.find(function(t) { return t.id === tierId })
+  if (!editingTier) return
+
+  document.getElementById('tierModalTitle').textContent = 'Edit Tier: ' + editingTier.name
+  document.getElementById('tierId').value = editingTier.id
+  document.getElementById('tierIdInput').value = editingTier.id
+  document.getElementById('tierIdInput').disabled = true
+  document.getElementById('tierName').value = editingTier.name || ''
+  document.getElementById('tierPrice').value = editingTier.price || 0
+  document.getElementById('tierInterval').value = editingTier.billing_interval || 'monthly'
+  document.getElementById('tierDescription').value = editingTier.description || ''
+  document.getElementById('tierStripePriceId').value = editingTier.stripe_price_id || ''
+  document.getElementById('tierStripeProductId').value = editingTier.stripe_product_id || ''
+  document.getElementById('tierActive').checked = editingTier.is_active !== false
+  document.getElementById('tierPublic').checked = editingTier.is_public !== false
+  document.getElementById('tierComingSoon').checked = editingTier.coming_soon === true
+
+  var featuresList = document.getElementById('featuresList')
+  featuresList.innerHTML = ''
+  featureCounter = 0
+  var features = editingTier.features || []
+  features.forEach(function(f) {
+    addFeature(f.label, f.available, f.soon)
+  })
+
+  document.getElementById('tierModal').classList.remove('hidden')
+  document.body.style.overflow = 'hidden'
+}
+
+function closeTierModal() {
+  document.getElementById('tierModal').classList.add('hidden')
+  document.body.style.overflow = ''
+}
+
+function addFeature(label, available, soon) {
+  label = label || ''
+  available = available !== false
+  soon = soon === true
+
+  var container = document.getElementById('featuresList')
+  var idx = featureCounter++
+  var div = document.createElement('div')
+  div.className = 'feature-item'
+  div.id = 'feature-' + idx
+  div.innerHTML =
+    '<input type="checkbox" id="available-' + idx + '" ' + (available ? 'checked' : '') + '>'
+    + '<input type="text" id="label-' + idx + '" value="' + escapeHtml(label) + '" placeholder="Feature name" class="flex-1 px-2 py-1 bg-surface-cl rounded font-body text-on-surface" style="font-size:12px;">'
+    + '<label class="flex items-center gap-1 text-on-surface-variant" style="font-size:10px;"><input type="checkbox" id="soon-' + idx + '" ' + (soon ? 'checked' : '') + '> Soon</label>'
+    + '<button type="button" onclick="removeFeature(' + idx + ')" class="text-tertiary hover:underline" style="font-size:10px;">Remove</button>'
+  container.appendChild(div)
+}
+
+function removeFeature(idx) {
+  var el = document.getElementById('feature-' + idx)
+  if (el) el.remove()
+}
+
+function collectFeatures() {
+  var features = []
+  var container = document.getElementById('featuresList')
+  container.querySelectorAll('.feature-item').forEach(function(item) {
+    var idx = item.id.replace('feature-', '')
+    var labelEl = document.getElementById('label-' + idx)
+    var availableEl = document.getElementById('available-' + idx)
+    var soonEl = document.getElementById('soon-' + idx)
+    if (labelEl && labelEl.value.trim()) {
+      features.push({
+        label: labelEl.value.trim(),
+        available: availableEl ? availableEl.checked : true,
+        soon: soonEl ? soonEl.checked : false
+      })
+    }
+  })
+  return features
+}
+
+async function saveTier(e) {
+  e.preventDefault()
+
+  var form = document.getElementById('tierForm')
+  var id = document.getElementById('tierIdInput').value.trim().toLowerCase().replace(/\s+/g, '-')
+  var name = form.name.value.trim()
+  var price = parseFloat(form.price.value) || 0
+  var interval = form.billing_interval.value
+  var description = form.description.value.trim()
+  var stripePriceId = form.stripe_price_id.value.trim()
+  var stripeProductId = form.stripe_product_id.value.trim()
+  var isActive = form.is_active.checked
+  var isPublic = form.is_public.checked
+  var comingSoon = form.coming_soon.checked
+  var features = collectFeatures()
+
+  if (!id || !name) {
+    showToast('ID and Name are required', 'error')
+    return
+  }
+
+  var data = {
+    id: id,
+    name: name,
+    price: price,
+    billing_interval: interval,
+    description: description,
+    features: features,
+    is_active: isActive,
+    is_public: isPublic,
+    coming_soon: comingSoon,
+    stripe_price_id: stripePriceId || null,
+    stripe_product_id: stripeProductId || null
+  }
+
+  var result
+  if (editingTier && editingTier.id === id) {
+    // Update
+    result = await supabaseClient
+      .from('subscription_tiers')
+      .update(data)
+      .eq('id', id)
+  } else {
+    // Insert
+    var maxSort = Math.max(...tiers.map(function(t) { return t.sort_order || 0 }), 0)
+    data.sort_order = maxSort + 1
+    result = await supabaseClient
+      .from('subscription_tiers')
+      .insert([data])
+  }
+
+  if (result.error) {
+    showToast('Error saving tier: ' + result.error.message, 'error')
+    return
+  }
+
+  showToast('Tier saved successfully', 'success')
+  closeTierModal()
+  await loadTiers()
+}
+
+async function deleteTier(tierId) {
+  if (!confirm('Delete tier "' + tierId + '"? This cannot be undone.')) return
+
+  var result = await supabaseClient
+    .from('subscription_tiers')
+    .delete()
+    .eq('id', tierId)
+
+  if (result.error) {
+    showToast('Error deleting tier: ' + result.error.message, 'error')
+    return
+  }
+
+  showToast('Tier deleted', 'success')
+  await loadTiers()
+}
+
+// ════════════════════════════════════════════
+// ALLOCATION
+// ════════════════════════════════════════════
+function renderAllocationPreview() {
+  var container = document.getElementById('allocationPreview')
+  if (!allocation || !allocation.segments) {
+    container.innerHTML = '<p class="text-center font-body text-outline py-6" style="font-size:13px;">No allocation configured</p>'
+    return
+  }
+
+  var segments = allocation.segments
+  var colors = { primary: '#3d6285', secondary: '#6b9bc3', outline: '#b2b2ab' }
+
+  var barHtml = '<div class="h-3 w-full flex rounded-full overflow-hidden mb-4">'
+  segments.forEach(function(seg, i) {
+    var color = colors[seg.color] || colors.primary
+    var isFirst = i === 0
+    var isLast = i === segments.length - 1
+    barHtml += '<div style="width:' + seg.percent + '%;height:100%;background:' + color + ';border-radius:' + (isFirst ? '99px 0 0 99px' : isLast ? '0 99px 99px 0' : '0') + '"></div>'
+  })
+  barHtml += '</div>'
+
+  var legendHtml = '<div class="space-y-2">'
+  segments.forEach(function(seg) {
+    var dotClass = seg.color === 'primary' ? 'bg-primary' : seg.color === 'secondary' ? 'bg-secondary' : 'bg-outline'
+    legendHtml +=
+      '<div class="flex items-center gap-3">'
+        + '<div class="w-2.5 h-2.5 rounded-full ' + dotClass + ' flex-shrink-0"></div>'
+        + '<span class="font-headline font-bold text-on-surface" style="font-size:12px;">' + seg.percent + '%</span>'
+        + '<span class="font-body text-on-surface-variant" style="font-size:12px;">' + escapeHtml(seg.label || '') + '</span>'
+      + '</div>'
+  })
+  legendHtml += '</div>'
+
+  var noteHtml = allocation.admin_note
+    ? '<p class="font-body text-on-surface-variant italic text-center mt-4" style="font-size:11px;">' + escapeHtml(allocation.admin_note) + '</p>'
+    : ''
+
+  container.innerHTML = barHtml + legendHtml + noteHtml
+}
+
+function openAllocationModal() {
+  if (!allocation || !allocation.segments) {
+    allocation = { segments: [], admin_note: '' }
+  }
+
+  var container = document.getElementById('allocationSegments')
+  container.innerHTML = ''
+
+  allocation.segments.forEach(function(seg) {
+    addSegment(seg.label, seg.percent, seg.color, seg.description)
+  })
+
+  document.getElementById('allocationNote').value = allocation.admin_note || ''
+  document.getElementById('allocationModal').classList.remove('hidden')
+  document.body.style.overflow = 'hidden'
+}
+
+function closeAllocationModal() {
+  document.getElementById('allocationModal').classList.add('hidden')
+  document.body.style.overflow = ''
+}
+
+var segmentCounter = 0
+
+function addSegment(label, percent, color, description) {
+  label = label || ''
+  percent = percent || 0
+  color = color || 'primary'
+  description = description || ''
+
+  var container = document.getElementById('allocationSegments')
+  var idx = segmentCounter++
+  var div = document.createElement('div')
+  div.className = 'bg-surface-clow rounded-xl p-4'
+  div.id = 'segment-' + idx
+  div.innerHTML =
+    '<div class="flex items-center justify-between mb-3">'
+      + '<span class="font-headline font-semibold text-on-surface" style="font-size:13px;">Segment ' + (idx + 1) + '</span>'
+      + '<button type="button" onclick="removeSegment(' + idx + ')" class="text-tertiary hover:underline font-body font-semibold" style="font-size:11px;">Remove</button>'
+    + '</div>'
+    + '<div class="grid grid-cols-2 gap-3 mb-3">'
+      + '<div>'
+        + '<label class="block font-body font-semibold text-on-surface mb-1" style="font-size:11px;">Label</label>'
+        + '<input type="text" id="seg-label-' + idx + '" value="' + escapeHtml(label) + '" class="w-full px-2 py-1.5 bg-surface-cl rounded font-body text-on-surface" style="font-size:12px;" placeholder="Direct Mission Funding">'
+      + '</div>'
+      + '<div>'
+        + '<label class="block font-body font-semibold text-on-surface mb-1" style="font-size:11px;">Percent</label>'
+        + '<input type="number" id="seg-percent-' + idx + '" value="' + percent + '" min="0" max="100" class="w-full px-2 py-1.5 bg-surface-cl rounded font-body text-on-surface" style="font-size:12px;">'
+      + '</div>'
+    + '</div>'
+    + '<div class="mb-3">'
+      + '<label class="block font-body font-semibold text-on-surface mb-1" style="font-size:11px;">Description</label>'
+      + '<textarea id="seg-desc-' + idx + '" rows="2" class="w-full px-2 py-1.5 bg-surface-cl rounded font-body text-on-surface" style="font-size:12px;" placeholder="Explain what this funds...">' + escapeHtml(description) + '</textarea>'
+    + '</div>'
+    + '<div>'
+      + '<label class="block font-body font-semibold text-on-surface mb-1" style="font-size:11px;">Color</label>'
+      + '<select id="seg-color-' + idx + '" class="w-full px-2 py-1.5 bg-surface-cl rounded font-body text-on-surface" style="font-size:12px;">'
+        + '<option value="primary" ' + (color === 'primary' ? 'selected' : '') + '>Primary (Blue)</option>'
+        + '<option value="secondary" ' + (color === 'secondary' ? 'selected' : '') + '>Secondary (Light Blue)</option>'
+        + '<option value="outline" ' + (color === 'outline' ? 'selected' : '') + '>Outline (Gray)</option>'
+      + '</select>'
+    + '</div>'
+
+  container.appendChild(div)
+}
+
+function removeSegment(idx) {
+  var el = document.getElementById('segment-' + idx)
+  if (el) el.remove()
+}
+
+function collectSegments() {
+  var segments = []
+  var container = document.getElementById('allocationSegments')
+  container.querySelectorAll('[id^="segment-"]').forEach(function(item) {
+    var idx = item.id.replace('segment-', '')
+    var labelEl = document.getElementById('seg-label-' + idx)
+    var percentEl = document.getElementById('seg-percent-' + idx)
+    var descEl = document.getElementById('seg-desc-' + idx)
+    var colorEl = document.getElementById('seg-color-' + idx)
+    if (labelEl && labelEl.value.trim()) {
+      segments.push({
+        label: labelEl.value.trim(),
+        percent: parseInt(percentEl.value) || 0,
+        color: colorEl.value || 'primary',
+        description: descEl.value.trim()
+      })
+    }
+  })
+  return segments
+}
+
+async function saveAllocation(e) {
+  e.preventDefault()
+
+  var segments = collectSegments()
+  var note = document.getElementById('allocationNote').value.trim()
+
+  var totalPercent = segments.reduce(function(sum, seg) { return sum + seg.percent }, 0)
+  if (totalPercent !== 100) {
+    showToast('Segments must total 100% (currently ' + totalPercent + '%)', 'error')
+    return
+  }
+
+  var data = {
+    segments: segments,
+    admin_note: note,
+    is_active: true
+  }
+
+  // Deactivate old records
+  await supabaseClient
+    .from('subscription_allocation')
+    .update({ is_active: false })
+    .eq('is_active', true)
+
+  // Insert new
+  var result = await supabaseClient
+    .from('subscription_allocation')
+    .insert([data])
+
+  if (result.error) {
+    showToast('Error saving allocation: ' + result.error.message, 'error')
+    return
+  }
+
+  showToast('Allocation saved successfully', 'success')
+  closeAllocationModal()
+  await loadAllocation()
+}
+
+// ════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════
+function escapeHtml(str) {
+  if (!str) return ''
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')
+}
+
+function showToast(msg, type) {
+  type = type || 'success'
+  var existing = document.getElementById('adminToast'); if (existing) existing.remove()
+  var t = document.createElement('div'); t.id = 'adminToast'
+  var bgColor = type === 'error' ? 'bg-tertiary' : 'bg-primary'
+  t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] ' + bgColor + ' text-on-primary font-body font-semibold px-5 py-2.5 rounded-full shadow-float whitespace-nowrap'
+  t.style.fontSize = '13px'
+  t.textContent = msg
+  document.body.appendChild(t)
+  setTimeout(function() { if (t.parentNode) t.remove() }, 3000)
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+async function init() {
+  var isAdmin = await checkAdminAuth()
+  if (!isAdmin) return
+  await Promise.all([loadTiers(), loadAllocation()])
+}
+
+init()
+</script>
+</body>
+</html>
