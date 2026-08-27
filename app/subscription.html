@@ -593,9 +593,19 @@ function openBillingPortal() {
   else showToast('Billing portal not configured')
 }
 
-function openPaymentLink() {
-  if (stripePaymentLink) window.open(stripePaymentLink, '_blank')
-  else showToast('Payment link not configured')
+function openPaymentLink(tierId) {
+  if (!stripePaymentLink) {
+    showToast('Payment link not configured');
+    return;
+  }
+  
+  // Attach user_id so Stripe Webhook knows who to upgrade!
+  var checkoutUrl = new URL(stripePaymentLink);
+  if (currentUser && currentUser.id) {
+    checkoutUrl.searchParams.set('client_reference_id', currentUser.id);
+  }
+  
+  window.open(checkoutUrl.toString(), '_blank');
 }
 
 function confirmCancel() {
