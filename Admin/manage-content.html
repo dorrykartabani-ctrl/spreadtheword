@@ -3,15 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Landing Page Builder — GSTW Admin</title>
+  <title>Page Builder — GSTW Admin</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/x-icon" href="/images/favicon/favicon.ico">
 
   <script>
     tailwind.config = {
@@ -19,72 +16,70 @@
         extend: {
           colors: {
             'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
-            'surface-c':'#efeee7','surface-chigh':'#e9e8e1','surface-chighest':'#e3e3db',
-            'on-surface':'#31332e','on-surface-variant':'#5e6059',
-            'inverse-surface':'#0e0e0c','inverse-on-surface':'#9e9d99',
-            'outline':'#7a7b75','outline-variant':'#b2b2ab',
-            'primary':'#3d6285','on-primary':'#f7f9ff',
-            'primary-container':'#b0d5fe','on-primary-container':'#234a6c',
-            'secondary':'#41637c','on-secondary':'#f6f9ff',
-            'secondary-container':'#cae6ff',
-            'tertiary':'#ad332b','on-tertiary':'#fff7f6',
-            'primary-dim':'#305678','secondary-dim':'#355670','tertiary-dim':'#9d2621',
-            'sidebar-bg':'#0e0e0c','sidebar-hover':'#1a1a18','sidebar-active':'#3d6285',
+            'surface-c':'#efeee7','on-surface':'#31332e','on-surface-variant':'#5e6059',
+            'primary':'#3d6285','on-primary':'#f7f9ff','primary-container':'#b0d5fe',
+            'secondary':'#41637c','tertiary':'#ad332b',
           },
-          fontFamily:{
-            'headline':['Plus Jakarta Sans','sans-serif'],
-            'body':['Manrope','sans-serif'],
-          },
-          boxShadow:{
-            'ambient':'0 20px 40px rgba(49,51,46,0.05)',
-            'ambient-sm':'0 8px 24px rgba(49,51,46,0.04)',
-            'float':'0 20px 40px rgba(49,51,46,0.08)',
-          },
+          fontFamily: { 'headline':['Plus Jakarta Sans','sans-serif'], 'body':['Manrope','sans-serif'] }
         },
       },
     }
   </script>
 
   <style>
-    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;letter-spacing:-0.005em}
-    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
+    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;overflow:hidden;}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;}
     .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
+    .filled{font-variation-settings:'FILL' 1}
     .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
-    
-    .sidebar{background:#0e0e0c;color:#f7f9ff}
-    .sidebar-item{
-      display:flex;align-items:center;gap:12px;
-      padding:10px 14px;border-radius:10px;
-      color:rgba(247,249,255,0.6);
-      font-size:13px;font-weight:600;
-      transition:all 0.15s ease;
-      text-decoration:none;
-    }
+
+    ::-webkit-scrollbar{width:5px;height:5px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:10px}
+
+    /* Sidebar */
+    .sidebar{background:#0e0e0c;color:#f7f9ff; z-index: 50;}
+    .sidebar-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;color:rgba(247,249,255,0.6);font-size:13px;font-weight:600; transition:all 0.15s ease;}
     .sidebar-item:hover{background:#1a1a18;color:#f7f9ff}
     .sidebar-item.active{background:#3d6285;color:#f7f9ff}
 
-    .section-card {
-      transition: all 0.2s ease;
-      border: 1px solid rgba(49, 51, 46, 0.08);
+    /* Split Pane Layout */
+    .pane-container { height: calc(100vh - 72px); }
+    
+    /* Drag & Drop Block List */
+    .block-card {
+      padding: 14px 16px; border-bottom: 1px solid #efeee7; cursor: grab; transition: all 0.15s ease;
+      background: #ffffff; border-left: 4px solid transparent; display: flex; justify-content: space-between; align-items: center;
     }
-    .section-card.is-hidden {
-      opacity: 0.55;
-      background: #efeee7;
-    }
+    .block-card:hover { background: #fbf9f4; }
+    .block-card.active { background: #ffffff; border-left-color: #3d6285; box-shadow: inset 0 2px 10px rgba(0,0,0,0.02); }
+    .block-card.dragging { opacity: 0.5; background: #f5f4ed; }
+    .block-card.drag-over { border-top: 2px solid #3d6285; }
+    .block-card.hidden-block { opacity: 0.6; }
+
+    /* Forms */
+    .form-input { background: #f5f4ed; border: 1px solid transparent; transition: all 0.2s; color: #31332e; }
+    .form-input:focus { background: #ffffff; border-color: rgba(61,98,133,0.3); outline: none; }
+    
+    /* Skeleton */
+    .skeleton{ background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:8px; }
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spin{animation:spin 1s linear infinite;display:inline-block}
   </style>
 </head>
 
-<body class="min-h-screen flex flex-col md:flex-row overflow-hidden bg-surface">
+<body class="flex bg-surface">
 
 <!-- SIDEBAR -->
-<aside id="sidebar" class="sidebar w-64 flex flex-col p-4 z-40 hidden md:flex shrink-0 h-screen border-r border-white/5">
+<aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 hidden md:flex">
   <div class="mb-6 px-2 pt-2">
     <div class="flex items-center gap-2.5">
       <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center">
         <span class="font-headline font-bold text-on-primary" style="font-size:10px;">GSTW</span>
       </div>
       <div>
-        <h1 class="font-headline font-bold text-white" style="font-size:15px;letter-spacing:-0.02em;">Command</h1>
+        <h1 class="font-headline font-bold text-white" style="font-size:15px;">Command</h1>
         <p class="text-white/40 font-body" style="font-size:9px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">Admin Panel</p>
       </div>
     </div>
@@ -100,261 +95,119 @@
     <a href="manage-rewards.html" class="sidebar-item"><span class="material-symbols-outlined">emoji_events</span>Rewards</a>
     <a href="manage-media.html" class="sidebar-item"><span class="material-symbols-outlined">perm_media</span>Media Library</a>
     <a href="notifications.html" class="sidebar-item"><span class="material-symbols-outlined">notifications</span>Broadcasts</a>
-    <a href="manage-content.html" class="sidebar-item active"><span class="material-symbols-outlined">web</span>Landing Page</a>
+    <a href="manage-content.html" class="sidebar-item active"><span class="material-symbols-outlined">web</span>Page Builder</a>
     <a href="analytics.html" class="sidebar-item"><span class="material-symbols-outlined">analytics</span>Analytics</a>
   </nav>
-
+  
   <div class="mt-4 pt-4 border-t border-white/10 space-y-2">
     <a href="settings.html" class="sidebar-item"><span class="material-symbols-outlined">settings</span>Settings</a>
-    <div class="flex items-center gap-3 px-2 py-2">
-      <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center text-on-primary font-headline font-bold flex-shrink-0 admin-initials">AD</div>
-      <div class="flex-1 min-w-0">
-        <p class="font-body font-semibold text-white truncate admin-name">Admin</p>
-        <p class="text-white/40 font-body" style="font-size:10px;">Super Admin</p>
-      </div>
-      <button onclick="handleLogout()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-all">
-        <span class="material-symbols-outlined" style="font-size:16px;">logout</span>
-      </button>
-    </div>
   </div>
 </aside>
 
-<!-- BUILDER WORKSPACE (SPLIT SCREEN) -->
-<div class="flex-1 flex flex-col h-screen overflow-hidden">
+<div id="sidebarOverlay" class="fixed inset-0 bg-inverse-surface/60 z-30 hidden md:hidden" onclick="document.getElementById('sidebar').classList.add('hidden'); this.classList.add('hidden')"></div>
+
+<!-- MAIN WORKSPACE -->
+<div class="flex-1 md:ml-64 flex flex-col h-screen overflow-hidden bg-surface">
 
   <!-- TOP HEADER -->
-  <header class="h-16 bg-surface-cl border-b border-surface-chigh flex items-center justify-between px-6 z-20 shrink-0">
+  <header class="h-[72px] bg-white border-b border-surface-c flex items-center justify-between px-4 lg:px-6 shrink-0 z-20">
     <div class="flex items-center gap-3">
-      <button onclick="toggleSidebar()" class="md:hidden text-on-surface">
-        <span class="material-symbols-outlined">menu</span>
-      </button>
-      <div>
-        <h2 class="font-headline font-bold text-base text-on-surface">Landing Page Builder</h2>
-        <p class="text-on-surface-variant font-body text-xs hidden sm:block">Visual split-screen editor & section manager</p>
-      </div>
+      <button onclick="document.getElementById('sidebar').classList.toggle('hidden'); document.getElementById('sidebarOverlay').classList.toggle('hidden')" class="md:hidden text-on-surface p-1"><span class="material-symbols-outlined">menu</span></button>
+      <h2 class="font-headline font-bold text-on-surface text-xl">Page Builder</h2>
     </div>
-
-    <!-- Actions -->
-    <div class="flex items-center gap-3">
-      <!-- Mobile Preview Trigger -->
-      <button onclick="openMobilePreview()" class="lg:hidden flex items-center gap-1.5 px-3 py-2 bg-surface-c text-on-surface rounded-xl font-body font-semibold text-xs">
-        <span class="material-symbols-outlined" style="font-size: 16px;">preview</span>
-        <span>Preview</span>
-      </button>
-
-      <!-- Viewport Device Mode (Desktop Split) -->
-      <div class="hidden lg:flex items-center bg-surface-clow rounded-xl p-1 gap-1 border border-surface-chigh">
-        <button onclick="setPreviewDevice('desktop')" id="dev-desktop" class="p-1.5 rounded-lg bg-white shadow-sm text-primary" title="Desktop View">
-          <span class="material-symbols-outlined" style="font-size:18px;">desktop_windows</span>
-        </button>
-        <button onclick="setPreviewDevice('tablet')" id="dev-tablet" class="p-1.5 rounded-lg text-outline hover:text-on-surface" title="Tablet View">
-          <span class="material-symbols-outlined" style="font-size:18px;">tablet_mac</span>
-        </button>
-        <button onclick="setPreviewDevice('mobile')" id="dev-mobile" class="p-1.5 rounded-lg text-outline hover:text-on-surface" title="Mobile View">
-          <span class="material-symbols-outlined" style="font-size:18px;">smartphone</span>
-        </button>
-      </div>
-
-      <!-- Publish Live -->
-      <button onclick="saveAndPublish()" id="publishBtn" class="flex items-center gap-2 px-5 py-2 signature-gradient text-on-primary font-headline font-semibold text-xs rounded-xl shadow-ambient-sm hover:opacity-90 active:scale-95 transition-all">
-        <span class="material-symbols-outlined" style="font-size:16px;">cloud_upload</span>
-        <span>Publish Live</span>
+    <div class="flex gap-2">
+      <a href="../index.html" target="_blank" class="px-4 py-2 bg-surface-clow text-on-surface font-headline font-semibold rounded-lg text-sm hover:bg-surface-c transition-colors flex items-center gap-2">
+        <span class="material-symbols-outlined text-[18px]">open_in_new</span>View Live
+      </a>
+      <button onclick="saveAllBlocks()" id="saveBtn" class="signature-gradient text-white font-headline font-semibold rounded-lg px-4 py-2 flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform text-sm">
+        <span id="saveIcon" class="material-symbols-outlined text-[18px]">save</span>
+        <span>Publish</span>
       </button>
     </div>
   </header>
 
-  <!-- SPLIT CONTAINER -->
-  <div class="flex-1 flex overflow-hidden">
+  <!-- SPLIT PANE -->
+  <div class="flex pane-container w-full relative">
 
-    <!-- LEFT PANE: CONTROLS & SECTIONS (Scrollable) -->
-    <div class="w-full lg:w-[50%] xl:w-[45%] h-full overflow-y-auto p-6 space-y-6 border-r border-surface-chigh">
-
-      <!-- Status Notification Toast -->
-      <div id="statusToast" class="hidden p-3 rounded-xl font-body text-xs flex items-center gap-2"></div>
-
-      <!-- SECTIONS REORDER & TOGGLE HUB -->
-      <div class="bg-surface-cl rounded-2xl p-5 shadow-ambient">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="font-headline font-bold text-sm text-on-surface">Page Structure & Order</h3>
-          <span class="text-[11px] font-body text-outline">Reorder or toggle sections</span>
-        </div>
-        <div id="sectionOrderList" class="space-y-2">
-          <!-- Dynamic section items injected here -->
-        </div>
+    <!-- LEFT: BLOCKS LIST -->
+    <div class="w-full lg:w-[320px] flex-shrink-0 flex flex-col bg-surface-clow border-r border-surface-c h-full z-10 transition-transform">
+      
+      <div class="p-4 border-b border-surface-c bg-white shrink-0 flex justify-between items-center">
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Page Layout</p>
+        <button onclick="openAddBlockModal()" class="text-primary hover:text-primary-dim text-xs font-bold flex items-center gap-1">
+          <span class="material-symbols-outlined text-sm">add</span>Add Section
+        </button>
       </div>
 
-      <!-- SECTION CONTENT EDITORS -->
-      <div class="space-y-4">
-        <h3 class="font-headline font-bold text-sm text-on-surface px-1">Section Details</h3>
-
-        <!-- HERO SETTINGS -->
-        <div class="bg-surface-cl rounded-2xl p-5 shadow-ambient space-y-4 section-editor" data-section="hero">
-          <div class="flex items-center justify-between border-b border-surface-chigh pb-3">
-            <span class="font-headline font-bold text-sm text-on-surface flex items-center gap-2">
-              <span class="material-symbols-outlined text-primary" style="font-size: 18px;">heroinfo</span>
-              Hero Section
-            </span>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-on-surface mb-1">Headline (HTML supported)</label>
-            <textarea id="field_hero_headline" rows="2" oninput="handleRealtimeUpdate()" class="w-full p-3 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none"></textarea>
-            <p class="text-[10px] text-outline mt-1">Wrap text with <code>&lt;span class="grad-text"&gt;...&lt;/span&gt;</code> for the signature gradient.</p>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-on-surface mb-1">Subheadline</label>
-            <textarea id="field_hero_subheadline" rows="2" oninput="handleRealtimeUpdate()" class="w-full p-3 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none"></textarea>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-bold text-on-surface mb-1">Button Text</label>
-              <input type="text" id="field_hero_cta_text" oninput="handleRealtimeUpdate()" class="w-full p-2.5 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-on-surface mb-1">Button Link</label>
-              <input type="text" id="field_hero_cta_link" oninput="handleRealtimeUpdate()" class="w-full p-2.5 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none">
-            </div>
-          </div>
-          <!-- Hero Mockup Screen Image -->
-          <div>
-            <label class="block text-xs font-bold text-on-surface mb-1">Mockup Screen Image (Optional URL or File)</label>
-            <div class="flex gap-2">
-              <input type="text" id="field_hero_mockup_image" placeholder="/images/... or https://..." oninput="handleRealtimeUpdate()" class="flex-1 p-2.5 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none">
-              <label class="cursor-pointer px-3 py-2 bg-surface-c hover:bg-surface-chigh text-on-surface rounded-xl text-xs font-bold flex items-center gap-1">
-                <span class="material-symbols-outlined" style="font-size:16px;">upload</span>
-                <input type="file" accept="image/*" class="hidden" onchange="uploadImage(this, 'field_hero_mockup_image')">
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <!-- MISSION SETTINGS -->
-        <div class="bg-surface-cl rounded-2xl p-5 shadow-ambient space-y-4 section-editor" data-section="mission">
-          <div class="flex items-center justify-between border-b border-surface-chigh pb-3">
-            <span class="font-headline font-bold text-sm text-on-surface flex items-center gap-2">
-              <span class="material-symbols-outlined text-secondary" style="font-size: 18px;">volunteer_activism</span>
-              Mission & Allocation
-            </span>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-on-surface mb-1">Heading</label>
-            <input type="text" id="field_mission_heading" oninput="handleRealtimeUpdate()" class="w-full p-2.5 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-on-surface mb-1">Context Paragraph 1</label>
-            <textarea id="field_mission_body_1" rows="2" oninput="handleRealtimeUpdate()" class="w-full p-2.5 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none"></textarea>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-on-surface mb-1">Context Paragraph 2</label>
-            <textarea id="field_mission_body_2" rows="2" oninput="handleRealtimeUpdate()" class="w-full p-2.5 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none"></textarea>
-          </div>
-          <div class="grid grid-cols-2 gap-3 pt-2">
-            <div>
-              <label class="block text-[11px] font-semibold text-outline mb-1">Bible Dist. (%)</label>
-              <input type="number" id="field_prog_bible" min="0" max="100" oninput="handleRealtimeUpdate()" class="w-full p-2 bg-surface-clow rounded-lg text-xs font-body outline-none">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-outline mb-1">Planting (%)</label>
-              <input type="number" id="field_prog_planting" min="0" max="100" oninput="handleRealtimeUpdate()" class="w-full p-2 bg-surface-clow rounded-lg text-xs font-body outline-none">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-outline mb-1">Preachers (%)</label>
-              <input type="number" id="field_prog_preaching" min="0" max="100" oninput="handleRealtimeUpdate()" class="w-full p-2 bg-surface-clow rounded-lg text-xs font-body outline-none">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-outline mb-1">Care (%)</label>
-              <input type="number" id="field_prog_care" min="0" max="100" oninput="handleRealtimeUpdate()" class="w-full p-2 bg-surface-clow rounded-lg text-xs font-body outline-none">
-            </div>
-          </div>
-        </div>
-
-        <!-- FINAL CTA SETTINGS -->
-        <div class="bg-surface-cl rounded-2xl p-5 shadow-ambient space-y-4 section-editor" data-section="cta">
-          <div class="flex items-center justify-between border-b border-surface-chigh pb-3">
-            <span class="font-headline font-bold text-sm text-on-surface flex items-center gap-2">
-              <span class="material-symbols-outlined text-tertiary" style="font-size: 18px;">call_to_action</span>
-              Bottom Call To Action
-            </span>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-on-surface mb-1">Eyebrow</label>
-            <input type="text" id="field_cta_eyebrow" oninput="handleRealtimeUpdate()" class="w-full p-2.5 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-on-surface mb-1">Headline (HTML supported)</label>
-            <input type="text" id="field_cta_headline" oninput="handleRealtimeUpdate()" class="w-full p-2.5 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-on-surface mb-1">Subheadline</label>
-            <textarea id="field_cta_subheadline" rows="2" oninput="handleRealtimeUpdate()" class="w-full p-2.5 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none"></textarea>
-          </div>
-        </div>
-
-        <!-- SOCIAL LINKS & BRAND ASSETS -->
-        <div class="bg-surface-cl rounded-2xl p-5 shadow-ambient space-y-4">
-          <div class="flex items-center justify-between border-b border-surface-chigh pb-3">
-            <span class="font-headline font-bold text-sm text-on-surface flex items-center gap-2">
-              <span class="material-symbols-outlined text-primary" style="font-size: 18px;">share</span>
-              Brand Social Links
-            </span>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-[11px] font-semibold text-outline mb-1">Instagram URL</label>
-              <input type="text" id="field_social_instagram" placeholder="https://instagram.com/..." oninput="handleRealtimeUpdate()" class="w-full p-2 bg-surface-clow rounded-lg text-xs font-body outline-none">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-outline mb-1">Facebook URL</label>
-              <input type="text" id="field_social_facebook" placeholder="https://facebook.com/..." oninput="handleRealtimeUpdate()" class="w-full p-2 bg-surface-clow rounded-lg text-xs font-body outline-none">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-outline mb-1">X (Twitter) URL</label>
-              <input type="text" id="field_social_x" placeholder="https://x.com/..." oninput="handleRealtimeUpdate()" class="w-full p-2 bg-surface-clow rounded-lg text-xs font-body outline-none">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-outline mb-1">TikTok URL</label>
-              <input type="text" id="field_social_tiktok" placeholder="https://tiktok.com/@..." oninput="handleRealtimeUpdate()" class="w-full p-2 bg-surface-clow rounded-lg text-xs font-body outline-none">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-outline mb-1">YouTube URL</label>
-              <input type="text" id="field_social_youtube" placeholder="https://youtube.com/..." oninput="handleRealtimeUpdate()" class="w-full p-2 bg-surface-clow rounded-lg text-xs font-body outline-none">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-outline mb-1">WhatsApp Community</label>
-              <input type="text" id="field_social_whatsapp" placeholder="https://chat.whatsapp.com/..." oninput="handleRealtimeUpdate()" class="w-full p-2 bg-surface-clow rounded-lg text-xs font-body outline-none">
-            </div>
-          </div>
-        </div>
-
+      <div id="blockList" class="flex-1 overflow-y-auto pb-20">
+        <!-- Rendered by JS -->
+        <div class="p-4"><div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full"></div></div>
       </div>
     </div>
 
-    <!-- RIGHT PANE: DESKTOP SPLIT LIVE PREVIEW -->
-    <div class="hidden lg:flex flex-1 bg-surface-chigh items-center justify-center p-6 overflow-hidden">
-      <div id="previewWrapper" class="w-full h-full bg-white rounded-2xl shadow-float overflow-hidden transition-all duration-300 flex flex-col">
-        <div class="h-8 bg-inverse-surface flex items-center px-4 gap-1.5 shrink-0">
-          <div class="w-2.5 h-2.5 rounded-full bg-[#fe6d60]"></div>
-          <div class="w-2.5 h-2.5 rounded-full bg-[#e3e3db] opacity-40"></div>
-          <div class="w-2.5 h-2.5 rounded-full bg-[#e3e3db] opacity-40"></div>
-          <span class="text-[10px] text-white/40 font-body ml-3 font-mono">Live Draft Preview</span>
-        </div>
-        <iframe id="livePreviewFrame" src="/" class="w-full flex-1 border-0"></iframe>
+    <!-- RIGHT: EDITOR -->
+    <div class="hidden lg:flex flex-1 flex-col bg-white h-full relative z-20">
+      
+      <!-- Mobile Back -->
+      <div class="lg:hidden flex items-center p-3 border-b border-surface-c bg-white shrink-0">
+        <button onclick="document.querySelector('.lg\\:flex').classList.add('hidden')" class="flex items-center gap-1 text-primary font-bold text-sm">
+          <span class="material-symbols-outlined">arrow_back</span> Back to Layout
+        </button>
       </div>
-    </div>
 
+      <div class="flex-1 overflow-y-auto p-5 lg:p-8 pb-32">
+        <div class="max-w-2xl mx-auto" id="editorContent">
+          <div class="text-center mt-20 text-slate-400">
+            <span class="material-symbols-outlined text-5xl mb-2">touch_app</span>
+            <p class="font-body text-sm">Select a block from the left to edit its content.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </div>
 </div>
 
-<!-- SLIDE-OUT PREVIEW MODAL (FOR MOBILE / TABLETS) -->
-<div id="mobilePreviewModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex flex-col justify-end">
-  <div class="w-full h-[90vh] bg-surface-cl rounded-t-3xl flex flex-col overflow-hidden shadow-2xl">
-    <div class="p-4 bg-surface-c flex items-center justify-between border-b border-surface-chigh">
-      <span class="font-headline font-bold text-sm text-on-surface">Interactive Mobile Preview</span>
-      <button onclick="closeMobilePreview()" class="w-8 h-8 rounded-full bg-surface-chigh flex items-center justify-center text-on-surface">
-        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+<!-- ADD BLOCK MODAL -->
+<div id="addBlockModal" class="hidden fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+    <div class="p-5 border-b border-surface-c flex justify-between items-center">
+      <h3 class="font-headline font-bold text-lg">Add New Section</h3>
+      <button onclick="document.getElementById('addBlockModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-700"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="p-5 space-y-2 max-h-[60vh] overflow-y-auto">
+      <button onclick="addBlock('hero')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-colors">
+        <p class="font-bold text-sm text-slate-800">Hero Banner</p>
+        <p class="text-xs text-slate-500">Large image, headline, and call to action.</p>
+      </button>
+      <button onclick="addBlock('missions')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-colors">
+        <p class="font-bold text-sm text-slate-800">Missions Grid (Live Data)</p>
+        <p class="text-xs text-slate-500">Automatically displays active missions.</p>
+      </button>
+      <button onclick="addBlock('pricing')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-colors">
+        <p class="font-bold text-sm text-slate-800">Pricing / Tiers (Live Data)</p>
+        <p class="text-xs text-slate-500">Automatically displays subscription tiers.</p>
+      </button>
+      <button onclick="addBlock('stats')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-colors">
+        <p class="font-bold text-sm text-slate-800">Stats Counter (Live Data)</p>
+        <p class="text-xs text-slate-500">Shows total warriors, shares, and countries.</p>
+      </button>
+      <button onclick="addBlock('features')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-colors">
+        <p class="font-bold text-sm text-slate-800">Feature Grid</p>
+        <p class="text-xs text-slate-500">3-column text grid for "How it works".</p>
+      </button>
+      <button onclick="addBlock('cta')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-colors">
+        <p class="font-bold text-sm text-slate-800">Call to Action Banner</p>
+        <p class="text-xs text-slate-500">Bottom banner to drive signups.</p>
       </button>
     </div>
-    <iframe id="mobilePreviewFrame" src="/" class="w-full flex-1 border-0"></iframe>
   </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-slate-900/90 backdrop-blur-md text-white font-body font-bold px-5 py-3 rounded-full shadow-2xl items-center gap-2 text-sm">
+  <span class="material-symbols-outlined text-green-400">check_circle</span>
+  <span id="toastMsg"></span>
 </div>
 
 <script>
@@ -363,255 +216,292 @@ var supabaseClient = supabase.createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
 );
 
-var SECTION_NAMES = {
-  'hero': 'Hero Banner',
-  'marquee': 'Scripture Marquee',
-  'how_it_works': 'How It Works (Steps)',
-  'features': 'Features Bento Grid',
-  'pricing': 'Subscription Tiers',
-  'mission': 'Mission & Impact Allocation',
-  'cta': 'Final Call to Action'
+var blocks = [];
+var mediaOptions = [];
+var activeBlockId = null;
+var draggedBlockId = null;
+
+var BLOCK_DEFAULTS = {
+  hero: { headline: "New Headline", subheadline: "Subheadline text", cta_text: "Get Started", cta_link: "#", bg_image: "" },
+  missions: { eyebrow: "THE CAUSE", heading: "Active Missions", subheading: "Where your support goes." },
+  pricing: { eyebrow: "THE COST", heading: "Enlist Today", subheading: "Choose your rank." },
+  stats: { heading: "Field Report" },
+  features: { eyebrow: "YOUR ORDERS", heading: "How It Works", subheading: "Four simple steps." },
+  cta: { eyebrow: "FINAL CALL", heading: "Join the Mission", subheading: "Stand with us.", btn_text: "Enlist", btn_link: "#" }
 };
 
-var config = {
-  sections_order: ['hero', 'marquee', 'how_it_works', 'features', 'pricing', 'mission', 'cta'],
-  sections_visibility: {
-    hero: true,
-    marquee: true,
-    how_it_works: true,
-    features: true,
-    pricing: true,
-    mission: true,
-    cta: true
-  },
-  hero: {},
-  mission: {},
-  cta: {},
-  social_links: {}
+var BLOCK_LABELS = {
+  hero: { name: 'Hero Banner', icon: 'view_day' },
+  missions: { name: 'Missions Grid', icon: 'volunteer_activism' },
+  pricing: { name: 'Pricing Tiers', icon: 'sell' },
+  stats: { name: 'Live Stats', icon: 'monitoring' },
+  features: { name: 'Features Grid', icon: 'grid_view' },
+  cta: { name: 'CTA Banner', icon: 'ads_click' }
 };
 
-// Check Admin Access
-async function checkAdminAuth() {
-  var sessionRes = await supabaseClient.auth.getSession();
-  if (!sessionRes.data.session) { window.location.href = 'login.html'; return false; }
-  var user = sessionRes.data.session.user;
-  var pRes = await supabaseClient.from('profiles').select('role, full_name').eq('id', user.id).single();
-  if (pRes.error || !pRes.data || pRes.data.role !== 'admin') { window.location.href = '../app/index.html'; return false; }
-  document.querySelectorAll('.admin-name').forEach(function(el){ el.textContent = pRes.data.full_name || 'Admin'; });
-  return true;
+async function init() {
+  const { data: session } = await supabaseClient.auth.getSession();
+  if (!session?.session) return window.location.href = 'login.html';
+  
+  await Promise.all([loadBlocks(), loadMedia()]);
 }
 
-// Load Configuration
-async function loadConfig() {
-  var res = await supabaseClient.from('site_settings').select('value').eq('id', 'landing_page_config').single();
-  if (res.data && res.data.value) {
-    config = Object.assign(config, res.data.value);
-  }
-  populateFormFields();
-  renderSectionList();
-  setTimeout(handleRealtimeUpdate, 600);
+async function loadBlocks() {
+  const { data, error } = await supabaseClient.from('page_blocks').select('*').order('sort_order');
+  if (error) return showToast('Error loading blocks', true);
+  blocks = data || [];
+  renderBlockList();
 }
 
-function populateFormFields() {
-  // Hero
-  setVal('field_hero_headline', config.hero?.headline || '');
-  setVal('field_hero_subheadline', config.hero?.subheadline || '');
-  setVal('field_hero_cta_text', config.hero?.cta_text || '');
-  setVal('field_hero_cta_link', config.hero?.cta_link || '');
-  setVal('field_hero_mockup_image', config.hero?.mockup_image || '');
-
-  // Mission
-  setVal('field_mission_heading', config.mission?.heading || '');
-  setVal('field_mission_body_1', config.mission?.body_1 || '');
-  setVal('field_mission_body_2', config.mission?.body_2 || '');
-  setVal('field_prog_bible', config.mission?.prog_bible ?? 40);
-  setVal('field_prog_planting', config.mission?.prog_planting ?? 30);
-  setVal('field_prog_preaching', config.mission?.prog_preaching ?? 20);
-  setVal('field_prog_care', config.mission?.prog_care ?? 10);
-
-  // CTA
-  setVal('field_cta_eyebrow', config.cta?.eyebrow || '');
-  setVal('field_cta_headline', config.cta?.headline || '');
-  setVal('field_cta_subheadline', config.cta?.subheadline || '');
-
-  // Social
-  setVal('field_social_instagram', config.social_links?.instagram || '');
-  setVal('field_social_facebook', config.social_links?.facebook || '');
-  setVal('field_social_x', config.social_links?.x || '');
-  setVal('field_social_tiktok', config.social_links?.tiktok || '');
-  setVal('field_social_youtube', config.social_links?.youtube || '');
-  setVal('field_social_whatsapp', config.social_links?.whatsapp || '');
+async function loadMedia() {
+  const { data } = await supabaseClient.from('media').select('url, label').eq('type', 'landing').eq('is_active', true);
+  mediaOptions = data || [];
 }
 
-function setVal(id, val) {
-  var el = document.getElementById(id);
-  if (el) el.value = val;
-}
+// ─── DRAG & DROP LIST ──────────────────────────────────────────────
 
-// Render Section Reorder / Visibility Control List
-function renderSectionList() {
-  var container = document.getElementById('sectionOrderList');
-  container.innerHTML = '';
-
-  config.sections_order.forEach(function(secKey, idx) {
-    var isVisible = config.sections_visibility[secKey] !== false;
-    var name = SECTION_NAMES[secKey] || secKey;
-
-    var row = document.createElement('div');
-    row.className = 'flex items-center justify-between p-2.5 rounded-xl border border-surface-chigh bg-surface-clow hover:bg-surface-c transition-colors';
-    row.innerHTML =
-      '<div class="flex items-center gap-2.5">'
-        + '<button onclick="toggleVisibility(\'' + secKey + '\')" class="text-on-surface-variant hover:text-primary transition-colors" title="Toggle visibility">'
-          + '<span class="material-symbols-outlined text-[18px]">' + (isVisible ? 'visibility' : 'visibility_off') + '</span>'
-        + '</button>'
-        + '<span class="font-body text-xs font-semibold text-on-surface ' + (isVisible ? '' : 'line-through opacity-50') + '">' + name + '</span>'
-      + '</div>'
-      + '<div class="flex items-center gap-1">'
-        + '<button onclick="moveSection(' + idx + ', -1)" ' + (idx === 0 ? 'disabled class="opacity-20"' : 'class="hover:text-primary"') + ' title="Move Up"><span class="material-symbols-outlined text-[16px]">arrow_upward</span></button>'
-        + '<button onclick="moveSection(' + idx + ', 1)" ' + (idx === config.sections_order.length - 1 ? 'disabled class="opacity-20"' : 'class="hover:text-primary"') + ' title="Move Down"><span class="material-symbols-outlined text-[16px]">arrow_downward</span></button>'
-      + '</div>';
-
-    container.appendChild(row);
-  });
-}
-
-function toggleVisibility(secKey) {
-  config.sections_visibility[secKey] = !config.sections_visibility[secKey];
-  renderSectionList();
-  handleRealtimeUpdate();
-}
-
-function moveSection(idx, dir) {
-  var targetIdx = idx + dir;
-  if (targetIdx < 0 || targetIdx >= config.sections_order.length) return;
-  var temp = config.sections_order[idx];
-  config.sections_order[idx] = config.sections_order[targetIdx];
-  config.sections_order[targetIdx] = temp;
-  renderSectionList();
-  handleRealtimeUpdate();
-}
-
-// Live Synchronisation with Iframe
-function handleRealtimeUpdate() {
-  // Sync inputs back to config object
-  config.hero.headline = document.getElementById('field_hero_headline').value;
-  config.hero.subheadline = document.getElementById('field_hero_subheadline').value;
-  config.hero.cta_text = document.getElementById('field_hero_cta_text').value;
-  config.hero.cta_link = document.getElementById('field_hero_cta_link').value;
-  config.hero.mockup_image = document.getElementById('field_hero_mockup_image').value;
-
-  config.mission.heading = document.getElementById('field_mission_heading').value;
-  config.mission.body_1 = document.getElementById('field_mission_body_1').value;
-  config.mission.body_2 = document.getElementById('field_mission_body_2').value;
-  config.mission.prog_bible = Number(document.getElementById('field_prog_bible').value) || 0;
-  config.mission.prog_planting = Number(document.getElementById('field_prog_planting').value) || 0;
-  config.mission.prog_preaching = Number(document.getElementById('field_prog_preaching').value) || 0;
-  config.mission.prog_care = Number(document.getElementById('field_prog_care').value) || 0;
-
-  config.cta.eyebrow = document.getElementById('field_cta_eyebrow').value;
-  config.cta.headline = document.getElementById('field_cta_headline').value;
-  config.cta.subheadline = document.getElementById('field_cta_subheadline').value;
-
-  config.social_links.instagram = document.getElementById('field_social_instagram').value;
-  config.social_links.facebook = document.getElementById('field_social_facebook').value;
-  config.social_links.x = document.getElementById('field_social_x').value;
-  config.social_links.tiktok = document.getElementById('field_social_tiktok').value;
-  config.social_links.youtube = document.getElementById('field_social_youtube').value;
-  config.social_links.whatsapp = document.getElementById('field_social_whatsapp').value;
-
-  // Dispatch postMessage to iframes
-  var payload = { type: 'GSTW_PAGE_PREVIEW_UPDATE', config: config };
-  var f1 = document.getElementById('livePreviewFrame');
-  var f2 = document.getElementById('mobilePreviewFrame');
-  if (f1 && f1.contentWindow) f1.contentWindow.postMessage(payload, '*');
-  if (f2 && f2.contentWindow) f2.contentWindow.postMessage(payload, '*');
-}
-
-// Upload Media Asset to Supabase Bucket
-async function uploadImage(input, targetFieldId) {
-  if (!input.files || !input.files[0]) return;
-  var file = input.files[0];
-  var fileName = 'asset_' + Date.now() + '_' + file.name.replace(/\s+/g, '-');
-
-  showToast('Uploading asset...', 'info');
-
-  var res = await supabaseClient.storage.from('landing-assets').upload(fileName, file);
-  if (res.error) {
-    showToast('Upload error: ' + res.error.message, 'error');
+function renderBlockList() {
+  var list = document.getElementById('blockList');
+  list.innerHTML = '';
+  
+  if (blocks.length === 0) {
+    list.innerHTML = '<p class="text-xs text-slate-400 p-4">No sections. Add one.</p>';
     return;
   }
 
-  var publicUrlRes = supabaseClient.storage.from('landing-assets').getPublicUrl(fileName);
-  document.getElementById(targetFieldId).value = publicUrlRes.data.publicUrl;
-  showToast('Image uploaded successfully!', 'success');
-  handleRealtimeUpdate();
+  blocks.forEach(b => {
+    var info = BLOCK_LABELS[b.type] || { name: 'Section', icon: 'web' };
+    var div = document.createElement('div');
+    div.className = `block-card ${b.id === activeBlockId ? 'active' : ''} ${b.is_visible ? '' : 'hidden-block'}`;
+    div.draggable = true;
+    div.dataset.id = b.id;
+    
+    // Drag Events
+    div.ondragstart = (e) => { draggedBlockId = b.id; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; };
+    div.ondragover = (e) => { e.preventDefault(); e.currentTarget.classList.add('drag-over'); };
+    div.ondragleave = (e) => { e.currentTarget.classList.remove('drag-over'); };
+    div.ondrop = (e) => handleDrop(e, b.id);
+    div.ondragend = (e) => { e.currentTarget.classList.remove('dragging'); document.querySelectorAll('.block-card').forEach(c => c.classList.remove('drag-over')); };
+
+    div.innerHTML = `
+      <div class="flex items-center gap-3 cursor-pointer flex-1 min-w-0" onclick="selectBlock('${b.id}')">
+        <span class="material-symbols-outlined text-slate-300 cursor-grab" style="font-size:18px;">drag_indicator</span>
+        <div class="flex-1 min-w-0">
+          <p class="font-headline font-bold text-slate-800 text-sm truncate">${info.name}</p>
+          <p class="text-[10px] text-slate-400 mt-0.5 truncate">${b.content.heading || b.content.headline || 'No title'}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 shrink-0">
+        <button onclick="toggleVisibility('${b.id}')" class="text-slate-400 hover:text-primary p-1">
+          <span class="material-symbols-outlined text-[18px]">${b.is_visible ? 'visibility' : 'visibility_off'}</span>
+        </button>
+        <button onclick="deleteBlock('${b.id}')" class="text-slate-400 hover:text-red-500 p-1">
+          <span class="material-symbols-outlined text-[18px]">delete</span>
+        </button>
+      </div>
+    `;
+    list.appendChild(div);
+  });
 }
 
-// Save & Publish
-async function saveAndPublish() {
-  var btn = document.getElementById('publishBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="material-symbols-outlined animate-spin" style="font-size:16px;">sync</span><span>Publishing...</span>';
+function handleDrop(e, targetId) {
+  e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+  if (!draggedBlockId || draggedBlockId === targetId) return;
 
-  var res = await supabaseClient
-    .from('site_settings')
-    .upsert({ id: 'landing_page_config', value: config, updated_at: new Date().toISOString() });
+  var draggedIdx = blocks.findIndex(b => b.id === draggedBlockId);
+  var targetIdx = blocks.findIndex(b => b.id === targetId);
+  
+  var moved = blocks.splice(draggedIdx, 1)[0];
+  blocks.splice(targetIdx, 0, moved);
+  
+  // Re-assign sort_orders
+  blocks.forEach((b, i) => b.sort_order = i + 1);
+  
+  renderBlockList();
+  // Auto-save sort order implicitly (will be committed on Publish)
+}
 
-  if (res.error) {
-    showToast('Failed to publish: ' + res.error.message, 'error');
+function selectBlock(id) {
+  activeBlockId = id;
+  renderBlockList(); // highlight active
+  
+  var block = blocks.find(b => b.id === id);
+  renderEditor(block);
+  
+  if (window.innerWidth < 1024) {
+    document.querySelector('.lg\\:flex').classList.remove('hidden');
+  }
+}
+
+function toggleVisibility(id) {
+  var b = blocks.find(x => x.id === id);
+  if(b) b.is_visible = !b.is_visible;
+  renderBlockList();
+}
+
+async function deleteBlock(id) {
+  if(!confirm("Remove this section from the page?")) return;
+  blocks = blocks.filter(b => b.id !== id);
+  
+  // Delete from DB immediately
+  await supabaseClient.from('page_blocks').delete().eq('id', id);
+  
+  if (activeBlockId === id) {
+    activeBlockId = null;
+    document.getElementById('editorContent').innerHTML = '<div class="text-center mt-20 text-slate-400"><p>Section deleted.</p></div>';
+  }
+  renderBlockList();
+  showToast("Section removed");
+}
+
+function openAddBlockModal() {
+  document.getElementById('addBlockModal').classList.remove('hidden');
+}
+
+function addBlock(type) {
+  var newId = 'block_' + Date.now();
+  var newBlock = {
+    id: newId,
+    type: type,
+    sort_order: blocks.length + 1,
+    is_visible: true,
+    content: Object.assign({}, BLOCK_DEFAULTS[type] || {})
+  };
+  
+  blocks.push(newBlock);
+  document.getElementById('addBlockModal').classList.add('hidden');
+  
+  renderBlockList();
+  selectBlock(newId);
+}
+
+// ─── RIGHT PANE EDITOR ─────────────────────────────────────────────
+
+function renderEditor(block) {
+  var info = BLOCK_LABELS[block.type] || { name: 'Section', icon: 'web' };
+  var c = block.content;
+  var html = `
+    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-surface-c">
+      <span class="material-symbols-outlined text-primary text-2xl">${info.icon}</span>
+      <div>
+        <h3 class="font-headline font-bold text-xl text-slate-900">${info.name}</h3>
+        <p class="text-xs text-slate-500">Edit content for this block</p>
+      </div>
+    </div>
+  `;
+
+  // Generate fields based on type
+  if (block.type === 'hero') {
+    html += buildField('Headline', 'headline', c.headline, true);
+    html += buildField('Subheadline', 'subheadline', c.subheadline);
+    html += buildField('Button Text', 'cta_text', c.cta_text);
+    html += buildField('Button Link', 'cta_link', c.cta_link);
+    html += buildMediaDropdown('Background Image', 'bg_image', c.bg_image);
+  } else if (['missions', 'pricing', 'features'].includes(block.type)) {
+    html += `<div class="bg-blue-50 text-blue-800 p-4 rounded-xl text-xs font-bold mb-5 flex items-center gap-2 border border-blue-100"><span class="material-symbols-outlined">auto_awesome</span> This block automatically loads live data from your database!</div>`;
+    html += buildField('Eyebrow (Small Top Text)', 'eyebrow', c.eyebrow);
+    html += buildField('Main Heading', 'heading', c.heading);
+    html += buildField('Subheading', 'subheading', c.subheading, true);
+  } else if (block.type === 'cta') {
+    html += buildField('Eyebrow', 'eyebrow', c.eyebrow);
+    html += buildField('Heading', 'heading', c.heading);
+    html += buildField('Subheading', 'subheading', c.subheading);
+    html += buildField('Button Text', 'btn_text', c.btn_text);
+    html += buildField('Button Link', 'btn_link', c.btn_link);
+  } else if (block.type === 'stats') {
+    html += `<div class="bg-blue-50 text-blue-800 p-4 rounded-xl text-xs font-bold mb-5 flex items-center gap-2 border border-blue-100"><span class="material-symbols-outlined">auto_awesome</span> Counters automatically update based on live app usage.</div>`;
+    html += buildField('Heading', 'heading', c.heading);
   } else {
-    showToast('Landing page is now published live!', 'success');
+    html += `<p class="text-sm text-slate-500">No editable content for this block.</p>`;
   }
 
-  btn.disabled = false;
-  btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;">cloud_upload</span><span>Publish Live</span>';
+  document.getElementById('editorContent').innerHTML = html;
 }
 
-function showToast(msg, type) {
-  var t = document.getElementById('statusToast');
-  t.className = 'p-3 rounded-xl font-body text-xs flex items-center gap-2 ' + (type === 'error' ? 'bg-tertiary/10 text-tertiary' : 'bg-primary/10 text-primary');
-  t.innerHTML = '<span class="material-symbols-outlined text-[16px]">' + (type === 'error' ? 'error' : 'check_circle') + '</span><span>' + msg + '</span>';
-  t.classList.remove('hidden');
-  setTimeout(function(){ t.classList.add('hidden'); }, 4000);
+// ─── FIELD BUILDERS & UPDATERS ─────────────────────────────────────
+
+function buildField(label, key, val, isTextarea = false) {
+  var v = escapeHtml(val || '');
+  var inputHtml = isTextarea 
+    ? `<textarea rows="3" class="w-full form-input rounded-xl px-4 py-3 text-sm font-medium resize-none" oninput="updateContent('${key}', this.value)">${v}</textarea>`
+    : `<input type="text" class="w-full form-input rounded-xl px-4 py-3 text-sm font-semibold" value="${v}" oninput="updateContent('${key}', this.value)">`;
+
+  return `
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-surface-c mb-4">
+      <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">${label}</label>
+      ${inputHtml}
+    </div>
+  `;
 }
 
-// Viewport Switcher
-function setPreviewDevice(dev) {
-  var wrapper = document.getElementById('previewWrapper');
-  ['dev-desktop','dev-tablet','dev-mobile'].forEach(function(b){
-    document.getElementById(b).classList.remove('bg-white','shadow-sm','text-primary');
-    document.getElementById(b).classList.add('text-outline');
+function buildMediaDropdown(label, key, val) {
+  var options = `<option value="">Default / None</option>`;
+  mediaOptions.forEach(m => {
+    options += `<option value="${m.url}" ${val === m.url ? 'selected' : ''}>${m.label}</option>`;
   });
-  document.getElementById('dev-' + dev).classList.add('bg-white','shadow-sm','text-primary');
 
-  if (dev === 'mobile') wrapper.style.maxWidth = '390px';
-  else if (dev === 'tablet') wrapper.style.maxWidth = '768px';
-  else wrapper.style.maxWidth = '100%';
+  return `
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-surface-c mb-4">
+      <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">${label}</label>
+      <select class="w-full form-input rounded-xl px-4 py-3 text-sm font-semibold cursor-pointer" onchange="updateContent('${key}', this.value)">
+        ${options}
+      </select>
+      <p class="text-[10px] text-primary font-bold mt-2 hover:underline"><a href="manage-media.html">Upload more via Media Library</a></p>
+    </div>
+  `;
 }
 
-function openMobilePreview() {
-  document.getElementById('mobilePreviewModal').classList.remove('hidden');
-  handleRealtimeUpdate();
-}
-function closeMobilePreview() {
-  document.getElementById('mobilePreviewModal').classList.add('hidden');
-}
-
-function toggleSidebar() {
-  var s = document.getElementById('sidebar');
-  s.classList.toggle('hidden');
-  s.classList.toggle('flex');
+function updateContent(key, value) {
+  if (!activeBlockId) return;
+  var block = blocks.find(b => b.id === activeBlockId);
+  if (block) {
+    block.content[key] = value;
+    // Update list subtitle live if it's the heading
+    if (key === 'heading' || key === 'headline') renderBlockList(); 
+  }
 }
 
-async function handleLogout() {
-  await supabaseClient.auth.signOut();
-  window.location.href = 'login.html';
+// ─── SAVE TO DB ────────────────────────────────────────────────────
+
+async function saveAllBlocks() {
+  var btn = document.getElementById('saveBtn');
+  var icon = document.getElementById('saveIcon');
+  btn.disabled = true; icon.classList.add('spin'); icon.textContent = 'progress_activity';
+
+  // Prepare UPSERT payload
+  var payload = blocks.map(b => ({
+    id: b.id,
+    type: b.type,
+    sort_order: b.sort_order,
+    is_visible: b.is_visible,
+    content: b.content,
+    updated_at: new Date().toISOString()
+  }));
+
+  const { error } = await supabaseClient.from('page_blocks').upsert(payload);
+
+  btn.disabled = false; icon.classList.remove('spin'); icon.textContent = 'save';
+
+  if (error) {
+    console.error(error);
+    showToast('Error publishing changes', true);
+  } else {
+    showToast('Website published successfully!');
+  }
 }
 
-(async function init() {
-  var authOk = await checkAdminAuth();
-  if (authOk) await loadConfig();
-})();
+function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+
+function showToast(msg, isErr=false) {
+  var t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.querySelector('span').textContent = isErr ? 'error' : 'check_circle';
+  t.querySelector('span').className = 'material-symbols-outlined ' + (isErr ? 'text-red-400' : 'text-green-400');
+  t.classList.remove('hidden'); t.classList.add('flex');
+  setTimeout(() => { t.classList.add('hidden'); t.classList.remove('flex'); }, 3000);
+}
+
+init();
 </script>
 </body>
 </html>
