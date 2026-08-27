@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Rewards & Progress</title>
-  <script src="https://cdn.tailwindcss.com"></script>p
+  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="badges-config.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -15,7 +15,11 @@
     tailwind.config = {
       theme: {
         extend: {
-          colors: { 'surface': '#f8fafc', 'card': '#ffffff', 'text-main': '#0f172a', 'text-muted': '#64748b', 'primary': '#3d6285', 'gold': '#D4A24C' }
+          colors: { 
+            'surface': '#f8fafc', 'card': '#ffffff', 'text-main': '#0f172a', 'text-muted': '#64748b', 
+            'primary': '#3d6285', 'gold': '#D4A24C',
+            'common': '#64748b', 'uncommon': '#16a34a', 'rare': '#2563eb', 'epic': '#9333ea', 'mythic': '#d97706' 
+          }
         }
       }
     }
@@ -24,25 +28,34 @@
   <style>
     body { font-family: 'Manrope', sans-serif; background: #f8fafc; color: #0f172a; }
     .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .dash-card { background: white; border-radius: 24px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; }
     
-    /* Bottom Sheet Modal */
-    .modal-overlay { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 100; }
-    .modal-sheet { transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1); background: white; border-radius: 32px 32px 0 0; max-height: 90vh; overflow-y: auto; }
-    .modal-sheet.open { transform: translateY(0); }
-
     /* Hide scrollbar for horizontal scroll */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
     .fade-up { opacity: 0; transform: translateY(10px); transition: 0.5s ease-out; }
     .fade-up.visible { opacity: 1; transform: translateY(0); }
+
+    /* Badge Hover Effect */
+    .badge-item { transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; }
+    .badge-item:hover { transform: scale(1.08); filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15)); }
+    .badge-item.unclaimed { opacity: 0.3; filter: grayscale(1); }
+    .badge-item.unclaimed:hover { opacity: 0.6; filter: grayscale(0.5); transform: scale(1.05); }
+
+    /* Trophy Colored Pills */
+    .trophy-pill { transition: all 0.2s ease; cursor: pointer; }
+    .trophy-pill:active { transform: scale(0.95); }
+    .pill-common { background: #f1f5f9; border: 1px solid #e2e8f0; }
+    .pill-uncommon { background: #dcfce7; border: 1px solid #bbf7d0; }
+    .pill-rare { background: #dbeafe; border: 1px solid #bfdbfe; }
+    .pill-epic { background: #f3e8ff; border: 1px solid #e9d5ff; }
+    .pill-mythic { background: #fef3c7; border: 1px solid #fde68a; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.15); }
   </style>
 </head>
 <body class="pb-32">
 
-<!-- HEADER -->
-<header class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
+<!-- HEADER (Fixed with safe-area padding for mobile notches) -->
+<header class="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-slate-100" style="padding-top: env(safe-area-inset-top);">
   <div class="max-w-[430px] mx-auto px-6 py-4 flex items-center justify-between">
     <div>
       <h1 class="font-headline font-extrabold text-xl text-slate-900">Rewards</h1>
@@ -52,55 +65,43 @@
   </div>
 </header>
 
-<main class="pt-24 px-5 max-w-[430px] mx-auto space-y-8">
+<main class="pt-28 px-5 max-w-[430px] mx-auto space-y-8">
 
-  <!-- 1. YOUR COVENANT (SUBSCRIPTION) -->
+  <!-- 1. SUBSCRIPTION STATUS (Redesigned, Lighter) -->
   <section class="fade-up">
-    <h3 class="font-headline font-bold text-lg mb-3 px-1">Your Covenant</h3>
-    <div id="covenantCard" class="dash-card !p-6 bg-gradient-to-br from-slate-900 to-slate-800 text-white relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform" onclick="openCovenantModal()">
-      <div class="absolute top-0 right-0 w-32 h-32 bg-gold/20 rounded-full blur-3xl"></div>
-      <div class="relative z-10 flex items-center gap-4">
-        <div id="covenantIconWrap" class="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center border border-white/10">
-          <img id="covenantImg" src="" class="w-10 h-10 object-contain">
+    <div id="covenantCard" class="rounded-[32px] p-6 bg-gradient-to-br from-slate-50 to-white border border-slate-100 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform" onclick="openCovenantModal()">
+      <div class="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full blur-3xl"></div>
+      <div class="relative z-10 flex flex-col items-center text-center">
+        <div id="covenantIconWrap" class="w-24 h-24 rounded-3xl bg-white flex items-center justify-center mb-4 shadow-sm border border-slate-50">
+          <img id="covenantImg" src="" class="w-16 h-16 object-contain">
         </div>
-        <div>
-          <p class="text-[9px] font-black text-gold uppercase tracking-widest mb-1">Current Status</p>
-          <h2 id="covenantName" class="font-headline font-black text-xl">Loading...</h2>
-          <p id="covenantTagline" class="text-[11px] text-white/60 mt-1">—</p>
-        </div>
+        <h2 id="covenantName" class="font-headline font-black text-2xl text-slate-900">Loading...</h2>
+        <p id="covenantTagline" class="text-[12px] text-slate-500 mt-1 font-medium">—</p>
+        <p class="text-[10px] font-bold text-gold uppercase tracking-widest mt-3">Current Status</p>
       </div>
     </div>
   </section>
 
-  <!-- 2. YOUR BADGES -->
+  <!-- 2. BADGES (Standalone, No Pills) -->
   <section class="fade-up">
-    <div class="flex justify-between items-center mb-3 px-1">
-      <h3 class="font-headline font-bold text-lg">Your Badges</h3>
-    </div>
-    <div id="badgesContainer" class="dash-card !p-5">
+    <h3 class="font-headline font-bold text-lg mb-4 px-1">Your Badges</h3>
+    <div id="badgesContainer" class="flex flex-wrap justify-center gap-6 py-4">
       <!-- Injected via JS -->
     </div>
   </section>
 
-  <!-- 3. YOUR TROPHIES -->
+  <!-- 3. TROPHIES (Colored Pills, Inline) -->
   <section class="fade-up">
-    <div class="flex justify-between items-center mb-3 px-1">
-      <h3 class="font-headline font-bold text-lg">Your Trophies</h3>
-    </div>
-    <div id="trophiesGrid" class="grid grid-cols-2 gap-3">
+    <h3 class="font-headline font-bold text-lg mb-4 px-1">Your Trophies</h3>
+    <div id="trophiesGrid" class="grid grid-cols-2 gap-4">
       <!-- Injected via JS -->
     </div>
-    <button onclick="openUnclaimedModal()" class="w-full mt-4 py-3 text-sm font-bold text-primary bg-primary/5 rounded-xl active:scale-95 transition-transform">
-      Discover unclaimed trophies →
-    </button>
   </section>
 
-  <!-- 4. CURRENT CALLS (CAMPAIGNS) -->
+  <!-- 4. CURRENT CALLS (Campaigns) -->
   <section class="fade-up">
-    <div class="flex justify-between items-center mb-3 px-1">
-      <h3 class="font-headline font-bold text-lg">Current Calls</h3>
-    </div>
-    <div id="campaignsList" class="space-y-3">
+    <h3 class="font-headline font-bold text-lg mb-4 px-1">Current Calls</h3>
+    <div id="campaignsList" class="space-y-4">
       <!-- Injected via JS -->
     </div>
   </section>
@@ -108,19 +109,19 @@
 </main>
 
 <!-- BOTTOM NAV -->
-<nav class="fixed bottom-0 inset-x-0 z-40 bg-white/80 backdrop-blur-[20px] border-t border-slate-100" style="padding-bottom: env(safe-area-inset-bottom);">
+<nav class="fixed bottom-0 inset-x-0 z-40 bg-white/90 backdrop-blur-[20px] border-t border-slate-100" style="padding-bottom: env(safe-area-inset-bottom);">
   <div class="max-w-lg mx-auto flex items-center justify-around h-16 px-2">
     <a href="index.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">home</span><span class="text-[10px] font-bold">Home</span></a>
     <a href="library.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">auto_stories</span><span class="text-[10px] font-bold">Library</span></a>
     <a href="cause.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">volunteer_activism</span><span class="text-[10px] font-bold">Missions</span></a>
     <a href="impact.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">bar_chart</span><span class="text-[10px] font-bold">Impact</span></a>
-    <a href="profile.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">person</span><span class="text-[10px] font-bold">Profile</span></a>
+    <a href="profile.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-primary bg-primary/5"><span class="material-symbols-outlined filled" style="font-size:1.35rem">person</span><span class="text-[10px] font-bold">Profile</span></a>
   </div>
 </nav>
 
-<!-- UNIVERSAL MODAL CONTAINER -->
-<div id="modalOverlay" class="fixed inset-0 modal-overlay hidden" onclick="closeModal()">
-  <div id="modalSheet" class="absolute bottom-0 inset-x-0 modal-sheet p-8 max-w-lg mx-auto" onclick="event.stopPropagation()">
+<!-- UNIVERSAL MODAL CONTAINER (Only used for Subscription details now) -->
+<div id="modalOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden" onclick="closeModal()">
+  <div id="modalSheet" class="absolute bottom-0 inset-x-0 bg-white rounded-t-[32px] p-8 max-w-lg mx-auto transform translate-y-full transition-transform duration-300 ease-out" onclick="event.stopPropagation()" style="max-height: 90vh; overflow-y: auto;">
     <div class="w-12 h-1 bg-slate-200 mx-auto mb-8 rounded-full"></div>
     <div id="modalContent"></div>
     <button onclick="closeModal()" class="w-full mt-8 py-4 bg-slate-900 text-white font-headline font-bold rounded-2xl active:scale-95 transition-transform">Close</button>
@@ -135,16 +136,7 @@ var supabaseClient = supabase.createClient(
 
 var currentUser, userProfile;
 var userStats = { shares: 0, recruits_paid: 0, countries_paid: 0 };
-
-// MOCK DATA FOR CAMPAIGNS & BADGES (Replace with Supabase calls later)
-const MOCK_CAMPAIGNS = [
-  { id: 'c1', title: '7 Days of Witness', desc: 'Share the Word on 7 separate days this week.', progress: 3, target: 7, reward: 'Faithful Witness Badge', cta: 'View Mission' },
-  { id: 'c2', title: 'Nations Challenge', desc: 'Invite paid warriors from 3 new countries.', progress: 1, target: 3, reward: 'Nations Builder Badge + Voyager Progress', cta: 'Invite Warriors' }
-];
-const MOCK_BADGES = [
-  { id: 'b1', name: 'Founding Member', desc: 'Joined during the initial launch phase.', date: 'Jan 2024', icon: 'rocket_launch' },
-  { id: 'b2', name: 'First Mission', desc: 'Completed your very first mission deployment.', date: 'Feb 2024', icon: 'flag' }
-];
+var allTrophyDefs = [];
 
 async function init() {
   const s = await supabaseClient.auth.getSession();
@@ -158,15 +150,23 @@ async function loadData() {
   const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
   userProfile = profile || {};
 
+  const inviteCode = userProfile.invite_code;
+  const recruitsQuery = inviteCode 
+    ? supabaseClient.from('profiles').select('country, subscription_tier').eq('referred_by', currentUser.id) 
+    : Promise.resolve({ data: [] }); 
+
   const res = await Promise.allSettled([
     supabaseClient.from('shares').select('shared_at', { count: 'exact' }).eq('user_id', currentUser.id),
-    supabaseClient.from('profiles').select('country, subscription_tier').eq('referred_by', userProfile.invite_code),
-    supabaseClient.from('trophy_definitions').select('*').eq('is_active', true)
+    recruitsQuery,
+    supabaseClient.from('trophy_definitions').select('*').eq('is_active', true),
+    // Attempt to fetch active campaigns. If table doesn't exist, it fails gracefully.
+    supabaseClient.from('campaigns').select('*').eq('is_active', true).order('created_at', {ascending: false})
   ]);
 
-  const sharesCount = res[0].value?.count || 0;
-  const recruits = res[1].value?.data || [];
-  const trophyDefs = res[2].value?.data || [];
+  const sharesCount = res[0].status === 'fulfilled' ? (res[0].value.count || 0) : 0;
+  const recruits = res[1].status === 'fulfilled' ? (res[1].value.data || []) : [];
+  allTrophyDefs = res[2].status === 'fulfilled' ? (res[2].value.data || []) : [];
+  const campaigns = res[3].status === 'fulfilled' ? (res[3].value.data || []) : [];
 
   const paidRecruits = recruits.filter(r => r.subscription_tier !== 'free');
   userStats = { 
@@ -177,8 +177,8 @@ async function loadData() {
 
   renderCovenant();
   renderBadges();
-  renderTrophies(trophyDefs);
-  renderCampaigns();
+  renderTrophies();
+  renderCampaigns(campaigns);
 }
 
 // --- RENDER FUNCTIONS ---
@@ -194,90 +194,102 @@ function renderCovenant() {
 
 function renderBadges() {
   const container = document.getElementById('badgesContainer');
-  const earnedBadges = [];
-
-  // 1. Check if the user has been awarded the Genesis badge by Admin
-  if (userProfile.badges && userProfile.badges.includes('genesis')) {
-    earnedBadges.push({
-      id: 'genesis',
-      name: 'Genesis',
-      desc: 'One of the first 5 warriors to join the movement and test the app.',
-      date: 'Genesis Launch',
-      icon: 'rocket_launch'
-    });
-  }
-
-  // 2. Render the Badges
-  if (earnedBadges.length === 0) {
-    container.innerHTML = `<p class="text-center text-slate-400 text-sm py-4">Join a campaign or be a founding member to earn your first badge.</p>`;
-    return;
-  }
-
-  container.innerHTML = `<div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-    ${earnedBadges.map(b => `
-      <div class="flex-shrink-0 w-24 text-center cursor-pointer" onclick="openBadgeModal('${b.id}')">
-        <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary/20 to-gold/20 flex items-center justify-center mb-2 border border-gold/20">
-          <span class="material-symbols-outlined text-gold text-2xl filled">${b.icon}</span>
-        </div>
-        <p class="text-[10px] font-bold text-slate-700 leading-tight">${b.name}</p>
-      </div>
-    `).join('')}
-  </div>`;
-}
-
-function renderTrophies(trophyDefs) {
-  const container = document.getElementById('trophiesGrid');
   container.innerHTML = '';
-  
-  const earnedTrophies = trophyDefs.filter(t => {
-    const state = getTrophyState(t, userStats);
-    return state.count > 0; // ONLY SHOW IF EARNED AT LEAST LEVEL 1
-  });
 
-  if (earnedTrophies.length === 0) {
-    container.innerHTML = `<div class="col-span-2 text-center py-8 text-slate-400 text-sm">Start sharing or recruiting to unlock your first trophy.</div>`;
+  // Combine special badges (like Genesis) with any future badge logic
+  const allBadges = SPECIAL_BADGES || [];
+  const earnedBadgeIds = userProfile.badges || [];
+
+  if (allBadges.length === 0) {
+    container.innerHTML = `<p class="text-center text-slate-400 text-sm py-4 w-full">Join a campaign to earn your first badge.</p>`;
     return;
   }
 
-  earnedTrophies.forEach(trophy => {
-    const state = getTrophyState(trophy, userStats);
-    const colors = RARITY_COLORS[state.activeTier.rarity];
-    
+  allBadges.forEach(b => {
+    const isEarned = earnedBadgeIds.includes(b.id);
     const div = document.createElement('div');
-    div.className = 'dash-card !p-4 text-center cursor-pointer active:scale-95 transition-transform';
-    div.onclick = () => openTrophyModal(trophy, state);
+    div.className = `badge-item flex flex-col items-center w-24 ${isEarned ? '' : 'unclaimed'}`;
+    div.onclick = () => openBadgeModal(b);
     div.innerHTML = `
-      <div class="w-12 h-12 mx-auto rounded-xl ${colors.bg} flex items-center justify-center mb-2 shadow-sm">
-        <span class="material-symbols-outlined text-white text-2xl filled">${trophy.icon}</span>
+      <img src="${b.image || '/images/badges/placeholder.svg'}" class="w-16 h-16 object-contain mb-2" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+      <div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-2 hidden">
+        <span class="material-symbols-outlined text-primary text-2xl">${b.icon}</span>
       </div>
-      <p class="text-[11px] font-bold text-slate-800 leading-tight">${trophy.title}</p>
-      <p class="text-[9px] font-black uppercase tracking-widest mt-1 ${colors.text}">${state.activeTier.rarity}</p>
+      <p class="text-[10px] font-bold text-slate-700 leading-tight text-center">${b.name}</p>
+      ${!isEarned ? '<p class="text-[8px] text-slate-400 mt-1">Locked</p>' : ''}
     `;
     container.appendChild(div);
   });
 }
 
-function renderCampaigns() {
+function renderTrophies() {
+  const container = document.getElementById('trophiesGrid');
+  container.innerHTML = '';
+
+  if (allTrophyDefs.length === 0) {
+    container.innerHTML = `<div class="col-span-2 text-center py-8 text-slate-400 text-sm">Trophies will appear here.</div>`;
+    return;
+  }
+
+  allTrophyDefs.forEach(trophy => {
+    const state = getTrophyState(trophy, userStats);
+    const rarity = state.activeTier.rarity;
+    const isEarned = state.count > 0;
+    
+    const div = document.createElement('div');
+    div.className = `trophy-pill pill-${rarity} rounded-2xl p-4 text-center flex flex-col items-center justify-center h-32 ${!isEarned ? 'opacity-60' : ''}`;
+    div.onclick = () => openTrophyModal(trophy, state);
+    div.innerHTML = `
+      <div class="w-12 h-12 mb-2 flex items-center justify-center">
+        <!-- Placeholder for your rich 3D images. Replace src with actual image path later -->
+        <span class="material-symbols-outlined text-3xl text-slate-700">${trophy.icon}</span>
+      </div>
+      <p class="text-[11px] font-bold text-slate-800 leading-tight">${trophy.title}</p>
+      <p class="text-[9px] font-black uppercase tracking-widest mt-1 text-${rarity}">${rarity}</p>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function renderCampaigns(campaigns) {
   const container = document.getElementById('campaignsList');
-  container.innerHTML = MOCK_CAMPAIGNS.map(c => `
-    <div class="dash-card !p-5 cursor-pointer active:scale-[0.98] transition-transform" onclick="openCampaignModal('${c.id}')">
+  container.innerHTML = '';
+
+  // If no campaigns table exists or it's empty
+  if (!campaigns || campaigns.length === 0) {
+    container.innerHTML = `
+      <div class="bg-white rounded-2xl p-6 text-center border border-slate-100">
+        <span class="material-symbols-outlined text-slate-300 text-3xl mb-2">notifications_off</span>
+        <p class="text-sm text-slate-500 font-medium">No active campaigns right now.</p>
+        <p class="text-[11px] text-slate-400 mt-1">New calls to action will appear here.</p>
+      </div>
+    `;
+    return;
+  }
+
+  campaigns.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'bg-white rounded-2xl p-5 border border-slate-100 shadow-sm cursor-pointer active:scale-[0.98] transition-transform';
+    div.onclick = () => window.location.href = 'cause.html'; // Link to missions page
+    div.innerHTML = `
       <div class="flex justify-between items-start mb-3">
         <div class="flex-1">
-          <h4 class="font-headline font-bold text-slate-900">${c.title}</h4>
-          <p class="text-[11px] text-slate-500 mt-1">${c.desc}</p>
+          <h4 class="font-headline font-bold text-slate-900 text-lg">${c.title}</h4>
+          <p class="text-[12px] text-slate-500 mt-1">${c.description}</p>
         </div>
         <span class="material-symbols-outlined text-primary ml-3">arrow_forward</span>
       </div>
       <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 mb-1.5">
         <span>Progress</span>
-        <span>${c.progress} / ${c.target}</span>
+        <span>${c.current_progress || 0} / ${c.target_amount}</span>
       </div>
-      <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mb-3">
-        <div class="h-full bg-primary rounded-full" style="width: ${(c.progress/c.target)*100}%"></div>
+      <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden mb-3">
+        <div class="h-full bg-primary rounded-full transition-all duration-500" style="width: ${((c.current_progress || 0) / c.target_amount) * 100}%"></div>
       </div>
-      <p class="text-[10px] text-gold font-bold">Reward: ${c.reward}</p>
-    </div>
-  `).join('');
+      <p class="text-[10px] text-gold font-bold">Reward: ${c.reward_description}</p>
+    `;
+    container.appendChild(div);
+  });
 }
 
 // --- MODAL LOGIC ---
@@ -285,12 +297,15 @@ function renderCampaigns() {
 function openModal(html) {
   document.getElementById('modalContent').innerHTML = html;
   document.getElementById('modalOverlay').classList.remove('hidden');
-  setTimeout(() => document.getElementById('modalSheet').classList.add('open'), 10);
+  // Small delay to allow display:block to apply before transition
+  setTimeout(() => {
+    document.getElementById('modalSheet').classList.remove('translate-y-full');
+  }, 10);
 }
 
 function closeModal() {
-  document.getElementById('modalSheet').classList.remove('open');
-  setTimeout(() => document.getElementById('modalOverlay').classList.add('hidden'), 400);
+  document.getElementById('modalSheet').classList.add('translate-y-full');
+  setTimeout(() => document.getElementById('modalOverlay').classList.add('hidden'), 300);
 }
 
 function openCovenantModal() {
@@ -304,13 +319,13 @@ function openCovenantModal() {
       ${SUBSCRIPTION_ROADMAP.map(b => {
         const isActive = b.key === currentTier;
         return `
-        <div class="flex items-center gap-4 p-4 rounded-2xl border ${isActive ? 'border-primary bg-primary/5' : 'border-slate-100 bg-slate-50'}">
-          <img src="${b.image}" class="w-10 h-10 object-contain ${isActive ? '' : 'grayscale opacity-50'}">
-          <div class="flex-1">
+        <div class="flex items-center gap-4 p-4 rounded-2xl border ${isActive ? 'border-primary bg-primary/5' : 'border-slate-100 bg-white'}">
+          <img src="${b.image}" class="w-12 h-12 object-contain">
+          <div class="flex-1 text-left">
             <p class="font-headline font-bold text-sm ${isActive ? 'text-primary' : 'text-slate-700'}">${b.name}</p>
-            <p class="text-[10px] text-slate-400">${b.tagline}</p>
+            <p class="text-[11px] text-slate-400">${b.tagline}</p>
           </div>
-          <p class="text-[10px] font-bold ${isActive ? 'text-primary' : 'text-slate-400'}">${b.price}</p>
+          <p class="text-[11px] font-bold ${isActive ? 'text-primary' : 'text-slate-400'}">${b.price}</p>
         </div>`;
       }).join('')}
     </div>
@@ -321,8 +336,8 @@ function openCovenantModal() {
 function openTrophyModal(trophy, state) {
   const html = `
     <div class="text-center mb-6">
-      <div class="w-20 h-20 mx-auto rounded-2xl ${RARITY_COLORS[state.activeTier.rarity].bg} flex items-center justify-center mb-4 shadow-lg">
-        <span class="material-symbols-outlined text-white text-4xl filled">${trophy.icon}</span>
+      <div class="w-20 h-20 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center mb-4 shadow-inner">
+        <span class="material-symbols-outlined text-4xl text-slate-700">${trophy.icon}</span>
       </div>
       <h2 class="font-headline font-black text-2xl text-slate-900">${trophy.title}</h2>
       <p class="text-sm text-slate-500 mt-2 px-4">${trophy.description}</p>
@@ -333,13 +348,13 @@ function openTrophyModal(trophy, state) {
         const isDone = state.count >= tier.req;
         const isNext = !isDone && state.nextTier && state.nextTier.req === tier.req;
         return `
-        <div class="flex items-center gap-3 p-3 rounded-xl ${isDone ? 'bg-slate-50 border border-slate-100' : isNext ? 'bg-primary/5 border border-primary/20' : 'opacity-40'}">
-          <div class="w-2.5 h-2.5 rounded-full ${RARITY_COLORS[tier.rarity].bg}"></div>
+        <div class="flex items-center gap-3 p-3 rounded-xl ${isDone ? 'bg-slate-50 border border-slate-100' : isNext ? 'bg-primary/5 border border-primary/20' : 'opacity-40 bg-slate-50'}">
+          <div class="w-2.5 h-2.5 rounded-full bg-${tier.rarity}"></div>
           <div class="flex-1">
             <p class="text-xs font-bold text-slate-800">${tier.name}</p>
             <p class="text-[10px] text-slate-400">${tier.desc || ''}</p>
           </div>
-          <p class="text-[10px] font-black ${isDone ? 'text-primary' : 'text-slate-400'}">${tier.req} ${trophy.type.split('_')[0].toUpperCase()}</p>
+          <p class="text-[10px] font-black ${isDone ? 'text-primary' : 'text-slate-400'}">${tier.req} ${trophy.type.replace('_', ' ')}</p>
           ${isDone ? '<span class="material-symbols-outlined text-green-500 text-lg filled">check_circle</span>' : ''}
         </div>`;
       }).join('')}
@@ -348,50 +363,17 @@ function openTrophyModal(trophy, state) {
   openModal(html);
 }
 
-function openBadgeModal(id) {
-  // Define the badge details locally (or fetch from a badges table later)
-  const badgeDetails = {
-    'genesis': {
-      name: 'Genesis',
-      desc: 'Awarded to the first 5 warriors who joined the movement and helped test the app.',
-      date: 'Genesis Launch',
-      icon: 'rocket_launch'
-    }
-  };
-
-  const badge = badgeDetails[id] || { name: 'Unknown Badge', desc: 'Details coming soon.', date: '', icon: 'star' };
-
-  openModal(`
+function openBadgeModal(badge) {
+  const isEarned = (userProfile.badges || []).includes(badge.id);
+  const html = `
     <div class="text-center">
-      <div class="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary/20 to-gold/20 flex items-center justify-center mb-4 border border-gold/20">
-        <span class="material-symbols-outlined text-gold text-4xl filled">${badge.icon}</span>
-      </div>
+      <img src="${badge.image || ''}" class="w-24 h-24 mx-auto mb-4 object-contain" onerror="this.style.display='none'">
       <h2 class="font-headline font-black text-2xl text-slate-900">${badge.name}</h2>
-      <p class="text-sm text-slate-500 mt-3 px-6">${badge.desc}</p>
-      <p class="text-[10px] font-bold text-gold uppercase tracking-widest mt-6">Earned: ${badge.date}</p>
+      <p class="text-sm text-slate-500 mt-3 px-6">${badge.description}</p>
+      ${isEarned ? '<p class="text-[10px] font-bold text-gold uppercase tracking-widest mt-6">Earned</p>' : '<p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-6">Locked</p>'}
     </div>
-  `);
-}
-
-function openCampaignModal(id) {
-  const c = MOCK_CAMPAIGNS.find(x => x.id === id);
-  openModal(`
-    <div class="text-center mb-6">
-      <h2 class="font-headline font-black text-2xl text-slate-900">${c.title}</h2>
-      <p class="text-sm text-slate-500 mt-3 px-4">${c.desc}</p>
-    </div>
-    <div class="bg-slate-50 p-5 rounded-2xl mb-6">
-      <div class="flex justify-between text-xs font-bold text-slate-600 mb-2"><span>Your Progress</span><span>${c.progress} / ${c.target}</span></div>
-      <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden"><div class="h-full bg-primary rounded-full" style="width: ${(c.progress/c.target)*100}%"></div></div>
-      <p class="text-[10px] text-gold font-bold mt-4 text-center">Reward: ${c.reward}</p>
-    </div>
-    <a href="cause.html" class="block w-full py-4 bg-slate-900 text-white font-headline font-bold rounded-2xl text-center active:scale-95 transition-transform">${c.cta}</a>
-  `);
-}
-
-function openUnclaimedModal() {
-  // In a real app, fetch all trophies and filter out the earned ones
-  openModal(`<div class="text-center py-10"><p class="text-slate-500">Full list of unclaimed trophies will appear here.</p></div>`);
+  `;
+  openModal(html);
 }
 
 init();
