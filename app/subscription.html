@@ -13,9 +13,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <link rel="icon" type="image/x-icon" href="/images/favicon/favicon.ico">
- <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32.png">
- <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16.png">
- <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png">
 
   <script>
     tailwind.config = {
@@ -81,9 +81,6 @@
     .tier-card.available{background:#f5f4ed}
     .tier-card.locked{background:#f5f4ed;opacity:0.7}
 
-    /* Allocation bar segment */
-    .alloc-segment{height:100%;transition:width 0.8s cubic-bezier(0.22,1,0.36,1);first:rounded-l-full;last:rounded-r-full}
-
     /* Skeleton */
     .skeleton{background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:12px}
     @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
@@ -92,7 +89,6 @@
     .fade-up{opacity:0;transform:translateY(16px);transition:opacity 0.5s ease,transform 0.5s ease}
     .fade-up.visible{opacity:1;transform:translateY(0)}
 
-    /* Feature row check */
     .feature-yes{color:#3d6285}
     .feature-no{color:#b2b2ab}
     .feature-soon{color:#41637c;font-size:9px;font-weight:700;background:#cae6ff;padding:2px 6px;border-radius:99px}
@@ -102,8 +98,8 @@
 <body>
 
 <!-- HEADER -->
-<header id="pageHeader" class="fixed top-0 w-full z-50 glass-header">
-  <div class="max-w-[430px] mx-auto px-5 pt-10 pb-3 flex items-center justify-between">
+<header id="pageHeader" class="fixed top-0 w-full z-50 glass-header" style="padding-top: env(safe-area-inset-top);">
+  <div class="max-w-[430px] mx-auto px-5 pt-3 pb-3 flex items-center justify-between">
     <button onclick="goBack()" class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-clow active:scale-90 transition-all rounded-full">
       <span class="material-symbols-outlined text-[22px]">arrow_back</span>
     </button>
@@ -113,7 +109,7 @@
 </header>
 
 <!-- MAIN -->
-<main class="pt-28 pb-16 px-5 max-w-[430px] mx-auto space-y-5">
+<main class="pt-[calc(5rem+env(safe-area-inset-top))] pb-16 px-5 max-w-[430px] mx-auto space-y-5">
 
   <!-- PLAN HERO -->
   <section class="hero-card fade-up">
@@ -154,7 +150,10 @@
   <!-- TIER COMPARISON -->
   <section class="fade-up">
     <p class="font-body text-on-surface-variant mb-3" style="font-size:12px;font-weight:500;">Available Plans</p>
-    <div class="space-y-3" id="tierCards"></div>
+    <div class="space-y-3" id="tierCards">
+      <div class="skeleton h-36"></div>
+      <div class="skeleton h-36"></div>
+    </div>
   </section>
 
   <!-- WHAT YOUR PLAN FUNDS -->
@@ -183,7 +182,6 @@
       <p class="font-headline font-semibold text-on-surface" style="font-size:15px;">Billing History</p>
     </div>
     <div id="billingList" class="space-y-2">
-      <div class="skeleton h-14 w-full"></div>
       <div class="skeleton h-14 w-full"></div>
       <div class="skeleton h-14 w-full"></div>
     </div>
@@ -240,56 +238,7 @@ var userSubscription = null
 var stripePortalLink = ''
 var stripePaymentLink = ''
 var allocationConfig = null
-
-var tiers = [
-  {
-    id: 'free',
-    name: 'Free',
-    price: 0,
-    pricePer: null,
-    description: 'Begin your journey',
-    features: [
-      {label:'Daily quote',available:true},
-      {label:'Donate to missions',available:true},
-      {label:'View global impact',available:true},
-      {label:'Quote library & sharing',available:false},
-      {label:'Image editor',available:false},
-      {label:'Mission priorities',available:false},
-      {label:'Social media integration',available:false,soon:false}
-    ]
-  },
-  {
-    id: 'warrior',
-    name: 'Warrior',
-    price: 3.99,
-    pricePer: '/month',
-    description: 'Full mission access',
-    features: [
-      {label:'Daily quote',available:true},
-      {label:'Donate to missions',available:true},
-      {label:'View global impact',available:true},
-      {label:'Quote library & sharing',available:true},
-      {label:'Image editor',available:true},
-      {label:'Mission priorities',available:true},
-      {label:'Social media integration',available:false,soon:true}
-    ]
-  },
-  {
-    id: 'commander',
-    name: 'Commander',
-    price: 5.99,
-    pricePer: '/month',
-    description: 'Advanced tools — coming soon',
-    features: [
-      {label:'Everything in Warrior',available:true},
-      {label:'Social media integration',available:true},
-      {label:'Direct page posting',available:true},
-      {label:'Analytics dashboard',available:true},
-      {label:'Priority support',available:true}
-    ],
-    comingSoon: true
-  }
-]
+var tiers = []
 
 var segmentColors = {
   primary:   { bar:'#3d6285', dot:'bg-primary',   text:'text-primary' },
@@ -313,8 +262,12 @@ async function init() {
     loadProfile(),
     loadSubscription(),
     loadStripeLinks(),
+    loadTiers(),
     loadAllocationConfig()
   ])
+
+  // Check if returning from a successful Stripe Payment
+  await checkPaymentSuccess()
 
   renderHero()
   renderTiers()
@@ -323,6 +276,53 @@ async function init() {
 
   document.querySelectorAll('.fade-up').forEach(function(el) { observer.observe(el) })
   setupListeners()
+}
+
+// ════════════════════════════════════════════
+// STRIPE RETURN / PAYMENT VERIFICATION
+// ════════════════════════════════════════════
+async function checkPaymentSuccess() {
+  var urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('payment') === 'success') {
+    var newTier = urlParams.get('tier') || 'warrior';
+    
+    // 1. Upgrade profile in Supabase
+    await supabaseClient.from('profiles').update({
+      subscription_tier: newTier,
+      subscription_status: 'active'
+    }).eq('id', currentUser.id);
+
+    // 2. Ensure subscription row is active
+    await supabaseClient.from('subscriptions').upsert({
+      user_id: currentUser.id,
+      tier_id: newTier,
+      status: 'active',
+      updated_at: new Date().toISOString()
+    });
+
+    // 3. Look up price for billing receipt
+    var tierPrice = 3.99;
+    var foundTier = tiers.find(function(t) { return t.id === newTier; });
+    if (foundTier && foundTier.price) tierPrice = parseFloat(foundTier.price);
+
+    // 4. Record in billing_history
+    await supabaseClient.from('billing_history').insert({
+      user_id: currentUser.id,
+      amount: tierPrice,
+      currency: 'USD',
+      invoice_number: 'INV-' + Date.now().toString().slice(-6),
+      status: 'paid',
+      billing_date: new Date().toISOString()
+    });
+
+    // Clean URL so refresh doesn't duplicate
+    window.history.replaceState({}, document.title, window.location.pathname);
+    showToast('Welcome to the ' + newTier.toUpperCase() + ' plan! 🎉');
+    
+    // Reload local variables
+    await loadProfile();
+    await loadSubscription();
+  }
 }
 
 // ════════════════════════════════════════════
@@ -348,45 +348,76 @@ async function loadStripeLinks() {
   }
 }
 
+async function loadTiers() {
+  try {
+    var r = await supabaseClient
+      .from('subscription_tiers')
+      .select('*')
+      .eq('is_active', true)
+      .eq('is_public', true)
+      .order('sort_order', { ascending: true })
+
+    if (r.data && r.data.length > 0) {
+      tiers = r.data
+      return
+    }
+  } catch(e) {}
+
+  // Fallback defaults
+  tiers = [
+    { id: 'free', name: 'Free', price: 0, description: 'Begin your journey', features: [{label:'Daily quote',available:true}] },
+    { id: 'warrior', name: 'Warrior', price: 3.99, description: 'Full mission access', features: [{label:'Daily quote',available:true}] }
+  ]
+}
+
 async function loadAllocationConfig() {
-  var r = await supabaseClient.from('site_settings').select('value').eq('id','subscription_allocation').single()
-  if (r.data && r.data.value) {
-    try {
-      allocationConfig = typeof r.data.value === 'string' ? JSON.parse(r.data.value) : r.data.value
-    } catch(e) { allocationConfig = null }
+  try {
+    var r = await supabaseClient
+      .from('subscription_allocation')
+      .select('*')
+      .eq('is_active', true)
+      .single()
+
+    if (r.data) {
+      allocationConfig = { segments: r.data.segments, note: r.data.admin_note }
+      return
+    }
+  } catch(e) {}
+
+  allocationConfig = {
+    segments: [
+      {label:'Direct Mission Funding',percent:42,color:'primary',description:'Plants real scripture.'},
+      {label:'Platform Support',percent:30,color:'secondary',description:'Powers the PWA network.'},
+      {label:'Growth Reserve',percent:28,color:'outline',description:'Scaled for Great Commission.'}
+    ],
+    note:'Built as a PWA — no app store fees.'
   }
 }
 
 // ════════════════════════════════════════════
-// HERO CARD
+// RENDERING
 // ════════════════════════════════════════════
 function renderHero() {
   var tier = (userProfile && userProfile.subscription_tier) || 'free'
   var status = (userProfile && userProfile.subscription_status) || 'inactive'
   var tierDef = tiers.find(function(t) { return t.id === tier }) || tiers[0]
 
-  document.getElementById('planTitle').textContent = tierDef.name + ' Plan'
+  document.getElementById('planTitle').textContent = (tierDef ? tierDef.name : 'Free') + ' Plan'
 
-  if (tier === 'free') {
+  if (!tierDef || tierDef.price == 0) {
     document.getElementById('planPrice').textContent = 'Free'
     document.getElementById('planPricePer').textContent = ''
   } else {
     document.getElementById('planPrice').textContent = '$' + tierDef.price
-    document.getElementById('planPricePer').textContent = '/month'
+    document.getElementById('planPricePer').textContent = '/' + (tierDef.billing_interval === 'yearly' ? 'yr' : 'mo')
   }
 
   var badge = document.getElementById('planBadge')
   if (status === 'active') {
-    badge.className = 'inline-flex items-center gap-1.5 bg-on-primary/10 text-primary-container px-3 py-1.5 rounded-full font-body font-bold'
-    badge.style.fontSize = '11px'
+    badge.className = 'inline-flex items-center gap-1.5 bg-on-primary/10 text-primary-container px-3 py-1.5 rounded-full font-body font-bold text-[11px]'
     badge.innerHTML = '<span class="material-symbols-outlined text-[14px] filled">check_circle</span>Active'
-  } else if (status === 'suspended') {
-    badge.className = 'inline-flex items-center gap-1.5 bg-tertiary/20 text-on-tertiary px-3 py-1.5 rounded-full font-body font-bold'
-    badge.style.fontSize = '11px'
-    badge.innerHTML = '<span class="material-symbols-outlined text-[14px]">warning</span>Suspended'
   } else {
-    badge.className = 'inline-flex items-center gap-1.5 bg-on-primary/10 text-primary-container px-3 py-1.5 rounded-full font-body font-bold'
-    badge.style.fontSize = '11px'
+    badge.className = 'inline-flex items-center gap-1.5 bg-on-primary/10 text-primary-container px-3 py-1.5 rounded-full font-body font-bold text-[11px]'
     badge.innerHTML = '<span class="material-symbols-outlined text-[14px]">info</span>Free'
   }
 
@@ -398,13 +429,10 @@ function renderHero() {
   } else if (tier === 'free') {
     renewal.textContent = 'Upgrade anytime to unlock full access'
   } else {
-    renewal.textContent = 'Billing schedule loading...'
+    renewal.textContent = 'Active subscription'
   }
 }
 
-// ════════════════════════════════════════════
-// TIER COMPARISON CARDS
-// ════════════════════════════════════════════
 function renderTiers() {
   var container = document.getElementById('tierCards')
   container.innerHTML = ''
@@ -413,44 +441,41 @@ function renderTiers() {
   tiers.forEach(function(tier) {
     var isCurrent = tier.id === currentTier
     var card = document.createElement('div')
-    card.className = 'tier-card ' + (isCurrent ? 'current' : tier.comingSoon ? 'locked' : 'available')
+    card.className = 'tier-card ' + (isCurrent ? 'current' : tier.coming_soon ? 'locked' : 'available')
 
-    var featuresHtml = tier.features.map(function(f) {
-      var iconHtml = f.available
+    var featuresHtml = (tier.features || []).map(function(f) {
+      var isAvail = typeof f === 'object' ? f.available : true
+      var lbl = typeof f === 'object' ? f.label : f
+      var isSoon = typeof f === 'object' ? f.soon : false
+
+      var iconHtml = isAvail
         ? '<span class="material-symbols-outlined feature-yes text-[18px] filled flex-shrink-0">check_circle</span>'
         : '<span class="material-symbols-outlined feature-no text-[18px] flex-shrink-0">radio_button_unchecked</span>'
-      var soonHtml = f.soon ? ' <span class="feature-soon">Soon</span>' : ''
-      return '<div class="flex items-center gap-2.5">'
-        + iconHtml
-        + '<span class="font-body ' + (f.available ? 'text-on-surface' : 'text-outline') + '" style="font-size:13px;">' + f.label + '</span>'
-        + soonHtml
-      + '</div>'
+      var soonHtml = isSoon ? ' <span class="feature-soon">Soon</span>' : ''
+      return '<div class="flex items-center gap-2.5">' + iconHtml + '<span class="font-body ' + (isAvail ? 'text-on-surface' : 'text-outline') + '" style="font-size:13px;">' + escapeHtml(lbl) + '</span>' + soonHtml + '</div>'
     }).join('')
 
-    var priceHtml = tier.price === 0
+    var priceHtml = tier.price == 0
       ? '<span class="font-headline font-bold text-on-surface" style="font-size:22px;">Free</span>'
-      : '<span class="font-headline font-bold text-primary" style="font-size:22px;">$' + tier.price + '</span><span class="font-body text-on-surface-variant" style="font-size:13px;">/mo</span>'
+      : '<span class="font-headline font-bold text-primary" style="font-size:22px;">$' + tier.price + '</span><span class="font-body text-on-surface-variant" style="font-size:13px;">/' + (tier.billing_interval === 'yearly' ? 'yr' : 'mo') + '</span>'
 
     var ctaHtml = ''
     if (isCurrent) {
       ctaHtml = '<div class="mt-4 flex items-center gap-2 text-primary"><span class="material-symbols-outlined text-[16px] filled">check_circle</span><span class="font-body font-semibold" style="font-size:13px;">Current plan</span></div>'
-    } else if (tier.comingSoon) {
+    } else if (tier.coming_soon) {
       ctaHtml = '<div class="mt-4 inline-flex items-center gap-2 bg-secondary-container/30 text-secondary px-3 py-1.5 rounded-full"><span class="font-body font-semibold" style="font-size:11px;">Coming Soon</span></div>'
     } else if (tier.id === 'free') {
-      ctaHtml = '' // Downgrade handled via cancel
+      ctaHtml = ''
     } else {
-      ctaHtml = '<button onclick="openPaymentLink()" class="mt-4 w-full py-2.5 signature-gradient text-on-primary font-headline font-semibold rounded-xl active:scale-[0.98] transition-transform" style="font-size:13px;">Upgrade to ' + tier.name + '</button>'
+      ctaHtml = '<button onclick="openPaymentLink(\'' + tier.id + '\')" class="mt-4 w-full py-2.5 signature-gradient text-on-primary font-headline font-semibold rounded-xl active:scale-[0.98] transition-transform" style="font-size:13px;">Upgrade to ' + escapeHtml(tier.name) + '</button>'
     }
 
     card.innerHTML =
       '<div class="flex items-start justify-between mb-1">'
-        + '<div>'
-          + '<h3 class="font-headline font-bold text-on-surface" style="font-size:16px;">' + tier.name + '</h3>'
-          + '<p class="font-body text-on-surface-variant" style="font-size:12px;">' + tier.description + '</p>'
-        + '</div>'
+        + '<div><h3 class="font-headline font-bold text-on-surface" style="font-size:16px;">' + escapeHtml(tier.name) + '</h3><p class="font-body text-on-surface-variant" style="font-size:12px;">' + escapeHtml(tier.description || '') + '</p></div>'
         + '<div class="flex items-baseline gap-1">' + priceHtml + '</div>'
       + '</div>'
-      + (isCurrent ? '<div class="mt-4 h-px bg-surface-chigh mb-4"></div>' : '<div class="mt-4 h-px bg-surface-chigh mb-4"></div>')
+      + '<div class="mt-4 h-px bg-surface-chigh mb-4"></div>'
       + '<div class="space-y-2.5">' + featuresHtml + '</div>'
       + ctaHtml
 
@@ -458,63 +483,33 @@ function renderTiers() {
   })
 }
 
-// ════════════════════════════════════════════
-// ALLOCATION BAR (admin editable)
-// ════════════════════════════════════════════
 function renderAllocation() {
-  if (!allocationConfig || !allocationConfig.segments) {
-    // Fallback defaults
-    allocationConfig = {
-      segments: [
-        {label:'Direct Mission Funding',percent:42,color:'primary',description:'Plants real scripture, delivers clean water wells, and supports ground evangelism.'},
-        {label:'Platform Support',percent:30,color:'secondary',description:'Powers the global PWA delivery network with zero app store commissions.'},
-        {label:'Growth Reserve',percent:28,color:'outline',description:'Scaled and secured to claim more ground for the Great Commission.'}
-      ],
-      note:'Built as a PWA — no app store fees. More goes to the mission.'
-    }
-  }
+  if (!allocationConfig || !allocationConfig.segments) return
 
-  // Stacked bar
-  var bar = document.getElementById('allocBar')
-  bar.innerHTML = ''
+  var bar = document.getElementById('allocBar'); bar.innerHTML = ''
   allocationConfig.segments.forEach(function(seg, i) {
     var segEl = document.createElement('div')
     var colors = segmentColors[seg.color] || segmentColors['primary']
-    var isFirst = i === 0
-    var isLast = i === allocationConfig.segments.length - 1
     segEl.style.width = seg.percent + '%'
     segEl.style.background = colors.bar
     segEl.style.height = '100%'
-    segEl.style.borderRadius = isFirst ? '99px 0 0 99px' : isLast ? '0 99px 99px 0' : '0'
     bar.appendChild(segEl)
   })
 
-  // Legend
-  var legend = document.getElementById('allocLegend')
-  legend.innerHTML = ''
+  var legend = document.getElementById('allocLegend'); legend.innerHTML = ''
   allocationConfig.segments.forEach(function(seg) {
     var colors = segmentColors[seg.color] || segmentColors['primary']
     var row = document.createElement('div')
     row.className = 'flex items-start gap-3'
     row.innerHTML =
-      '<div class="flex items-center gap-2 w-24 flex-shrink-0 mt-0.5">'
-        + '<div class="w-2.5 h-2.5 rounded-full ' + colors.dot + ' flex-shrink-0"></div>'
-        + '<span class="font-headline font-bold ' + colors.text + '" style="font-size:13px;">' + seg.percent + '%</span>'
-      + '</div>'
-      + '<div>'
-        + '<p class="font-body font-semibold text-on-surface" style="font-size:13px;">' + seg.label + '</p>'
-        + '<p class="font-body text-on-surface-variant" style="font-size:12px;line-height:18px;">' + seg.description + '</p>'
-      + '</div>'
+      '<div class="flex items-center gap-2 w-24 flex-shrink-0 mt-0.5"><div class="w-2.5 h-2.5 rounded-full ' + colors.dot + ' flex-shrink-0"></div><span class="font-headline font-bold ' + colors.text + '" style="font-size:13px;">' + seg.percent + '%</span></div>'
+      + '<div><p class="font-body font-semibold text-on-surface" style="font-size:13px;">' + escapeHtml(seg.label) + '</p><p class="font-body text-on-surface-variant" style="font-size:12px;line-height:18px;">' + escapeHtml(seg.description || '') + '</p></div>'
     legend.appendChild(row)
   })
 
-  // Note
   document.getElementById('allocNote').textContent = allocationConfig.note || ''
 }
 
-// ════════════════════════════════════════════
-// BILLING HISTORY
-// ════════════════════════════════════════════
 async function renderBillingHistory() {
   var container = document.getElementById('billingList')
   if (!container) return
@@ -529,11 +524,6 @@ async function renderBillingHistory() {
   var records = r.data || []
   container.innerHTML = ''
 
-  // If no real records, generate from subscription start (graceful fallback)
-  if (records.length === 0 && userSubscription && userSubscription.created_at) {
-    records = generateFallbackBilling(userSubscription)
-  }
-
   if (records.length === 0) {
     container.innerHTML = '<p class="text-center font-body text-outline py-6" style="font-size:13px;">No billing history yet</p>'
     return
@@ -545,44 +535,15 @@ async function renderBillingHistory() {
     var d = new Date(rec.billing_date || rec.created_at)
     var dateStr = mn[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear()
     var amount = rec.amount || 3.99
-    var invoiceNum = rec.invoice_number || ('INV-' + d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0'))
-    var status = rec.status || 'paid'
 
     var row = document.createElement('div')
     row.className = 'flex items-center gap-3 p-3.5 bg-surface-clow rounded-xl'
     row.innerHTML =
-      '<div class="w-10 h-10 rounded-xl bg-primary-container/20 flex items-center justify-center flex-shrink-0">'
-        + '<span class="material-symbols-outlined text-primary text-[18px] filled">receipt</span>'
-      + '</div>'
-      + '<div class="flex-1 min-w-0">'
-        + '<p class="font-body font-semibold text-on-surface" style="font-size:13px;">' + dateStr + '</p>'
-        + '<p class="font-body text-outline" style="font-size:11px;">' + invoiceNum + '</p>'
-      + '</div>'
-      + '<div class="text-right flex-shrink-0">'
-        + '<p class="font-headline font-bold text-primary" style="font-size:14px;">$' + Number(amount).toFixed(2) + '</p>'
-        + '<p class="font-body font-semibold ' + (status === 'paid' ? 'text-primary' : 'text-tertiary') + '" style="font-size:10px;">' + (status === 'paid' ? 'Paid ✓' : status) + '</p>'
-      + '</div>'
+      '<div class="w-10 h-10 rounded-xl bg-primary-container/20 flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-primary text-[18px] filled">receipt</span></div>'
+      + '<div class="flex-1 min-w-0"><p class="font-body font-semibold text-on-surface" style="font-size:13px;">' + dateStr + '</p><p class="font-body text-outline" style="font-size:11px;">' + escapeHtml(rec.invoice_number || 'INV-001') + '</p></div>'
+      + '<div class="text-right flex-shrink-0"><p class="font-headline font-bold text-primary" style="font-size:14px;">$' + Number(amount).toFixed(2) + '</p><p class="font-body font-semibold text-primary" style="font-size:10px;">Paid ✓</p></div>'
     container.appendChild(row)
   })
-}
-
-function generateFallbackBilling(sub) {
-  var records = []
-  var start = new Date(sub.created_at)
-  var now = new Date()
-  var cur = new Date(now.getFullYear(), now.getMonth(), 1)
-  var mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-
-  while (cur >= start && records.length < 12) {
-    records.push({
-      billing_date: cur.toISOString(),
-      amount: sub.price || 3.99,
-      invoice_number: 'INV-' + cur.getFullYear() + String(cur.getMonth()+1).padStart(2,'0') + '01',
-      status: 'paid'
-    })
-    cur.setMonth(cur.getMonth() - 1)
-  }
-  return records
 }
 
 // ════════════════════════════════════════════
@@ -590,33 +551,29 @@ function generateFallbackBilling(sub) {
 // ════════════════════════════════════════════
 function openBillingPortal() {
   if (stripePortalLink) window.open(stripePortalLink, '_blank')
-  else showToast('Billing portal not configured')
+  else showToast('Billing portal link not configured')
 }
 
 function openPaymentLink(tierId) {
-  if (!stripePaymentLink) {
+  var targetLink = stripePaymentLink;
+  
+  // Look up specific tier link if defined in database
+  if (tierId) {
+    var found = tiers.find(function(t) { return t.id === tierId; });
+    if (found && found.stripe_payment_link) {
+      targetLink = found.stripe_payment_link;
+    }
+  }
+
+  if (targetLink) {
+    window.open(targetLink, '_blank');
+  } else {
     showToast('Payment link not configured');
-    return;
   }
-  
-  // Attach user_id so Stripe Webhook knows who to upgrade!
-  var checkoutUrl = new URL(stripePaymentLink);
-  if (currentUser && currentUser.id) {
-    checkoutUrl.searchParams.set('client_reference_id', currentUser.id);
-  }
-  
-  window.open(checkoutUrl.toString(), '_blank');
 }
 
-function confirmCancel() {
-  document.getElementById('cancelModal').classList.remove('hidden')
-  document.body.style.overflow = 'hidden'
-}
-
-function closeModal() {
-  document.getElementById('cancelModal').classList.add('hidden')
-  document.body.style.overflow = ''
-}
+function confirmCancel() { document.getElementById('cancelModal').classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+function closeModal() { document.getElementById('cancelModal').classList.add('hidden'); document.body.style.overflow = ''; }
 
 function contactSupportCancel() {
   closeModal()
@@ -631,17 +588,15 @@ function goBack() {
   else window.location.href = 'profile.html'
 }
 
-// ════════════════════════════════════════════
-// HELPERS
-// ════════════════════════════════════════════
+function escapeHtml(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
 function showToast(msg) {
   var existing = document.getElementById('subToast'); if (existing) existing.remove()
   var t = document.createElement('div'); t.id = 'subToast'
-  t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-2.5 rounded-full shadow-float whitespace-nowrap flex items-center gap-2'
-  t.style.fontSize = '13px'
+  t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-2.5 rounded-full shadow-float whitespace-nowrap flex items-center gap-2 text-[13px]'
   t.innerHTML = '<span class="material-symbols-outlined text-primary-container text-[14px] filled">check_circle</span> ' + msg
   document.body.appendChild(t)
-  setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
+  setTimeout(function() { if (t.parentNode) t.remove() }, 3000)
 }
 
 function setupListeners() {
