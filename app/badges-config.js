@@ -1,17 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════
-// GSTW BADGES CONFIG — Static Rewards & System Logic
+// GSTW BADGES CONFIG — Static Rewards & System Helper Logic
 // ═══════════════════════════════════════════════════════════════════
 
-// 1. RARITY COLORS (Used across the app)
+// 1. RARITY COLORS & STYLES (Used across the app)
 var RARITY_COLORS = {
-  'common':   { bg: 'bg-common',   text: 'text-common' },
-  'uncommon': { bg: 'bg-uncommon', text: 'text-uncommon' },
-  'rare':     { bg: 'bg-rare',     text: 'text-rare' },
-  'epic':     { bg: 'bg-epic',     text: 'text-epic' },
-  'mythic':   { bg: 'bg-mythic',   text: 'text-mythic' }
+  'common':   { bg: 'bg-common',   text: 'text-common',   border: 'border-slate-200',  glow: '' },
+  'uncommon': { bg: 'bg-uncommon', text: 'text-uncommon', border: 'border-green-500/30', glow: '' },
+  'rare':     { bg: 'bg-rare',     text: 'text-rare',     border: 'border-blue-500/30',  glow: '' },
+  'epic':     { bg: 'bg-epic',     text: 'text-epic',     border: 'border-purple-500/30',glow: '' },
+  'mythic':   { bg: 'bg-mythic',   text: 'text-mythic',   border: 'border-amber-500/50', glow: 'mythic-glow' }
 };
 
-// 2. SUBSCRIPTION ROADMAP (Static)
+// 2. SUBSCRIPTION ROADMAP (Fallback defaults)
 var SUBSCRIPTION_ROADMAP = [
   { key: 'free',      badgeKey: 'called',    name: 'The Called',    tagline: 'Answered the call',        price: 'Free',         image: '/images/badges/called.svg' },
   { key: 'warrior',   badgeKey: 'warrior',   name: 'The Warrior',   tagline: 'Committed witness',        price: '$3.99/mo',     image: '/images/badges/warrior.svg' },
@@ -19,67 +19,101 @@ var SUBSCRIPTION_ROADMAP = [
   { key: 'legacy',    badgeKey: 'legacy',    name: 'The Anointed',  tagline: 'Pillar of the movement',   price: 'Founder',      image: '/images/badges/legacy.svg' }
 ];
 
-// 3. SPECIAL BADGES (One-off achievements like Genesis)
+// 3. SPECIAL BADGES FALLBACK
 var SPECIAL_BADGES = [
   {
     id: 'genesis',
     name: 'Genesis',
     description: 'One of the first 5 warriors to join the movement and test the app.',
     icon: 'rocket_launch', 
-    image: '/images/badges/genesis.svg', // Make sure to add this image to your folder!
-    condition: 'first_5_testers' 
+    image: '/images/badges/genesis.svg'
+  },
+  {
+    id: '1000-generals',
+    name: '1000 Generals',
+    description: 'Part of the founding 1000 frontline commanders.',
+    icon: 'military_tech',
+    image: '/images/badges/1000-generals.svg'
   }
 ];
 
-// ══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 // SYSTEM LOGIC & HELPERS
 // ═══════════════════════════════════════════════════════════════════
 
 /**
- * Determines a specific trophy's state based on dynamic DB tiers
- * (Trophies are now loaded from Supabase, not this file)
+ * Calculates state for flat Supabase DB trophy rows OR multi-tier trophies
  */
 function getTrophyState(trophy, stats) {
-  var count = stats[trophy.type] || 0;
-  var tiers = trophy.tiers; 
+  var reqType = trophy.requirement_type || trophy.type || 'shares';
+  
+  // Normalize stats lookup
+  var count = 0;
+  if (reqType === 'shares') count = stats.shares || 0;
+  else if (reqType === 'recruits' || reqType === 'recruits_paid' || reqType === 'warriors') count = stats.recruits_paid || stats.recruits || 0;
+  else if (reqType === 'countries' || reqType === 'countries_paid' || reqType === 'nations') count = stats.countries_paid || stats.countries || 0;
+  else count = stats[reqType] || 0;
 
-  var currentTier = null;
-  var nextTier = null;
+  // Handle Multi-tier trophy objects (legacy)
+  if (trophy.tiers && Array.isArray(trophy.tiers) && trophy.tiers.length > 0) {
+    var currentTier = null;
+    var nextTier = null;
 
-  for (var i = 0; i < tiers.length; i++) {
-    if (count >= tiers[i].req) {
-      currentTier = tiers[i];
-    } else {
-      nextTier = tiers[i];
-      break;
+    for (var i = 0; i < trophy.tiers.length; i++) {
+      if (count >= trophy.tiers[i].req) {
+        currentTier = trophy.tiers[i];
+      } else {
+        nextTier = trophy.tiers[i];
+        break;
+      }
     }
+
+    var isUnlocked = currentTier !== null;
+    var activeTier = currentTier || trophy.tiers[0];
+    var progressPercent = 0;
+
+    if (!isUnlocked) {
+      progressPercent = Math.min(Math.round((count / trophy.tiers[0].req) * 100), 100);
+    } else if (nextTier) {
+      var prevReq = currentTier.req;
+      var range = nextTier.req - prevReq;
+      progressPercent = Math.min(Math.round(((count - prevReq) / range) * 100), 100);
+    } else {
+      progressPercent = 100;
+    }
+
+    return {
+      isUnlocked: isUnlocked,
+      activeTier: activeTier,
+      nextTier: nextTier,
+      progressPercent: progressPercent,
+      count: count,
+      targetValue: nextTier ? nextTier.req : activeTier.req
+    };
   }
 
-  var isUnlocked = currentTier !== null;
-  var activeTier = currentTier || tiers[0];
-
-  var progressPercent = 0;
-  if (!isUnlocked) {
-    progressPercent = Math.min(Math.round((count / tiers[0].req) * 100), 100);
-  } else if (nextTier) {
-    var prevReq = currentTier.req;
-    var range = nextTier.req - prevReq;
-    progressPercent = Math.min(Math.round(((count - prevReq) / range) * 100), 100);
-  } else {
-    progressPercent = 100;
-  }
+  // Handle Flat Database Trophy Rows (Supabase trophy_definitions)
+  var targetValue = Number(trophy.requirement_value || trophy.req || 1);
+  var isUnlocked = count >= targetValue;
+  var progressPercent = Math.min(Math.round((count / Math.max(targetValue, 1)) * 100), 100);
 
   return {
     isUnlocked: isUnlocked,
-    activeTier: activeTier,
-    nextTier: nextTier,
+    activeTier: {
+      name: trophy.name || trophy.title || 'Trophy',
+      rarity: (trophy.rarity || 'common').toLowerCase(),
+      req: targetValue,
+      desc: trophy.description || ''
+    },
+    nextTier: isUnlocked ? null : { req: targetValue },
     progressPercent: progressPercent,
-    count: count
+    count: count,
+    targetValue: targetValue
   };
 }
 
 /**
- * Calculates which Era/Avatar stage the user is in
+ * Calculates which Era/Avatar stage the user is in based on Mythic trophies earned
  */
 function calculateAvatarStage(trophyDefinitions, stats, avatarStages) {
   if (!avatarStages || avatarStages.length === 0) return null;
@@ -100,7 +134,7 @@ function calculateAvatarStage(trophyDefinitions, stats, avatarStages) {
 }
 
 /**
- * Helper for Subscription UI
+ * Helper for Subscription Badge lookup
  */
 function getUserSubscriptionBadge(profile) {
   if (!profile) return SUBSCRIPTION_ROADMAP[0];
