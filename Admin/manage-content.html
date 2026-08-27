@@ -360,7 +360,54 @@ async function loadBuilderData() {
     }
   });
 }
+async function loadTiersPreview() {
+  const container = document.getElementById('adminTiersPreview');
+  const { data, error } = await supabaseClient
+    .from('tiers')
+    .select('*')
+    .order('sort_order', { ascending: true });
 
+  if (error || !data) {
+    container.innerHTML = `<p class="text-tertiary text-sm">Failed to load plans preview: ${error?.message}</p>`;
+    return;
+  }
+
+  container.innerHTML = '';
+  data.forEach(tier => {
+    const isFeatured = tier.is_featured;
+    const isComingSoon = tier.is_coming_soon;
+    
+    // Parse jsonb features list safely
+    let featuresHtml = '';
+    const featuresList = typeof tier.features === 'string' ? JSON.parse(tier.features) : tier.features;
+    
+    featuresList.slice(0, 3).forEach(f => {
+      featuresHtml += `
+        <li class="flex items-center gap-2 text-xs ${f.available ? 'text-on-surface-variant' : 'text-outline-variant'}">
+          <span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' ${f.available ? 1 : 0}">${f.available ? 'check_circle' : 'remove'}</span>
+          <span>${f.text}</span>
+        </li>`;
+    });
+
+    const card = document.createElement('div');
+    card.className = `p-5 rounded-xl border ${isFeatured ? 'border-primary bg-primary-container/10' : 'border-surface-chigh bg-surface-clow'} flex flex-col justify-between relative`;
+    card.innerHTML = `
+      ${tier.badge ? `<span class="absolute top-3 right-3 text-[9px] font-bold tracking-wide uppercase px-2 py-0.5 rounded bg-primary text-white">${tier.badge}</span>` : ''}
+      <div>
+        <p class="font-headline font-bold text-sm text-on-surface">${tier.name}</p>
+        <p class="font-headline font-extrabold text-lg text-primary mt-1">$${tier.price} <span class="text-[10px] text-outline font-normal">/${tier.interval}</span></p>
+        <ul class="space-y-2 mt-4 border-t border-surface-chigh pt-3">
+          ${featuresHtml}
+          ${featuresList.length > 3 ? `<li class="text-[10px] text-outline font-medium">+ ${featuresList.length - 3} more</li>` : ''}
+        </ul>
+      </div>
+      <a href="manage-tiers.html?id=${tier.id}" class="block text-center text-[11px] font-bold py-2 mt-4 bg-white hover:bg-surface-c border border-surface-chigh rounded-lg text-on-surface transition-colors">
+        Edit Plan Configuration
+      </a>
+    `;
+    container.appendChild(card);
+  });
+}
 // Save All Settings
 async function saveAllSettings() {
   const saveBtn = document.getElementById('saveBtn');
