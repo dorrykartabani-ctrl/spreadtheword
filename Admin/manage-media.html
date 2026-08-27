@@ -93,15 +93,37 @@
     .media-card.inactive{opacity:0.55}
     .media-card.dragging{opacity:0.4;transform:scale(0.98)}
     .media-card.drag-over{outline:2px dashed #3d6285;outline-offset:-2px}
+    .media-card.is-contain[data-type="avatar"] .media-thumb{
+  aspect-ratio:3/4;
+}
 
-    .media-thumb{
-      width:100%;aspect-ratio:1;
-      background:#efeee7;
-      display:flex;align-items:center;justify-content:center;
-      overflow:hidden;
-    }
-    .media-thumb img{width:100%;height:100%;object-fit:cover}
-
+   .media-thumb{
+  width:100%;aspect-ratio:1;
+  background:#efeee7;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+.media-thumb img{
+  width:100%;height:100%;
+  object-fit:cover;
+}
+/* Full-body / icon assets: show whole image */
+.media-card.is-contain .media-thumb{
+  background:
+    linear-gradient(45deg,#e9e8e1 25%,transparent 25%),
+    linear-gradient(-45deg,#e9e8e1 25%,transparent 25%),
+    linear-gradient(45deg,transparent 75%,#e9e8e1 75%),
+    linear-gradient(-45deg,transparent 75%,#e9e8e1 75%);
+  background-size:12px 12px;
+  background-position:0 0,0 6px,6px -6px,-6px 0;
+  background-color:#f5f4ed;
+}
+.media-card.is-contain .media-thumb img{
+  object-fit:contain;
+  object-position:center top;
+  padding:10px;
+  box-sizing:border-box;
+}
     .media-badge-row{
       position:absolute;top:8px;left:8px;right:8px;
       display:flex;justify-content:space-between;align-items:flex-start;gap:6px;
@@ -210,7 +232,7 @@
 <body class="min-h-screen flex">
 
 <!-- Hidden file input -->
-<input type="file" id="fileInput" accept="image/*" multiple class="hidden" onchange="handleFileSelect(this)">
+<input type="file" id="replaceFileInput" accept="image/*" class="hidden" onchange="handleReplaceFile(this)">
 
 <!-- SIDEBAR -->
 <aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 hidden md:flex">
@@ -424,7 +446,23 @@
     </div>
 
     <div class="p-6 pt-0 space-y-4">
-      <div id="editPreview" class="preview-img-container"></div>
+     <div id="editPreview" class="preview-img-container"></div>
+
+<div class="flex items-center justify-between gap-3">
+  <p class="font-body text-on-surface-variant" style="font-size:11px;">
+    Same media record · swap file without deleting
+  </p>
+  <button type="button" onclick="document.getElementById('replaceFileInput').click()"
+    class="px-3 py-2 bg-surface-clow text-on-surface font-body font-semibold rounded-lg hover:bg-surface-chigh transition-colors inline-flex items-center gap-1.5"
+    style="font-size:12px;">
+    <span class="material-symbols-outlined" style="font-size:16px;">sync</span>
+    Replace image
+  </button>
+</div>
+<div id="replaceProgress" class="hidden text-primary font-body" style="font-size:12px;">
+  <span class="material-symbols-outlined spin" style="font-size:14px;vertical-align:middle;">progress_activity</span>
+  Replacing…
+</div>
 
       <div>
         <label class="font-body text-on-surface-variant block mb-1.5" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Label</label>
@@ -579,8 +617,12 @@ var TYPE_GUIDANCE = {
   trophy:      { name:'Trophy',          dims:'512×512',   ratio:1,      note:'Square · gamification rewards (PNG or SVG)' },
   background:  { name:'Background',      dims:'1200×1200', ratio:1,      note:'Square aspect ratio · used in quote editor' },
   icon_logo:   { name:'Icon or Logo',    dims:'512×512',   ratio:1,      note:'Transparent background (PNG or SVG) · ministries, UI icons' },
-  avatar:      { name: 'Avatar / Character', dims: '600×800 (3:4)',   ratio: 0.75, // 3:4 portrait ratio
-  note: 'Full-length character art · SVG or PNG with transparent background' },
+  avatar: {
+  name: 'Avatar / Character',
+  dims: '600×800 (3:4)',
+  ratio: 0.75,
+  note: 'Full-length character art · SVG or PNG with transparent BG · face in top ~30%'
+},
   landing:     { name:'Landing Page',    dims:'1920×1080', ratio:1.778,  note:'16:9 or 4:3 · high-res for website frontend' },
   other:       { name:'Other',           dims:'No restriction', ratio:0, note:'No specific size requirement' }
 }
@@ -663,6 +705,92 @@ function toggleSidebar() {
 async function handleLogout() {
   try { await supabaseClient.auth.signOut() } catch(e) {}
   window.location.href = 'login.html'
+}
+async function handleReplaceFile(input) {
+  var file = input.files && input.files[0]
+  input.value = ''
+  if (!file || !editingMedia) return
+  if (!file.type.startsWith('image/')) {
+    showToast('Please choose an image file')
+    return
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('Max 10MB')
+    return
+  }
+
+  var progress = document.getElementById('replaceProgress')
+  var saveBtn = document.getElementById('editSaveBtn')
+  if (progress) progress.classList.remove('hidden')
+  if (saveBtn) saveBtn.disabled = true
+
+  try {
+    var type = document.getElementById('editType').value || editingMedia.type || 'other'
+    var isSvg = file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg')
+    var uploadData
+
+    if (isSvg) {
+      uploadData = { blob: file, width: null, height: null, size: file.size, mimeType: 'image/svg+xml' }
+      var dims = await checkFileDimensions(file)
+      if (dims) {
+        uploadData.width = dims.width
+        uploadData.height = dims.height
+      }
+    } else {
+      uploadData = await resizeImage(file, getMaxWidthForType(type), getFormatForType(type, file.type))
+    }
+
+    var timestamp = Date.now()
+    var randStr = Math.random().toString(36).substring(2, 8)
+    var ext = getExtForType(type, uploadData.mimeType)
+    var filePath = type + '/' + timestamp + '-' + randStr + '.' + ext
+
+    var uploadResult = await supabaseClient.storage
+      .from('media')
+      .upload(filePath, uploadData.blob, { upsert: false, contentType: uploadData.mimeType })
+
+    if (uploadResult.error) throw uploadResult.error
+
+    var publicUrl = supabaseClient.storage.from('media').getPublicUrl(filePath).data.publicUrl
+    var oldUrl = editingMedia.url
+
+    var updateResult = await supabaseClient.from('media').update({
+      url: publicUrl,
+      width: uploadData.width,
+      height: uploadData.height,
+      file_size: uploadData.size,
+      updated_at: new Date().toISOString()
+    }).eq('id', editingMedia.id)
+
+    if (updateResult.error) throw updateResult.error
+
+    // Best-effort delete previous storage object (skip static /images paths)
+    try {
+      if (oldUrl && oldUrl.indexOf('/media/') !== -1) {
+        var oldPath = oldUrl.split('/media/')[1]
+        if (oldPath) await supabaseClient.storage.from('media').remove([oldPath.split('?')[0]])
+      }
+    } catch (err) {
+      console.warn('Old file cleanup skipped:', err)
+    }
+
+    editingMedia.url = publicUrl
+    editingMedia.width = uploadData.width
+    editingMedia.height = uploadData.height
+    editingMedia.file_size = uploadData.size
+
+    document.getElementById('editPreview').innerHTML =
+      '<img src="' + escapeAttr(publicUrl) + '?t=' + Date.now() + '" alt="">'
+
+    showToast('Image replaced')
+    await loadMedia()
+  } catch (e) {
+    console.error(e)
+    showToast('Replace failed: ' + (e.message || 'error'))
+  }
+
+  if (progress) progress.classList.add('hidden')
+  if (saveBtn) saveBtn.disabled = false
 }
 
 async function loadMedia() {
@@ -768,6 +896,9 @@ function buildMediaCard(m) {
     card.addEventListener('dragend', onDragEnd)
   }
 
+var containTypes = { avatar:1, badge:1, trophy:1, icon_logo:1, tier:1 }
+if (containTypes[m.type]) card.classList.add('is-contain')
+card.setAttribute('data-type', m.type || 'other')
   var typeConfig = TYPE_CONFIG[m.type || 'other'] || TYPE_CONFIG.other
 
   var badgesLeft = ''
