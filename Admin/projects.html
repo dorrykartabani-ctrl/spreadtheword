@@ -67,11 +67,6 @@
     .sidebar-item:hover{background:#1a1a18;color:#f7f9ff}
     .sidebar-item.active{background:#3d6285;color:#f7f9ff}
     .sidebar-item .material-symbols-outlined{font-size:20px}
-    .sidebar-item .soon-tag{
-      margin-left:auto;font-size:9px;font-weight:700;
-      background:rgba(247,249,255,0.08);color:rgba(247,249,255,0.5);
-      padding:2px 6px;border-radius:99px;letter-spacing:0.05em;
-    }
 
     /* Cards */
     .mission-card{
@@ -130,12 +125,6 @@
     @keyframes spin{to{transform:rotate(360deg)}}
     .spin{animation:spin 1s linear infinite;display:inline-block}
 
-    @keyframes fadeUp{
-      from{opacity:0;transform:translateY(8px)}
-      to{opacity:1;transform:translateY(0)}
-    }
-    .fade-up{animation:fadeUp 0.3s ease-out both}
-
     /* Status badges */
     .badge{
       display:inline-flex;align-items:center;gap:4px;
@@ -147,10 +136,8 @@
     .badge-completed{background:rgba(65,99,124,0.15);color:#41637c}
     .badge-paused{background:rgba(122,123,117,0.2);color:#5e6059}
 
-    /* Update note */
     .update-note{background:#f5f4ed;border-left:3px solid #3d6285;padding:10px 12px;border-radius:0 8px 8px 0}
 
-    /* Icon picker */
     .icon-pick{
       width:40px;height:40px;border-radius:10px;
       background:#f5f4ed;color:#5e6059;
@@ -167,9 +154,7 @@
 <!-- Hidden file input -->
 <input type="file" id="missionImageFile" accept="image/*" class="hidden" onchange="handleImageUpload(this)">
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- SIDEBAR (updated with Campaigns) -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- SIDEBAR -->
 <aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 hidden md:flex">
   <div class="mb-6 px-2 pt-2">
     <div class="flex items-center gap-2.5">
@@ -188,9 +173,11 @@
     <a href="manage-quotes.html" class="sidebar-item"><span class="material-symbols-outlined">format_quote</span>Quotes</a>
     <a href="schedule.html" class="sidebar-item"><span class="material-symbols-outlined">calendar_today</span>Schedule</a>
     <a href="campaigns.html" class="sidebar-item"><span class="material-symbols-outlined">campaign</span>Campaigns</a>
-    <a href="manage-backgrounds.html" class="sidebar-item"><span class="material-symbols-outlined">wallpaper</span>Backgrounds<span class="soon-tag">SOON</span></a>
-    <a href="projects.html" class="sidebar-item"><span class="material-symbols-outlined">volunteer_activism</span>Missions</a>
+    <a href="projects.html" class="sidebar-item active"><span class="material-symbols-outlined">volunteer_activism</span>Missions</a>
+    <a href="manage-media.html" class="sidebar-item"><span class="material-symbols-outlined">perm_media</span>Media</a>
     <a href="warriors.html" class="sidebar-item"><span class="material-symbols-outlined">group</span>Users</a>
+    <a href="manage-tiers.html" class="sidebar-item"><span class="material-symbols-outlined">workspace_premium</span>Tiers</a>
+    <a href="manage-rewards.html" class="sidebar-item"><span class="material-symbols-outlined">emoji_events</span>Rewards</a>
     <a href="notifications.html" class="sidebar-item"><span class="material-symbols-outlined">notifications</span>Notifications</a>
     <a href="ai-generator.html" class="sidebar-item"><span class="material-symbols-outlined">auto_awesome</span>AI Generator</a>
     <a href="analytics.html" class="sidebar-item"><span class="material-symbols-outlined">analytics</span>Analytics</a>
@@ -212,9 +199,7 @@
 </aside>
 <div id="sidebarOverlay" class="fixed inset-0 bg-inverse-surface/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
 
-<!-- ═══════════════════════════════════════════ -->
 <!-- MAIN -->
-<!-- ═══════════════════════════════════════════ -->
 <div class="flex-1 md:ml-64 flex flex-col min-h-screen">
 
   <!-- HEADER -->
@@ -235,9 +220,7 @@
     </div>
   </header>
 
-  <!-- ═══════════════════════════════════════════ -->
   <!-- LIST VIEW -->
-  <!-- ═══════════════════════════════════════════ -->
   <main id="listView" class="p-6 lg:p-8 flex-1">
     <div class="max-w-6xl mx-auto space-y-6">
 
@@ -288,9 +271,7 @@
     </div>
   </main>
 
-  <!-- ═══════════════════════════════════════════ -->
   <!-- FORM VIEW (Create + Edit) -->
-  <!-- ═══════════════════════════════════════════ -->
   <main id="formView" class="hidden p-6 lg:p-8 flex-1">
     <div class="max-w-3xl mx-auto space-y-6">
 
@@ -368,18 +349,24 @@
           </div>
         </div>
 
-        <!-- Image -->
+        <!-- Image (Media Library + Upload) -->
         <div class="bg-surface-cl rounded-2xl p-5 space-y-3">
-          <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Mission Image</label>
-          <p class="font-body text-outline" style="font-size:11px;">Recommended: 1200×630px landscape</p>
+          <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Mission Cover Image</label>
+          
+          <div>
+            <select id="missionMediaSelect" onchange="onMediaSelectChange(this)" class="form-input w-full rounded-xl px-4 py-2.5 font-body text-on-surface" style="font-size:13px;">
+              <option value="">Custom Upload / URL</option>
+              <!-- Populated via loadMediaImages -->
+            </select>
+          </div>
 
-          <div class="flex gap-4">
-            <div id="imagePreview" class="w-32 h-20 rounded-xl bg-surface-clow overflow-hidden flex-shrink-0 flex items-center justify-center">
+          <div class="flex gap-4 pt-1">
+            <div id="imagePreview" class="w-32 h-20 rounded-xl bg-surface-clow overflow-hidden flex-shrink-0 flex items-center justify-center border border-surface-c">
               <span class="material-symbols-outlined text-outline" style="font-size:22px;">image</span>
             </div>
             <div class="flex-1 space-y-2">
               <button type="button" onclick="triggerImageUpload()" class="w-full py-2.5 signature-gradient text-on-primary font-body font-semibold rounded-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-transform" style="font-size:13px;">
-                <span class="material-symbols-outlined" style="font-size:16px;">upload</span>Upload Image
+                <span class="material-symbols-outlined" style="font-size:16px;">upload</span>Upload New Image
               </button>
               <button type="button" onclick="removeMissionImage()" id="removeImgBtn" class="hidden w-full py-2 bg-surface-clow text-on-surface-variant font-body font-semibold rounded-lg" style="font-size:12px;">Remove</button>
             </div>
@@ -400,14 +387,23 @@
           <textarea id="missionUpdate" rows="2" placeholder="A message to share with users about this mission..." class="form-input w-full rounded-xl px-4 py-3 font-body text-on-surface placeholder:text-outline-variant resize-none" style="font-size:14px;"></textarea>
         </div>
 
-        <!-- Rewards -->
+        <!-- Rewards & Badges -->
         <div class="bg-surface-cl rounded-2xl p-5 space-y-4">
           <div>
             <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Reward Badge</label>
-            <p class="font-body text-outline mt-1" style="font-size:11px;">Choose an icon representing the reward for participating</p>
+            <p class="font-body text-outline mt-1" style="font-size:11px;">Link a system badge or choose an icon reward</p>
           </div>
 
-          <div class="flex gap-2 flex-wrap">
+          <!-- Dynamic Badge Select -->
+          <div>
+            <select id="rewardBadgeSelect" onchange="onBadgeSelectChange(this)" class="form-input w-full rounded-xl px-4 py-2.5 font-body text-on-surface" style="font-size:13px;">
+              <option value="">None (No badge reward)</option>
+              <!-- Populated via loadBadgeDefs -->
+            </select>
+          </div>
+
+          <!-- Icon picker fallback -->
+          <div class="flex gap-2 flex-wrap pt-1">
             <div class="icon-pick" onclick="selectRewardIcon('',this)" data-icon="" title="None">
               <span class="material-symbols-outlined" style="font-size:18px;">block</span>
             </div>
@@ -432,17 +428,11 @@
             <div class="icon-pick" onclick="selectRewardIcon('menu_book',this)" data-icon="menu_book" title="Book">
               <span class="material-symbols-outlined" style="font-size:20px;">menu_book</span>
             </div>
-            <div class="icon-pick" onclick="selectRewardIcon('favorite',this)" data-icon="favorite" title="Heart">
-              <span class="material-symbols-outlined" style="font-size:20px;">favorite</span>
-            </div>
-            <div class="icon-pick" onclick="selectRewardIcon('handshake',this)" data-icon="handshake" title="Handshake">
-              <span class="material-symbols-outlined" style="font-size:20px;">handshake</span>
-            </div>
           </div>
 
           <div>
             <label class="font-body text-on-surface-variant block mb-2" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Reward Description</label>
-            <input id="missionRewardDesc" type="text" placeholder="e.g. Earn the Water Bearer badge" class="form-input w-full rounded-xl px-4 py-3 font-body text-on-surface placeholder:text-outline-variant" style="font-size:14px;">
+            <input id="missionRewardDesc" type="text" placeholder="e.g. Earn the Genesis badge" class="form-input w-full rounded-xl px-4 py-3 font-body text-on-surface placeholder:text-outline-variant" style="font-size:14px;">
           </div>
         </div>
 
@@ -503,9 +493,7 @@
   </main>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
 <!-- CONFIRM MODAL -->
-<!-- ═══════════════════════════════════════════ -->
 <div id="confirmModal" class="hidden fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm z-[100] flex items-center justify-center px-5" onclick="if(event.target===this)closeConfirm()">
   <div class="bg-surface-cl rounded-2xl p-6 w-full max-w-sm shadow-float">
     <div class="text-center">
@@ -536,6 +524,8 @@ var supabaseClient = supabase.createClient(
 
 var currentUser = null
 var allMissions = []
+var mediaImages = []
+var badgeDefs = []
 var currentMissionType = 'monetary'
 var currentReward = ''
 var currentImageUrl = null
@@ -548,46 +538,19 @@ var isVisible = true
 var fallbackImages = [
   'https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=800&q=80',
   'https://images.unsplash.com/photo-1594398901394-4e34939a02eb?w=800&q=80',
-  'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80',
-  'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&q=80',
-  'https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=800&q=80'
+  'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80'
 ]
 
-// ════════════════════════════════════════════
-// AUTH
-// ════════════════════════════════════════════
 async function checkAdminAuth() {
   try {
-    var result = null
-    for (var attempt = 0; attempt < 3; attempt++) {
-      result = await supabaseClient.auth.getSession()
-      if (result.data && result.data.session) break
-      await new Promise(function(r) { setTimeout(r, 300) })
-    }
-    if (!result.data || !result.data.session) {
-      try {
-        var refreshed = await supabaseClient.auth.refreshSession()
-        if (refreshed.data && refreshed.data.session) result = refreshed
-      } catch(e) {}
-    }
+    var result = await supabaseClient.auth.getSession()
     if (!result.data || !result.data.session) { window.location.href = 'login.html'; return false }
-
     currentUser = result.data.session.user
     var p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single()
-    if (p.error) { showToast('Connection error'); setTimeout(function() { window.location.reload() }, 1500); return false }
-    if (!p.data) { window.location.href = 'login.html'; return false }
-    if (p.data.role !== 'admin') { window.location.href = '../app/index.html'; return false }
-
-    var email = currentUser.email || ''
-    var initials = '?'
-    if (p.data.full_name) {
-      var parts = p.data.full_name.trim().split(' ')
-      initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : parts[0].substring(0,2).toUpperCase()
-    } else if (email) { initials = email.substring(0,2).toUpperCase() }
-    document.querySelectorAll('.admin-initials').forEach(function(el) { el.textContent = initials })
-    document.querySelectorAll('.admin-name').forEach(function(el) { el.textContent = p.data.full_name || email })
+    if (!p.data || p.data.role !== 'admin') { window.location.href = '../app/index.html'; return false }
+    document.querySelectorAll('.admin-name').forEach(function(el) { el.textContent = p.data.full_name || currentUser.email })
     return true
-  } catch(e) { console.error(e); showToast('Error'); setTimeout(function() { window.location.reload() }, 1500); return false }
+  } catch(e) { return false }
 }
 
 function toggleSidebar() {
@@ -601,7 +564,7 @@ async function handleLogout() {
 }
 
 // ════════════════════════════════════════════
-// LOAD MISSIONS
+// LOAD DATA
 // ════════════════════════════════════════════
 async function loadMissions() {
   var result = await supabaseClient.from('projects').select('*').order('created_at', { ascending: false })
@@ -613,25 +576,40 @@ async function loadMissions() {
   renderMissions(allMissions)
 }
 
+async function loadMediaImages() {
+  var r = await supabaseClient.from('media').select('url, label').in('type', ['mission', 'landing']).eq('is_active', true)
+  mediaImages = r.data || []
+  var select = document.getElementById('missionMediaSelect')
+  select.innerHTML = '<option value="">Custom Upload / URL</option>'
+  mediaImages.forEach(function(m) {
+    select.innerHTML += '<option value="' + escapeHtml(m.url) + '">' + escapeHtml(m.label || 'Mission Image') + '</option>'
+  })
+}
+
+async function loadBadgeDefs() {
+  var r = await supabaseClient.from('badge_definitions').select('id, name').eq('is_active', true)
+  badgeDefs = r.data || []
+  var select = document.getElementById('rewardBadgeSelect')
+  select.innerHTML = '<option value="">None (No badge reward)</option>'
+  badgeDefs.forEach(function(b) {
+    select.innerHTML += '<option value="' + escapeHtml(b.id) + '">' + escapeHtml(b.name) + '</option>'
+  })
+}
+
 async function updateAutoData() {
   for (var i = 0; i < allMissions.length; i++) {
     var m = allMissions[i]
     if (m.status !== 'active') continue
 
-    // Warrior count from priorities
     try {
-      var priorityResult = await supabaseClient
-        .from('project_priorities')
-        .select('id', { count: 'exact', head: true })
-        .eq('project_id', m.id)
+      var priorityResult = await supabaseClient.from('project_priorities').select('id', { count: 'exact', head: true }).eq('project_id', m.id)
       var newWarriorCount = priorityResult.count || 0
       if (newWarriorCount !== m.warrior_count) {
         await supabaseClient.from('projects').update({ warrior_count: newWarriorCount }).eq('id', m.id)
         m.warrior_count = newWarriorCount
       }
-    } catch(e) { console.warn('Warrior count update failed:', e) }
+    } catch(e) {}
 
-    // Auto-track raised amounts for users/shares types
     if (m.auto_track && m.auto_track_source) {
       var newAmount = 0
       if (m.auto_track_source === 'profiles_count') {
@@ -653,9 +631,7 @@ function renderStats() {
   var active = allMissions.filter(function(m) { return m.status === 'active' })
   var completed = allMissions.filter(function(m) { return m.status === 'completed' })
   var paused = allMissions.filter(function(m) { return m.status === 'paused' })
-  var raised = allMissions
-    .filter(function(m) { return m.goal_type === 'monetary' || !m.goal_type })
-    .reduce(function(s, m) { return s + Number(m.raised_amount || 0) }, 0)
+  var raised = allMissions.filter(function(m) { return m.goal_type === 'monetary' || !m.goal_type }).reduce(function(s, m) { return s + Number(m.raised_amount || 0) }, 0)
 
   document.getElementById('statRaised').textContent = '$' + raised.toLocaleString()
   document.getElementById('statActive').textContent = active.length
@@ -665,20 +641,10 @@ function renderStats() {
 }
 
 function renderMissions(missions) {
-  var grid = document.getElementById('missionGrid')
-  var empty = document.getElementById('emptyState')
-
-  if (!missions.length) {
-    grid.innerHTML = ''
-    empty.classList.remove('hidden')
-    return
-  }
-  empty.classList.add('hidden')
-  grid.innerHTML = ''
-
-  missions.forEach(function(m, i) {
-    grid.appendChild(buildMissionCard(m, i))
-  })
+  var grid = document.getElementById('missionGrid'), empty = document.getElementById('emptyState')
+  if (!missions.length) { grid.innerHTML = ''; empty.classList.remove('hidden'); return }
+  empty.classList.add('hidden'); grid.innerHTML = ''
+  missions.forEach(function(m, i) { grid.appendChild(buildMissionCard(m, i)) })
 }
 
 function buildMissionCard(m, i) {
@@ -696,76 +662,33 @@ function buildMissionCard(m, i) {
   var typeLabel = goalType === 'users' ? 'User Growth' : goalType === 'shares' ? 'Share Goal' : 'Monetary'
   var typeIcon = goalType === 'users' ? 'group_add' : goalType === 'shares' ? 'share' : 'payments'
 
-  var statusBadge = isComplete
-    ? '<span class="badge badge-completed"><span class="material-symbols-outlined" style="font-size:10px;">check</span>Complete</span>'
-    : isPaused
-      ? '<span class="badge badge-paused"><span class="material-symbols-outlined" style="font-size:10px;">pause</span>Paused</span>'
-      : '<span class="badge badge-active"><span class="material-symbols-outlined filled" style="font-size:10px;">radio_button_checked</span>Active</span>'
-
-  var daysText = ''
-  if (m.end_date) {
-    var end = new Date(m.end_date)
-    var now = new Date()
-    var diff = Math.ceil((end - now) / (1000 * 60 * 60 * 24))
-    daysText = diff > 0 ? diff + ' days left' : 'Ended'
-  } else {
-    daysText = 'Ongoing'
-  }
-
-  var countryChip = m.country
-    ? '<span class="inline-flex items-center gap-1 font-body text-outline mr-2" style="font-size:11px;"><span class="material-symbols-outlined" style="font-size:12px;">public</span>' + escapeHtml(m.country) + '</span>'
-    : ''
-
-  var rewardChip = m.reward_badge
-    ? '<span class="inline-flex items-center gap-1 bg-primary-container/25 text-primary px-2 py-0.5 rounded-full font-body font-semibold" style="font-size:10px;"><span class="material-symbols-outlined filled" style="font-size:12px;">' + m.reward_badge + '</span>Reward</span>'
-    : ''
-
-  var donateChip = m.accept_donations
-    ? '<span class="inline-flex items-center gap-1 bg-secondary-container/40 text-secondary px-2 py-0.5 rounded-full font-body font-semibold" style="font-size:10px;"><span class="material-symbols-outlined" style="font-size:12px;">favorite</span>Donate</span>'
-    : ''
+  var statusBadge = isComplete ? '<span class="badge badge-completed">Complete</span>'
+    : isPaused ? '<span class="badge badge-paused">Paused</span>'
+    : '<span class="badge badge-active">Active</span>'
 
   var card = document.createElement('article')
   card.className = 'mission-card' + ((isComplete || isPaused) ? ' opacity-80' : '')
-  card.onclick = function(e) {
-    if (e.target.closest('button')) return
-    openEdit(m.id)
-  }
+  card.onclick = function(e) { if (!e.target.closest('button')) openEdit(m.id) }
 
   card.innerHTML =
     '<div class="h-40 relative overflow-hidden">'
-      + '<img src="' + img + '" alt="' + escapeHtml(m.title || '') + '" class="w-full h-full object-cover">'
-      + '<div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>'
-      + '<span class="absolute top-3 left-3 bg-white/95 backdrop-blur-sm rounded-full px-2.5 py-1 flex items-center gap-1 font-body font-bold text-on-surface" style="font-size:10px;letter-spacing:0.03em;text-transform:uppercase;">'
+      + '<img src="' + img + '" class="w-full h-full object-cover">'
+      + '<span class="absolute top-3 left-3 bg-white/95 backdrop-blur-sm rounded-full px-2.5 py-1 font-body font-bold text-on-surface flex items-center gap-1" style="font-size:10px;">'
         + '<span class="material-symbols-outlined" style="font-size:12px;">' + typeIcon + '</span>' + typeLabel
       + '</span>'
       + '<span class="absolute top-3 right-3">' + statusBadge + '</span>'
     + '</div>'
     + '<div class="p-5 space-y-3">'
-      + '<div>'
-        + '<h4 class="font-headline font-bold text-on-surface" style="font-size:15px;line-height:20px;">' + escapeHtml(m.title || 'Untitled') + '</h4>'
-        + (m.description ? '<p class="font-body text-on-surface-variant mt-1" style="font-size:12px;line-height:18px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">' + escapeHtml(m.description) + '</p>' : '')
-      + '</div>'
-      + (countryChip || rewardChip || donateChip ? '<div class="flex items-center gap-2 flex-wrap">' + countryChip + rewardChip + donateChip + '</div>' : '')
+      + '<div><h4 class="font-headline font-bold text-on-surface" style="font-size:15px;">' + escapeHtml(m.title || 'Untitled') + '</h4>'
+      + (m.description ? '<p class="font-body text-on-surface-variant mt-1 line-clamp-2" style="font-size:12px;">' + escapeHtml(m.description) + '</p>' : '') + '</div>'
       + '<div class="space-y-2">'
-        + '<div class="flex justify-between items-baseline">'
-          + '<span class="font-headline font-bold text-primary" style="font-size:13px;">' + pct + '%</span>'
-          + '<span class="font-body text-on-surface-variant" style="font-size:11px;font-weight:500;">' + prefix + raised.toLocaleString() + suffix + ' / ' + prefix + Number(goal).toLocaleString() + suffix + '</span>'
-        + '</div>'
-        + '<div class="h-2 bg-surface-clow rounded-full overflow-hidden">'
-          + '<div class="h-full ' + (isComplete ? 'bg-secondary' : 'signature-gradient') + ' rounded-full" style="width:' + Math.min(pct, 100) + '%"></div>'
-        + '</div>'
-        + '<div class="flex justify-between font-body text-outline" style="font-size:11px;">'
-          + '<span>' + daysText + '</span>'
-          + '<span>' + (m.warrior_count || 0) + ' warrior' + ((m.warrior_count || 0) !== 1 ? 's' : '') + '</span>'
-        + '</div>'
+        + '<div class="flex justify-between font-body text-xs"><span class="font-bold text-primary">' + pct + '%</span><span>' + prefix + raised.toLocaleString() + suffix + ' / ' + prefix + Number(goal).toLocaleString() + suffix + '</span></div>'
+        + '<div class="h-2 bg-surface-clow rounded-full overflow-hidden"><div class="h-full signature-gradient rounded-full" style="width:' + Math.min(pct, 100) + '%"></div></div>'
       + '</div>'
-      + (m.latest_update ? '<div class="update-note font-body italic text-on-surface-variant" style="font-size:12px;">' + escapeHtml(m.latest_update.substring(0, 100)) + (m.latest_update.length > 100 ? '...' : '') + '</div>' : '')
-      + '<div class="flex justify-between items-center pt-3">'
-        + '<span class="font-body text-outline" style="font-size:11px;">' + (m.start_date ? 'Started ' + new Date(m.start_date).toLocaleDateString('en-AU', { month: 'short', day: 'numeric' }) : '') + '</span>'
+      + '<div class="flex justify-between items-center pt-3 border-t border-surface-c">'
+        + '<span class="font-body text-outline" style="font-size:11px;">' + (m.warrior_count || 0) + ' warriors</span>'
         + '<div class="flex gap-3">'
           + '<button onclick="event.stopPropagation();openEdit(\'' + m.id + '\')" class="text-primary font-body font-semibold" style="font-size:12px;">Edit</button>'
-          + (!isComplete && !isPaused ? '<button onclick="event.stopPropagation();pauseMission(\'' + m.id + '\')" class="text-on-surface-variant font-body font-semibold" style="font-size:12px;">Pause</button>' : '')
-          + (isPaused ? '<button onclick="event.stopPropagation();resumeMission(\'' + m.id + '\')" class="text-primary font-body font-semibold" style="font-size:12px;">Resume</button>' : '')
           + '<button onclick="event.stopPropagation();confirmDelete(\'' + m.id + '\')" class="text-tertiary font-body font-semibold" style="font-size:12px;">Delete</button>'
         + '</div>'
       + '</div>'
@@ -781,41 +704,24 @@ function filterMissions(status, btn) {
 }
 
 // ════════════════════════════════════════════
-// FORM MODE — CREATE + EDIT
+// FORM MODE
 // ════════════════════════════════════════════
 function openCreate() {
-  isEditMode = false
-  editMissionId = null
-  showForm()
-  resetForm()
+  isEditMode = false; editMissionId = null
+  showForm(); resetForm()
   document.getElementById('formTitle').textContent = 'Create New Mission'
-  document.getElementById('formCrumb').textContent = 'Create Mission'
   document.getElementById('submitLabel').textContent = 'Launch Mission'
-  document.getElementById('submitIcon').textContent = 'rocket_launch'
-
-  // Set default dates
-  var today = new Date()
-  document.getElementById('missionStartDate').value = today.toISOString().split('T')[0]
-  var endDate = new Date()
-  endDate.setDate(endDate.getDate() + 30)
-  document.getElementById('missionEndDate').value = endDate.toISOString().split('T')[0]
 }
 
 async function openEdit(id) {
-  isEditMode = true
-  editMissionId = id
-  showForm()
-  resetForm()
-
+  isEditMode = true; editMissionId = id
+  showForm(); resetForm()
   document.getElementById('formTitle').textContent = 'Edit Mission'
-  document.getElementById('formCrumb').textContent = 'Edit Mission'
   document.getElementById('submitLabel').textContent = 'Save Changes'
-  document.getElementById('submitIcon').textContent = 'save'
 
-  var result = await supabaseClient.from('projects').select('*').eq('id', id).single()
-  if (result.error || !result.data) { showToast('Error loading mission'); showList(); return }
+  var m = allMissions.find(x => x.id === id)
+  if (!m) return showList()
 
-  var m = result.data
   document.getElementById('missionTitle').value = m.title || ''
   document.getElementById('missionDesc').value = m.description || ''
   document.getElementById('missionGoal').value = m.goal_amount || ''
@@ -826,179 +732,125 @@ async function openEdit(id) {
   document.getElementById('missionRewardDesc').value = m.reward_description || ''
   document.getElementById('missionDonateUrl').value = m.donate_url || ''
 
-  // Set mission type
   setMissionType(m.goal_type || 'monetary')
 
-  // Set reward icon
-  if (m.reward_badge) selectRewardIcon(m.reward_badge, document.querySelector('[data-icon="' + m.reward_badge + '"]'))
-  else selectRewardIcon('', document.querySelector('[data-icon=""]'))
+  if (m.reward_badge) {
+    var bSel = document.getElementById('rewardBadgeSelect')
+    if (bSel && bSel.querySelector('option[value="' + m.reward_badge + '"]')) {
+      bSel.value = m.reward_badge
+    } else {
+      selectRewardIcon(m.reward_badge, document.querySelector('[data-icon="' + m.reward_badge + '"]'))
+    }
+  }
 
-  // Set image
   if (m.image_url) {
     currentImageUrl = m.image_url
     updateImagePreview(m.image_url)
+    document.getElementById('missionMediaSelect').value = m.image_url
   }
 
-  // Set toggles
   acceptDonations = !!m.accept_donations
   isVisible = m.is_visible !== false
   updateToggles()
 }
 
-function showList() {
-  document.getElementById('listView').classList.remove('hidden')
-  document.getElementById('formView').classList.add('hidden')
-  isEditMode = false
-  editMissionId = null
-}
-
-function showForm() {
-  document.getElementById('listView').classList.add('hidden')
-  document.getElementById('formView').classList.remove('hidden')
-  window.scrollTo({ top: 0 })
-}
+function showList() { document.getElementById('listView').classList.remove('hidden'); document.getElementById('formView').classList.add('hidden') }
+function showForm() { document.getElementById('listView').classList.add('hidden'); document.getElementById('formView').classList.remove('hidden'); window.scrollTo({ top: 0 }) }
 
 function resetForm() {
   document.getElementById('missionTitle').value = ''
   document.getElementById('missionDesc').value = ''
   document.getElementById('missionGoal').value = ''
   document.getElementById('missionCountry').value = ''
-  document.getElementById('missionStartDate').value = ''
-  document.getElementById('missionEndDate').value = ''
   document.getElementById('missionUpdate').value = ''
   document.getElementById('missionRewardDesc').value = ''
   document.getElementById('missionDonateUrl').value = ''
-  document.getElementById('formError').classList.add('hidden')
-  document.querySelectorAll('.form-input').forEach(function(f) { f.classList.remove('error') })
+  document.getElementById('missionMediaSelect').value = ''
+  document.getElementById('rewardBadgeSelect').value = ''
 
-  currentImageUrl = null
-  currentReward = ''
-  currentMissionType = 'monetary'
-  acceptDonations = false
-  isVisible = true
-
+  currentImageUrl = null; currentReward = ''; currentMissionType = 'monetary'
+  acceptDonations = false; isVisible = true
   setMissionType('monetary')
-  selectRewardIcon('', document.querySelector('[data-icon=""]'))
   updateImagePreview(null)
   updateToggles()
 }
 
 function setMissionType(type) {
   currentMissionType = type
-  document.querySelectorAll('.mtype-btn').forEach(function(b) {
-    b.classList.toggle('active', b.dataset.mtype === type)
-  })
+  document.querySelectorAll('.mtype-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.mtype === type) })
+  document.getElementById('autoTrackNotice').classList.toggle('hidden', type === 'monetary')
+}
 
-  var goalLabel = document.getElementById('goalLabel')
-  var goalInput = document.getElementById('missionGoal')
-  var autoNotice = document.getElementById('autoTrackNotice')
+function onMediaSelectChange(select) {
+  if (select.value) {
+    currentImageUrl = select.value
+    updateImagePreview(select.value)
+  }
+}
 
-  if (type === 'monetary') {
-    goalLabel.innerHTML = 'Goal ($) <span class="text-tertiary">*</span>'
-    goalInput.placeholder = '5000'
-    autoNotice.classList.add('hidden')
-  } else if (type === 'users') {
-    goalLabel.innerHTML = 'Target Warriors <span class="text-tertiary">*</span>'
-    goalInput.placeholder = '1000'
-    autoNotice.classList.remove('hidden')
-  } else {
-    goalLabel.innerHTML = 'Target Shares <span class="text-tertiary">*</span>'
-    goalInput.placeholder = '50000'
-    autoNotice.classList.remove('hidden')
+function onBadgeSelectChange(select) {
+  if (select.value) {
+    currentReward = select.value
+    document.querySelectorAll('.icon-pick').forEach(function(b) { b.classList.remove('selected') })
   }
 }
 
 function selectRewardIcon(icon, btn) {
   currentReward = icon
+  document.getElementById('rewardBadgeSelect').value = ''
   document.querySelectorAll('.icon-pick').forEach(function(b) { b.classList.remove('selected') })
   if (btn) btn.classList.add('selected')
 }
 
-function toggleDonate() {
-  acceptDonations = !acceptDonations
-  updateToggles()
-}
-
-function toggleVisible() {
-  isVisible = !isVisible
-  updateToggles()
-}
-
+function toggleDonate() { acceptDonations = !acceptDonations; updateToggles() }
+function toggleVisible() { isVisible = !isVisible; updateToggles() }
 function updateToggles() {
   document.getElementById('donateToggle').classList.toggle('on', acceptDonations)
   document.getElementById('donateUrlSection').classList.toggle('hidden', !acceptDonations)
   document.getElementById('visibleToggle').classList.toggle('on', isVisible)
 }
 
-// ════════════════════════════════════════════
-// IMAGE UPLOAD
-// ════════════════════════════════════════════
-function triggerImageUpload() {
-  document.getElementById('missionImageFile').click()
-}
+function triggerImageUpload() { document.getElementById('missionImageFile').click() }
 
 async function handleImageUpload(input) {
   var file = input.files[0]
   if (!file) return
-  if (!file.type.startsWith('image/')) { showToast('Please select an image'); return }
-  if (file.size > 10 * 1024 * 1024) { showToast('Image must be under 10MB'); return }
 
   var progressEl = document.getElementById('uploadProgress')
   progressEl.classList.remove('hidden')
 
   try {
-    var resized = await resizeImage(file, 1200)
     var timestamp = Date.now()
-    var filePath = 'missions/' + timestamp + '.png'
+    var randStr = Math.random().toString(36).substring(2, 8)
+    var filePath = 'mission/' + timestamp + '-' + randStr + '.png'
 
-    var uploadResult = await supabaseClient.storage
-      .from('mission-images')
-      .upload(filePath, resized, { upsert: false, contentType: 'image/png' })
-
+    var uploadResult = await supabaseClient.storage.from('media').upload(filePath, file, { upsert: false })
     if (uploadResult.error) throw uploadResult.error
 
-    var urlResult = supabaseClient.storage.from('mission-images').getPublicUrl(filePath)
-    currentImageUrl = urlResult.data.publicUrl
+    var publicUrl = supabaseClient.storage.from('media').getPublicUrl(filePath).data.publicUrl
+
+    // Register into Media Table
+    await supabaseClient.from('media').insert({
+      type: 'mission',
+      url: publicUrl,
+      label: document.getElementById('missionTitle').value || 'Mission Cover',
+      uploaded_by: currentUser.id
+    })
+
+    currentImageUrl = publicUrl
     updateImagePreview(currentImageUrl)
-    showToast('Image uploaded')
+    showToast('Image uploaded and added to Media Library')
   } catch(e) {
-    console.error('Upload error:', e)
-    showToast('Upload failed. Try again.')
+    showToast('Upload failed')
   } finally {
     progressEl.classList.add('hidden')
-    input.value = ''
   }
 }
 
-function resizeImage(file, maxWidth) {
-  return new Promise(function(resolve, reject) {
-    var reader = new FileReader()
-    reader.onload = function(e) {
-      var img = new Image()
-      img.onload = function() {
-        var scale = Math.min(1, maxWidth / img.width)
-        var canvas = document.createElement('canvas')
-        canvas.width = img.width * scale
-        canvas.height = img.height * scale
-        var ctx = canvas.getContext('2d')
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-        canvas.toBlob(function(blob) {
-          if (blob) resolve(blob); else reject(new Error('Blob failed'))
-        }, 'image/png', 0.92)
-      }
-      img.onerror = reject
-      img.src = e.target.result
-    }
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
-}
-
 function updateImagePreview(url) {
-  var preview = document.getElementById('imagePreview')
-  var removeBtn = document.getElementById('removeImgBtn')
+  var preview = document.getElementById('imagePreview'), removeBtn = document.getElementById('removeImgBtn')
   if (url) {
-    preview.innerHTML = '<img src="' + url + '" class="w-full h-full object-cover" alt="Preview">'
+    preview.innerHTML = '<img src="' + url + '" class="w-full h-full object-cover">'
     removeBtn.classList.remove('hidden')
   } else {
     preview.innerHTML = '<span class="material-symbols-outlined text-outline" style="font-size:22px;">image</span>'
@@ -1006,102 +858,43 @@ function updateImagePreview(url) {
   }
 }
 
-function removeMissionImage() {
-  currentImageUrl = null
-  updateImagePreview(null)
-}
+function removeMissionImage() { currentImageUrl = null; updateImagePreview(null) }
 
-// ════════════════════════════════════════════
-// SUBMIT
-// ════════════════════════════════════════════
 async function handleSubmit(e) {
   e.preventDefault()
-
   var title = document.getElementById('missionTitle').value.trim()
   var desc = document.getElementById('missionDesc').value.trim()
   var goal = parseFloat(document.getElementById('missionGoal').value)
-  var country = document.getElementById('missionCountry').value.trim()
-  var startDate = document.getElementById('missionStartDate').value
-  var endDate = document.getElementById('missionEndDate').value
-  var update = document.getElementById('missionUpdate').value.trim()
-  var rewardDesc = document.getElementById('missionRewardDesc').value.trim()
-  var donateUrl = document.getElementById('missionDonateUrl').value.trim()
-  var errorEl = document.getElementById('formError')
-  var errorMsg = document.getElementById('formErrorMsg')
 
-  errorEl.classList.add('hidden')
-  document.querySelectorAll('.form-input').forEach(function(f) { f.classList.remove('error') })
-
-  var hasError = false
-  if (!title) { document.getElementById('missionTitle').classList.add('error'); hasError = true }
-  if (!desc) { document.getElementById('missionDesc').classList.add('error'); hasError = true }
-  if (!goal || goal <= 0) { document.getElementById('missionGoal').classList.add('error'); hasError = true }
-
-  if (hasError) {
-    errorMsg.textContent = 'Please fill in all required fields'
-    errorEl.classList.remove('hidden')
-    return
-  }
-
-  if (acceptDonations && !donateUrl) {
-    errorMsg.textContent = 'Please provide a donation URL when donations are enabled'
-    errorEl.classList.remove('hidden')
-    document.getElementById('missionDonateUrl').classList.add('error')
-    return
-  }
-
-  var btn = document.getElementById('submitBtn')
-  var icon = document.getElementById('submitIcon')
-  var label = document.getElementById('submitLabel')
-
-  icon.textContent = 'progress_activity'
-  icon.classList.add('spin')
-  label.textContent = isEditMode ? 'Saving...' : 'Launching...'
-  btn.disabled = true
-
-  var goalUnit = currentMissionType === 'monetary' ? 'USD' : currentMissionType === 'users' ? 'warriors' : 'shares'
-  var autoTrack = currentMissionType !== 'monetary'
-  var autoSource = currentMissionType === 'users' ? 'profiles_count' : currentMissionType === 'shares' ? 'shares_count' : null
+  if (!title || !desc || !goal) { showToast('Fill in title, description, and goal'); return }
 
   var data = {
     title: title,
     description: desc,
     goal_amount: goal,
-    country: country || null,
-    start_date: startDate || null,
-    end_date: endDate || null,
-    latest_update: update || null,
+    country: document.getElementById('missionCountry').value.trim() || null,
+    start_date: document.getElementById('missionStartDate').value || null,
+    end_date: document.getElementById('missionEndDate').value || null,
+    latest_update: document.getElementById('missionUpdate').value.trim() || null,
     image_url: currentImageUrl,
     reward_badge: currentReward || null,
-    reward_description: rewardDesc || null,
-    donate_url: donateUrl || null,
+    reward_description: document.getElementById('missionRewardDesc').value.trim() || null,
+    donate_url: document.getElementById('missionDonateUrl').value.trim() || null,
     accept_donations: acceptDonations,
     is_visible: isVisible,
     goal_type: currentMissionType,
-    goal_unit: goalUnit,
-    auto_track: autoTrack,
-    auto_track_source: autoSource
+    goal_unit: currentMissionType === 'monetary' ? 'USD' : currentMissionType,
+    auto_track: currentMissionType !== 'monetary',
+    auto_track_source: currentMissionType === 'users' ? 'profiles_count' : currentMissionType === 'shares' ? 'shares_count' : null
   }
 
-  if (!isEditMode) {
+  if (isEditMode) {
+    await supabaseClient.from('projects').update(data).eq('id', editMissionId)
+  } else {
     data.status = 'active'
     data.raised_amount = 0
     data.warrior_count = 0
-  }
-
-  var result = isEditMode
-    ? await supabaseClient.from('projects').update(data).eq('id', editMissionId).select().single()
-    : await supabaseClient.from('projects').insert(data).select().single()
-
-  icon.classList.remove('spin')
-  btn.disabled = false
-
-  if (result.error) {
-    icon.textContent = isEditMode ? 'save' : 'rocket_launch'
-    label.textContent = isEditMode ? 'Save Changes' : 'Launch Mission'
-    errorMsg.textContent = 'Error: ' + result.error.message
-    errorEl.classList.remove('hidden')
-    return
+    await supabaseClient.from('projects').insert(data)
   }
 
   showToast(isEditMode ? 'Mission updated' : 'Mission launched!')
@@ -1109,85 +902,27 @@ async function handleSubmit(e) {
   showList()
 }
 
-// ════════════════════════════════════════════
-// PAUSE / RESUME / DELETE
-// ════════════════════════════════════════════
-async function pauseMission(id) {
-  var r = await supabaseClient.from('projects').update({ status: 'paused' }).eq('id', id)
-  if (r.error) { showToast('Error'); return }
-  showToast('Mission paused')
+async function confirmDelete(id) {
+  if (!confirm('Delete this mission permanently?')) return
+  await supabaseClient.from('projects').delete().eq('id', id)
+  showToast('Mission deleted')
   await loadMissions()
 }
 
-async function resumeMission(id) {
-  var r = await supabaseClient.from('projects').update({ status: 'active' }).eq('id', id)
-  if (r.error) { showToast('Error'); return }
-  showToast('Mission resumed')
-  await loadMissions()
-}
-
-function confirmDelete(id) {
-  confirmAction = { type: 'delete', id: id }
-  document.getElementById('confirmTitle').textContent = 'Delete this mission?'
-  document.getElementById('confirmMsg').textContent = 'This mission will be permanently deleted. This action cannot be undone.'
-  document.getElementById('confirmBtn').textContent = 'Delete Forever'
-  document.getElementById('confirmModal').classList.remove('hidden')
-  document.body.style.overflow = 'hidden'
-}
-
-function closeConfirm() {
-  document.getElementById('confirmModal').classList.add('hidden')
-  document.body.style.overflow = ''
-}
-
-async function executeConfirm() {
-  if (!confirmAction) return
-  closeConfirm()
-  if (confirmAction.type === 'delete') {
-    var r = await supabaseClient.from('projects').delete().eq('id', confirmAction.id)
-    if (r.error) { showToast('Error'); return }
-    showToast('Mission deleted')
-    await loadMissions()
-  }
-  confirmAction = null
-}
-
-// ════════════════════════════════════════════
-// HELPERS
-// ════════════════════════════════════════════
-function escapeHtml(str) {
-  if (!str) return ''
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')
-}
-
-var toastTimer
 function showToast(msg) {
-  var toast = document.getElementById('toast')
-  var toastMsg = document.getElementById('toastMsg')
-  if (!toast || !toastMsg) return
-  toastMsg.textContent = msg
-  toast.classList.remove('hidden')
-  toast.classList.add('flex')
-  clearTimeout(toastTimer)
-  toastTimer = setTimeout(function() {
-    toast.classList.add('hidden')
-    toast.classList.remove('flex')
-  }, 2500)
+  document.getElementById('toastMsg').textContent = msg
+  document.getElementById('toast').classList.remove('hidden'); document.getElementById('toast').classList.add('flex')
+  setTimeout(function() { document.getElementById('toast').classList.add('hidden') }, 2500)
 }
 
-// ════════════════════════════════════════════
-// INIT
-// ════════════════════════════════════════════
+function escapeHtml(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
 async function init() {
-  var isAdmin = await checkAdminAuth()
-  if (!isAdmin) return
+  if (!(await checkAdminAuth())) return
+  await loadMediaImages()
+  await loadBadgeDefs()
   await loadMissions()
-
-  // Check for URL param to open edit directly
-  var editId = new URLSearchParams(window.location.search).get('edit')
-  if (editId) openEdit(editId)
 }
-
 init()
 </script>
 </body>
