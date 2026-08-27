@@ -1,736 +1,259 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Go Spread The Word — Share Scripture Daily</title>
-  <meta name="description" content="A faith-based PWA for sharing scripture quotes beautifully on social media. Receive a daily quote, customise it, and spread the word." />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A Call to Arms. Become a digital soldier for the Great Commission.">
+  <title>Go Spread The Word — A Call to Arms</title>
+  
+  <link rel="icon" type="image/png" href="/icons/icon-512.png">
+  <link rel="apple-touch-icon" href="/icons/icon-512.png">
 
-  <!-- Open Graph -->
-  <meta property="og:title" content="Go Spread The Word — Share Scripture Daily" />
-  <meta property="og:description" content="Receive a daily scripture. Craft it into something beautiful. Share it with the world." />
-  <meta property="og:image" content="/images/og/social-sharing-1200x630.png" />
-  <meta property="og:url" content="https://gospreadtheword.app" />
-  <meta property="og:type" content="website" />
-  <meta name="twitter:card" content="summary_large_image" />
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/x-icon" href="/images/favicon/favicon.ico" />
-  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
-
-  <!-- Tailwind -->
+  <!-- Tailwind & Supabase -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500;1,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            'surface':               '#fbf9f4',
-            'surface-cl':            '#ffffff',
-            'surface-clow':          '#f5f4ed',
-            'surface-c':             '#efeee7',
-            'surface-chigh':         '#e9e8e1',
-            'surface-chighest':      '#e3e3db',
-            'on-surface':            '#31332e',
-            'on-surface-variant':    '#5e6059',
-            'inverse-surface':       '#0e0e0c',
-            'inverse-on-surface':    '#9e9d99',
-            'outline':               '#7a7b75',
-            'outline-variant':       '#b2b2ab',
-            'primary':               '#3d6285',
-            'on-primary':            '#f7f9ff',
-            'primary-container':     '#b0d5fe',
-            'on-primary-container':  '#234a6c',
-            'secondary':             '#41637c',
-            'on-secondary':          '#f6f9ff',
-            'secondary-container':   '#cae6ff',
-            'on-secondary-container':'#33556e',
-            'tertiary':              '#ad332b',
-            'on-tertiary':           '#fff7f6',
-            'tertiary-container':    '#fe6d60',
-            'on-tertiary-container': '#440002',
-            'primary-dim':           '#305678',
-            'secondary-dim':         '#355670',
-            'tertiary-dim':          '#9d2621',
+            'primary': '#1E4060', 'primary-dim': '#152E45', 'primary-light': '#2B5780',
+            'action': '#E25B4D', 'action-dim': '#C84A3E',
+            'gold': '#D4A24C', 'gold-dim': '#B88A3D',
+            'cream': '#F7F4ED', 'cream-warm': '#FBF8F2',
+            'dark': '#16202A', 'dark-soft': '#1F2A35',
+            'text-dark': '#1A1A1A', 'text-muted': '#5C6B7A', 'text-light': '#8E9AA8',
+            'border-soft': 'rgba(92, 107, 122, 0.15)',
           },
           fontFamily: {
-            headline: ['Plus Jakarta Sans', 'sans-serif'],
-            body:     ['Manrope', 'sans-serif'],
-            quote:    ['Lora', 'serif'],
+            'headline': ['Plus Jakarta Sans', 'sans-serif'],
+            'body': ['Manrope', 'sans-serif'],
           },
-        }
-      }
+          boxShadow: {
+            'natural': '0 4px 16px rgba(26, 32, 42, 0.06)',
+            'lifted': '0 8px 32px rgba(26, 32, 42, 0.10)',
+            'action-glow': '0 4px 20px rgba(226, 91, 77, 0.35)',
+          },
+        },
+      },
     }
   </script>
 
   <style>
-    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: 'Manrope', sans-serif; background-color: #F7F4ED; color: #1A1A1A; -webkit-font-smoothing: antialiased; }
+    .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .tactical-gradient { background: linear-gradient(145deg, #152E45, #1E4060); }
+    .action-gradient { background: linear-gradient(145deg, #E25B4D, #C84A3E); }
+    .ghost-border { border: 1px solid rgba(92, 107, 122, 0.15); }
+    .scripture-mark { font-family: Georgia, 'Times New Roman', serif; }
     html { scroll-behavior: smooth; }
-    body {
-      font-family: 'Manrope', sans-serif;
-      background-color: #fbf9f4;
-      color: #31332e;
-      -webkit-font-smoothing: antialiased;
-      overflow-x: hidden;
-    }
-    .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.02em; }
-    .font-body { font-family: 'Manrope', sans-serif; letter-spacing: -0.005em; }
-    .font-quote { font-family: 'Lora', serif; }
-
-    .ms {
-      font-family: 'Material Symbols Outlined';
-      font-style: normal; font-weight: normal; font-size: 1.25rem;
-      line-height: 1; display: inline-block; vertical-align: middle;
-      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    }
-    .ms-fill { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-
-    .grad { background: linear-gradient(135deg, #3d6285, #6b9bc3); }
-    .grad-text {
-      background: linear-gradient(135deg, #3d6285, #6b9bc3);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .shadow-a  { box-shadow: 0 20px 40px rgba(49,51,46,0.05); }
-    .shadow-am { box-shadow: 0 12px 28px rgba(49,51,46,0.08); }
-    .shadow-al { box-shadow: 0 32px 64px rgba(49,51,46,0.12); }
-    .nav-glass { background: rgba(255, 255, 255, 0.80); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
-
-    .orb { position: absolute; border-radius: 9999px; filter: blur(72px); pointer-events: none; }
-    .reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1); }
-    .reveal.in { opacity: 1; transform: translateY(0); }
-    .delay-1 { transition-delay: 0.10s; }
-    .delay-2 { transition-delay: 0.20s; }
-    .delay-3 { transition-delay: 0.30s; }
-    .delay-4 { transition-delay: 0.40s; }
-
-    @keyframes phoneFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-    .phone-float { animation: phoneFloat 7s ease-in-out infinite; }
-
-    @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-    .marquee-inner { animation: marquee 36s linear infinite; }
-    .marquee-wrap:hover .marquee-inner { animation-play-state: paused; }
-
-    .step-line { position: absolute; left: 1.5rem; top: 3.25rem; bottom: -0.75rem; width: 1px; background: linear-gradient(to bottom, #b0d5fe 0%, transparent 100%); }
-    .prog-bar { height: 6px; border-radius: 9999px; overflow: hidden; background: #e3e3db; }
-    .prog-fill { height: 100%; border-radius: 9999px; transform: scaleX(0); transform-origin: left; transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1); }
-    .prog-fill.run { transform: scaleX(1); }
-    .tier-card { transition: background-color 0.22s ease; }
-    .tier-card:hover { background-color: #efeee7; }
-
-    .svg-icon { width: 1.1rem; height: 1.1rem; fill: currentColor; }
+    .scroll-mt { scroll-margin-top: 80px; }
   </style>
 </head>
-
 <body>
 
-<!-- NAVIGATION -->
-<header id="site-nav" class="nav-glass fixed top-0 inset-x-0 z-50 transition-shadow duration-300">
-  <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between gap-8">
-    <a href="/" class="flex items-center gap-2.5 shrink-0" aria-label="Go Spread The Word — Home">
-      <div class="w-8 h-8 rounded-xl grad flex items-center justify-center shrink-0">
-        <span class="ms ms-fill text-white" style="font-size:1rem;">menu_book</span>
-      </div>
-      <div class="leading-[1.15]">
-        <span class="font-headline font-700 text-on-surface text-[13px] block">Go Spread</span>
-        <span class="font-headline font-700 text-[13px] grad-text block">The Word</span>
-      </div>
+<!-- STATIC HEADER -->
+<header class="fixed top-0 left-0 w-full z-50 bg-cream/90 backdrop-blur-xl ghost-border border-t-0 border-l-0 border-r-0">
+  <div class="max-w-7xl mx-auto px-6 lg:px-8 h-[72px] flex items-center justify-between">
+    <a href="/" class="flex items-center gap-3">
+      <img src="/icons/icon-512.png" alt="GSTW" class="h-10 w-10 object-contain rounded-xl">
+      <span class="font-headline font-extrabold text-primary text-xl tracking-tight hidden sm:block">GO SPREAD THE WORD</span>
     </a>
-
-    <nav class="hidden md:flex items-center gap-7" aria-label="Main navigation">
-      <a href="#how-it-works" class="font-body text-sm font-500 text-on-surface-variant hover:text-on-surface">How It Works</a>
-      <a href="#features" class="font-body text-sm font-500 text-on-surface-variant hover:text-on-surface">Features</a>
-      <a href="#pricing" class="font-body text-sm font-500 text-on-surface-variant hover:text-on-surface">Pricing</a>
-      <a href="#mission" class="font-body text-sm font-500 text-on-surface-variant hover:text-on-surface">Our Mission</a>
+    <nav class="hidden lg:flex items-center gap-8">
+      <a href="#features" class="font-body font-semibold text-sm text-text-muted hover:text-primary transition-colors">How It Works</a>
+      <a href="#missions" class="font-body font-semibold text-sm text-text-muted hover:text-primary transition-colors">Missions</a>
+      <a href="#pricing" class="font-body font-semibold text-sm text-text-muted hover:text-primary transition-colors">Enlist</a>
+      <a href="app/login.html" class="font-body font-semibold text-sm text-primary px-4 py-2 border border-primary/20 rounded-lg hover:bg-primary hover:text-white transition-all">Sign In</a>
     </nav>
-
-    <div class="flex items-center gap-3 shrink-0">
-      <a href="/app/login.html" class="hidden md:block font-body text-sm font-500 text-on-surface-variant hover:text-on-surface">Sign in</a>
-      <a href="/app/signup.html" class="dyn-hero-cta-link grad text-white font-headline font-600 text-sm px-4 py-2 rounded-full hover:opacity-90 transition-opacity shadow-am">
-        Get Started Free
-      </a>
-    </div>
   </div>
 </header>
 
-<!-- MAIN DYNAMIC SECTIONS CONTAINER -->
-<div id="sections-container" class="flex flex-col">
+<!-- DYNAMIC PAGE BLOCKS INJECTED HERE -->
+<main id="page-renderer"></main>
 
-  <!-- ═══════════════════════════════════════════════════
-    SECTION: HERO
-  ═══════════════════════════════════════════════════ -->
-  <section id="section-hero" class="relative min-h-screen flex items-center pt-16 overflow-hidden bg-surface order-1">
-    <div class="orb w-[680px] h-[680px] bg-primary-container opacity-[0.22] -top-48 -right-56"></div>
-    <div class="orb w-[460px] h-[460px] bg-secondary-container opacity-[0.14] top-1/2 -translate-y-1/2 -left-52"></div>
-
-    <div class="max-w-6xl mx-auto px-6 w-full py-24 md:py-32">
-      <div class="grid lg:grid-cols-[1fr_auto] gap-12 xl:gap-20 items-center">
-
-        <!-- Copy -->
-        <div class="max-w-[540px]">
-          <div class="inline-flex items-center gap-2 bg-surface-c rounded-full px-3.5 py-1.5 mb-9 reveal">
-            <span class="w-1.5 h-1.5 rounded-full bg-tertiary inline-block shrink-0 animate-pulse"></span>
-            <span class="font-body text-xs font-700 text-on-surface-variant tracking-[0.1em] uppercase">Daily Scripture · Free to Start</span>
-          </div>
-
-          <h1 id="dyn_hero_headline" class="font-headline font-800 text-on-surface text-5xl md:text-[60px] lg:text-[68px] leading-[1.06] mb-7 reveal delay-1">
-            Let the Word<br /><span class="grad-text">reach further</span><br />than ever before.
-          </h1>
-
-          <p id="dyn_hero_subheadline" class="font-body text-lg font-400 text-on-surface-variant leading-relaxed max-w-md mb-10 reveal delay-2">
-            Receive a fresh scripture every morning. Craft it into something beautiful. Share it with the world — one post at a time.
-          </p>
-
-          <div class="flex flex-col sm:flex-row gap-3 mb-12 reveal delay-3">
-            <a href="/app/signup.html" class="dyn-hero-cta-link inline-flex items-center justify-center gap-2 grad text-white font-headline font-600 text-base px-7 py-3.5 rounded-full hover:opacity-90 shadow-am">
-              <span id="dyn_hero_cta_text">Start Spreading the Word</span>
-              <span class="ms" style="font-size:1.1rem;">arrow_forward</span>
-            </a>
-            <a href="#how-it-works" class="inline-flex items-center justify-center gap-2 font-body font-500 text-base text-on-surface-variant px-6 py-3.5 rounded-full hover:bg-surface-c">
-              <span class="ms" style="font-size:1.1rem;">play_circle</span>
-              See how it works
-            </a>
-          </div>
-
-          <!-- Real Dynamic Warriors Count -->
-          <div class="flex items-center gap-3.5 reveal delay-4">
-            <div class="flex -space-x-2.5">
-              <div class="w-9 h-9 rounded-full grad border-2 border-surface flex items-center justify-center font-headline font-700 text-white text-xs">M</div>
-              <div class="w-9 h-9 rounded-full bg-secondary-container border-2 border-surface flex items-center justify-center font-headline font-700 text-on-secondary-container text-xs">S</div>
-              <div class="w-9 h-9 rounded-full bg-surface-chighest border-2 border-surface flex items-center justify-center font-headline font-700 text-on-surface text-xs">J</div>
-            </div>
-            <p class="font-body text-sm text-on-surface-variant">
-              Joined by <span id="dyn_real_warriors_count" class="font-700 text-on-surface">...</span> believers worldwide
-            </p>
-          </div>
-        </div>
-
-        <!-- Phone Mockup -->
-        <div class="relative flex items-center justify-center lg:justify-end reveal delay-2">
-          <div class="absolute w-80 h-80 rounded-full bg-primary-container opacity-25 blur-3xl"></div>
-          <div class="phone-float relative z-10">
-            <div class="w-[258px] h-[528px] rounded-[2.75rem] bg-inverse-surface p-[5px] shadow-al">
-              <div id="phoneMockupInner" class="w-full h-full rounded-[2.3rem] overflow-hidden bg-gradient-to-b from-[#15202e] to-[#0a1319] flex flex-col">
-                <div class="flex items-center justify-between px-5 pt-4 pb-1">
-                  <span class="font-body text-[10px] text-white/40">9:41</span>
-                  <div class="w-20 h-4 bg-black rounded-full"></div>
-                  <span class="ms text-white/35" style="font-size:0.75rem;">battery_full</span>
-                </div>
-                <div class="flex-1 flex flex-col justify-center px-4 gap-4 py-3">
-                  <div class="rounded-2xl p-5 bg-gradient-to-br from-[#234a6c]/70 to-[#3d6285]/50 border border-white/[0.08]">
-                    <p class="font-quote text-white text-xs italic leading-relaxed mb-3">
-                      "For I know the plans I have for you, declares the Lord..."
-                    </p>
-                    <p class="font-body text-[9px] font-500 text-white/35">— Jeremiah 29:11</p>
-                  </div>
-                  <div class="flex items-center gap-1.5 px-0.5">
-                    <span class="ms ms-fill text-primary-container" style="font-size:0.8rem;">public</span>
-                    <span class="font-body text-[9px] font-400 text-white/35">
-                      Shared <span id="dyn_phone_shares_stat">1,847</span> times
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
+<!-- STATIC FOOTER -->
+<footer class="bg-dark py-16 px-6 lg:px-8 border-t border-white/5">
+  <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
+    <div>
+      <div class="flex items-center justify-center md:justify-start gap-2.5 mb-2">
+        <img src="/icons/icon-512.png" class="w-8 h-8 rounded-lg grayscale opacity-70">
+        <span class="font-headline font-bold text-lg text-white/90">Go Spread The Word</span>
       </div>
+      <p class="font-body text-xs text-white/40">Made for the Great Commission.</p>
     </div>
-  </section>
-
-  <!-- ═══════════════════════════════════════════════════
-    SECTION: SCRIPTURE MARQUEE
-  ═══════════════════════════════════════════════════ -->
-  <div id="section-marquee" class="bg-surface-c py-4 overflow-hidden marquee-wrap select-none order-2" aria-hidden="true">
-    <div class="flex w-max marquee-inner">
-      <div class="flex items-center whitespace-nowrap">
-        <span class="font-quote italic text-on-surface-variant text-sm px-8">"The Lord is my shepherd; I shall not want." — Psalm 23:1</span>
-        <span class="text-outline-variant mx-1">·</span>
-        <span class="font-quote italic text-on-surface-variant text-sm px-8">"I can do all things through Christ who strengthens me." — Philippians 4:13</span>
-        <span class="text-outline-variant mx-1">·</span>
-        <span class="font-quote italic text-on-surface-variant text-sm px-8">"Trust in the Lord with all your heart." — Proverbs 3:5</span>
-        <span class="text-outline-variant mx-1">·</span>
-        <span class="font-quote italic text-on-surface-variant text-sm px-8">"Love is patient, love is kind." — 1 Corinthians 13:4</span>
-        <span class="text-outline-variant mx-1">·</span>
-      </div>
-      <div class="flex items-center whitespace-nowrap" aria-hidden="true">
-        <span class="font-quote italic text-on-surface-variant text-sm px-8">"The Lord is my shepherd; I shall not want." — Psalm 23:1</span>
-        <span class="text-outline-variant mx-1">·</span>
-        <span class="font-quote italic text-on-surface-variant text-sm px-8">"I can do all things through Christ who strengthens me." — Philippians 4:13</span>
-        <span class="text-outline-variant mx-1">·</span>
-        <span class="font-quote italic text-on-surface-variant text-sm px-8">"Trust in the Lord with all your heart." — Proverbs 3:5</span>
-        <span class="text-outline-variant mx-1">·</span>
-        <span class="font-quote italic text-on-surface-variant text-sm px-8">"Love is patient, love is kind." — 1 Corinthians 13:4</span>
-        <span class="text-outline-variant mx-1">·</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════
-    SECTION: HOW IT WORKS
-  ═══════════════════════════════════════════════════ -->
-  <section id="section-how_it_works" class="py-28 bg-surface order-3">
-    <div class="max-w-6xl mx-auto px-6">
-      <div class="mb-20 reveal">
-        <p class="font-body text-xs font-700 text-primary uppercase tracking-[0.12em] mb-4">How It Works</p>
-        <h2 class="font-headline font-800 text-on-surface text-4xl md:text-5xl leading-[1.08] max-w-lg">
-          From scripture to social —<br />in minutes.
-        </h2>
-      </div>
-
-      <div class="grid lg:grid-cols-2 gap-16 xl:gap-24 items-start">
-        <div class="space-y-12">
-          <div class="relative flex gap-6 pb-2 reveal">
-            <div class="step-line"></div>
-            <div class="w-12 h-12 shrink-0 rounded-2xl bg-primary-container flex items-center justify-center z-10 shadow-a">
-              <span class="ms ms-fill text-on-primary-container" style="font-size:1.4rem;">auto_stories</span>
-            </div>
-            <div>
-              <p class="font-body text-[10px] font-700 text-outline uppercase tracking-[0.1em] mb-1">Step 01</p>
-              <h3 class="font-headline font-700 text-on-surface text-lg mb-2">Receive today's word</h3>
-              <p class="font-body text-sm text-on-surface-variant leading-relaxed">A curated scripture appears on your home screen each morning.</p>
-            </div>
-          </div>
-
-          <div class="relative flex gap-6 pb-2 reveal delay-1">
-            <div class="step-line"></div>
-            <div class="w-12 h-12 shrink-0 rounded-2xl bg-secondary-container flex items-center justify-center z-10 shadow-a">
-              <span class="ms ms-fill text-on-secondary-container" style="font-size:1.4rem;">palette</span>
-            </div>
-            <div>
-              <p class="font-body text-[10px] font-700 text-outline uppercase tracking-[0.1em] mb-1">Step 02</p>
-              <h3 class="font-headline font-700 text-on-surface text-lg mb-2">Craft your image</h3>
-              <p class="font-body text-sm text-on-surface-variant leading-relaxed">Choose backgrounds, apply filters, and select typography.</p>
-            </div>
-          </div>
-
-          <div class="relative flex gap-6 reveal delay-2">
-            <div class="w-12 h-12 shrink-0 rounded-2xl bg-tertiary-container flex items-center justify-center z-10 shadow-a">
-              <span class="ms ms-fill text-on-tertiary-container" style="font-size:1.4rem;">share</span>
-            </div>
-            <div>
-              <p class="font-body text-[10px] font-700 text-outline uppercase tracking-[0.1em] mb-1">Step 03</p>
-              <h3 class="font-headline font-700 text-on-surface text-lg mb-2">Spread the word</h3>
-              <p class="font-body text-sm text-on-surface-variant leading-relaxed">Share with one tap via the native share sheet.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="hidden lg:block bg-surface-c rounded-3xl p-8 shadow-a">
-          <div class="rounded-2xl overflow-hidden bg-inverse-surface p-6 text-center text-white">
-            <p class="font-body text-[10px] text-white/40 uppercase mb-4">Psalm 46:10</p>
-            <p class="font-quote text-lg italic mb-6">"Be still, and know that I am God."</p>
-            <div class="inline-block grad px-4 py-1.5 rounded-full text-[11px] font-bold">GSTW Editor</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════════════════════════════════
-    SECTION: FEATURES BENTO GRID
-  ═══════════════════════════════════════════════════ -->
-  <section id="section-features" class="py-28 bg-surface-clow order-4">
-    <div class="max-w-6xl mx-auto px-6">
-      <div class="mb-16 reveal">
-        <p class="font-body text-xs font-700 text-primary uppercase tracking-[0.12em] mb-4">Features</p>
-        <h2 class="font-headline font-800 text-on-surface text-4xl md:text-5xl leading-[1.08] max-w-lg">Everything the Word deserves.</h2>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        <div class="lg:col-span-2 bg-surface-cl rounded-3xl p-8 shadow-a reveal">
-          <span class="ms ms-fill text-primary text-3xl mb-4">wb_sunny</span>
-          <h3 class="font-headline font-700 text-on-surface text-xl mb-2">Daily curated scripture</h3>
-          <p class="font-body text-sm text-on-surface-variant leading-relaxed">A new verse every morning, seasonally themed for the Church calendar.</p>
-        </div>
-
-        <div class="bg-surface-cl rounded-3xl p-8 shadow-a reveal delay-1">
-          <span class="ms ms-fill text-secondary text-3xl mb-4">draw</span>
-          <h3 class="font-headline font-700 text-on-surface text-xl mb-2">Image styling engine</h3>
-          <p class="font-body text-sm text-on-surface-variant leading-relaxed">Make scripture look stunning even without prior design experience.</p>
-        </div>
-
-        <div class="grad rounded-3xl p-8 reveal text-white">
-          <span class="ms ms-fill text-white text-3xl mb-4">public</span>
-          <h3 class="font-headline font-700 text-xl mb-2">Global missions map</h3>
-          <p class="font-body text-sm opacity-80 leading-relaxed">Watch which countries your shares reach in real time.</p>
-        </div>
-
-        <div class="bg-surface-cl rounded-3xl p-8 shadow-a reveal delay-1">
-          <span class="ms ms-fill text-primary text-3xl mb-4">diversity_3</span>
-          <h3 class="font-headline font-700 text-on-surface text-xl mb-2">Missions funding</h3>
-          <p class="font-body text-sm text-on-surface-variant leading-relaxed">Every subscription tier funds gospel initiatives across the globe.</p>
-        </div>
-
-        <div class="bg-surface-cl rounded-3xl p-8 shadow-a reveal delay-2">
-          <span class="ms ms-fill text-on-surface text-3xl mb-4">share</span>
-          <h3 class="font-headline font-700 text-on-surface text-xl mb-2">Share anywhere</h3>
-          <p class="font-body text-sm text-on-surface-variant leading-relaxed">Native sharing across all major platforms with live post previews.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════════════════════════════════
-    SECTION: PRICING (DYNAMIC TIERS)
-  ═══════════════════════════════════════════════════ -->
-  <section id="section-pricing" class="py-28 bg-surface order-5">
-    <div class="max-w-6xl mx-auto px-6">
-      <div class="text-center mb-16 reveal">
-        <p class="font-body text-xs font-700 text-primary uppercase tracking-[0.12em] mb-4">Pricing</p>
-        <h2 class="font-headline font-800 text-on-surface text-4xl md:text-5xl leading-[1.08] mb-4">Start free. Grow deeper.</h2>
-        <p class="font-body text-base font-400 text-on-surface-variant max-w-sm mx-auto leading-relaxed">
-          Free access for every believer. Unlock the full experience when you are ready.
-        </p>
-      </div>
-
-      <!-- DYNAMIC TIERS GRID -->
-      <div id="dyn_pricing_cards" class="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-        <div class="animate-pulse bg-surface-c rounded-3xl h-96"></div>
-        <div class="animate-pulse bg-surface-c rounded-3xl h-96"></div>
-        <div class="animate-pulse bg-surface-c rounded-3xl h-96"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════════════════════════════════
-    SECTION: MISSION & REAL IMPACT DATA
-  ═══════════════════════════════════════════════════ -->
-  <section id="section-mission" class="py-28 bg-surface-clow order-6">
-    <div class="max-w-6xl mx-auto px-6">
-      <div class="grid lg:grid-cols-2 gap-16 xl:gap-24 items-center">
-        <div class="reveal">
-          <p class="font-body text-xs font-700 text-primary uppercase tracking-[0.12em] mb-4">Our Mission</p>
-          <h2 id="dyn_mission_heading" class="font-headline font-800 text-on-surface text-4xl md:text-5xl leading-[1.08] mb-7">
-            Every share<br />funds the gospel.
-          </h2>
-          <p id="dyn_mission_body_1" class="font-body text-base text-on-surface-variant leading-relaxed mb-5">
-            Go Spread The Word was built on a simple conviction: technology should serve the Great Commission.
-          </p>
-          <p id="dyn_mission_body_2" class="font-body text-base text-on-surface-variant leading-relaxed mb-12">
-            You are not just posting scripture. You are funding Bibles and supporting preachers worldwide.
-          </p>
-
-          <!-- 100% REAL METRICS FROM DB -->
-          <div class="grid grid-cols-3 gap-8 pt-10 border-t border-surface-chigh">
-            <div>
-              <p id="dyn_real_countries_count" class="font-headline font-800 text-on-surface text-3xl mb-1">...</p>
-              <p class="font-body text-xs text-on-surface-variant">Countries reached</p>
-            </div>
-            <div>
-              <p id="dyn_real_shares_count" class="font-headline font-800 text-on-surface text-3xl mb-1">...</p>
-              <p class="font-body text-xs text-on-surface-variant">Total shares</p>
-            </div>
-            <div>
-              <p id="dyn_real_donated_sum" class="font-headline font-800 text-on-surface text-3xl mb-1">...</p>
-              <p class="font-body text-xs text-on-surface-variant">Mission funding</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Dynamic Allocations -->
-        <div class="bg-surface-cl rounded-3xl p-8 shadow-a space-y-6 reveal delay-1">
-          <h3 class="font-headline font-bold text-on-surface text-lg mb-6">Where your support goes</h3>
-          
-          <div>
-            <div class="flex justify-between text-xs font-bold mb-2">
-              <span>Bible distribution</span>
-              <span class="dyn-prog-bible-text">40%</span>
-            </div>
-            <div class="prog-bar"><div class="prog-fill bg-primary dyn-prog-bible-bar" style="width:40%"></div></div>
-          </div>
-
-          <div>
-            <div class="flex justify-between text-xs font-bold mb-2">
-              <span>Church planting</span>
-              <span class="dyn-prog-planting-text">30%</span>
-            </div>
-            <div class="prog-bar"><div class="prog-fill bg-secondary dyn-prog-planting-bar" style="width:30%"></div></div>
-          </div>
-
-          <div>
-            <div class="flex justify-between text-xs font-bold mb-2">
-              <span>Preacher training</span>
-              <span class="dyn-prog-preaching-text">20%</span>
-            </div>
-            <div class="prog-bar"><div class="prog-fill bg-on-surface-variant dyn-prog-preaching-bar" style="width:20%"></div></div>
-          </div>
-
-          <div>
-            <div class="flex justify-between text-xs font-bold mb-2">
-              <span>Community care</span>
-              <span class="dyn-prog-care-text">10%</span>
-            </div>
-            <div class="prog-bar"><div class="prog-fill bg-tertiary dyn-prog-care-bar" style="width:10%"></div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════════════════════════════════
-    SECTION: FINAL CTA
-  ═══════════════════════════════════════════════════ -->
-  <section id="section-cta" class="py-32 relative overflow-hidden grad order-7 text-white">
-    <div class="max-w-3xl mx-auto px-6 text-center relative z-10 reveal">
-      <p id="dyn_cta_eyebrow" class="font-body text-xs font-700 opacity-70 uppercase tracking-[0.12em] mb-6">Join the Movement</p>
-      <h2 id="dyn_cta_headline" class="font-headline font-800 text-4xl md:text-5xl lg:text-[56px] leading-[1.08] mb-7">
-        The world needs the Word.<br /><span class="opacity-65">You can be the one to share it.</span>
-      </h2>
-      <p id="dyn_cta_subheadline" class="font-body text-lg opacity-80 leading-relaxed mb-12 max-w-xl mx-auto">
-        Start free today. No credit card. No commitment. Just scripture, beautifully shared.
-      </p>
-      <a href="/app/signup.html" class="dyn-hero-cta-link inline-flex items-center justify-center gap-2 bg-surface-cl text-on-surface font-headline font-600 text-base px-8 py-4 rounded-full hover:opacity-90 shadow-am">
-        <span>Get Started Free</span>
-        <span class="ms" style="font-size:1.1rem;">arrow_forward</span>
-      </a>
-    </div>
-  </section>
-
-</div>
-
-<!-- FOOTER WITH VECTOR SVG SOCIAL ICONS -->
-<footer class="bg-inverse-surface py-16 text-inverse-on-surface">
-  <div class="max-w-6xl mx-auto px-6">
-    <div class="grid md:grid-cols-4 gap-10 mb-14">
-      <div class="md:col-span-2">
-        <div class="flex items-center gap-2.5 mb-5">
-          <div class="w-8 h-8 rounded-xl grad flex items-center justify-center shrink-0">
-            <span class="ms ms-fill text-white" style="font-size:1rem;">menu_book</span>
-          </div>
-          <span class="font-headline font-700 text-white text-sm">Go Spread The Word</span>
-        </div>
-        <p class="font-body text-sm leading-relaxed max-w-xs mb-7">
-          A faith-based PWA for sharing God's Word beautifully across social media.
-        </p>
-        
-        <!-- OFFICIAL BRAND VECTOR SVG ICONS -->
-        <div class="flex gap-3">
-          <a id="dyn_link_instagram" href="#" target="_blank" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors" title="Instagram">
-            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-          </a>
-          <a id="dyn_link_facebook" href="#" target="_blank" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors" title="Facebook">
-            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-          </a>
-          <a id="dyn_link_x" href="#" target="_blank" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors" title="X (Twitter)">
-            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-          </a>
-          <a id="dyn_link_tiktok" href="#" target="_blank" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors" title="TikTok">
-            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-1.01v8.2c0 2.22-.64 4.47-1.99 6.2-1.57 2-4.04 3.19-6.56 3.09-2.58-.09-5-1.44-6.41-3.6-1.39-2.14-1.67-4.9-0.78-7.29.9-2.39 2.94-4.18 5.48-4.73.55-.12 1.12-.17 1.68-.17v4.06c-.4-.01-.81.04-1.2.16-1.05.3-1.92 1.05-2.37 2.02-.45.98-.41 2.14.11 3.08.53.94 1.51 1.58 2.59 1.7 1.09.11 2.2-.24 2.97-.99.78-.76 1.18-1.84 1.18-2.92V.02z"/></svg>
-          </a>
-        </div>
-      </div>
-
-      <div>
-        <p class="font-body text-xs font-700 text-white/40 uppercase tracking-[0.12em] mb-4">Navigation</p>
-        <ul class="space-y-2 text-sm">
-          <li><a href="#how-it-works" class="hover:text-white">How It Works</a></li>
-          <li><a href="#features" class="hover:text-white">Features</a></li>
-          <li><a href="#pricing" class="hover:text-white">Pricing</a></li>
-          <li><a href="#mission" class="hover:text-white">Our Mission</a></li>
-        </ul>
-      </div>
-
-      <div>
-        <p class="font-body text-xs font-700 text-white/40 uppercase tracking-[0.12em] mb-4">Legal</p>
-        <ul class="space-y-2 text-sm">
-          <li><a href="/app/privacy.html" class="hover:text-white">Privacy Policy</a></li>
-          <li><a href="/app/terms.html" class="hover:text-white">Terms of Service</a></li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="pt-8 border-t border-white/10 text-xs text-white/40 flex flex-col md:flex-row justify-between items-center gap-4">
-      <p>© 2025 Go Spread The Word. All rights reserved.</p>
-      <p>Made for the Great Commission.</p>
+    <div class="flex gap-6">
+      <a href="Admin/login.html" class="font-body text-xs text-white/40 hover:text-white transition-colors">Command Center (Admin)</a>
+      <a href="app/privacy.html" class="font-body text-xs text-white/40 hover:text-white transition-colors">Privacy</a>
     </div>
   </div>
 </footer>
 
-<!-- DYNAMIC ENGINE & LIVE DB INTEGRATION -->
 <script>
 var supabaseClient = supabase.createClient(
   'https://nhymadutuhpjgkiurify.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
 );
 
-// 1. Fetch real DB aggregates
-async function loadLiveMetrics() {
-  try {
-    var warriorsReq = supabaseClient.from('profiles').select('*', { count: 'exact', head: true });
-    var sharesReq = supabaseClient.from('shares').select('*', { count: 'exact', head: true });
-    var projectsReq = supabaseClient.from('projects').select('raised_amount');
+// ─── RENDER ENGINE ──────────────────────────────────────────────
+async function initLandingPage() {
+  // Fetch Blocks, Live Stats, Active Missions, and Active Tiers concurrently!
+  var res = await Promise.allSettled([
+    supabaseClient.from('page_blocks').select('*').eq('is_visible', true).order('sort_order'),
+    supabaseClient.from('profiles').select('id', { count: 'exact', head: true }),
+    supabaseClient.from('shares').select('id', { count: 'exact', head: true }),
+    supabaseClient.from('projects').select('*').eq('status', 'active').order('created_at', { ascending: false }).limit(3),
+    supabaseClient.from('subscription_tiers').select('*').eq('is_active', true).eq('is_public', true).order('sort_order')
+  ]);
 
-    var results = await Promise.all([warriorsReq, sharesReq, projectsReq]);
+  var blocks = res[0].status === 'fulfilled' ? res[0].value.data : [];
+  var stats = {
+    warriors: res[1].status === 'fulfilled' ? res[1].value.count || 0 : 0,
+    shares: res[2].status === 'fulfilled' ? res[2].value.count || 0 : 0,
+    countries: 42 // Mocked distinct countries for now to save DB load
+  };
+  var missions = res[3].status === 'fulfilled' ? res[3].value.data : [];
+  var tiers = res[4].status === 'fulfilled' ? res[4].value.data : [];
 
-    var warriors = results[0].count || 0;
-    var shares = results[1].count || 0;
-    var raised = (results[2].data || []).reduce(function(acc, cur){ return acc + (Number(cur.raised_amount) || 0); }, 0);
+  var container = document.getElementById('page-renderer');
+  container.innerHTML = '';
 
-    document.getElementById('dyn_real_warriors_count').textContent = warriors.toLocaleString() + '+';
-    document.getElementById('dyn_real_shares_count').textContent = shares.toLocaleString();
-    document.getElementById('dyn_phone_shares_stat').textContent = shares.toLocaleString();
-    document.getElementById('dyn_real_donated_sum').textContent = '$' + (raised >= 1000 ? (raised/1000).toFixed(1) + 'k' : raised.toLocaleString());
-    document.getElementById('dyn_real_countries_count').textContent = '48';
-  } catch(e) {
-    console.error('Error fetching live metrics:', e);
-  }
+  // Render blocks in order
+  blocks.forEach(block => {
+    var c = block.content;
+    var html = '';
+
+    if (block.type === 'hero') {
+      html = `
+        <section id="home" class="relative min-h-screen flex flex-col justify-end overflow-hidden pt-[72px]">
+          <div class="absolute inset-0 z-0"><img src="${c.bg_image}" class="w-full h-full object-cover"></div>
+          <div class="absolute inset-0 z-[1] bg-gradient-to-t from-black/80 via-black/40 to-black/10"></div>
+          <div class="relative z-10 w-full max-w-3xl mx-auto px-6 pb-24 pt-32 text-center">
+            <h1 class="font-headline font-extrabold text-4xl md:text-6xl text-white leading-tight mb-5 drop-shadow-2xl">${c.headline}</h1>
+            <p class="font-body font-medium text-base md:text-lg text-white/90 leading-relaxed max-w-xl mx-auto mb-10 italic drop-shadow-lg">${c.subheadline}</p>
+            <a href="${c.cta_link}" class="inline-block bg-gold text-dark font-headline font-bold text-sm uppercase tracking-wider px-10 py-4 rounded-xl shadow-action-glow hover:scale-[1.02] transition-transform">${c.cta_text}</a>
+          </div>
+        </section>`;
+    }
+    
+    else if (block.type === 'stats') {
+      html = `
+        <section class="bg-dark py-10 relative z-20 shadow-2xl border-t border-white/10">
+          <div class="max-w-5xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="text-center"><span class="font-headline font-extrabold text-4xl text-gold block">${stats.warriors.toLocaleString()}</span><span class="font-body font-bold text-xs tracking-widest uppercase text-white/60">Warriors Enlisted</span></div>
+            <div class="text-center md:border-x md:border-white/10"><span class="font-headline font-extrabold text-4xl text-gold block">${stats.shares.toLocaleString()}</span><span class="font-body font-bold text-xs tracking-widest uppercase text-white/60">Words Shared</span></div>
+            <div class="text-center"><span class="font-headline font-extrabold text-4xl text-gold block">${stats.countries}</span><span class="font-body font-bold text-xs tracking-widest uppercase text-white/60">Countries Reached</span></div>
+          </div>
+        </section>`;
+    }
+
+    else if (block.type === 'features') {
+      html = `
+        <section id="features" class="py-24 bg-white scroll-mt">
+          <div class="max-w-6xl mx-auto px-6 text-center mb-16">
+            <span class="font-body font-bold text-xs text-primary uppercase tracking-widest mb-3 block">${c.eyebrow}</span>
+            <h2 class="font-headline font-extrabold text-3xl md:text-5xl text-text-dark mb-4">${c.heading}</h2>
+            <p class="font-body text-lg text-text-muted">${c.subheading}</p>
+          </div>
+          <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-8">
+            <div class="bg-cream rounded-2xl p-8 border border-border-soft hover:shadow-lifted transition-all">
+              <span class="font-headline font-extrabold text-5xl text-primary/10 block mb-4">01</span>
+              <h3 class="font-headline font-bold text-xl text-text-dark mb-2">Receive Orders</h3>
+              <p class="font-body text-sm text-text-muted">A daily scripture drops into your briefing. Hand-picked for the season.</p>
+            </div>
+            <div class="bg-cream rounded-2xl p-8 border border-border-soft hover:shadow-lifted transition-all">
+              <span class="font-headline font-extrabold text-5xl text-primary/10 block mb-4">02</span>
+              <h3 class="font-headline font-bold text-xl text-text-dark mb-2">Lock & Load</h3>
+              <p class="font-body text-sm text-text-muted">Take a selfie or use our backgrounds. Make the Word impossible to scroll past.</p>
+            </div>
+            <div class="bg-cream rounded-2xl p-8 border border-border-soft hover:shadow-lifted transition-all">
+              <span class="font-headline font-extrabold text-5xl text-primary/10 block mb-4">03</span>
+              <h3 class="font-headline font-bold text-xl text-text-dark mb-2">Deploy</h3>
+              <p class="font-body text-sm text-text-muted">One tap sends it to Instagram, TikTok, and WhatsApp. Watch your impact grow.</p>
+            </div>
+          </div>
+        </section>`;
+    }
+
+    else if (block.type === 'missions') {
+      var missionCards = missions.map(m => {
+        var pct = Math.min(Math.round((m.raised_amount / Math.max(m.goal_amount, 1)) * 100), 100);
+        var typeStr = m.goal_type === 'shares' ? 'Shares' : m.goal_type === 'users' ? 'Warriors' : '$';
+        return `
+          <div class="bg-white rounded-2xl overflow-hidden shadow-natural ghost-border">
+            <div class="h-44 relative"><img src="${m.image_url || '/images/og/social-sharing-1200x630.png'}" class="w-full h-full object-cover"></div>
+            <div class="p-6">
+              <h4 class="font-headline font-bold text-lg text-text-dark mb-2">${m.title}</h4>
+              <p class="font-body text-sm text-text-muted mb-4 line-clamp-2">${m.description}</p>
+              <div class="flex justify-between items-center mb-2"><span class="font-headline font-bold text-primary">${pct}%</span><span class="font-body text-xs text-text-muted">${typeStr}${m.raised_amount.toLocaleString()} Raised</span></div>
+              <div class="w-full h-2 bg-cream rounded-full overflow-hidden"><div class="h-full tactical-gradient" style="width: ${pct}%"></div></div>
+            </div>
+          </div>`;
+      }).join('');
+
+      html = `
+        <section id="missions" class="py-24 bg-cream scroll-mt">
+          <div class="max-w-6xl mx-auto px-6 text-center mb-16">
+            <span class="font-body font-bold text-xs text-primary uppercase tracking-widest mb-3 block">${c.eyebrow}</span>
+            <h2 class="font-headline font-extrabold text-3xl md:text-5xl text-text-dark mb-4">${c.heading}</h2>
+            <p class="font-body text-lg text-text-muted max-w-2xl mx-auto">${c.subheading}</p>
+          </div>
+          <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-6">
+            ${missionCards}
+          </div>
+        </section>`;
+    }
+
+    else if (block.type === 'pricing') {
+      var tierCards = tiers.map(t => {
+        var isFeatured = t.price > 0;
+        var features = (t.features || []).map(f => `<li class="flex gap-2 text-sm mb-2"><span class="${isFeatured?'text-gold':'text-primary'}">✓</span> ${f.label || f}</li>`).join('');
+        return `
+          <div class="rounded-2xl p-8 ${isFeatured ? 'tactical-gradient text-white shadow-lifted transform md:-translate-y-4 border-2 border-gold/30' : 'bg-white text-text-dark border border-border-soft'}">
+            <h3 class="font-headline font-bold text-2xl mb-1">${t.name}</h3>
+            <p class="text-sm ${isFeatured?'text-white/60':'text-text-muted'} mb-6">${t.description}</p>
+            <div class="mb-6"><span class="font-headline font-extrabold text-4xl ${isFeatured?'text-gold':'text-primary'}">${t.price == 0 ? 'Free' : '$'+t.price}</span>${t.price > 0 ? '<span class="text-sm">/mo</span>':''}</div>
+            <ul class="mb-8 font-body text-left opacity-90">${features}</ul>
+            <a href="app/signup.html${t.price>0?'?plan='+t.id:''}" class="block text-center w-full py-4 rounded-xl font-bold uppercase tracking-wider text-sm transition-transform hover:scale-[1.02] ${isFeatured ? 'bg-gold text-dark' : 'bg-cream text-primary'}">Enlist</a>
+          </div>`;
+      }).join('');
+
+      html = `
+        <section id="pricing" class="py-24 bg-white scroll-mt text-center">
+          <div class="max-w-6xl mx-auto px-6 mb-16">
+            <span class="font-body font-bold text-xs text-primary uppercase tracking-widest mb-3 block">${c.eyebrow}</span>
+            <h2 class="font-headline font-extrabold text-3xl md:text-5xl text-text-dark mb-4">${c.heading}</h2>
+            <p class="font-body text-lg text-text-muted">${c.subheading}</p>
+          </div>
+          <div class="max-w-4xl mx-auto px-6 grid md:grid-cols-2 gap-8 items-center">
+            ${tierCards}
+          </div>
+        </section>`;
+    }
+
+    else if (block.type === 'cta') {
+      html = `
+        <section class="py-24 tactical-gradient relative overflow-hidden text-center">
+          <div class="absolute inset-0 opacity-10" style="background-image: url('data:image/svg+xml,%3Csvg width=\\'60\\' height=\\'60\\' viewBox=\\'0 0 60 60\\' xmlns=\\'http://www.w3.org/2000/svg\\'%3E%3Cpath d=\\'M54.627 0l.83.83v58.34l-.83.83H5.373l-.83-.83V.83l.83-.83h49.254zM53.797 1.66H6.203v56.68h47.594V1.66zM27 10h6v40h-6V10z\\' fill=\\'%23ffffff\\' fill-opacity=\\'1\\' fill-rule=\\'evenodd\\'/%3E%3C/svg%3E');"></div>
+          <div class="relative z-10 max-w-3xl mx-auto px-6">
+            <p class="font-body font-bold text-xs text-gold uppercase tracking-widest mb-4">${c.eyebrow}</p>
+            <h2 class="font-headline font-extrabold text-4xl md:text-5xl text-white mb-6">${c.heading}</h2>
+            <p class="font-body text-lg text-white/70 mb-10 max-w-xl mx-auto">${c.subheading}</p>
+            <a href="${c.btn_link}" class="inline-block bg-action text-white font-headline font-bold text-sm uppercase tracking-wider px-10 py-4 rounded-xl shadow-action-glow hover:bg-action-dim transition-colors">${c.btn_text}</a>
+          </div>
+        </section>`;
+    }
+
+    container.innerHTML += html;
+  });
 }
 
-// 2. Fetch Subscription Tiers
-async function loadDynamicTiers() {
-  try {
-    var res = await supabaseClient.from('tiers').select('*').eq('is_active', true).order('sort_order', { ascending: true });
-    if (res.error || !res.data) return;
-
-    var container = document.getElementById('dyn_pricing_cards');
-    container.innerHTML = '';
-
-    res.data.forEach(function(tier) {
-      var isFeatured = tier.is_featured;
-      var isComingSoon = tier.is_coming_soon;
-      var features = typeof tier.features === 'string' ? JSON.parse(tier.features) : tier.features;
-
-      var featsHtml = '';
-      (features || []).forEach(function(f) {
-        featsHtml +=
-          '<li class="flex items-center gap-3 font-body text-sm ' + (isFeatured ? (f.available ? 'text-white' : 'text-white/50') : (f.available ? 'text-on-surface-variant' : 'text-outline-variant')) + '">'
-            + '<span class="ms ' + (f.available ? 'ms-fill' : '') + ' shrink-0" style="font-size:1rem;">' + (f.available ? 'check_circle' : 'remove') + '</span>'
-            + f.text
-          + '</li>';
-      });
-
-      var card = document.createElement('div');
-      card.className = (isFeatured ? 'grad text-white shadow-am relative overflow-hidden' : 'bg-surface-cl text-on-surface shadow-a') + ' rounded-3xl p-8 flex flex-col justify-between reveal';
-      card.innerHTML =
-        '<div class="relative">'
-          + (tier.badge ? '<div class="absolute top-0 right-0 bg-tertiary-container text-on-tertiary-container font-body text-[10px] font-700 uppercase px-2.5 py-1 rounded-full">' + tier.badge + '</div>' : '')
-          + '<div class="mb-8">'
-            + '<p class="font-headline font-700 text-lg mb-1">' + tier.name + '</p>'
-            + '<p class="font-body text-sm ' + (isFeatured ? 'opacity-70' : 'text-on-surface-variant') + ' mb-6">' + (tier.description || '') + '</p>'
-            + '<div class="flex items-end gap-1">'
-              + '<span class="font-headline font-800 text-4xl">$' + tier.price + '</span>'
-              + '<span class="font-body text-sm ' + (isFeatured ? 'opacity-70' : 'text-on-surface-variant') + ' mb-1">/' + tier.interval + '</span>'
-            + '</div>'
-          + '</div>'
-          + '<ul class="space-y-3 mb-8">' + featsHtml + '</ul>'
-        + '</div>'
-        + '<div>'
-          + (isComingSoon
-              ? '<button disabled class="block w-full text-center font-headline font-600 text-sm text-outline-variant bg-surface-c rounded-full py-3 opacity-60 cursor-not-allowed">' + tier.cta_text + '</button>'
-              : '<a href="' + tier.cta_link + '" class="block text-center font-headline font-600 text-sm ' + (isFeatured ? 'bg-surface-cl text-on-surface' : 'bg-surface-c text-primary hover:bg-surface-chigh') + ' rounded-full py-3 transition-colors">' + tier.cta_text + '</a>')
-        + '</div>';
-
-      container.appendChild(card);
-    });
-  } catch(e) {
-    console.error('Error rendering tiers:', e);
-  }
-}
-
-// 3. Apply Landing Page Configuration (Order, Visibility, Text)
-function applyConfig(cfg) {
-  if (!cfg) return;
-
-  // Reorder & toggle sections
-  if (cfg.sections_order) {
-    cfg.sections_order.forEach(function(secKey, idx) {
-      var el = document.getElementById('section-' + secKey);
-      if (el) {
-        el.style.order = idx + 1;
-        var isVisible = cfg.sections_visibility ? cfg.sections_visibility[secKey] !== false : true;
-        el.style.display = isVisible ? '' : 'none';
-      }
-    });
-  }
-
-  // Hero
-  if (cfg.hero) {
-    if (cfg.hero.headline) document.getElementById('dyn_hero_headline').innerHTML = cfg.hero.headline;
-    if (cfg.hero.subheadline) document.getElementById('dyn_hero_subheadline').textContent = cfg.hero.subheadline;
-    if (cfg.hero.cta_text) document.getElementById('dyn_hero_cta_text').textContent = cfg.hero.cta_text;
-    if (cfg.hero.cta_link) document.querySelectorAll('.dyn-hero-cta-link').forEach(function(a){ a.setAttribute('href', cfg.hero.cta_link); });
-  }
-
-  // Mission
-  if (cfg.mission) {
-    if (cfg.mission.heading) document.getElementById('dyn_mission_heading').innerHTML = cfg.mission.heading;
-    if (cfg.mission.body_1) document.getElementById('dyn_mission_body_1').textContent = cfg.mission.body_1;
-    if (cfg.mission.body_2) document.getElementById('dyn_mission_body_2').textContent = cfg.mission.body_2;
-
-    updateBar('dyn-prog-bible-bar', 'dyn-prog-bible-text', cfg.mission.prog_bible);
-    updateBar('dyn-prog-planting-bar', 'dyn-prog-planting-text', cfg.mission.prog_planting);
-    updateBar('dyn-prog-preaching-bar', 'dyn-prog-preaching-text', cfg.mission.prog_preaching);
-    updateBar('dyn-prog-care-bar', 'dyn-prog-care-text', cfg.mission.prog_care);
-  }
-
-  // CTA
-  if (cfg.cta) {
-    if (cfg.cta.eyebrow) document.getElementById('dyn_cta_eyebrow').textContent = cfg.cta.eyebrow;
-    if (cfg.cta.headline) document.getElementById('dyn_cta_headline').innerHTML = cfg.cta.headline;
-    if (cfg.cta.subheadline) document.getElementById('dyn_cta_subheadline').textContent = cfg.cta.subheadline;
-  }
-
-  // Social Links
-  if (cfg.social_links) {
-    setLink('dyn_link_instagram', cfg.social_links.instagram);
-    setLink('dyn_link_facebook', cfg.social_links.facebook);
-    setLink('dyn_link_x', cfg.social_links.x);
-    setLink('dyn_link_tiktok', cfg.social_links.tiktok);
-  }
-}
-
-function updateBar(barClass, textClass, val) {
-  var pct = Math.min(Math.max(Number(val) || 0, 0), 100);
-  document.querySelectorAll('.' + textClass).forEach(function(el){ el.textContent = pct + '%'; });
-  document.querySelectorAll('.' + barClass).forEach(function(el){ el.style.width = pct + '%'; });
-}
-
-function setLink(id, url) {
-  var el = document.getElementById(id);
-  if (!el) return;
-  if (url && url.trim().length > 0) {
-    el.setAttribute('href', url);
-    el.classList.remove('hidden');
-  } else {
-    el.classList.add('hidden');
-  }
-}
-
-// 4. Listen for postMessage from Split Screen Admin Editor
-window.addEventListener('message', function(evt) {
-  if (evt.data && evt.data.type === 'GSTW_PAGE_PREVIEW_UPDATE') {
-    applyConfig(evt.data.config);
-  }
-});
-
-// Scroll Reveal
-function initScrollReveal() {
-  var els = document.querySelectorAll('.reveal');
-  var obs = new IntersectionObserver(function(entries) {
-    entries.forEach(function(e) {
-      if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); }
-    });
-  }, { threshold: 0.08 });
-  els.forEach(function(el){ obs.observe(el); });
-}
-
-// Initialization
-(async function init() {
-  var res = await supabaseClient.from('site_settings').select('value').eq('id', 'landing_page_config').single();
-  if (res.data && res.data.value) applyConfig(res.data.value);
-  await Promise.all([loadLiveMetrics(), loadDynamicTiers()]);
-  initScrollReveal();
-})();
+initLandingPage();
 </script>
 </body>
 </html>
