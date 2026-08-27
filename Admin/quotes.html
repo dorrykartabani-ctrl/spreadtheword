@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Quote Engine — GSTW Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Quote — GSTW Admin</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -19,83 +19,69 @@
             'surface-c':'#efeee7','on-surface':'#31332e','on-surface-variant':'#5e6059',
             'outline':'#7a7b75','outline-variant':'#b2b2ab',
             'primary':'#3d6285','on-primary':'#f7f9ff','primary-container':'#b0d5fe',
-            'secondary':'#41637c','tertiary':'#ad332b',
+            'secondary':'#41637c','tertiary':'#ad332b','sidebar-bg':'#0e0e0c','sidebar-hover':'#1a1a18',
           },
-          fontFamily: { 'headline':['Plus Jakarta Sans','sans-serif'], 'body':['Manrope','sans-serif'] }
+          fontFamily:{
+            'headline':['Plus Jakarta Sans','sans-serif'],
+            'body':['Manrope','sans-serif'],
+          }
         },
       },
     }
   </script>
 
   <style>
-    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;overflow:hidden;}
-    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;}
+    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;letter-spacing:-0.005em}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
     .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
     .filled{font-variation-settings:'FILL' 1}
     .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
-
-    ::-webkit-scrollbar{width:5px;height:5px}
+    
+    ::-webkit-scrollbar{width:6px;height:6px}
     ::-webkit-scrollbar-track{background:transparent}
-    ::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:10px}
+    ::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:3px}
 
-    /* Sidebar */
-    .sidebar{background:#0e0e0c;color:#f7f9ff; z-index: 50;}
-    .sidebar-item{
-      display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;
-      color:rgba(247,249,255,0.6);font-size:13px;font-weight:600; transition:all 0.15s ease;
-    }
+    .sidebar{background:#0e0e0c;color:#f7f9ff}
+    .sidebar-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;color:rgba(247,249,255,0.6);font-size:13px;font-weight:600;transition:all 0.15s ease;text-decoration:none;}
     .sidebar-item:hover{background:#1a1a18;color:#f7f9ff}
     .sidebar-item.active{background:#3d6285;color:#f7f9ff}
 
-    /* Split Pane Layout */
-    .pane-container { height: calc(100vh - 72px); }
-    
-    /* List Cards */
-    .list-card {
-      padding: 16px; border-bottom: 1px solid #efeee7; cursor: pointer; transition: all 0.15s ease;
-      background: transparent; border-left: 4px solid transparent;
-    }
-    .list-card:hover { background: #fbf9f4; }
-    .list-card.active { background: #ffffff; border-left-color: #3d6285; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
-    
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-    .dot-live { background: #16a34a; box-shadow: 0 0 8px rgba(22,163,74,0.4); }
-    .dot-sched { background: #3d6285; }
-    .dot-draft { background: #b2b2ab; }
+    .method-tab{transition:all 0.2s ease;cursor:pointer;background:#ffffff;color:#5e6059;}
+    .method-tab:hover{background:#f5f4ed}
+    .method-tab.active{background:#3d6285;color:#f7f9ff}
+    .method-tab.active .method-icon{color:#f7f9ff}
 
-    /* Forms */
-    .form-input { background: #f5f4ed; border: 1px solid transparent; transition: all 0.2s; color: #31332e; }
-    .form-input:focus { background: #ffffff; border-color: rgba(61,98,133,0.3); outline: none; }
-    
-    /* Editor Tabs */
-    .method-tab { transition: all 0.2s; cursor: pointer; background: #ffffff; color: #5e6059; border: 2px solid transparent; }
-    .method-tab.active { border-color: #3d6285; background: rgba(61,98,133,0.05); color: #3d6285; }
+    .form-input{background:#ffffff;border:1px solid transparent;transition:all 0.2s ease;}
+    .form-input:focus{border-color:rgba(61,98,133,0.3);outline:none}
 
-    .publish-card { transition: all 0.2s; cursor: pointer; background: #ffffff; border: 2px solid transparent; }
-    .publish-card.active { border-color: #3d6285; background: rgba(61,98,133,0.05); color: #3d6285; }
+    .theme-pill{background:#f5f4ed;color:#5e6059;transition:all 0.15s ease;}
+    .theme-pill:hover{background:#efeee7}
+    .theme-pill.active{background:#3d6285;color:#f7f9ff}
 
-    .bg-thumb {
-      width: 72px; height: 72px; border-radius: 12px; overflow: hidden; cursor: pointer; 
-      border: 3px solid transparent; flex-shrink: 0; position: relative;
-    }
-    .bg-thumb.selected { border-color: #3d6285; box-shadow: 0 4px 12px rgba(61,98,133,0.25); }
-    .bg-thumb .check-overlay { position: absolute; inset: 0; background: rgba(61,98,133,0.4); display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.2s; }
-    .bg-thumb.selected .check-overlay { opacity: 1; }
+    .publish-card{transition:all 0.2s ease;cursor:pointer;background:#ffffff;color:#5e6059;}
+    .publish-card:hover{background:#f5f4ed}
+    .publish-card.active{background:#3d6285;color:#f7f9ff}
 
-    /* Skeleton */
-    .skeleton{ background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:8px; }
-    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    .bg-thumb{width:80px;height:80px;border-radius:12px;overflow:hidden;cursor:pointer;border:3px solid transparent;flex-shrink:0;transition:all 0.15s;position:relative;}
+    .bg-thumb.selected{border-color:#3d6285;box-shadow:0 4px 12px rgba(61,98,133,0.25)}
+    .bg-thumb .check-overlay{position:absolute;inset:0;background:rgba(61,98,133,0.4);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s ease;}
+    .bg-thumb.selected .check-overlay{opacity:1}
+
+    .hashtag-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(176,213,254,0.25);color:#234a6c;padding:6px 10px;border-radius:99px;font-size:12px;font-weight:600;}
+    .hashtag-chip button{opacity:0.5;transition:opacity 0.15s ease;cursor:pointer;}
+    .hashtag-chip button:hover{opacity:1}
+
+    .collapse-content{max-height:0;overflow:hidden;opacity:0;transition:max-height 0.35s ease,opacity 0.25s ease;}
+    .collapse-content.open{max-height:600px;opacity:1}
     @keyframes spin{to{transform:rotate(360deg)}}
     .spin{animation:spin 1s linear infinite;display:inline-block}
   </style>
 </head>
 
-<body class="flex bg-surface">
-
+<body class="min-h-screen flex">
 <input type="file" id="bgFileInput" accept="image/*" class="hidden" onchange="handleBgUpload(this)">
 
-<!-- SIDEBAR -->
-<aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 hidden md:flex">
+<aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 hidden md:flex">
   <div class="mb-6 px-2 pt-2">
     <div class="flex items-center gap-2.5">
       <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center">
@@ -110,235 +96,209 @@
 
   <nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
     <a href="index.html" class="sidebar-item"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
-    <a href="quotes.html" class="sidebar-item active"><span class="material-symbols-outlined">format_quote</span>Quotes</a>
+    <a href="quotes.html" class="sidebar-item active"><span class="material-symbols-outlined">add_circle</span>Create Quote</a>
+    <a href="manage-quotes.html" class="sidebar-item"><span class="material-symbols-outlined">format_quote</span>Manage Quotes</a>
+    <a href="schedule.html" class="sidebar-item"><span class="material-symbols-outlined">calendar_today</span>Schedule</a>
+    
     <a href="campaigns.html" class="sidebar-item"><span class="material-symbols-outlined">campaign</span>Campaigns</a>
     <a href="projects.html" class="sidebar-item"><span class="material-symbols-outlined">volunteer_activism</span>Missions</a>
-    <a href="manage-media.html" class="sidebar-item"><span class="material-symbols-outlined">perm_media</span>Media</a>
+    <a href="manage-media.html" class="sidebar-item"><span class="material-symbols-outlined">perm_media</span>Media Library</a>
     <a href="warriors.html" class="sidebar-item"><span class="material-symbols-outlined">group</span>Users</a>
     <a href="manage-tiers.html" class="sidebar-item"><span class="material-symbols-outlined">workspace_premium</span>Tiers</a>
     <a href="manage-rewards.html" class="sidebar-item"><span class="material-symbols-outlined">emoji_events</span>Rewards</a>
-    <a href="notifications.html" class="sidebar-item"><span class="material-symbols-outlined">notifications</span>Notifications</a>
+    <a href="notifications.html" class="sidebar-item"><span class="material-symbols-outlined">notifications</span>Broadcasts</a>
     <a href="analytics.html" class="sidebar-item"><span class="material-symbols-outlined">analytics</span>Analytics</a>
   </nav>
 </aside>
-<div id="sidebarOverlay" class="fixed inset-0 bg-inverse-surface/60 z-40 hidden md:hidden" onclick="toggleSidebar()"></div>
 
-<!-- MAIN WORKSPACE -->
-<div class="flex-1 md:ml-64 flex flex-col h-screen overflow-hidden bg-surface">
-
-  <!-- TOP HEADER -->
-  <header class="h-[72px] bg-white border-b border-surface-c flex items-center justify-between px-4 lg:px-6 shrink-0 z-20">
-    <div class="flex items-center gap-3">
-      <button onclick="toggleSidebar()" class="md:hidden text-on-surface p-1"><span class="material-symbols-outlined">menu</span></button>
-      <h2 class="font-headline font-bold text-on-surface text-xl">Quote Engine</h2>
-    </div>
-    
-    <div class="flex items-center gap-3">
-      <button onclick="createNewQuote()" class="signature-gradient text-white font-headline font-semibold rounded-xl px-4 py-2 flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform">
-        <span class="material-symbols-outlined text-lg">add</span>
-        <span class="hidden sm:inline">New Quote</span>
+<div class="flex-1 md:ml-64 flex flex-col min-h-screen">
+  <header class="sticky top-0 z-20 bg-surface/85 backdrop-blur-xl border-b border-surface-c">
+    <div class="flex items-center gap-4 px-6 lg:px-8 py-4">
+      <button onclick="document.getElementById('sidebar').classList.toggle('hidden')" class="md:hidden text-on-surface">
+        <span class="material-symbols-outlined">menu</span>
       </button>
+      <h2 id="pageTitle" class="font-headline font-bold text-on-surface" style="font-size:22px;">Create Quote</h2>
     </div>
   </header>
 
-  <!-- SPLIT PANE -->
-  <div class="flex pane-container w-full relative">
+  <main class="p-6 lg:p-8 flex-1">
+    <div class="max-w-3xl mx-auto space-y-6">
 
-    <!-- LEFT: AGENDA / LIST -->
-    <div id="listPane" class="w-full lg:w-[360px] xl:w-[400px] flex-shrink-0 flex flex-col bg-surface-clow border-r border-surface-c h-full z-10 transition-transform">
-      
-      <!-- List Filters -->
-      <div class="p-4 border-b border-surface-c bg-white shrink-0">
+      <div>
+        <h2 id="formTitle" class="font-headline font-bold text-on-surface text-2xl">Create New Quote</h2>
+        <p class="font-body text-on-surface-variant mt-1 text-sm">Choose your input method, customise, and publish.</p>
+      </div>
+
+      <!-- INPUT METHODS -->
+      <div>
+        <div class="grid grid-cols-3 gap-3">
+          <button onclick="switchMethod('bible')" class="method-tab active flex flex-col items-center gap-2 p-4 rounded-2xl">
+            <span class="method-icon material-symbols-outlined text-[24px] filled">menu_book</span>
+            <span class="font-body font-semibold text-xs">Bible Lookup</span>
+          </button>
+          <button onclick="switchMethod('ai')" class="method-tab flex flex-col items-center gap-2 p-4 rounded-2xl">
+            <span class="method-icon material-symbols-outlined text-[24px]">auto_awesome</span>
+            <span class="font-body font-semibold text-xs">Templates</span>
+          </button>
+          <button onclick="switchMethod('manual')" class="method-tab flex flex-col items-center gap-2 p-4 rounded-2xl">
+            <span class="method-icon material-symbols-outlined text-[24px]">edit_note</span>
+            <span class="font-body font-semibold text-xs">Manual</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- BIBLE LOOKUP -->
+      <div id="panelBible" class="bg-surface-cl rounded-2xl p-6 space-y-4 shadow-sm border border-surface-c">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-[18px] filled">menu_book</span>
+          <h3 class="font-headline font-bold text-sm">Bible Reference Lookup</h3>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <button onclick="setLookupTranslation('web',this)" class="theme-pill active px-3 py-1.5 rounded-full text-xs font-bold">WEB</button>
+          <button onclick="setLookupTranslation('kjv',this)" class="theme-pill px-3 py-1.5 rounded-full text-xs font-bold">KJV</button>
+        </div>
         <div class="flex gap-2">
-          <button onclick="filterList('live')" id="tab-live" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-surface-c text-slate-500 transition-colors">Live & Next</button>
-          <button onclick="filterList('scheduled')" id="tab-scheduled" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-surface-c text-slate-500 transition-colors">Scheduled</button>
-          <button onclick="filterList('drafts')" id="tab-drafts" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-surface-c text-slate-500 transition-colors">Drafts</button>
+          <input id="bibleRef" type="text" placeholder="e.g. John 3:16" onkeydown="if(event.key==='Enter'){lookupBible()}" class="form-input flex-1 rounded-xl px-4 py-3 text-sm">
+          <button onclick="lookupBible()" id="lookupBtn" class="signature-gradient text-white font-bold px-5 py-3 rounded-xl flex items-center gap-2 text-sm">
+            <span id="lookupIcon" class="material-symbols-outlined text-[18px]">search</span> Lookup
+          </button>
         </div>
+        <div id="lookupStatus" class="hidden text-xs text-primary font-bold"></div>
       </div>
 
-      <!-- Scrollable List -->
-      <div id="quotesList" class="flex-1 overflow-y-auto pb-20">
-        <div class="p-4 space-y-3">
-          <div class="skeleton h-20 w-full"></div>
-          <div class="skeleton h-20 w-full"></div>
+      <!-- TEMPLATES -->
+      <div id="panelAI" class="hidden bg-surface-cl rounded-2xl p-6 space-y-4 border border-surface-c">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-[18px] filled">auto_awesome</span>
+          <h3 class="font-headline font-bold text-sm">Quote Templates</h3>
         </div>
-      </div>
-    </div>
-
-    <!-- RIGHT: EDITOR -->
-    <div id="editorPane" class="hidden lg:flex flex-1 flex-col bg-white h-full relative z-20">
-      
-      <!-- Mobile Back Header -->
-      <div class="lg:hidden flex items-center p-3 border-b border-surface-c bg-white shrink-0">
-        <button onclick="closeEditorMobile()" class="flex items-center gap-1 text-primary font-bold text-sm">
-          <span class="material-symbols-outlined">arrow_back</span> Back to List
+        <div class="flex flex-wrap gap-2">
+          <button onclick="selectAITheme(this,'Hope')" class="theme-pill px-3 py-1.5 rounded-full text-xs font-bold">Hope</button>
+          <button onclick="selectAITheme(this,'Courage')" class="theme-pill px-3 py-1.5 rounded-full text-xs font-bold">Courage</button>
+        </div>
+        <button onclick="generateAIQuotes()" id="generateBtn" class="w-full py-3 signature-gradient text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm">
+          <span id="genIcon" class="material-symbols-outlined text-[18px]">auto_awesome</span> Load Templates
         </button>
+        <div id="aiResults" class="space-y-3"></div>
       </div>
 
-      <!-- Editor Scroll Area -->
-      <div class="flex-1 overflow-y-auto p-5 lg:p-8 pb-32">
-        <div class="max-w-2xl mx-auto space-y-8">
-          
+      <div id="panelManual" class="hidden"></div>
+
+      <!-- MAIN FORM -->
+      <form id="quoteForm" onsubmit="handlePublish(event)" class="space-y-5">
+        
+        <!-- Quote Text -->
+        <div class="bg-surface-cl rounded-2xl p-5 space-y-3 shadow-sm border border-surface-c">
+          <div class="flex justify-between items-end">
+            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">The Quote *</label>
+            <span id="charCount" class="text-[11px] text-slate-400">0 / 500</span>
+          </div>
+          <textarea id="quoteText" required maxlength="500" oninput="updateCharCount()" class="form-input w-full h-32 rounded-xl p-4 text-[15px] resize-none" placeholder="Enter scripture..."></textarea>
+        </div>
+
+        <!-- Source -->
+        <div class="bg-surface-cl rounded-2xl p-5 space-y-2 shadow-sm border border-surface-c">
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Source / Reference *</label>
+          <input id="quoteSource" required type="text" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. John 3:16">
+        </div>
+
+        <!-- Context -->
+        <div class="bg-surface-cl rounded-2xl p-5 space-y-3 shadow-sm border border-surface-c">
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Context (Optional)</label>
+          <textarea id="quoteContext" class="form-input w-full h-24 rounded-xl p-4 text-sm resize-none" placeholder="Historical background or meaning..."></textarea>
+        </div>
+
+        <!-- Category & Campaign -->
+        <div class="grid grid-cols-2 gap-5">
+          <div class="bg-surface-cl rounded-2xl p-5 shadow-sm border border-surface-c">
+            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Category</label>
+            <select id="quoteCategory" class="form-input w-full rounded-xl px-4 py-3 text-sm cursor-pointer">
+              <option value="Faith">Faith</option><option value="Hope">Hope</option>
+              <option value="Courage">Courage</option><option value="Wisdom">Wisdom</option>
+              <option value="Mission">Mission</option>
+            </select>
+          </div>
+          <div class="bg-surface-cl rounded-2xl p-5 shadow-sm border border-surface-c">
+            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Campaign</label>
+            <select id="quoteCampaign" class="form-input w-full rounded-xl px-4 py-3 text-sm cursor-pointer">
+              <option value="">— None —</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Hashtags -->
+        <div class="bg-surface-cl rounded-2xl p-5 space-y-3 shadow-sm border border-surface-c">
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Hashtags</label>
+          <div id="hashtagsContainer" class="flex flex-wrap gap-2"></div>
+          <div class="flex gap-2">
+            <input id="hashtagField" type="text" placeholder="#Tag" onkeydown="if(event.key==='Enter'){event.preventDefault();addHashtag()}" class="form-input flex-1 rounded-lg px-3 py-2 text-sm">
+            <button type="button" onclick="addHashtag()" class="bg-primary text-white font-bold px-4 py-2 rounded-lg text-sm">Add</button>
+          </div>
+        </div>
+
+        <!-- Background -->
+        <div class="bg-surface-cl rounded-2xl p-5 space-y-3 shadow-sm border border-surface-c">
           <div class="flex items-center justify-between">
-            <div>
-              <h2 id="editorTitle" class="font-headline font-bold text-2xl text-slate-800">New Quote</h2>
-              <p id="editorSubtitle" class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Unsaved Draft</p>
-            </div>
-            <button type="button" onclick="deleteCurrentQuote()" id="deleteBtn" class="hidden text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Delete Quote">
-              <span class="material-symbols-outlined">delete</span>
+            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Background Image</label>
+            <button type="button" onclick="document.getElementById('bgFileInput').click()" class="text-primary text-xs font-bold flex items-center gap-1 hover:underline">
+              <span class="material-symbols-outlined text-[16px]">upload</span> Upload Custom
             </button>
           </div>
+          <div class="flex gap-3 overflow-x-auto pb-2" id="bgThumbsContainer"></div>
+          <p id="bgUploadProgress" class="hidden text-xs text-primary font-bold"><span class="material-symbols-outlined spin text-xs align-middle">progress_activity</span> Uploading...</p>
+        </div>
 
-          <!-- INPUT METHOD -->
-          <div>
-            <label class="font-body text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Input Method</label>
-            <div class="grid grid-cols-3 gap-3">
-              <button onclick="switchMethod('bible')" class="method-tab active flex flex-col items-center gap-1 p-3 rounded-xl">
-                <span class="material-symbols-outlined text-xl">menu_book</span>
-                <span class="text-[11px] font-bold">Bible Lookup</span>
-              </button>
-              <button onclick="switchMethod('ai')" class="method-tab flex flex-col items-center gap-1 p-3 rounded-xl">
-                <span class="material-symbols-outlined text-xl">auto_awesome</span>
-                <span class="text-[11px] font-bold">Templates</span>
-              </button>
-              <button onclick="switchMethod('manual')" class="method-tab flex flex-col items-center gap-1 p-3 rounded-xl">
-                <span class="material-symbols-outlined text-xl">edit_note</span>
-                <span class="text-[11px] font-bold">Manual</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- BIBLE TOOL -->
-          <div id="panelBible" class="bg-slate-50 border border-slate-100 rounded-2xl p-5">
-            <div class="flex gap-2 mb-3">
-              <button onclick="setTranslation('web',this)" class="trans-btn active bg-white border border-slate-200 px-3 py-1 rounded-lg text-xs font-bold text-slate-600">WEB</button>
-              <button onclick="setTranslation('kjv',this)" class="trans-btn bg-white border border-slate-200 px-3 py-1 rounded-lg text-xs font-bold text-slate-600">KJV</button>
-              <button onclick="setTranslation('bbe',this)" class="trans-btn bg-white border border-slate-200 px-3 py-1 rounded-lg text-xs font-bold text-slate-600">BBE</button>
-            </div>
-            <div class="flex gap-2">
-              <input id="bibleRef" type="text" placeholder="e.g. John 3:16" class="form-input flex-1 rounded-xl px-4 py-2.5 text-sm" onkeydown="if(event.key==='Enter'){lookupBible()}">
-              <button onclick="lookupBible()" id="lookupBtn" class="bg-primary text-white font-bold px-4 py-2.5 rounded-xl flex items-center gap-1 text-sm">
-                <span id="lookupIcon" class="material-symbols-outlined text-sm">search</span> Find
-              </button>
-            </div>
-            <p id="lookupError" class="hidden text-xs text-red-500 font-bold mt-2"></p>
-          </div>
-
-          <!-- TEMPLATES TOOL -->
-          <div id="panelAI" class="hidden bg-slate-50 border border-slate-100 rounded-2xl p-5">
-            <div class="flex flex-wrap gap-2 mb-4">
-              <button onclick="loadTemplates('Hope')" class="bg-white border border-slate-200 px-3 py-1.5 rounded-full text-xs font-bold text-slate-600 hover:border-primary hover:text-primary">Hope</button>
-              <button onclick="loadTemplates('Courage')" class="bg-white border border-slate-200 px-3 py-1.5 rounded-full text-xs font-bold text-slate-600 hover:border-primary hover:text-primary">Courage</button>
-              <button onclick="loadTemplates('Love')" class="bg-white border border-slate-200 px-3 py-1.5 rounded-full text-xs font-bold text-slate-600 hover:border-primary hover:text-primary">Love</button>
-              <button onclick="loadTemplates('Strength')" class="bg-white border border-slate-200 px-3 py-1.5 rounded-full text-xs font-bold text-slate-600 hover:border-primary hover:text-primary">Strength</button>
-            </div>
-            <div id="templateResults" class="space-y-2 max-h-48 overflow-y-auto pr-2"></div>
-          </div>
-
-          <!-- MANUAL (Just hides tools) -->
-          <div id="panelManual" class="hidden"></div>
-
-          <!-- MAIN EDITOR FORM -->
-          <div class="space-y-5">
-            <div>
-              <div class="flex justify-between items-end mb-1">
-                <label class="font-body text-[11px] font-bold text-slate-400 uppercase tracking-wider">Quote Text *</label>
-                <span id="charCount" class="text-[10px] font-bold text-slate-400">0/500</span>
-              </div>
-              <textarea id="quoteText" required rows="4" oninput="updateCharCount()" class="w-full form-input rounded-xl px-4 py-3 text-[15px] font-medium leading-relaxed resize-none shadow-sm placeholder:text-slate-300" placeholder="Enter scripture or quote..."></textarea>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
+        <!-- Advanced Display -->
+        <div class="bg-surface-cl rounded-2xl p-5 shadow-sm border border-surface-c">
+          <button type="button" onclick="document.getElementById('advPanel').classList.toggle('open')" class="w-full flex justify-between items-center">
+            <div class="flex items-center gap-2"><span class="material-symbols-outlined text-slate-500 text-lg">tune</span><span class="font-bold text-sm">Advanced Home Display</span></div>
+            <span class="material-symbols-outlined text-slate-400">expand_more</span>
+          </button>
+          <div id="advPanel" class="collapse-content">
+            <div class="pt-4 space-y-4">
               <div>
-                <label class="font-body text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Reference / Source *</label>
-                <input type="text" id="quoteSource" required placeholder="e.g. John 3:16" class="w-full form-input rounded-xl px-4 py-3 text-sm font-semibold shadow-sm">
+                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Font Size</label>
+                <div class="flex gap-2"><button type="button" onclick="setHomeSize('',this)" class="theme-pill active px-3 py-1.5 rounded-lg text-xs font-bold" data-size="">Default</button><button type="button" onclick="setHomeSize('26px',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-size="26px">Medium</button></div>
               </div>
               <div>
-                <label class="font-body text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Category</label>
-                <select id="quoteCategory" class="w-full form-input rounded-xl px-4 py-3 text-sm font-semibold shadow-sm cursor-pointer">
-                  <option value="Faith">Faith</option>
-                  <option value="Hope">Hope</option>
-                  <option value="Courage">Courage</option>
-                  <option value="Love">Love</option>
-                  <option value="Strength">Strength</option>
-                  <option value="Mission">Mission</option>
-                </select>
+                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Alignment</label>
+                <div class="flex gap-2"><button type="button" onclick="setHomeAlign('left',this)" class="theme-pill active px-3 py-1.5 rounded-lg text-xs font-bold" data-align="left">Left</button><button type="button" onclick="setHomeAlign('center',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-align="center">Center</button></div>
+              </div>
+              <div>
+                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Color</label>
+                <input type="color" id="homeTextColor" value="#ffffff" class="w-8 h-8 rounded border-0 bg-transparent p-0 cursor-pointer">
               </div>
             </div>
-
-            <!-- Background Picker -->
-            <div class="pt-2">
-              <div class="flex justify-between items-center mb-2">
-                <label class="font-body text-[11px] font-bold text-slate-400 uppercase tracking-wider">Background</label>
-                <button onclick="document.getElementById('bgFileInput').click()" class="text-[10px] font-bold text-primary uppercase flex items-center gap-1 hover:underline">
-                  <span class="material-symbols-outlined text-[14px]">upload</span> Upload
-                </button>
-              </div>
-              <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar" id="bgThumbsContainer">
-                <div class="skeleton w-[72px] h-[72px] flex-shrink-0"></div>
-              </div>
-              <p id="bgUploadStatus" class="hidden text-xs text-primary font-bold mt-1"><span class="material-symbols-outlined spin text-xs align-middle">progress_activity</span> Uploading...</p>
-            </div>
-
-            <!-- Publish State -->
-            <div class="bg-slate-50 border border-slate-100 rounded-2xl p-5 mt-6">
-              <label class="font-body text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-3">Publishing Status</label>
-              <div class="grid grid-cols-3 gap-2">
-                <label class="cursor-pointer">
-                  <input type="radio" name="status" value="live" class="hidden" onchange="updatePublishUI()">
-                  <div class="publish-card rounded-xl p-3 text-center border-2">
-                    <span class="material-symbols-outlined text-xl mb-1">bolt</span>
-                    <p class="text-[10px] font-bold uppercase tracking-wide">Live Now</p>
-                  </div>
-                </label>
-                <label class="cursor-pointer">
-                  <input type="radio" name="status" value="scheduled" checked class="hidden" onchange="updatePublishUI()">
-                  <div class="publish-card rounded-xl p-3 text-center border-2 active">
-                    <span class="material-symbols-outlined text-xl mb-1">calendar_month</span>
-                    <p class="text-[10px] font-bold uppercase tracking-wide">Schedule</p>
-                  </div>
-                </label>
-                <label class="cursor-pointer">
-                  <input type="radio" name="status" value="draft" class="hidden" onchange="updatePublishUI()">
-                  <div class="publish-card rounded-xl p-3 text-center border-2">
-                    <span class="material-symbols-outlined text-xl mb-1">drafts</span>
-                    <p class="text-[10px] font-bold uppercase tracking-wide">Draft</p>
-                  </div>
-                </label>
-              </div>
-
-              <div id="scheduleWrapper" class="mt-4 grid grid-cols-2 gap-3">
-                <div>
-                  <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Date</label>
-                  <input type="date" id="scheduleDate" class="w-full form-input rounded-lg px-3 py-2 text-sm font-semibold">
-                </div>
-                <div>
-                  <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Time (AEST)</label>
-                  <input type="time" id="scheduleTime" value="05:30" class="w-full form-input rounded-lg px-3 py-2 text-sm font-semibold">
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
-      </div>
 
-      <!-- Editor Footer / Save Button -->
-      <div class="absolute bottom-0 w-full bg-white border-t border-slate-100 p-4 lg:px-8 flex items-center justify-end z-30">
-        <button onclick="saveQuote()" id="saveBtn" class="signature-gradient text-white font-headline font-bold text-sm px-8 py-3.5 rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center gap-2">
-          <span id="saveIcon" class="material-symbols-outlined text-[18px]">send</span>
-          <span id="saveLabel">Schedule Quote</span>
+        <!-- Publish Options -->
+        <div class="bg-surface-cl rounded-2xl p-5 space-y-4 shadow-sm border border-surface-c">
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">When to Publish</label>
+          <div class="grid grid-cols-3 gap-3">
+            <label class="cursor-pointer"><input type="radio" name="publish_state" value="now" checked class="hidden" onchange="updatePubState(this)"><div class="publish-card active flex flex-col items-center p-3 rounded-xl border-2"><span class="material-symbols-outlined mb-1 text-xl">bolt</span><span class="text-[10px] font-bold uppercase">Now</span></div></label>
+            <label class="cursor-pointer"><input type="radio" name="publish_state" value="schedule" class="hidden" onchange="updatePubState(this)"><div class="publish-card flex flex-col items-center p-3 rounded-xl border-2"><span class="material-symbols-outlined mb-1 text-xl">calendar_month</span><span class="text-[10px] font-bold uppercase">Schedule</span></div></label>
+            <label class="cursor-pointer"><input type="radio" name="publish_state" value="draft" class="hidden" onchange="updatePubState(this)"><div class="publish-card flex flex-col items-center p-3 rounded-xl border-2"><span class="material-symbols-outlined mb-1 text-xl">drafts</span><span class="text-[10px] font-bold uppercase">Draft</span></div></label>
+          </div>
+
+          <div id="schedulePicker" class="hidden grid grid-cols-2 gap-3 mt-4">
+            <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Date</label><input type="date" id="scheduleDate" class="form-input w-full rounded-lg px-3 py-2 text-sm"></div>
+            <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Time (AEST)</label><input type="time" id="scheduleTime" value="05:30" class="form-input w-full rounded-lg px-3 py-2 text-sm"></div>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" id="submitBtn" class="w-full signature-gradient text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 text-sm shadow-md active:scale-95 transition-transform">
+          <span id="submitIcon" class="material-symbols-outlined text-lg">send</span> <span id="submitLabel">Publish Quote</span>
         </button>
-      </div>
 
+      </form>
     </div>
-  </div>
+  </main>
 </div>
 
-<!-- TOAST -->
-<div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-slate-900/90 backdrop-blur-md text-white font-body font-bold px-5 py-3 rounded-full shadow-2xl items-center gap-2 text-sm">
-  <span id="toastIcon" class="material-symbols-outlined text-green-400">check_circle</span>
-  <span id="toastMsg"></span>
+<div id="toast" class="hidden fixed top-6 right-6 z-50 bg-slate-900/90 backdrop-blur-md text-white font-bold px-5 py-3 rounded-full shadow-2xl items-center gap-2 text-sm">
+  <span class="material-symbols-outlined text-green-400">check_circle</span> <span id="toastMsg"></span>
 </div>
 
 <script>
@@ -347,424 +307,125 @@ var supabaseClient = supabase.createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
 );
 
-var allQuotes = [];
-var backgrounds = [];
-var currentQuoteId = null;
-var activeBgUrl = null;
-var listFilter = 'scheduled'; // live, scheduled, drafts
-
-// SAMPLE TEMPLATES
-var templates = {
-  Hope: [
-    { text: 'For I know the plans I have for you...', source: 'Jeremiah 29:11' },
-    { text: 'But those who hope in the Lord will renew their strength...', source: 'Isaiah 40:31' }
-  ],
-  Courage: [
-    { text: 'Have I not commanded you? Be strong and courageous...', source: 'Joshua 1:9' },
-    { text: 'The Lord is my light and my salvation...', source: 'Psalm 27:1' }
-  ],
-  Love: [
-    { text: 'For God so loved the world...', source: 'John 3:16' },
-    { text: 'And now these three remain: faith, hope and love...', source: '1 Corinthians 13:13' }
-  ],
-  Strength: [
-    { text: 'I can do all this through him who gives me strength.', source: 'Philippians 4:13' },
-    { text: 'God is our refuge and strength...', source: 'Psalm 46:1' }
-  ]
-};
+var isEditMode = false, editQuoteId = null, selectedBgUrl = null;
+var hashtags = [], backgrounds = [];
+var hSize = '', hAlign = 'left';
 
 async function init() {
-  const { data: session } = await supabaseClient.auth.getSession();
-  if (!session?.session) return window.location.href = 'login.html';
-  
-  // Set default schedule date to tomorrow
-  var d = new Date(); d.setDate(d.getDate() + 1);
-  document.getElementById('scheduleDate').value = d.toISOString().split('T')[0];
-
-  await Promise.all([loadBackgrounds(), fetchQuotes()]);
-  filterList('scheduled');
+  await Promise.all([loadBackgrounds(), loadCampaigns()]);
+  var urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('edit')) loadEditData(urlParams.get('edit'));
 }
-
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('hidden');
-  document.getElementById('sidebar').classList.toggle('flex');
-  document.getElementById('sidebarOverlay').classList.toggle('hidden');
-}
-
-// ─── DATA LOADING ──────────────────────────────────────────────────────────
 
 async function loadBackgrounds() {
-  var { data } = await supabaseClient.from('media').select('*').eq('type', 'background').eq('is_active', true).order('sort_order');
+  var { data } = await supabaseClient.from('media').select('*').eq('type','background').eq('is_active',true);
   backgrounds = data || [];
-  renderBackgrounds();
+  renderBgs();
 }
 
-async function fetchQuotes() {
-  // Fire the RPC to ensure scheduled quotes are pushed live if it's time
-  try { await supabaseClient.rpc('promote_scheduled_quotes'); } catch(e){}
-
-  var { data } = await supabaseClient.from('quotes').select('*').order('scheduled_for', { ascending: true }).order('published_at', { ascending: false });
-  allQuotes = data || [];
-}
-
-// ─── LEFT PANE: LIST RENDERING ─────────────────────────────────────────────
-
-function filterList(filter) {
-  listFilter = filter;
-  document.querySelectorAll('[id^="tab-"]').forEach(el => {
-    el.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
-    el.classList.add('bg-surface-c', 'text-slate-500');
-  });
-  var activeTab = document.getElementById('tab-' + filter);
-  activeTab.classList.remove('bg-surface-c', 'text-slate-500');
-  activeTab.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
-
-  var listContainer = document.getElementById('quotesList');
-  listContainer.innerHTML = '';
-
-  var filtered = [];
-  if (filter === 'live') {
-    filtered = allQuotes.filter(q => q.status === 'live');
-    // Also grab the very next scheduled quote
-    var next = allQuotes.filter(q => q.status === 'scheduled')[0];
-    if (next) filtered.push(next);
-  } else if (filter === 'scheduled') {
-    filtered = allQuotes.filter(q => q.status === 'scheduled');
-  } else {
-    filtered = allQuotes.filter(q => q.status === 'draft' || q.status === 'archived');
-  }
-
-  if (filtered.length === 0) {
-    listContainer.innerHTML = `<div class="p-6 text-center text-slate-400 text-sm font-bold mt-10">No quotes found here.</div>`;
-    return;
-  }
-
-  // Group by Date for Scheduled
-  var lastDate = null;
-
-  filtered.forEach(q => {
-    // Inject Date Headers for Schedule view
-    if (filter === 'scheduled' && q.scheduled_for) {
-      var d = new Date(q.scheduled_for);
-      var dateKey = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-      if (dateKey !== lastDate) {
-        listContainer.innerHTML += `<div class="px-4 pt-4 pb-2 text-[10px] font-black text-slate-400 uppercase tracking-widest sticky top-0 bg-surface-clow/90 backdrop-blur-sm z-10">${dateKey}</div>`;
-        lastDate = dateKey;
-      }
-    }
-
-    var text = q.text || 'Empty quote';
-    var dot = q.status === 'live' ? 'dot-live' : q.status === 'scheduled' ? 'dot-sched' : 'dot-draft';
-    var label = q.status === 'live' ? 'Live Now' : q.status === 'scheduled' ? new Date(q.scheduled_for).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Draft';
-    
-    var div = document.createElement('div');
-    div.className = `list-card ${currentQuoteId === q.id ? 'active' : ''}`;
-    div.onclick = () => loadQuoteIntoEditor(q.id);
-    div.innerHTML = `
-      <div class="flex items-center gap-2 mb-1.5">
-        <span class="status-dot ${dot}"></span>
-        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">${label}</span>
-      </div>
-      <p class="font-headline font-bold text-slate-800 text-sm line-clamp-2 leading-snug">${escapeHtml(text)}</p>
-      <p class="text-xs text-primary font-bold mt-1">— ${escapeHtml(q.source)}</p>
-    `;
-    listContainer.appendChild(div);
+function renderBgs() {
+  var container = document.getElementById('bgThumbsContainer');
+  container.innerHTML = `<div class="bg-thumb ${!selectedBgUrl?'selected':''}" style="background:#f5f4ed" onclick="selectBg(null)"><div class="w-full h-full flex items-center justify-center"><span class="material-symbols-outlined text-slate-400">block</span></div></div>`;
+  backgrounds.forEach(b => {
+    container.innerHTML += `<div class="bg-thumb ${selectedBgUrl===b.url?'selected':''}" onclick="selectBg('${b.url}')"><img src="${b.url}" class="w-full h-full object-cover"></div>`;
   });
 }
 
-// ─── RIGHT PANE: EDITOR LOGIC ──────────────────────────────────────────────
+function selectBg(url) { selectedBgUrl = url; renderBgs(); }
 
-function createNewQuote() {
-  currentQuoteId = null;
-  document.getElementById('editorTitle').textContent = "New Quote";
-  document.getElementById('editorSubtitle').textContent = "Unsaved Draft";
-  document.getElementById('deleteBtn').classList.add('hidden');
-  
-  document.getElementById('quoteText').value = '';
-  document.getElementById('quoteSource').value = '';
-  document.getElementById('quoteCategory').value = 'Faith';
-  updateCharCount();
-  
-  activeBgUrl = null;
-  renderBackgrounds();
-
-  var d = new Date(); d.setDate(d.getDate() + 1);
-  document.getElementById('scheduleDate').value = d.toISOString().split('T')[0];
-  document.querySelector('input[name="status"][value="scheduled"]').checked = true;
-  updatePublishUI();
-
-  // Update List selection state
-  document.querySelectorAll('.list-card').forEach(c => c.classList.remove('active'));
-
-  if (window.innerWidth < 1024) openEditorMobile();
+async function loadCampaigns() {
+  var { data } = await supabaseClient.from('campaigns').select('id, name').eq('status','active');
+  var sel = document.getElementById('quoteCampaign');
+  (data||[]).forEach(c => sel.innerHTML += `<option value="${c.id}">${c.name}</option>`);
 }
 
-function loadQuoteIntoEditor(id) {
-  var q = allQuotes.find(x => x.id === id);
-  if (!q) return;
-  currentQuoteId = q.id;
-
-  document.getElementById('editorTitle').textContent = "Edit Quote";
-  document.getElementById('editorSubtitle').textContent = q.status.toUpperCase();
-  document.getElementById('deleteBtn').classList.remove('hidden');
-
-  document.getElementById('quoteText').value = q.text || '';
-  document.getElementById('quoteSource').value = q.source || '';
-  document.getElementById('quoteCategory').value = q.category || 'Faith';
-  updateCharCount();
-
-  activeBgUrl = q.background_url || null;
-  renderBackgrounds();
-
-  // Publish Status
-  var r = document.querySelector(`input[name="status"][value="${q.status === 'archived' ? 'draft' : q.status}"]`);
-  if (r) r.checked = true;
-  if (q.scheduled_for) {
-    try {
-      var d = new Date(q.scheduled_for);
-      // Convert to local for the input (AEST approximation for simplicity in admin panel)
-      document.getElementById('scheduleDate').value = d.toISOString().split('T')[0];
-      document.getElementById('scheduleTime').value = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-    } catch(e){}
-  }
-  updatePublishUI();
-
-  // Highlight in list
-  filterList(listFilter); 
-
-  if (window.innerWidth < 1024) openEditorMobile();
-}
-
-function updatePublishUI() {
-  var status = document.querySelector('input[name="status"]:checked').value;
-  document.querySelectorAll('.publish-card').forEach(c => c.classList.remove('active'));
-  document.querySelector(`input[name="status"]:checked`).nextElementSibling.classList.add('active');
-
-  var wrapper = document.getElementById('scheduleWrapper');
-  var btnLbl = document.getElementById('saveLabel');
-  var btnIcon = document.getElementById('saveIcon');
-
-  if (status === 'scheduled') {
-    wrapper.classList.remove('hidden');
-    btnLbl.textContent = currentQuoteId ? 'Update Schedule' : 'Schedule Quote';
-    btnIcon.textContent = 'calendar_month';
-  } else if (status === 'live') {
-    wrapper.classList.add('hidden');
-    btnLbl.textContent = 'Push Live Now';
-    btnIcon.textContent = 'bolt';
-  } else {
-    wrapper.classList.add('hidden');
-    btnLbl.textContent = 'Save Draft';
-    btnIcon.textContent = 'save';
-  }
-}
-
-// ─── EDITOR TOOLS ──────────────────────────────────────────────────────────
-
-function switchMethod(method) {
-  document.querySelectorAll('.method-tab').forEach(b => b.classList.remove('active', 'border-primary', 'text-primary'));
-  event.currentTarget.classList.add('active', 'border-primary', 'text-primary');
-  
-  document.getElementById('panelBible').classList.toggle('hidden', method !== 'bible');
-  document.getElementById('panelAI').classList.toggle('hidden', method !== 'ai');
-}
-
-var currentTrans = 'web';
-function setTranslation(code, btn) {
-  currentTrans = code;
-  document.querySelectorAll('.trans-btn').forEach(b => { b.classList.remove('active', 'border-primary', 'text-primary'); });
-  btn.classList.add('active', 'border-primary', 'text-primary');
-}
-
-async function lookupBible() {
-  var ref = document.getElementById('bibleRef').value.trim();
-  var err = document.getElementById('lookupError');
-  var btn = document.getElementById('lookupBtn');
-  var icon = document.getElementById('lookupIcon');
-  if(!ref) return;
-
-  err.classList.add('hidden');
-  btn.disabled = true; icon.textContent = 'progress_activity'; icon.classList.add('spin');
-
-  try {
-    var encoded = encodeURIComponent(ref.replace(/\s+/g, '+'));
-    var response = await fetch(`https://bible-api.com/${encoded}?translation=${currentTrans}`);
-    if (!response.ok) throw new Error();
-    var data = await response.json();
-    
-    document.getElementById('quoteText').value = data.text.trim().replace(/\n/g, ' ');
-    document.getElementById('quoteSource').value = data.reference || ref;
-    updateCharCount();
-  } catch (e) {
-    err.textContent = "Could not find that verse.";
-    err.classList.remove('hidden');
-  } finally {
-    btn.disabled = false; icon.textContent = 'search'; icon.classList.remove('spin');
-  }
-}
-
-function loadTemplates(theme) {
-  var res = document.getElementById('templateResults');
-  res.innerHTML = '';
-  (templates[theme] || []).forEach(q => {
-    res.innerHTML += `
-      <div class="bg-white p-3 rounded-xl border border-slate-200 hover:border-primary cursor-pointer transition-colors"
-           onclick="useTemplate('${escapeHtml(q.text)}', '${escapeHtml(q.source)}', '${theme}')">
-        <p class="text-xs font-bold text-slate-800 leading-relaxed">"${q.text}"</p>
-        <p class="text-[10px] text-primary font-bold mt-1">— ${q.source}</p>
-      </div>
-    `;
-  });
-}
-
-function useTemplate(text, source, cat) {
-  document.getElementById('quoteText').value = text;
-  document.getElementById('quoteSource').value = source;
-  document.getElementById('quoteCategory').value = cat;
-  updateCharCount();
-  showToast("Template applied");
+function switchMethod(m) {
+  document.querySelectorAll('.method-tab').forEach(t => t.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('panelBible').classList.toggle('hidden', m !== 'bible');
+  document.getElementById('panelAI').classList.toggle('hidden', m !== 'ai');
 }
 
 function updateCharCount() {
-  var len = document.getElementById('quoteText').value.length;
-  document.getElementById('charCount').textContent = len + '/500';
-  document.getElementById('charCount').classList.toggle('text-red-500', len > 450);
+  var el = document.getElementById('charCount'), len = document.getElementById('quoteText').value.length;
+  el.textContent = len + ' / 500'; el.className = len > 450 ? 'text-[11px] font-bold text-red-500' : 'text-[11px] font-bold text-slate-400';
 }
 
-// ─── BACKGROUNDS ───────────────────────────────────────────────────────────
-
-function renderBackgrounds() {
-  var container = document.getElementById('bgThumbsContainer');
-  container.innerHTML = `
-    <div class="bg-thumb ${!activeBgUrl ? 'selected' : ''}" style="background:#f1f5f9" onclick="setBg(null)">
-      <div class="w-full h-full flex flex-col items-center justify-center">
-        <span class="material-symbols-outlined text-slate-400">block</span>
-        <span class="text-[8px] font-bold text-slate-400 uppercase mt-1">None</span>
-      </div>
-      <div class="check-overlay"><span class="material-symbols-outlined text-white">check_circle</span></div>
-    </div>
-  `;
-  backgrounds.forEach(b => {
-    container.innerHTML += `
-      <div class="bg-thumb ${activeBgUrl === b.url ? 'selected' : ''}" onclick="setBg('${b.url}')">
-        <img src="${b.url}" class="w-full h-full object-cover">
-        <div class="check-overlay"><span class="material-symbols-outlined text-white">check_circle</span></div>
-      </div>
-    `;
-  });
+function addHashtag() {
+  var tag = document.getElementById('hashtagField').value.trim();
+  if(!tag) return;
+  if(!tag.startsWith('#')) tag = '#' + tag;
+  if(!hashtags.includes(tag)) { hashtags.push(tag); renderHashtags(); }
+  document.getElementById('hashtagField').value = '';
+}
+function renderHashtags() {
+  document.getElementById('hashtagsContainer').innerHTML = hashtags.map((t,i) => `<span class="hashtag-chip">${t} <button type="button" onclick="hashtags.splice(${i},1);renderHashtags()"><span class="material-symbols-outlined text-xs">close</span></button></span>`).join('');
 }
 
-function setBg(url) {
-  activeBgUrl = url;
-  renderBackgrounds();
+function setHomeSize(sz, btn) { hSize = sz; document.querySelectorAll('[data-size]').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+function setHomeAlign(al, btn) { hAlign = al; document.querySelectorAll('[data-align]').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+
+function updatePubState(rad) {
+  document.querySelectorAll('.publish-card').forEach(c => c.classList.remove('active'));
+  rad.nextElementSibling.classList.add('active');
+  var v = rad.value;
+  document.getElementById('schedulePicker').classList.toggle('hidden', v !== 'schedule');
+  document.getElementById('submitLabel').textContent = v === 'now' ? (isEditMode?'Update & Publish':'Publish Now') : v === 'schedule' ? (isEditMode?'Update Schedule':'Schedule Quote') : 'Save Draft';
 }
 
-async function handleBgUpload(input) {
-  var file = input.files[0];
-  if(!file) return;
-  document.getElementById('bgUploadStatus').classList.remove('hidden');
-
-  try {
-    var path = 'quotes/' + Date.now() + '.png';
-    await supabaseClient.storage.from('quote-backgrounds').upload(path, file);
-    var url = supabaseClient.storage.from('quote-backgrounds').getPublicUrl(path).data.publicUrl;
-    
-    // Save to media library so it stays
-    await supabaseClient.from('media').insert({ type: 'background', url: url, label: 'Custom Upload', is_active: true });
-    
-    activeBgUrl = url;
-    await loadBackgrounds();
-    showToast("Background uploaded!");
-  } catch(e) {
-    showToast("Upload failed");
-  } finally {
-    document.getElementById('bgUploadStatus').classList.add('hidden');
-    input.value = '';
-  }
-}
-
-// ─── SAVE / DELETE ─────────────────────────────────────────────────────────
-
-async function saveQuote() {
-  var text = document.getElementById('quoteText').value.trim();
-  var source = document.getElementById('quoteSource').value.trim();
-  if(!text || !source) return showToast("Quote text and source are required!", true);
-
-  var status = document.querySelector('input[name="status"]:checked').value;
-  var scheduledFor = null;
-  var publishedAt = null;
-
-  if (status === 'scheduled') {
-    var d = document.getElementById('scheduleDate').value;
-    var t = document.getElementById('scheduleTime').value;
-    if (!d || !t) return showToast("Select schedule date and time", true);
-    // Parse as local, convert to UTC string
-    scheduledFor = new Date(d + 'T' + t + ':00').toISOString();
-  } else if (status === 'live') {
-    publishedAt = new Date().toISOString();
-  }
-
+async function handlePublish(e) {
+  e.preventDefault();
+  var text = document.getElementById('quoteText').value.trim(), source = document.getElementById('quoteSource').value.trim();
+  var status = document.querySelector('input[name="publish_state"]:checked').value;
+  
   var data = {
-    text: text,
-    source: source,
-    category: document.getElementById('quoteCategory').value,
-    status: status,
-    scheduled_for: scheduledFor,
-    published_at: publishedAt,
-    background_url: activeBgUrl
+    text: text, source: source, category: document.getElementById('quoteCategory').value,
+    context: document.getElementById('quoteContext').value.trim() || null,
+    campaign_id: document.getElementById('quoteCampaign').value || null,
+    hashtags: hashtags, background_url: selectedBgUrl,
+    home_font_size: hSize || null, home_text_align: hAlign, home_text_color: document.getElementById('homeTextColor').value,
+    status: status === 'now' ? 'live' : status
   };
 
-  var btn = document.getElementById('saveBtn');
-  var icon = document.getElementById('saveIcon');
-  btn.disabled = true; icon.className = "material-symbols-outlined spin text-[18px]"; icon.textContent = "progress_activity";
-
-  if (currentQuoteId) {
-    await supabaseClient.from('quotes').update(data).eq('id', currentQuoteId);
-    showToast("Quote updated!");
-  } else {
-    var res = await supabaseClient.from('quotes').insert([data]).select().single();
-    currentQuoteId = res.data.id;
-    showToast("Quote created!");
+  if (status === 'schedule') {
+    var d = document.getElementById('scheduleDate').value, t = document.getElementById('scheduleTime').value;
+    if(!d || !t) return alert("Select date/time");
+    // Calculate AEST back to UTC roughly for DB storage
+    var dObj = new Date(d + 'T' + t + ':00');
+    data.scheduled_for = new Date(dObj.getTime() - (10 * 60 * 60 * 1000)).toISOString();
+  } else if (status === 'now') {
+    data.published_at = new Date().toISOString();
   }
 
-  btn.disabled = false; icon.className = "material-symbols-outlined text-[18px]"; icon.textContent = "send";
+  var btn = document.getElementById('submitBtn'); btn.disabled = true; btn.innerHTML = 'Saving...';
   
-  await fetchQuotes();
-  filterList(listFilter); // Refresh list but stay on current tab
+  if(isEditMode) await supabaseClient.from('quotes').update(data).eq('id', editQuoteId);
+  else await supabaseClient.from('quotes').insert([data]);
+
+  alert("Quote saved!");
+  window.location.href = 'manage-quotes.html';
 }
 
-async function deleteCurrentQuote() {
-  if(!currentQuoteId || !confirm("Delete this quote permanently?")) return;
-  await supabaseClient.from('quotes').delete().eq('id', currentQuoteId);
-  showToast("Quote deleted");
-  await fetchQuotes();
-  createNewQuote();
-  filterList(listFilter);
-}
+async function loadEditData(id) {
+  isEditMode = true; editQuoteId = id;
+  document.getElementById('formTitle').textContent = 'Edit Quote';
+  var { data } = await supabaseClient.from('quotes').select('*').eq('id', id).single();
+  if(!data) return;
 
-// ─── MOBILE UI ─────────────────────────────────────────────────────────────
-function openEditorMobile() {
-  document.getElementById('listPane').classList.add('hidden', 'lg:flex');
-  document.getElementById('editorPane').classList.remove('hidden');
-  document.getElementById('editorPane').classList.add('flex');
-}
-function closeEditorMobile() {
-  document.getElementById('listPane').classList.remove('hidden');
-  document.getElementById('editorPane').classList.add('hidden', 'lg:flex');
-  document.getElementById('editorPane').classList.remove('flex');
-}
+  document.getElementById('quoteText').value = data.text;
+  document.getElementById('quoteSource').value = data.source;
+  document.getElementById('quoteContext').value = data.context || '';
+  document.getElementById('quoteCategory').value = data.category || 'Faith';
+  if(data.campaign_id) document.getElementById('quoteCampaign').value = data.campaign_id;
+  
+  hashtags = data.hashtags || []; renderHashtags();
+  selectedBgUrl = data.background_url || null; renderBgs();
 
-// ─── UTILS ─────────────────────────────────────────────────────────────────
-function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-var toastTimer;
-function showToast(msg, isErr=false) {
-  var t = document.getElementById('toast');
-  document.getElementById('toastMsg').textContent = msg;
-  document.getElementById('toastIcon').textContent = isErr ? 'error' : 'check_circle';
-  document.getElementById('toastIcon').className = 'material-symbols-outlined ' + (isErr ? 'text-red-400' : 'text-green-400');
-  t.classList.remove('hidden'); t.classList.add('flex');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.classList.add('hidden'); t.classList.remove('flex'); }, 3000);
+  document.getElementById('homeTextColor').value = data.home_text_color || '#ffffff';
+  updateCharCount();
+
+  var sRad = document.querySelector(`input[name="publish_state"][value="${data.status==='live'?'now':data.status}"]`);
+  if(sRad) { sRad.checked = true; updatePubState(sRad); }
 }
 
 init();
