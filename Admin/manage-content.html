@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manage Landing Page — GSTW Admin</title>
+  <title>Landing Page Builder — GSTW Admin</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <link rel="icon" type="image/x-icon" href="/images/favicon/favicon.ico">
-  
+
   <script>
     tailwind.config = {
       theme: {
@@ -51,7 +51,6 @@
     .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
     .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
     
-    /* Sidebar */
     .sidebar{background:#0e0e0c;color:#f7f9ff}
     .sidebar-item{
       display:flex;align-items:center;gap:12px;
@@ -64,19 +63,21 @@
     .sidebar-item:hover{background:#1a1a18;color:#f7f9ff}
     .sidebar-item.active{background:#3d6285;color:#f7f9ff}
 
-    /* Tabs UI */
-    .tab-btn{
-      padding:12px 16px; font-weight:600; font-size:14px; color:#5e6059;
-      border-bottom:2px solid transparent; transition: all 0.15s ease;
+    .section-card {
+      transition: all 0.2s ease;
+      border: 1px solid rgba(49, 51, 46, 0.08);
     }
-    .tab-btn.active{color:#3d6285; border-color:#3d6285}
+    .section-card.is-hidden {
+      opacity: 0.55;
+      background: #efeee7;
+    }
   </style>
 </head>
 
-<body class="min-h-screen flex">
+<body class="min-h-screen flex flex-col md:flex-row overflow-hidden bg-surface">
 
 <!-- SIDEBAR -->
-<aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 hidden md:flex">
+<aside id="sidebar" class="sidebar w-64 flex flex-col p-4 z-40 hidden md:flex shrink-0 h-screen border-r border-white/5">
   <div class="mb-6 px-2 pt-2">
     <div class="flex items-center gap-2.5">
       <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center">
@@ -118,357 +119,498 @@
   </div>
 </aside>
 
-<!-- MAIN -->
-<main class="flex-1 md:ml-64 min-h-screen pb-12">
-  <header class="sticky top-0 z-20 bg-surface/85 backdrop-blur-xl border-b border-surface-chigh">
-    <div class="flex items-center justify-between px-6 lg:px-8 py-4">
-      <div class="flex items-center gap-4">
-        <button onclick="toggleSidebar()" class="md:hidden text-on-surface">
-          <span class="material-symbols-outlined">menu</span>
-        </button>
-        <div>
-          <h2 class="font-headline font-bold text-on-surface" style="font-size:22px;line-height:28px;">Landing Page Designer</h2>
-          <p class="text-on-surface-variant font-body text-xs">Real-time control over branding & context settings</p>
-        </div>
+<!-- BUILDER WORKSPACE (SPLIT SCREEN) -->
+<div class="flex-1 flex flex-col h-screen overflow-hidden">
+
+  <!-- TOP HEADER -->
+  <header class="h-16 bg-surface-cl border-b border-surface-chigh flex items-center justify-between px-6 z-20 shrink-0">
+    <div class="flex items-center gap-3">
+      <button onclick="toggleSidebar()" class="md:hidden text-on-surface">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+      <div>
+        <h2 class="font-headline font-bold text-base text-on-surface">Landing Page Builder</h2>
+        <p class="text-on-surface-variant font-body text-xs hidden sm:block">Visual split-screen editor & section manager</p>
       </div>
-      
-      <!-- Save Button -->
-      <button onclick="saveAllSettings()" id="saveBtn" class="flex items-center gap-2 px-6 py-2.5 signature-gradient text-on-primary font-headline font-semibold rounded-xl hover:opacity-90 active:scale-[0.98] transition-all">
-        <span class="material-symbols-outlined" style="font-size: 18px;">save</span>
-        <span>Publish Changes</span>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-3">
+      <!-- Mobile Preview Trigger -->
+      <button onclick="openMobilePreview()" class="lg:hidden flex items-center gap-1.5 px-3 py-2 bg-surface-c text-on-surface rounded-xl font-body font-semibold text-xs">
+        <span class="material-symbols-outlined" style="font-size: 16px;">preview</span>
+        <span>Preview</span>
+      </button>
+
+      <!-- Viewport Device Mode (Desktop Split) -->
+      <div class="hidden lg:flex items-center bg-surface-clow rounded-xl p-1 gap-1 border border-surface-chigh">
+        <button onclick="setPreviewDevice('desktop')" id="dev-desktop" class="p-1.5 rounded-lg bg-white shadow-sm text-primary" title="Desktop View">
+          <span class="material-symbols-outlined" style="font-size:18px;">desktop_windows</span>
+        </button>
+        <button onclick="setPreviewDevice('tablet')" id="dev-tablet" class="p-1.5 rounded-lg text-outline hover:text-on-surface" title="Tablet View">
+          <span class="material-symbols-outlined" style="font-size:18px;">tablet_mac</span>
+        </button>
+        <button onclick="setPreviewDevice('mobile')" id="dev-mobile" class="p-1.5 rounded-lg text-outline hover:text-on-surface" title="Mobile View">
+          <span class="material-symbols-outlined" style="font-size:18px;">smartphone</span>
+        </button>
+      </div>
+
+      <!-- Publish Live -->
+      <button onclick="saveAndPublish()" id="publishBtn" class="flex items-center gap-2 px-5 py-2 signature-gradient text-on-primary font-headline font-semibold text-xs rounded-xl shadow-ambient-sm hover:opacity-90 active:scale-95 transition-all">
+        <span class="material-symbols-outlined" style="font-size:16px;">cloud_upload</span>
+        <span>Publish Live</span>
       </button>
     </div>
   </header>
 
-  <div class="p-6 lg:p-8 max-w-5xl mx-auto space-y-8">
-    
-    <!-- Tab Controls -->
-    <div class="flex border-b border-surface-chigh gap-2">
-      <button class="tab-btn active" onclick="switchTab('tab-hero', this)">Hero Section</button>
-      <button class="tab-btn" onclick="switchTab('tab-mission', this)">Mission Section</button>
-      <button class="tab-btn" onclick="switchTab('tab-metrics', this)">Metrics & Impact</button>
-      <button class="tab-btn" onclick="switchTab('tab-pricing', this)">Subscription Tiers</button>
-    </div>
+  <!-- SPLIT CONTAINER -->
+  <div class="flex-1 flex overflow-hidden">
 
-    <!-- Alert banner -->
-    <div id="statusAlert" class="hidden flex items-center gap-3 p-4 rounded-xl font-body text-sm"></div>
+    <!-- LEFT PANE: CONTROLS & SECTIONS (Scrollable) -->
+    <div class="w-full lg:w-[50%] xl:w-[45%] h-full overflow-y-auto p-6 space-y-6 border-r border-surface-chigh">
 
-    <form id="builderForm" onsubmit="event.preventDefault();" class="space-y-6">
-      
-      <!-- TAB 1: HERO -->
-      <div id="tab-hero" class="tab-content space-y-6">
-        <div class="bg-white rounded-2xl p-6 shadow-ambient">
-          <h3 class="font-headline font-bold text-lg text-on-surface mb-6">Hero Block Customisation</h3>
-          
-          <div class="grid grid-cols-1 gap-6">
-            <div>
-              <label class="block font-headline font-bold text-sm text-on-surface mb-2">Headline (HTML Allowed)</label>
-              <textarea id="hero_headline" rows="3" class="w-full p-4 bg-surface-clow rounded-xl font-body border border-transparent focus:border-primary focus:bg-white outline-none transition-all text-on-surface text-sm"></textarea>
-              <p class="text-outline text-[11px] mt-1">To apply your signature gradient text, wrap words with: <code class="bg-surface-chigh px-1.5 py-0.5 rounded">&lt;span class="grad-text"&gt;your text&lt;/span&gt;</code></p>
-            </div>
+      <!-- Status Notification Toast -->
+      <div id="statusToast" class="hidden p-3 rounded-xl font-body text-xs flex items-center gap-2"></div>
 
-            <div>
-              <label class="block font-headline font-bold text-sm text-on-surface mb-2">Subheadline</label>
-              <textarea id="hero_subheadline" rows="3" class="w-full p-4 bg-surface-clow rounded-xl font-body border border-transparent focus:border-primary focus:bg-white outline-none transition-all text-on-surface text-sm"></textarea>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label class="block font-headline font-bold text-sm text-on-surface mb-2">CTA Action Text</label>
-                <input type="text" id="hero_cta_text" class="w-full p-4 bg-surface-clow rounded-xl font-body border border-transparent focus:border-primary focus:bg-white outline-none transition-all text-on-surface text-sm">
-              </div>
-              <div>
-                <label class="block font-headline font-bold text-sm text-on-surface mb-2">CTA Destination Link</label>
-                <input type="text" id="hero_cta_link" class="w-full p-4 bg-surface-clow rounded-xl font-body border border-transparent focus:border-primary focus:bg-white outline-none transition-all text-on-surface text-sm">
-              </div>
-            </div>
-
-            <div>
-              <label class="block font-headline font-bold text-sm text-on-surface mb-2">Social Proof Overlay Member Count</label>
-              <input type="text" id="hero_members_count" class="w-full max-w-xs p-4 bg-surface-clow rounded-xl font-body border border-transparent focus:border-primary focus:bg-white outline-none transition-all text-on-surface text-sm" placeholder="e.g. 2,400+">
-            </div>
-          </div>
+      <!-- SECTIONS REORDER & TOGGLE HUB -->
+      <div class="bg-surface-cl rounded-2xl p-5 shadow-ambient">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-headline font-bold text-sm text-on-surface">Page Structure & Order</h3>
+          <span class="text-[11px] font-body text-outline">Reorder or toggle sections</span>
+        </div>
+        <div id="sectionOrderList" class="space-y-2">
+          <!-- Dynamic section items injected here -->
         </div>
       </div>
 
-      <!-- TAB 2: MISSION -->
-      <div id="tab-mission" class="tab-content hidden space-y-6">
-        <div class="bg-white rounded-2xl p-6 shadow-ambient">
-          <h3 class="font-headline font-bold text-lg text-on-surface mb-6">Mission & Vision Text</h3>
-          
-          <div class="grid grid-cols-1 gap-6">
-            <div>
-              <label class="block font-headline font-bold text-sm text-on-surface mb-2">Mission Headline</label>
-              <input type="text" id="mission_heading" class="w-full p-4 bg-surface-clow rounded-xl font-body border border-transparent focus:border-primary focus:bg-white outline-none transition-all text-on-surface text-sm">
-            </div>
+      <!-- SECTION CONTENT EDITORS -->
+      <div class="space-y-4">
+        <h3 class="font-headline font-bold text-sm text-on-surface px-1">Section Details</h3>
 
+        <!-- HERO SETTINGS -->
+        <div class="bg-surface-cl rounded-2xl p-5 shadow-ambient space-y-4 section-editor" data-section="hero">
+          <div class="flex items-center justify-between border-b border-surface-chigh pb-3">
+            <span class="font-headline font-bold text-sm text-on-surface flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary" style="font-size: 18px;">heroinfo</span>
+              Hero Section
+            </span>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-on-surface mb-1">Headline (HTML supported)</label>
+            <textarea id="field_hero_headline" rows="2" oninput="handleRealtimeUpdate()" class="w-full p-3 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none"></textarea>
+            <p class="text-[10px] text-outline mt-1">Wrap text with <code>&lt;span class="grad-text"&gt;...&lt;/span&gt;</code> for the signature gradient.</p>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-on-surface mb-1">Subheadline</label>
+            <textarea id="field_hero_subheadline" rows="2" oninput="handleRealtimeUpdate()" class="w-full p-3 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none"></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block font-headline font-bold text-sm text-on-surface mb-2">Mission Context Paragraph 1</label>
-              <textarea id="mission_body_1" rows="4" class="w-full p-4 bg-surface-clow rounded-xl font-body border border-transparent focus:border-primary focus:bg-white outline-none transition-all text-on-surface text-sm"></textarea>
+              <label class="block text-xs font-bold text-on-surface mb-1">Button Text</label>
+              <input type="text" id="field_hero_cta_text" oninput="handleRealtimeUpdate()" class="w-full p-2.5 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none">
             </div>
-
             <div>
-              <label class="block font-headline font-bold text-sm text-on-surface mb-2">Mission Context Paragraph 2</label>
-              <textarea id="mission_body_2" rows="4" class="w-full p-4 bg-surface-clow rounded-xl font-body border border-transparent focus:border-primary focus:bg-white outline-none transition-all text-on-surface text-sm"></textarea>
+              <label class="block text-xs font-bold text-on-surface mb-1">Button Link</label>
+              <input type="text" id="field_hero_cta_link" oninput="handleRealtimeUpdate()" class="w-full p-2.5 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none">
+            </div>
+          </div>
+          <!-- Hero Mockup Screen Image -->
+          <div>
+            <label class="block text-xs font-bold text-on-surface mb-1">Mockup Screen Image (Optional URL or File)</label>
+            <div class="flex gap-2">
+              <input type="text" id="field_hero_mockup_image" placeholder="/images/... or https://..." oninput="handleRealtimeUpdate()" class="flex-1 p-2.5 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none">
+              <label class="cursor-pointer px-3 py-2 bg-surface-c hover:bg-surface-chigh text-on-surface rounded-xl text-xs font-bold flex items-center gap-1">
+                <span class="material-symbols-outlined" style="font-size:16px;">upload</span>
+                <input type="file" accept="image/*" class="hidden" onchange="uploadImage(this, 'field_hero_mockup_image')">
+              </label>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- TAB 3: METRICS & IMPACT -->
-      <div id="tab-metrics" class="tab-content hidden space-y-6">
-        <div class="bg-white rounded-2xl p-6 shadow-ambient">
-          <h3 class="font-headline font-bold text-lg text-on-surface mb-6">Key Statistics Counts</h3>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- MISSION SETTINGS -->
+        <div class="bg-surface-cl rounded-2xl p-5 shadow-ambient space-y-4 section-editor" data-section="mission">
+          <div class="flex items-center justify-between border-b border-surface-chigh pb-3">
+            <span class="font-headline font-bold text-sm text-on-surface flex items-center gap-2">
+              <span class="material-symbols-outlined text-secondary" style="font-size: 18px;">volunteer_activism</span>
+              Mission & Allocation
+            </span>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-on-surface mb-1">Heading</label>
+            <input type="text" id="field_mission_heading" oninput="handleRealtimeUpdate()" class="w-full p-2.5 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-on-surface mb-1">Context Paragraph 1</label>
+            <textarea id="field_mission_body_1" rows="2" oninput="handleRealtimeUpdate()" class="w-full p-2.5 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-on-surface mb-1">Context Paragraph 2</label>
+            <textarea id="field_mission_body_2" rows="2" oninput="handleRealtimeUpdate()" class="w-full p-2.5 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none"></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-3 pt-2">
             <div>
-              <label class="block font-headline font-bold text-sm text-on-surface mb-2">Countries Reached</label>
-              <input type="text" id="stat_countries" class="w-full p-4 bg-surface-clow rounded-xl font-body border border-transparent focus:border-primary focus:bg-white outline-none transition-all text-on-surface text-sm">
+              <label class="block text-[11px] font-semibold text-outline mb-1">Bible Dist. (%)</label>
+              <input type="number" id="field_prog_bible" min="0" max="100" oninput="handleRealtimeUpdate()" class="w-full p-2 bg-surface-clow rounded-lg text-xs font-body outline-none">
             </div>
             <div>
-              <label class="block font-headline font-bold text-sm text-on-surface mb-2">Shares Count</label>
-              <input type="text" id="stat_shares" class="w-full p-4 bg-surface-clow rounded-xl font-body border border-transparent focus:border-primary focus:bg-white outline-none transition-all text-on-surface text-sm">
+              <label class="block text-[11px] font-semibold text-outline mb-1">Planting (%)</label>
+              <input type="number" id="field_prog_planting" min="0" max="100" oninput="handleRealtimeUpdate()" class="w-full p-2 bg-surface-clow rounded-lg text-xs font-body outline-none">
             </div>
             <div>
-              <label class="block font-headline font-bold text-sm text-on-surface mb-2">Missions Donated Amount</label>
-              <input type="text" id="stat_donated" class="w-full p-4 bg-surface-clow rounded-xl font-body border border-transparent focus:border-primary focus:bg-white outline-none transition-all text-on-surface text-sm">
+              <label class="block text-[11px] font-semibold text-outline mb-1">Preachers (%)</label>
+              <input type="number" id="field_prog_preaching" min="0" max="100" oninput="handleRealtimeUpdate()" class="w-full p-2 bg-surface-clow rounded-lg text-xs font-body outline-none">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-outline mb-1">Care (%)</label>
+              <input type="number" id="field_prog_care" min="0" max="100" oninput="handleRealtimeUpdate()" class="w-full p-2 bg-surface-clow rounded-lg text-xs font-body outline-none">
             </div>
           </div>
         </div>
-<!-- TAB 4: PRICING TIERS -->
-<div id="tab-pricing" class="tab-content hidden space-y-6">
-  <div class="bg-white rounded-2xl p-6 shadow-ambient">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h3 class="font-headline font-bold text-lg text-on-surface">Subscription Tiers Integration</h3>
-        <p class="text-on-surface-variant font-body text-xs mt-0.5">Below is a live rendering of subscription packages shown on your public landing page.</p>
+
+        <!-- FINAL CTA SETTINGS -->
+        <div class="bg-surface-cl rounded-2xl p-5 shadow-ambient space-y-4 section-editor" data-section="cta">
+          <div class="flex items-center justify-between border-b border-surface-chigh pb-3">
+            <span class="font-headline font-bold text-sm text-on-surface flex items-center gap-2">
+              <span class="material-symbols-outlined text-tertiary" style="font-size: 18px;">call_to_action</span>
+              Bottom Call To Action
+            </span>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-on-surface mb-1">Eyebrow</label>
+            <input type="text" id="field_cta_eyebrow" oninput="handleRealtimeUpdate()" class="w-full p-2.5 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-on-surface mb-1">Headline (HTML supported)</label>
+            <input type="text" id="field_cta_headline" oninput="handleRealtimeUpdate()" class="w-full p-2.5 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-on-surface mb-1">Subheadline</label>
+            <textarea id="field_cta_subheadline" rows="2" oninput="handleRealtimeUpdate()" class="w-full p-2.5 bg-surface-clow rounded-xl text-xs font-body border border-transparent focus:border-primary focus:bg-white outline-none"></textarea>
+          </div>
+        </div>
+
+        <!-- SOCIAL LINKS & BRAND ASSETS -->
+        <div class="bg-surface-cl rounded-2xl p-5 shadow-ambient space-y-4">
+          <div class="flex items-center justify-between border-b border-surface-chigh pb-3">
+            <span class="font-headline font-bold text-sm text-on-surface flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary" style="font-size: 18px;">share</span>
+              Brand Social Links
+            </span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-semibold text-outline mb-1">Instagram URL</label>
+              <input type="text" id="field_social_instagram" placeholder="https://instagram.com/..." oninput="handleRealtimeUpdate()" class="w-full p-2 bg-surface-clow rounded-lg text-xs font-body outline-none">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-outline mb-1">Facebook URL</label>
+              <input type="text" id="field_social_facebook" placeholder="https://facebook.com/..." oninput="handleRealtimeUpdate()" class="w-full p-2 bg-surface-clow rounded-lg text-xs font-body outline-none">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-outline mb-1">X (Twitter) URL</label>
+              <input type="text" id="field_social_x" placeholder="https://x.com/..." oninput="handleRealtimeUpdate()" class="w-full p-2 bg-surface-clow rounded-lg text-xs font-body outline-none">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-outline mb-1">TikTok URL</label>
+              <input type="text" id="field_social_tiktok" placeholder="https://tiktok.com/@..." oninput="handleRealtimeUpdate()" class="w-full p-2 bg-surface-clow rounded-lg text-xs font-body outline-none">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-outline mb-1">YouTube URL</label>
+              <input type="text" id="field_social_youtube" placeholder="https://youtube.com/..." oninput="handleRealtimeUpdate()" class="w-full p-2 bg-surface-clow rounded-lg text-xs font-body outline-none">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-outline mb-1">WhatsApp Community</label>
+              <input type="text" id="field_social_whatsapp" placeholder="https://chat.whatsapp.com/..." oninput="handleRealtimeUpdate()" class="w-full p-2 bg-surface-clow rounded-lg text-xs font-body outline-none">
+            </div>
+          </div>
+        </div>
+
       </div>
-      <a href="manage-tiers.html" class="flex items-center gap-2 px-4 py-2 bg-surface-clow hover:bg-surface-c border border-surface-chigh rounded-xl font-headline font-semibold text-xs text-on-surface transition-colors">
-        <span class="material-symbols-outlined" style="font-size: 16px;">payments</span>
-        <span>Open Tiers Manager</span>
-      </a>
     </div>
 
-    <!-- Live Tiers Grid Container -->
-    <div id="adminTiersPreview" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div class="col-span-3 p-12 text-center">
-        <span class="material-symbols-outlined animate-spin text-primary" style="font-size: 32px;">sync</span>
-        <p class="font-body text-on-surface-variant mt-2 text-sm">Loading dynamic tiers...</p>
+    <!-- RIGHT PANE: DESKTOP SPLIT LIVE PREVIEW -->
+    <div class="hidden lg:flex flex-1 bg-surface-chigh items-center justify-center p-6 overflow-hidden">
+      <div id="previewWrapper" class="w-full h-full bg-white rounded-2xl shadow-float overflow-hidden transition-all duration-300 flex flex-col">
+        <div class="h-8 bg-inverse-surface flex items-center px-4 gap-1.5 shrink-0">
+          <div class="w-2.5 h-2.5 rounded-full bg-[#fe6d60]"></div>
+          <div class="w-2.5 h-2.5 rounded-full bg-[#e3e3db] opacity-40"></div>
+          <div class="w-2.5 h-2.5 rounded-full bg-[#e3e3db] opacity-40"></div>
+          <span class="text-[10px] text-white/40 font-body ml-3 font-mono">Live Draft Preview</span>
+        </div>
+        <iframe id="livePreviewFrame" src="/" class="w-full flex-1 border-0"></iframe>
       </div>
     </div>
+
   </div>
 </div>
-        
-        <div class="bg-white rounded-2xl p-6 shadow-ambient">
-          <h3 class="font-headline font-bold text-lg text-on-surface mb-2">Fund Allocation Progress Percentages</h3>
-          <p class="text-outline text-xs mb-6">Values represent percentage out of 100%. (e.g. 40, 30, 20, 10)</p>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label class="block font-headline font-bold text-sm text-on-surface mb-2">Bible Distribution (%)</label>
-              <input type="number" id="prog_bible" min="0" max="100" class="w-full p-4 bg-surface-clow rounded-xl font-body border border-transparent focus:border-primary focus:bg-white outline-none transition-all text-on-surface text-sm">
-            </div>
-            <div>
-              <label class="block font-headline font-bold text-sm text-on-surface mb-2">Church Planting (%)</label>
-              <input type="number" id="prog_planting" min="0" max="100" class="w-full p-4 bg-surface-clow rounded-xl font-body border border-transparent focus:border-primary focus:bg-white outline-none transition-all text-on-surface text-sm">
-            </div>
-            <div>
-              <label class="block font-headline font-bold text-sm text-on-surface mb-2">Preacher Training (%)</label>
-              <input type="number" id="prog_preaching" min="0" max="100" class="w-full p-4 bg-surface-clow rounded-xl font-body border border-transparent focus:border-primary focus:bg-white outline-none transition-all text-on-surface text-sm">
-            </div>
-            <div>
-              <label class="block font-headline font-bold text-sm text-on-surface mb-2">Community Care (%)</label>
-              <input type="number" id="prog_care" min="0" max="100" class="w-full p-4 bg-surface-clow rounded-xl font-body border border-transparent focus:border-primary focus:bg-white outline-none transition-all text-on-surface text-sm">
-            </div>
-          </div>
-        </div>
-      </div>
 
-    </form>
+<!-- SLIDE-OUT PREVIEW MODAL (FOR MOBILE / TABLETS) -->
+<div id="mobilePreviewModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex flex-col justify-end">
+  <div class="w-full h-[90vh] bg-surface-cl rounded-t-3xl flex flex-col overflow-hidden shadow-2xl">
+    <div class="p-4 bg-surface-c flex items-center justify-between border-b border-surface-chigh">
+      <span class="font-headline font-bold text-sm text-on-surface">Interactive Mobile Preview</span>
+      <button onclick="closeMobilePreview()" class="w-8 h-8 rounded-full bg-surface-chigh flex items-center justify-center text-on-surface">
+        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+      </button>
+    </div>
+    <iframe id="mobilePreviewFrame" src="/" class="w-full flex-1 border-0"></iframe>
   </div>
-</main>
+</div>
 
 <script>
-// Initialise client
-const supabaseClient = supabase.createClient(
+var supabaseClient = supabase.createClient(
   'https://nhymadutuhpjgkiurify.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
 );
 
-let settingsCache = {};
+var SECTION_NAMES = {
+  'hero': 'Hero Banner',
+  'marquee': 'Scripture Marquee',
+  'how_it_works': 'How It Works (Steps)',
+  'features': 'Features Bento Grid',
+  'pricing': 'Subscription Tiers',
+  'mission': 'Mission & Impact Allocation',
+  'cta': 'Final Call to Action'
+};
 
-// Verify Administrator Authenticated Context
+var config = {
+  sections_order: ['hero', 'marquee', 'how_it_works', 'features', 'pricing', 'mission', 'cta'],
+  sections_visibility: {
+    hero: true,
+    marquee: true,
+    how_it_works: true,
+    features: true,
+    pricing: true,
+    mission: true,
+    cta: true
+  },
+  hero: {},
+  mission: {},
+  cta: {},
+  social_links: {}
+};
+
+// Check Admin Access
 async function checkAdminAuth() {
-  try {
-    let result = await supabaseClient.auth.getSession();
-    if (!result.data.session) {
-      window.location.href = 'login.html';
-      return false;
-    }
-    const user = result.data.session.user;
-
-    const profileResult = await supabaseClient
-      .from('profiles')
-      .select('role, full_name, nickname')
-      .eq('id', user.id)
-      .single();
-
-    if (profileResult.error || !profileResult.data || profileResult.data.role !== 'admin') {
-      window.location.href = '../app/index.html';
-      return false;
-    }
-
-    // Apply names & details safely
-    document.querySelectorAll('.admin-name').forEach(el => el.textContent = profileResult.data.full_name || 'Admin');
-    return true;
-  } catch(e) {
-    console.error('checkAdminAuth error:', e);
-    return false;
-  }
+  var sessionRes = await supabaseClient.auth.getSession();
+  if (!sessionRes.data.session) { window.location.href = 'login.html'; return false; }
+  var user = sessionRes.data.session.user;
+  var pRes = await supabaseClient.from('profiles').select('role, full_name').eq('id', user.id).single();
+  if (pRes.error || !pRes.data || pRes.data.role !== 'admin') { window.location.href = '../app/index.html'; return false; }
+  document.querySelectorAll('.admin-name').forEach(function(el){ el.textContent = pRes.data.full_name || 'Admin'; });
+  return true;
 }
 
-// Switch Interface Tabs
-function switchTab(tabId, btn) {
-  document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
-  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
-  document.getElementById(tabId).classList.remove('hidden');
-  btn.classList.add('active');
+// Load Configuration
+async function loadConfig() {
+  var res = await supabaseClient.from('site_settings').select('value').eq('id', 'landing_page_config').single();
+  if (res.data && res.data.value) {
+    config = Object.assign(config, res.data.value);
+  }
+  populateFormFields();
+  renderSectionList();
+  setTimeout(handleRealtimeUpdate, 600);
 }
 
-// Fetch all settings
-async function loadBuilderData() {
-  const fields = [
-    'hero_headline', 'hero_subheadline', 'hero_cta_text', 'hero_cta_link', 'hero_members_count',
-    'mission_heading', 'mission_body_1', 'mission_body_2',
-    'stat_countries', 'stat_shares', 'stat_donated',
-    'prog_bible', 'prog_planting', 'prog_preaching', 'prog_care'
-  ];
+function populateFormFields() {
+  // Hero
+  setVal('field_hero_headline', config.hero?.headline || '');
+  setVal('field_hero_subheadline', config.hero?.subheadline || '');
+  setVal('field_hero_cta_text', config.hero?.cta_text || '');
+  setVal('field_hero_cta_link', config.hero?.cta_link || '');
+  setVal('field_hero_mockup_image', config.hero?.mockup_image || '');
 
-  const { data, error } = await supabaseClient
-    .from('site_settings')
-    .select('id, value');
+  // Mission
+  setVal('field_mission_heading', config.mission?.heading || '');
+  setVal('field_mission_body_1', config.mission?.body_1 || '');
+  setVal('field_mission_body_2', config.mission?.body_2 || '');
+  setVal('field_prog_bible', config.mission?.prog_bible ?? 40);
+  setVal('field_prog_planting', config.mission?.prog_planting ?? 30);
+  setVal('field_prog_preaching', config.mission?.prog_preaching ?? 20);
+  setVal('field_prog_care', config.mission?.prog_care ?? 10);
 
-  if (error) {
-    showAlert('Failed to read configuration rules: ' + error.message, 'error');
-    return;
-  }
+  // CTA
+  setVal('field_cta_eyebrow', config.cta?.eyebrow || '');
+  setVal('field_cta_headline', config.cta?.headline || '');
+  setVal('field_cta_subheadline', config.cta?.subheadline || '');
 
-  data.forEach(row => {
-    const el = document.getElementById(row.id);
-    if (el) {
-      el.value = row.value;
-      settingsCache[row.id] = row.value;
-    }
-  });
+  // Social
+  setVal('field_social_instagram', config.social_links?.instagram || '');
+  setVal('field_social_facebook', config.social_links?.facebook || '');
+  setVal('field_social_x', config.social_links?.x || '');
+  setVal('field_social_tiktok', config.social_links?.tiktok || '');
+  setVal('field_social_youtube', config.social_links?.youtube || '');
+  setVal('field_social_whatsapp', config.social_links?.whatsapp || '');
 }
-async function loadTiersPreview() {
-  const container = document.getElementById('adminTiersPreview');
-  const { data, error } = await supabaseClient
-    .from('tiers')
-    .select('*')
-    .order('sort_order', { ascending: true });
 
-  if (error || !data) {
-    container.innerHTML = `<p class="text-tertiary text-sm">Failed to load plans preview: ${error?.message}</p>`;
-    return;
-  }
+function setVal(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.value = val;
+}
 
+// Render Section Reorder / Visibility Control List
+function renderSectionList() {
+  var container = document.getElementById('sectionOrderList');
   container.innerHTML = '';
-  data.forEach(tier => {
-    const isFeatured = tier.is_featured;
-    const isComingSoon = tier.is_coming_soon;
-    
-    // Parse jsonb features list safely
-    let featuresHtml = '';
-    const featuresList = typeof tier.features === 'string' ? JSON.parse(tier.features) : tier.features;
-    
-    featuresList.slice(0, 3).forEach(f => {
-      featuresHtml += `
-        <li class="flex items-center gap-2 text-xs ${f.available ? 'text-on-surface-variant' : 'text-outline-variant'}">
-          <span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' ${f.available ? 1 : 0}">${f.available ? 'check_circle' : 'remove'}</span>
-          <span>${f.text}</span>
-        </li>`;
-    });
 
-    const card = document.createElement('div');
-    card.className = `p-5 rounded-xl border ${isFeatured ? 'border-primary bg-primary-container/10' : 'border-surface-chigh bg-surface-clow'} flex flex-col justify-between relative`;
-    card.innerHTML = `
-      ${tier.badge ? `<span class="absolute top-3 right-3 text-[9px] font-bold tracking-wide uppercase px-2 py-0.5 rounded bg-primary text-white">${tier.badge}</span>` : ''}
-      <div>
-        <p class="font-headline font-bold text-sm text-on-surface">${tier.name}</p>
-        <p class="font-headline font-extrabold text-lg text-primary mt-1">$${tier.price} <span class="text-[10px] text-outline font-normal">/${tier.interval}</span></p>
-        <ul class="space-y-2 mt-4 border-t border-surface-chigh pt-3">
-          ${featuresHtml}
-          ${featuresList.length > 3 ? `<li class="text-[10px] text-outline font-medium">+ ${featuresList.length - 3} more</li>` : ''}
-        </ul>
-      </div>
-      <a href="manage-tiers.html?id=${tier.id}" class="block text-center text-[11px] font-bold py-2 mt-4 bg-white hover:bg-surface-c border border-surface-chigh rounded-lg text-on-surface transition-colors">
-        Edit Plan Configuration
-      </a>
-    `;
-    container.appendChild(card);
+  config.sections_order.forEach(function(secKey, idx) {
+    var isVisible = config.sections_visibility[secKey] !== false;
+    var name = SECTION_NAMES[secKey] || secKey;
+
+    var row = document.createElement('div');
+    row.className = 'flex items-center justify-between p-2.5 rounded-xl border border-surface-chigh bg-surface-clow hover:bg-surface-c transition-colors';
+    row.innerHTML =
+      '<div class="flex items-center gap-2.5">'
+        + '<button onclick="toggleVisibility(\'' + secKey + '\')" class="text-on-surface-variant hover:text-primary transition-colors" title="Toggle visibility">'
+          + '<span class="material-symbols-outlined text-[18px]">' + (isVisible ? 'visibility' : 'visibility_off') + '</span>'
+        + '</button>'
+        + '<span class="font-body text-xs font-semibold text-on-surface ' + (isVisible ? '' : 'line-through opacity-50') + '">' + name + '</span>'
+      + '</div>'
+      + '<div class="flex items-center gap-1">'
+        + '<button onclick="moveSection(' + idx + ', -1)" ' + (idx === 0 ? 'disabled class="opacity-20"' : 'class="hover:text-primary"') + ' title="Move Up"><span class="material-symbols-outlined text-[16px]">arrow_upward</span></button>'
+        + '<button onclick="moveSection(' + idx + ', 1)" ' + (idx === config.sections_order.length - 1 ? 'disabled class="opacity-20"' : 'class="hover:text-primary"') + ' title="Move Down"><span class="material-symbols-outlined text-[16px]">arrow_downward</span></button>'
+      + '</div>';
+
+    container.appendChild(row);
   });
 }
-// Save All Settings
-async function saveAllSettings() {
-  const saveBtn = document.getElementById('saveBtn');
-  const fields = Object.keys(settingsCache);
-  const payloads = [];
 
-  // Read current inputs
-  for (const id of fields) {
-    const el = document.getElementById(id);
-    if (el) {
-      payloads.push({ id, value: el.value });
-    }
-  }
-
-  saveBtn.disabled = true;
-  saveBtn.innerHTML = `<span class="material-symbols-outlined spin" style="animation: spin 1s linear infinite;">sync</span> <span>Publishing...</span>`;
-
-  try {
-    const { error } = await supabaseClient
-      .from('site_settings')
-      .upsert(payloads);
-
-    if (error) throw error;
-
-    showAlert('All landing page changes successfully updated and published!', 'success');
-  } catch (error) {
-    showAlert('An error occurred while saving: ' + error.message, 'error');
-  } finally {
-    saveBtn.disabled = false;
-    saveBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size: 18px;">save</span> <span>Publish Changes</span>`;
-  }
+function toggleVisibility(secKey) {
+  config.sections_visibility[secKey] = !config.sections_visibility[secKey];
+  renderSectionList();
+  handleRealtimeUpdate();
 }
 
-function showAlert(msg, type) {
-  const alert = document.getElementById('statusAlert');
-  alert.classList.remove('hidden', 'bg-tertiary/10', 'text-tertiary', 'bg-primary/10', 'text-primary');
-  
-  if (type === 'error') {
-    alert.classList.add('bg-tertiary/10', 'text-tertiary');
-  } else {
-    alert.classList.add('bg-primary/10', 'text-primary');
+function moveSection(idx, dir) {
+  var targetIdx = idx + dir;
+  if (targetIdx < 0 || targetIdx >= config.sections_order.length) return;
+  var temp = config.sections_order[idx];
+  config.sections_order[idx] = config.sections_order[targetIdx];
+  config.sections_order[targetIdx] = temp;
+  renderSectionList();
+  handleRealtimeUpdate();
+}
+
+// Live Synchronisation with Iframe
+function handleRealtimeUpdate() {
+  // Sync inputs back to config object
+  config.hero.headline = document.getElementById('field_hero_headline').value;
+  config.hero.subheadline = document.getElementById('field_hero_subheadline').value;
+  config.hero.cta_text = document.getElementById('field_hero_cta_text').value;
+  config.hero.cta_link = document.getElementById('field_hero_cta_link').value;
+  config.hero.mockup_image = document.getElementById('field_hero_mockup_image').value;
+
+  config.mission.heading = document.getElementById('field_mission_heading').value;
+  config.mission.body_1 = document.getElementById('field_mission_body_1').value;
+  config.mission.body_2 = document.getElementById('field_mission_body_2').value;
+  config.mission.prog_bible = Number(document.getElementById('field_prog_bible').value) || 0;
+  config.mission.prog_planting = Number(document.getElementById('field_prog_planting').value) || 0;
+  config.mission.prog_preaching = Number(document.getElementById('field_prog_preaching').value) || 0;
+  config.mission.prog_care = Number(document.getElementById('field_prog_care').value) || 0;
+
+  config.cta.eyebrow = document.getElementById('field_cta_eyebrow').value;
+  config.cta.headline = document.getElementById('field_cta_headline').value;
+  config.cta.subheadline = document.getElementById('field_cta_subheadline').value;
+
+  config.social_links.instagram = document.getElementById('field_social_instagram').value;
+  config.social_links.facebook = document.getElementById('field_social_facebook').value;
+  config.social_links.x = document.getElementById('field_social_x').value;
+  config.social_links.tiktok = document.getElementById('field_social_tiktok').value;
+  config.social_links.youtube = document.getElementById('field_social_youtube').value;
+  config.social_links.whatsapp = document.getElementById('field_social_whatsapp').value;
+
+  // Dispatch postMessage to iframes
+  var payload = { type: 'GSTW_PAGE_PREVIEW_UPDATE', config: config };
+  var f1 = document.getElementById('livePreviewFrame');
+  var f2 = document.getElementById('mobilePreviewFrame');
+  if (f1 && f1.contentWindow) f1.contentWindow.postMessage(payload, '*');
+  if (f2 && f2.contentWindow) f2.contentWindow.postMessage(payload, '*');
+}
+
+// Upload Media Asset to Supabase Bucket
+async function uploadImage(input, targetFieldId) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  var fileName = 'asset_' + Date.now() + '_' + file.name.replace(/\s+/g, '-');
+
+  showToast('Uploading asset...', 'info');
+
+  var res = await supabaseClient.storage.from('landing-assets').upload(fileName, file);
+  if (res.error) {
+    showToast('Upload error: ' + res.error.message, 'error');
+    return;
   }
-  
-  alert.innerHTML = `<span class="material-symbols-outlined">${type === 'error' ? 'error' : 'check_circle'}</span> <span>${msg}</span>`;
-  alert.classList.remove('hidden');
-  
-  setTimeout(() => alert.classList.add('hidden'), 5000);
+
+  var publicUrlRes = supabaseClient.storage.from('landing-assets').getPublicUrl(fileName);
+  document.getElementById(targetFieldId).value = publicUrlRes.data.publicUrl;
+  showToast('Image uploaded successfully!', 'success');
+  handleRealtimeUpdate();
+}
+
+// Save & Publish
+async function saveAndPublish() {
+  var btn = document.getElementById('publishBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined animate-spin" style="font-size:16px;">sync</span><span>Publishing...</span>';
+
+  var res = await supabaseClient
+    .from('site_settings')
+    .upsert({ id: 'landing_page_config', value: config, updated_at: new Date().toISOString() });
+
+  if (res.error) {
+    showToast('Failed to publish: ' + res.error.message, 'error');
+  } else {
+    showToast('Landing page is now published live!', 'success');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;">cloud_upload</span><span>Publish Live</span>';
+}
+
+function showToast(msg, type) {
+  var t = document.getElementById('statusToast');
+  t.className = 'p-3 rounded-xl font-body text-xs flex items-center gap-2 ' + (type === 'error' ? 'bg-tertiary/10 text-tertiary' : 'bg-primary/10 text-primary');
+  t.innerHTML = '<span class="material-symbols-outlined text-[16px]">' + (type === 'error' ? 'error' : 'check_circle') + '</span><span>' + msg + '</span>';
+  t.classList.remove('hidden');
+  setTimeout(function(){ t.classList.add('hidden'); }, 4000);
+}
+
+// Viewport Switcher
+function setPreviewDevice(dev) {
+  var wrapper = document.getElementById('previewWrapper');
+  ['dev-desktop','dev-tablet','dev-mobile'].forEach(function(b){
+    document.getElementById(b).classList.remove('bg-white','shadow-sm','text-primary');
+    document.getElementById(b).classList.add('text-outline');
+  });
+  document.getElementById('dev-' + dev).classList.add('bg-white','shadow-sm','text-primary');
+
+  if (dev === 'mobile') wrapper.style.maxWidth = '390px';
+  else if (dev === 'tablet') wrapper.style.maxWidth = '768px';
+  else wrapper.style.maxWidth = '100%';
+}
+
+function openMobilePreview() {
+  document.getElementById('mobilePreviewModal').classList.remove('hidden');
+  handleRealtimeUpdate();
+}
+function closeMobilePreview() {
+  document.getElementById('mobilePreviewModal').classList.add('hidden');
 }
 
 function toggleSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  sidebar.classList.toggle('hidden');
-  sidebar.classList.toggle('flex');
+  var s = document.getElementById('sidebar');
+  s.classList.toggle('hidden');
+  s.classList.toggle('flex');
 }
 
-// Init Auth & Page
-(async function() {
-  const authed = await checkAdminAuth();
-  if (authed) {
-    await loadBuilderData();
-  }
+async function handleLogout() {
+  await supabaseClient.auth.signOut();
+  window.location.href = 'login.html';
+}
+
+(async function init() {
+  var authOk = await checkAdminAuth();
+  if (authOk) await loadConfig();
 })();
 </script>
 </body>
