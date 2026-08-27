@@ -2,13 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Create Quote — GSTW Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Quote Engine — GSTW Admin</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
 
@@ -18,155 +16,93 @@
         extend: {
           colors: {
             'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
-            'surface-c':'#efeee7','surface-chigh':'#e9e8e1','surface-chighest':'#e3e3db',
-            'on-surface':'#31332e','on-surface-variant':'#5e6059',
-            'inverse-surface':'#0e0e0c','inverse-on-surface':'#9e9d99',
+            'surface-c':'#efeee7','on-surface':'#31332e','on-surface-variant':'#5e6059',
             'outline':'#7a7b75','outline-variant':'#b2b2ab',
-            'primary':'#3d6285','on-primary':'#f7f9ff',
-            'primary-container':'#b0d5fe','on-primary-container':'#234a6c',
-            'secondary':'#41637c','on-secondary':'#f6f9ff',
-            'secondary-container':'#cae6ff',
-            'tertiary':'#ad332b','on-tertiary':'#fff7f6',
-            'primary-dim':'#305678','secondary-dim':'#355670','tertiary-dim':'#9d2621',
-            'sidebar-bg':'#0e0e0c','sidebar-hover':'#1a1a18','sidebar-active':'#3d6285',
+            'primary':'#3d6285','on-primary':'#f7f9ff','primary-container':'#b0d5fe',
+            'secondary':'#41637c','tertiary':'#ad332b',
           },
-          fontFamily:{
-            'headline':['Plus Jakarta Sans','sans-serif'],
-            'body':['Manrope','sans-serif'],
-          },
-          boxShadow:{
-            'ambient':'0 20px 40px rgba(49,51,46,0.05)',
-            'ambient-sm':'0 8px 24px rgba(49,51,46,0.04)',
-            'float':'0 20px 40px rgba(49,51,46,0.08)',
-          },
+          fontFamily: { 'headline':['Plus Jakarta Sans','sans-serif'], 'body':['Manrope','sans-serif'] }
         },
       },
     }
   </script>
 
   <style>
-    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;letter-spacing:-0.005em}
-    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
+    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;overflow:hidden;}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;}
     .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
-    .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+    .filled{font-variation-settings:'FILL' 1}
     .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
 
-    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar{width:5px;height:5px}
     ::-webkit-scrollbar-track{background:transparent}
-    ::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:3px}
+    ::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:10px}
 
     /* Sidebar */
-    .sidebar{background:#0e0e0c;color:#f7f9ff}
+    .sidebar{background:#0e0e0c;color:#f7f9ff; z-index: 50;}
     .sidebar-item{
       display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;
-      color:rgba(247,249,255,0.6);font-size:13px;font-weight:600;
-      transition:all 0.15s ease;text-decoration:none;
+      color:rgba(247,249,255,0.6);font-size:13px;font-weight:600; transition:all 0.15s ease;
     }
     .sidebar-item:hover{background:#1a1a18;color:#f7f9ff}
     .sidebar-item.active{background:#3d6285;color:#f7f9ff}
-    .sidebar-item .material-symbols-outlined{font-size:20px}
-    .sidebar-item .soon-tag{
-      margin-left:auto;font-size:9px;font-weight:700;
-      background:rgba(247,249,255,0.08);color:rgba(247,249,255,0.5);
-      padding:2px 6px;border-radius:99px;letter-spacing:0.05em;
-    }
 
-    /* Method tabs */
-    .method-tab{
-      transition:all 0.2s ease;cursor:pointer;
-      background:#ffffff;color:#5e6059;
+    /* Split Pane Layout */
+    .pane-container { height: calc(100vh - 72px); }
+    
+    /* List Cards */
+    .list-card {
+      padding: 16px; border-bottom: 1px solid #efeee7; cursor: pointer; transition: all 0.15s ease;
+      background: transparent; border-left: 4px solid transparent;
     }
-    .method-tab:hover{background:#f5f4ed}
-    .method-tab.active{background:#3d6285;color:#f7f9ff}
-    .method-tab.active .method-icon{color:#f7f9ff}
+    .list-card:hover { background: #fbf9f4; }
+    .list-card.active { background: #ffffff; border-left-color: #3d6285; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+    
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .dot-live { background: #16a34a; box-shadow: 0 0 8px rgba(22,163,74,0.4); }
+    .dot-sched { background: #3d6285; }
+    .dot-draft { background: #b2b2ab; }
 
-    /* Form inputs */
-    .form-input{
-      background:#ffffff;border:1px solid transparent;
-      transition:all 0.2s ease;
-    }
-    .form-input:focus{border-color:rgba(61,98,133,0.3);outline:none}
+    /* Forms */
+    .form-input { background: #f5f4ed; border: 1px solid transparent; transition: all 0.2s; color: #31332e; }
+    .form-input:focus { background: #ffffff; border-color: rgba(61,98,133,0.3); outline: none; }
+    
+    /* Editor Tabs */
+    .method-tab { transition: all 0.2s; cursor: pointer; background: #ffffff; color: #5e6059; border: 2px solid transparent; }
+    .method-tab.active { border-color: #3d6285; background: rgba(61,98,133,0.05); color: #3d6285; }
 
-    /* Theme pill */
-    .theme-pill{
-      background:#f5f4ed;color:#5e6059;
-      transition:all 0.15s ease;
-    }
-    .theme-pill:hover{background:#efeee7}
-    .theme-pill.active{background:#3d6285;color:#f7f9ff}
+    .publish-card { transition: all 0.2s; cursor: pointer; background: #ffffff; border: 2px solid transparent; }
+    .publish-card.active { border-color: #3d6285; background: rgba(61,98,133,0.05); color: #3d6285; }
 
-    /* Publish card */
-    .publish-card{
-      transition:all 0.2s ease;cursor:pointer;
-      background:#ffffff;color:#5e6059;
+    .bg-thumb {
+      width: 72px; height: 72px; border-radius: 12px; overflow: hidden; cursor: pointer; 
+      border: 3px solid transparent; flex-shrink: 0; position: relative;
     }
-    .publish-card:hover{background:#f5f4ed}
-    .publish-card.active{background:#3d6285;color:#f7f9ff}
-
-    /* Background thumbnail */
-    .bg-thumb{
-      width:80px;height:80px;border-radius:12px;overflow:hidden;
-      cursor:pointer;border:3px solid transparent;flex-shrink:0;
-      transition:all 0.15s;position:relative;
-    }
-    .bg-thumb:active{transform:scale(0.95)}
-    .bg-thumb.selected{border-color:#3d6285;box-shadow:0 4px 12px rgba(61,98,133,0.25)}
-    .bg-thumb .check-overlay{
-      position:absolute;inset:0;background:rgba(61,98,133,0.4);
-      display:flex;align-items:center;justify-content:center;
-      opacity:0;transition:opacity 0.2s ease;
-    }
-    .bg-thumb.selected .check-overlay{opacity:1}
-
-    /* Hashtag chip */
-    .hashtag-chip{
-      display:inline-flex;align-items:center;gap:6px;
-      background:rgba(176,213,254,0.25);color:#234a6c;
-      padding:6px 10px;border-radius:99px;
-      font-size:12px;font-weight:600;
-    }
-    .hashtag-chip button{
-      opacity:0.5;transition:opacity 0.15s ease;cursor:pointer;
-    }
-    .hashtag-chip button:hover{opacity:1}
+    .bg-thumb.selected { border-color: #3d6285; box-shadow: 0 4px 12px rgba(61,98,133,0.25); }
+    .bg-thumb .check-overlay { position: absolute; inset: 0; background: rgba(61,98,133,0.4); display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.2s; }
+    .bg-thumb.selected .check-overlay { opacity: 1; }
 
     /* Skeleton */
-    .skeleton{
-      background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%);
-      background-size:200% 100%;
-      animation:shimmer 1.5s infinite;
-      border-radius:12px;
-    }
+    .skeleton{ background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:8px; }
     @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-
     @keyframes spin{to{transform:rotate(360deg)}}
     .spin{animation:spin 1s linear infinite;display:inline-block}
-
-    /* Collapsible */
-    .collapse-content{
-      max-height:0;overflow:hidden;opacity:0;
-      transition:max-height 0.35s cubic-bezier(0.22,1,0.36,1),opacity 0.25s ease,padding 0.25s ease;
-    }
-    .collapse-content.open{max-height:600px;opacity:1}
   </style>
 </head>
 
-<body class="min-h-screen flex">
+<body class="flex bg-surface">
 
-<!-- Hidden file input for background upload -->
 <input type="file" id="bgFileInput" accept="image/*" class="hidden" onchange="handleBgUpload(this)">
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- SIDEBAR (updated with Campaigns) -->
-<!-- ═══════════════════════════════════════════ -->
-<aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 hidden md:flex">
+<!-- SIDEBAR -->
+<aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 hidden md:flex">
   <div class="mb-6 px-2 pt-2">
     <div class="flex items-center gap-2.5">
       <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center">
         <span class="font-headline font-bold text-on-primary" style="font-size:10px;">GSTW</span>
       </div>
       <div>
-        <h1 class="font-headline font-bold text-white" style="font-size:15px;letter-spacing:-0.02em;">Command</h1>
+        <h1 class="font-headline font-bold text-white" style="font-size:15px;">Command</h1>
         <p class="text-white/40 font-body" style="font-size:9px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">Admin Panel</p>
       </div>
     </div>
@@ -174,470 +110,234 @@
 
   <nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
     <a href="index.html" class="sidebar-item"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
-    <a href="manage-quotes.html" class="sidebar-item"><span class="material-symbols-outlined">format_quote</span>Quotes</a>
-    <a href="schedule.html" class="sidebar-item"><span class="material-symbols-outlined">calendar_today</span>Schedule</a>
+    <a href="quotes.html" class="sidebar-item active"><span class="material-symbols-outlined">format_quote</span>Quotes</a>
     <a href="campaigns.html" class="sidebar-item"><span class="material-symbols-outlined">campaign</span>Campaigns</a>
     <a href="projects.html" class="sidebar-item"><span class="material-symbols-outlined">volunteer_activism</span>Missions</a>
     <a href="manage-media.html" class="sidebar-item"><span class="material-symbols-outlined">perm_media</span>Media</a>
     <a href="warriors.html" class="sidebar-item"><span class="material-symbols-outlined">group</span>Users</a>
+    <a href="manage-tiers.html" class="sidebar-item"><span class="material-symbols-outlined">workspace_premium</span>Tiers</a>
+    <a href="manage-rewards.html" class="sidebar-item"><span class="material-symbols-outlined">emoji_events</span>Rewards</a>
     <a href="notifications.html" class="sidebar-item"><span class="material-symbols-outlined">notifications</span>Notifications</a>
-    <a href="ai-generator.html" class="sidebar-item"><span class="material-symbols-outlined">auto_awesome</span>AI Generator</a>
     <a href="analytics.html" class="sidebar-item"><span class="material-symbols-outlined">analytics</span>Analytics</a>
   </nav>
-
-  <div class="mt-4 pt-4 border-t border-white/10 space-y-2">
-    <a href="settings.html" class="sidebar-item"><span class="material-symbols-outlined">settings</span>Settings</a>
-    <div class="flex items-center gap-3 px-2 py-2">
-      <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center text-on-primary font-headline font-bold flex-shrink-0 admin-initials" style="font-size:13px;">AD</div>
-      <div class="flex-1 min-w-0">
-        <p class="font-body font-semibold text-white truncate admin-name" style="font-size:12px;">Admin</p>
-        <p class="text-white/40 font-body" style="font-size:10px;">Super Admin</p>
-      </div>
-      <button onclick="handleLogout()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-all flex-shrink-0" title="Log out">
-        <span class="material-symbols-outlined" style="font-size:16px;">logout</span>
-      </button>
-    </div>
-  </div>
 </aside>
-<div id="sidebarOverlay" class="fixed inset-0 bg-inverse-surface/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+<div id="sidebarOverlay" class="fixed inset-0 bg-inverse-surface/60 z-40 hidden md:hidden" onclick="toggleSidebar()"></div>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- MAIN -->
-<!-- ═══════════════════════════════════════════ -->
-<div class="flex-1 md:ml-64 flex flex-col min-h-screen">
+<!-- MAIN WORKSPACE -->
+<div class="flex-1 md:ml-64 flex flex-col h-screen overflow-hidden bg-surface">
 
-  <!-- HEADER -->
-  <header class="sticky top-0 z-20 bg-surface/85 backdrop-blur-xl">
-    <div class="flex items-center gap-4 px-6 lg:px-8 py-4">
-      <button onclick="toggleSidebar()" class="md:hidden text-on-surface">
-        <span class="material-symbols-outlined">menu</span>
+  <!-- TOP HEADER -->
+  <header class="h-[72px] bg-white border-b border-surface-c flex items-center justify-between px-4 lg:px-6 shrink-0 z-20">
+    <div class="flex items-center gap-3">
+      <button onclick="toggleSidebar()" class="md:hidden text-on-surface p-1"><span class="material-symbols-outlined">menu</span></button>
+      <h2 class="font-headline font-bold text-on-surface text-xl">Quote Engine</h2>
+    </div>
+    
+    <div class="flex items-center gap-3">
+      <button onclick="createNewQuote()" class="signature-gradient text-white font-headline font-semibold rounded-xl px-4 py-2 flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform">
+        <span class="material-symbols-outlined text-lg">add</span>
+        <span class="hidden sm:inline">New Quote</span>
       </button>
-      <nav class="flex items-center gap-2 font-body" style="font-size:13px;">
-        <a href="index.html" class="text-on-surface-variant hover:text-primary transition-colors">Dashboard</a>
-        <span class="material-symbols-outlined text-outline" style="font-size:14px;">chevron_right</span>
-        <a href="manage-quotes.html" class="text-on-surface-variant hover:text-primary transition-colors">Quotes</a>
-        <span class="material-symbols-outlined text-outline" style="font-size:14px;">chevron_right</span>
-        <span id="pageTitle" class="text-primary font-semibold">Create Quote</span>
-      </nav>
     </div>
   </header>
 
-  <!-- CONTENT -->
-  <main class="p-6 lg:p-8 flex-1">
-    <div class="max-w-3xl mx-auto space-y-6">
+  <!-- SPLIT PANE -->
+  <div class="flex pane-container w-full relative">
 
-      <!-- Title -->
-      <div>
-        <h2 id="formTitle" class="font-headline font-bold text-on-surface" style="font-size:28px;line-height:36px;">Create New Quote</h2>
-        <p class="font-body text-on-surface-variant mt-1" style="font-size:14px;">Choose your input method, then customise and publish</p>
-      </div>
-
-      <!-- INPUT METHOD SELECTOR -->
-      <div>
-        <label class="font-body text-on-surface-variant block mb-3" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Input Method</label>
-        <div class="grid grid-cols-3 gap-3">
-          <button onclick="switchMethod('bible')" class="method-tab active flex flex-col items-center gap-2 p-4 rounded-2xl">
-            <span class="method-icon material-symbols-outlined text-[24px] filled">menu_book</span>
-            <span class="font-body font-semibold" style="font-size:12px;">Bible Lookup</span>
-          </button>
-          <button onclick="switchMethod('ai')" class="method-tab flex flex-col items-center gap-2 p-4 rounded-2xl">
-            <span class="method-icon material-symbols-outlined text-[24px]">auto_awesome</span>
-            <span class="font-body font-semibold" style="font-size:12px;">Templates</span>
-          </button>
-          <button onclick="switchMethod('manual')" class="method-tab flex flex-col items-center gap-2 p-4 rounded-2xl">
-            <span class="method-icon material-symbols-outlined text-[24px]">edit_note</span>
-            <span class="font-body font-semibold" style="font-size:12px;">Manual</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- BIBLE LOOKUP PANEL -->
-      <div id="panelBible" class="bg-surface-cl rounded-2xl p-6 space-y-4">
-        <div class="flex items-center gap-2">
-          <span class="material-symbols-outlined text-primary text-[18px] filled">menu_book</span>
-          <h3 class="font-headline font-bold text-on-surface" style="font-size:14px;">Bible Reference Lookup</h3>
-        </div>
-        <p class="font-body text-on-surface-variant" style="font-size:12px;">Enter a reference like <span class="font-semibold text-primary">John 3:16</span> to auto-fill the verse.</p>
-
-        <!-- Translation selector -->
-        <div class="flex gap-2 flex-wrap">
-          <button onclick="setLookupTranslation('web',this)" class="theme-pill active px-3 py-1.5 rounded-full font-body font-semibold" style="font-size:11px;">WEB</button>
-          <button onclick="setLookupTranslation('kjv',this)" class="theme-pill px-3 py-1.5 rounded-full font-body font-semibold" style="font-size:11px;">KJV</button>
-          <button onclick="setLookupTranslation('bbe',this)" class="theme-pill px-3 py-1.5 rounded-full font-body font-semibold" style="font-size:11px;">BBE</button>
-          <button onclick="setLookupTranslation('asv',this)" class="theme-pill px-3 py-1.5 rounded-full font-body font-semibold" style="font-size:11px;">ASV</button>
-        </div>
-
+    <!-- LEFT: AGENDA / LIST -->
+    <div id="listPane" class="w-full lg:w-[360px] xl:w-[400px] flex-shrink-0 flex flex-col bg-surface-clow border-r border-surface-c h-full z-10 transition-transform">
+      
+      <!-- List Filters -->
+      <div class="p-4 border-b border-surface-c bg-white shrink-0">
         <div class="flex gap-2">
-          <input id="bibleRef" type="text" placeholder="e.g. John 3:16"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();lookupBible()}"
-            class="form-input flex-1 rounded-xl px-4 py-3 font-body text-on-surface placeholder:text-outline-variant"
-            style="font-size:14px;">
-          <button onclick="lookupBible()" id="lookupBtn"
-            class="signature-gradient text-on-primary font-headline font-semibold px-5 py-3 rounded-xl active:scale-[0.98] transition-transform flex items-center gap-2"
-            style="font-size:14px;">
-            <span id="lookupIcon" class="material-symbols-outlined text-[18px]">search</span>
-            Lookup
-          </button>
-        </div>
-
-        <div id="lookupStatus" class="hidden"></div>
-
-        <div id="lookupResult" class="hidden bg-primary-container/15 rounded-xl p-4 space-y-3">
-          <div class="flex items-start justify-between gap-2">
-            <div class="flex-1">
-              <p class="font-body font-semibold text-primary" style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;">Found</p>
-              <p id="lookupText" class="font-headline font-semibold text-on-surface mt-1 leading-relaxed" style="font-size:15px;"></p>
-              <p id="lookupSource" class="font-body font-semibold text-primary mt-2" style="font-size:13px;"></p>
-            </div>
-            <button onclick="clearLookup()" class="text-outline hover:text-on-surface-variant flex-shrink-0">
-              <span class="material-symbols-outlined text-[18px]">close</span>
-            </button>
-          </div>
-          <button onclick="useLookupResult()" class="w-full py-2.5 bg-primary text-on-primary font-body font-semibold rounded-xl active:scale-[0.98] transition-transform flex items-center justify-center gap-2" style="font-size:13px;">
-            <span class="material-symbols-outlined text-[16px]">check</span>Use This Verse
-          </button>
-        </div>
-
-        <div>
-          <p class="font-body text-outline mb-2" style="font-size:10px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Popular</p>
-          <div class="flex flex-wrap gap-2">
-            <button onclick="quickLookup('John 3:16')" class="theme-pill px-2.5 py-1 rounded-full font-body font-semibold" style="font-size:11px;">John 3:16</button>
-            <button onclick="quickLookup('Jeremiah 29:11')" class="theme-pill px-2.5 py-1 rounded-full font-body font-semibold" style="font-size:11px;">Jer 29:11</button>
-            <button onclick="quickLookup('Philippians 4:13')" class="theme-pill px-2.5 py-1 rounded-full font-body font-semibold" style="font-size:11px;">Phil 4:13</button>
-            <button onclick="quickLookup('Isaiah 40:31')" class="theme-pill px-2.5 py-1 rounded-full font-body font-semibold" style="font-size:11px;">Isaiah 40:31</button>
-            <button onclick="quickLookup('Joshua 1:9')" class="theme-pill px-2.5 py-1 rounded-full font-body font-semibold" style="font-size:11px;">Joshua 1:9</button>
-            <button onclick="quickLookup('Proverbs 3:5')" class="theme-pill px-2.5 py-1 rounded-full font-body font-semibold" style="font-size:11px;">Prov 3:5</button>
-            <button onclick="quickLookup('Romans 8:28')" class="theme-pill px-2.5 py-1 rounded-full font-body font-semibold" style="font-size:11px;">Rom 8:28</button>
-            <button onclick="quickLookup('Psalm 23:1')" class="theme-pill px-2.5 py-1 rounded-full font-body font-semibold" style="font-size:11px;">Psalm 23:1</button>
-          </div>
+          <button onclick="filterList('live')" id="tab-live" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-surface-c text-slate-500 transition-colors">Live & Next</button>
+          <button onclick="filterList('scheduled')" id="tab-scheduled" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-surface-c text-slate-500 transition-colors">Scheduled</button>
+          <button onclick="filterList('drafts')" id="tab-drafts" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-surface-c text-slate-500 transition-colors">Drafts</button>
         </div>
       </div>
 
-      <!-- TEMPLATES PANEL -->
-      <div id="panelAI" class="hidden bg-surface-cl rounded-2xl p-6 space-y-4">
-        <div class="flex items-center gap-2">
-          <span class="material-symbols-outlined text-primary text-[18px] filled">auto_awesome</span>
-          <h3 class="font-headline font-bold text-on-surface" style="font-size:14px;">Quote Templates</h3>
-          <span class="ml-auto bg-secondary-container/40 text-secondary-dim font-body font-bold px-2 py-0.5 rounded-full" style="font-size:9px;letter-spacing:0.05em;text-transform:uppercase;">Sample library</span>
+      <!-- Scrollable List -->
+      <div id="quotesList" class="flex-1 overflow-y-auto pb-20">
+        <div class="p-4 space-y-3">
+          <div class="skeleton h-20 w-full"></div>
+          <div class="skeleton h-20 w-full"></div>
         </div>
-        <p class="font-body text-on-surface-variant" style="font-size:12px;">Choose a theme to see curated verse suggestions. Real AI integration coming soon.</p>
+      </div>
+    </div>
 
-        <div>
-          <label class="font-body text-on-surface-variant block mb-2" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Choose a Theme</label>
-          <div class="flex flex-wrap gap-2">
-            <button onclick="selectAITheme(this,'Hope')" class="theme-pill px-3 py-1.5 rounded-full font-body font-semibold" style="font-size:12px;">Hope</button>
-            <button onclick="selectAITheme(this,'Courage')" class="theme-pill px-3 py-1.5 rounded-full font-body font-semibold" style="font-size:12px;">Courage</button>
-            <button onclick="selectAITheme(this,'Faith')" class="theme-pill px-3 py-1.5 rounded-full font-body font-semibold" style="font-size:12px;">Faith</button>
-            <button onclick="selectAITheme(this,'Love')" class="theme-pill px-3 py-1.5 rounded-full font-body font-semibold" style="font-size:12px;">Love</button>
-            <button onclick="selectAITheme(this,'Grace')" class="theme-pill px-3 py-1.5 rounded-full font-body font-semibold" style="font-size:12px;">Grace</button>
-            <button onclick="selectAITheme(this,'Healing')" class="theme-pill px-3 py-1.5 rounded-full font-body font-semibold" style="font-size:12px;">Healing</button>
-            <button onclick="selectAITheme(this,'Peace')" class="theme-pill px-3 py-1.5 rounded-full font-body font-semibold" style="font-size:12px;">Peace</button>
-            <button onclick="selectAITheme(this,'Strength')" class="theme-pill px-3 py-1.5 rounded-full font-body font-semibold" style="font-size:12px;">Strength</button>
-          </div>
-        </div>
-
-        <button onclick="generateAIQuotes()" id="generateBtn" class="w-full py-3 signature-gradient text-on-primary font-headline font-semibold rounded-xl active:scale-[0.98] transition-transform flex items-center justify-center gap-2" style="font-size:14px;">
-          <span id="genIcon" class="material-symbols-outlined text-[18px]">auto_awesome</span>
-          <span id="genLabel">Load Templates</span>
+    <!-- RIGHT: EDITOR -->
+    <div id="editorPane" class="hidden lg:flex flex-1 flex-col bg-white h-full relative z-20">
+      
+      <!-- Mobile Back Header -->
+      <div class="lg:hidden flex items-center p-3 border-b border-surface-c bg-white shrink-0">
+        <button onclick="closeEditorMobile()" class="flex items-center gap-1 text-primary font-bold text-sm">
+          <span class="material-symbols-outlined">arrow_back</span> Back to List
         </button>
-
-        <div id="aiLoadingState" class="hidden space-y-3">
-          <div class="skeleton h-20 w-full"></div>
-          <div class="skeleton h-20 w-full"></div>
-        </div>
-        <div id="aiResults" class="space-y-3"></div>
       </div>
 
-      <!-- MANUAL PANEL -->
-      <div id="panelManual" class="hidden bg-surface-cl rounded-2xl p-5">
-        <div class="flex items-center gap-2 mb-2">
-          <span class="material-symbols-outlined text-on-surface-variant text-[18px]">edit_note</span>
-          <h3 class="font-headline font-bold text-on-surface" style="font-size:14px;">Manual Entry</h3>
-        </div>
-        <p class="font-body text-on-surface-variant" style="font-size:12px;">Type or paste any quote directly into the form below.</p>
-      </div>
-
-      <!-- ═══════════════════════════════════════════ -->
-      <!-- QUOTE FORM -->
-      <!-- ═══════════════════════════════════════════ -->
-      <form id="quoteForm" onsubmit="handlePublish(event)" class="space-y-5">
-
-        <!-- Quote Text -->
-        <div class="bg-surface-cl rounded-2xl p-5 space-y-3">
-          <div class="flex justify-between items-end">
-            <label class="font-body text-on-surface-variant" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">The Quote</label>
-            <span id="charCount" class="font-body text-outline" style="font-size:11px;">0 / 500</span>
-          </div>
-          <textarea id="quoteText" maxlength="500" oninput="updateCharCount()"
-            class="form-input w-full h-32 rounded-xl p-4 font-body text-on-surface placeholder:text-outline-variant resize-none"
-            style="font-size:15px;line-height:22px;"
-            placeholder="Enter the scripture or inspiration..."></textarea>
-        </div>
-
-        <!-- Source -->
-        <div class="bg-surface-cl rounded-2xl p-5 space-y-2">
-          <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Source / Reference *</label>
-          <input id="quoteSource" type="text"
-            class="form-input w-full rounded-xl px-4 py-3 font-body text-on-surface placeholder:text-outline-variant"
-            style="font-size:14px;"
-            placeholder="e.g. John 3:16, or C.S. Lewis">
-          <p class="font-body text-outline italic" style="font-size:11px;">Required — attribution for the quote</p>
-        </div>
-
-        <!-- Context -->
-        <div class="bg-surface-cl rounded-2xl p-5 space-y-3">
-          <div class="flex justify-between items-end">
-            <label class="font-body text-on-surface-variant" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">
-              Context
-              <span class="text-outline font-normal normal-case ml-1" style="letter-spacing:0;">(optional)</span>
-            </label>
-            <span id="contextCount" class="font-body text-outline" style="font-size:11px;">0 / 500</span>
-          </div>
-          <textarea id="quoteContext" maxlength="500" oninput="updateContextCount()"
-            class="form-input w-full h-24 rounded-xl p-4 font-body text-on-surface placeholder:text-outline-variant resize-none"
-            style="font-size:14px;line-height:20px;"
-            placeholder="Historical background, meaning, or application..."></textarea>
-          <p class="font-body text-outline italic" style="font-size:11px;">Shown when users tap "Read the Context"</p>
-        </div>
-
-        <!-- Category + Campaign row -->
-        <div class="grid grid-cols-2 gap-5">
-          <!-- Category -->
-          <div class="bg-surface-cl rounded-2xl p-5 space-y-2">
-            <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Category</label>
-            <p class="font-body text-outline" style="font-size:10px;">User-facing search filter</p>
-            <div class="relative">
-              <select id="quoteCategory" class="form-input w-full rounded-xl px-4 py-3 font-body text-on-surface appearance-none cursor-pointer pr-10" style="font-size:14px;">
-                <option value="Faith">Faith</option>
-                <option value="Hope">Hope</option>
-                <option value="Courage">Courage</option>
-                <option value="Wisdom">Wisdom</option>
-                <option value="Healing">Healing</option>
-                <option value="Strength">Strength</option>
-                <option value="Love">Love</option>
-                <option value="Peace">Peace</option>
-                <option value="Grace">Grace</option>
-                <option value="Prayer">Prayer</option>
-                <option value="Mission">Mission</option>
-              </select>
-              <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
-            </div>
-          </div>
-
-          <!-- Campaign -->
-          <div class="bg-surface-cl rounded-2xl p-5 space-y-2">
-            <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Campaign</label>
-            <p class="font-body text-outline" style="font-size:10px;">Admin-only grouping</p>
-            <div class="relative">
-              <select id="quoteCampaign" class="form-input w-full rounded-xl px-4 py-3 font-body text-on-surface appearance-none cursor-pointer pr-10" style="font-size:14px;">
-                <option value="">— None —</option>
-              </select>
-              <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Hashtags -->
-        <div class="bg-surface-cl rounded-2xl p-5 space-y-3">
-          <div class="flex justify-between items-end">
-            <label class="font-body text-on-surface-variant" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Hashtags</label>
-            <span id="hashtagCounter" class="font-body text-outline" style="font-size:11px;">0 / 8</span>
-          </div>
-          <p class="font-body text-outline" style="font-size:11px;">Suggested tags shown to users when sharing</p>
-
-          <div id="hashtagsContainer" class="flex flex-wrap gap-2"></div>
-
-          <div class="flex gap-2">
-            <input id="hashtagField" type="text" placeholder="#YourTag"
-              onkeydown="if(event.key==='Enter'){event.preventDefault();addHashtagFromInput()}"
-              class="form-input flex-1 rounded-lg px-3 py-2 font-body text-on-surface placeholder:text-outline-variant"
-              style="font-size:13px;">
-            <button type="button" onclick="addHashtagFromInput()"
-              class="signature-gradient text-on-primary font-headline font-semibold px-4 py-2 rounded-lg active:scale-95 transition-transform"
-              style="font-size:13px;">Add</button>
-          </div>
-        </div>
-
-        <!-- Background Image -->
-        <div class="bg-surface-cl rounded-2xl p-5 space-y-3">
+      <!-- Editor Scroll Area -->
+      <div class="flex-1 overflow-y-auto p-5 lg:p-8 pb-32">
+        <div class="max-w-2xl mx-auto space-y-8">
+          
           <div class="flex items-center justify-between">
-            <label class="font-body text-on-surface-variant" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Background Image</label>
-            <button type="button" onclick="triggerBgUpload()" class="flex items-center gap-1.5 text-primary font-body font-semibold hover:underline" style="font-size:12px;">
-              <span class="material-symbols-outlined text-[16px]">upload</span>Upload custom
+            <div>
+              <h2 id="editorTitle" class="font-headline font-bold text-2xl text-slate-800">New Quote</h2>
+              <p id="editorSubtitle" class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Unsaved Draft</p>
+            </div>
+            <button type="button" onclick="deleteCurrentQuote()" id="deleteBtn" class="hidden text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Delete Quote">
+              <span class="material-symbols-outlined">delete</span>
             </button>
           </div>
-          <p class="font-body text-outline" style="font-size:11px;">Assign an image or leave as default</p>
 
-          <div class="flex gap-3 overflow-x-auto pb-2" id="bgThumbsContainer">
-            <div class="skeleton" style="width:80px;height:80px;flex-shrink:0;"></div>
-            <div class="skeleton" style="width:80px;height:80px;flex-shrink:0;"></div>
-            <div class="skeleton" style="width:80px;height:80px;flex-shrink:0;"></div>
-          </div>
-
-          <div id="bgUploadProgress" class="hidden bg-primary-container/20 rounded-lg p-3 flex items-center gap-2">
-            <span class="material-symbols-outlined spin text-primary text-[18px]">progress_activity</span>
-            <span class="font-body font-semibold text-primary" style="font-size:12px;">Uploading...</span>
-          </div>
-        </div>
-
-        <!-- Advanced Home Display (Collapsible) -->
-        <div class="bg-surface-cl rounded-2xl p-5">
-          <button type="button" onclick="toggleAdvanced()" class="w-full flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-on-surface-variant" style="font-size:18px;">tune</span>
-              <span class="font-body font-semibold text-on-surface" style="font-size:13px;">Advanced Home Display</span>
-              <span class="font-body text-outline" style="font-size:11px;">(optional overrides)</span>
-            </div>
-            <span id="advCaret" class="material-symbols-outlined text-outline transition-transform" style="font-size:20px;">expand_more</span>
-          </button>
-
-          <div id="advPanel" class="collapse-content">
-            <div class="pt-4 space-y-4">
-              <!-- Font Size -->
-              <div>
-                <label class="font-body text-on-surface-variant block mb-2" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Font Size</label>
-                <div class="flex gap-2 flex-wrap">
-                  <button type="button" onclick="setHomeFontSize('',this)" class="theme-pill active px-3 py-1.5 rounded-lg font-body font-semibold" data-size="" style="font-size:11px;">Default</button>
-                  <button type="button" onclick="setHomeFontSize('22px',this)" class="theme-pill px-3 py-1.5 rounded-lg font-body font-semibold" data-size="22px" style="font-size:11px;">Small</button>
-                  <button type="button" onclick="setHomeFontSize('26px',this)" class="theme-pill px-3 py-1.5 rounded-lg font-body font-semibold" data-size="26px" style="font-size:11px;">Medium</button>
-                  <button type="button" onclick="setHomeFontSize('32px',this)" class="theme-pill px-3 py-1.5 rounded-lg font-body font-semibold" data-size="32px" style="font-size:11px;">Large</button>
-                  <button type="button" onclick="setHomeFontSize('40px',this)" class="theme-pill px-3 py-1.5 rounded-lg font-body font-semibold" data-size="40px" style="font-size:11px;">XL</button>
-                </div>
-              </div>
-
-              <!-- Text Alignment -->
-              <div>
-                <label class="font-body text-on-surface-variant block mb-2" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Text Alignment</label>
-                <div class="flex gap-2">
-                  <button type="button" onclick="setHomeAlign('left',this)" class="theme-pill active flex-1 px-3 py-2 rounded-lg font-body font-semibold flex items-center justify-center gap-1" data-align="left" style="font-size:11px;">
-                    <span class="material-symbols-outlined text-[16px]">format_align_left</span>Left
-                  </button>
-                  <button type="button" onclick="setHomeAlign('center',this)" class="theme-pill flex-1 px-3 py-2 rounded-lg font-body font-semibold flex items-center justify-center gap-1" data-align="center" style="font-size:11px;">
-                    <span class="material-symbols-outlined text-[16px]">format_align_center</span>Center
-                  </button>
-                  <button type="button" onclick="setHomeAlign('right',this)" class="theme-pill flex-1 px-3 py-2 rounded-lg font-body font-semibold flex items-center justify-center gap-1" data-align="right" style="font-size:11px;">
-                    <span class="material-symbols-outlined text-[16px]">format_align_right</span>Right
-                  </button>
-                </div>
-              </div>
-
-              <!-- Text Position -->
-              <div>
-                <label class="font-body text-on-surface-variant block mb-2" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Vertical Position</label>
-                <div class="flex gap-2">
-                  <button type="button" onclick="setHomePosition('top',this)" class="theme-pill flex-1 px-3 py-2 rounded-lg font-body font-semibold" data-position="top" style="font-size:11px;">Top</button>
-                  <button type="button" onclick="setHomePosition('center',this)" class="theme-pill active flex-1 px-3 py-2 rounded-lg font-body font-semibold" data-position="center" style="font-size:11px;">Center</button>
-                  <button type="button" onclick="setHomePosition('bottom',this)" class="theme-pill flex-1 px-3 py-2 rounded-lg font-body font-semibold" data-position="bottom" style="font-size:11px;">Bottom</button>
-                </div>
-              </div>
-
-              <!-- Text Color -->
-              <div>
-                <label class="font-body text-on-surface-variant block mb-2" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Text Color</label>
-                <div class="flex items-center gap-2">
-                  <div class="flex gap-2 flex-wrap flex-1">
-                    <button type="button" onclick="setHomeTextColor('#ffffff',this)" class="w-8 h-8 rounded-full ring-2 ring-primary" data-color="#ffffff" style="background:#ffffff;"></button>
-                    <button type="button" onclick="setHomeTextColor('#0e0e0c',this)" class="w-8 h-8 rounded-full" data-color="#0e0e0c" style="background:#0e0e0c;"></button>
-                    <button type="button" onclick="setHomeTextColor('#3d6285',this)" class="w-8 h-8 rounded-full" data-color="#3d6285" style="background:#3d6285;"></button>
-                    <button type="button" onclick="setHomeTextColor('#b0d5fe',this)" class="w-8 h-8 rounded-full" data-color="#b0d5fe" style="background:#b0d5fe;"></button>
-                    <button type="button" onclick="setHomeTextColor('#fbf9f4',this)" class="w-8 h-8 rounded-full" data-color="#fbf9f4" style="background:#fbf9f4;"></button>
-                  </div>
-                  <input type="color" id="homeTextColorPicker" value="#ffffff" oninput="setHomeTextColor(this.value,null)" class="w-8 h-8 rounded-lg cursor-pointer border-0 bg-transparent" style="padding:0;">
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Publish Options -->
-        <div class="bg-surface-cl rounded-2xl p-5 space-y-4">
-          <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">When to Publish</label>
-
-          <div class="grid grid-cols-3 gap-3">
-            <label class="cursor-pointer">
-              <input type="radio" name="publish_state" value="now" checked class="hidden" onchange="updatePublishState(this)">
-              <div id="optNow" class="publish-card active flex flex-col items-center justify-center p-4 rounded-2xl">
-                <span class="material-symbols-outlined mb-2 text-[22px]">bolt</span>
-                <span class="font-headline font-semibold" style="font-size:12px;">Publish Now</span>
-              </div>
-            </label>
-            <label class="cursor-pointer">
-              <input type="radio" name="publish_state" value="schedule" class="hidden" onchange="updatePublishState(this)">
-              <div id="optSchedule" class="publish-card flex flex-col items-center justify-center p-4 rounded-2xl">
-                <span class="material-symbols-outlined mb-2 text-[22px]">calendar_month</span>
-                <span class="font-headline font-semibold" style="font-size:12px;">Schedule</span>
-              </div>
-            </label>
-            <label class="cursor-pointer">
-              <input type="radio" name="publish_state" value="draft" class="hidden" onchange="updatePublishState(this)">
-              <div id="optDraft" class="publish-card flex flex-col items-center justify-center p-4 rounded-2xl">
-                <span class="material-symbols-outlined mb-2 text-[22px]">drafts</span>
-                <span class="font-headline font-semibold" style="font-size:12px;">Save Draft</span>
-              </div>
-            </label>
-          </div>
-
-          <p id="statusText" class="font-body text-on-surface-variant" style="font-size:12px;">Will go live immediately upon publishing</p>
-
-          <div id="schedulePicker" class="hidden space-y-3">
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="font-body text-outline block mb-1.5" style="font-size:10px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Date</label>
-                <input id="scheduleDate" type="date" onchange="updateScheduleNote()"
-                  class="form-input w-full rounded-lg px-3 py-2.5 font-body text-on-surface" style="font-size:13px;">
-              </div>
-              <div>
-                <label class="font-body text-outline block mb-1.5" style="font-size:10px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Time (AEST)</label>
-                <input id="scheduleTime" type="time" value="05:30"
-                  class="form-input w-full rounded-lg px-3 py-2.5 font-body text-on-surface" style="font-size:13px;">
-              </div>
-            </div>
-            <div id="scheduleNote" class="bg-primary-container/20 rounded-lg p-3 flex items-center gap-2">
-              <span class="material-symbols-outlined text-primary text-[16px] filled">schedule</span>
-              <p id="scheduleNoteText" class="font-body text-on-surface-variant" style="font-size:12px;">Select a date above</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Actions -->
-        <div class="flex items-center gap-3 pt-2">
-          <button type="submit" id="submitBtn"
-            class="flex-1 signature-gradient text-on-primary font-headline font-bold py-4 rounded-xl active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
-            style="font-size:15px;">
-            <span id="submitIcon" class="material-symbols-outlined text-[20px]">send</span>
-            <span id="submitLabel">Publish Quote</span>
-          </button>
-          <a href="manage-quotes.html"
-            class="w-12 h-12 flex items-center justify-center text-on-surface-variant hover:text-on-surface bg-surface-cl rounded-xl active:scale-95 transition-all flex-shrink-0">
-            <span class="material-symbols-outlined text-[20px]">close</span>
-          </a>
-        </div>
-      </form>
-
-      <!-- SUCCESS -->
-      <div id="successMsg" class="hidden bg-primary-container/20 rounded-2xl p-5">
-        <div class="flex items-center gap-4 mb-4">
-          <div class="w-12 h-12 rounded-xl signature-gradient flex items-center justify-center flex-shrink-0">
-            <span class="material-symbols-outlined text-on-primary text-[24px] filled">check_circle</span>
-          </div>
+          <!-- INPUT METHOD -->
           <div>
-            <p id="successTitle" class="font-headline font-bold text-primary" style="font-size:16px;">Quote Published!</p>
-            <p class="font-body text-on-surface-variant" style="font-size:13px;">Warriors will see this in their daily briefing.</p>
+            <label class="font-body text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Input Method</label>
+            <div class="grid grid-cols-3 gap-3">
+              <button onclick="switchMethod('bible')" class="method-tab active flex flex-col items-center gap-1 p-3 rounded-xl">
+                <span class="material-symbols-outlined text-xl">menu_book</span>
+                <span class="text-[11px] font-bold">Bible Lookup</span>
+              </button>
+              <button onclick="switchMethod('ai')" class="method-tab flex flex-col items-center gap-1 p-3 rounded-xl">
+                <span class="material-symbols-outlined text-xl">auto_awesome</span>
+                <span class="text-[11px] font-bold">Templates</span>
+              </button>
+              <button onclick="switchMethod('manual')" class="method-tab flex flex-col items-center gap-1 p-3 rounded-xl">
+                <span class="material-symbols-outlined text-xl">edit_note</span>
+                <span class="text-[11px] font-bold">Manual</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- BIBLE TOOL -->
+          <div id="panelBible" class="bg-slate-50 border border-slate-100 rounded-2xl p-5">
+            <div class="flex gap-2 mb-3">
+              <button onclick="setTranslation('web',this)" class="trans-btn active bg-white border border-slate-200 px-3 py-1 rounded-lg text-xs font-bold text-slate-600">WEB</button>
+              <button onclick="setTranslation('kjv',this)" class="trans-btn bg-white border border-slate-200 px-3 py-1 rounded-lg text-xs font-bold text-slate-600">KJV</button>
+              <button onclick="setTranslation('bbe',this)" class="trans-btn bg-white border border-slate-200 px-3 py-1 rounded-lg text-xs font-bold text-slate-600">BBE</button>
+            </div>
+            <div class="flex gap-2">
+              <input id="bibleRef" type="text" placeholder="e.g. John 3:16" class="form-input flex-1 rounded-xl px-4 py-2.5 text-sm" onkeydown="if(event.key==='Enter'){lookupBible()}">
+              <button onclick="lookupBible()" id="lookupBtn" class="bg-primary text-white font-bold px-4 py-2.5 rounded-xl flex items-center gap-1 text-sm">
+                <span id="lookupIcon" class="material-symbols-outlined text-sm">search</span> Find
+              </button>
+            </div>
+            <p id="lookupError" class="hidden text-xs text-red-500 font-bold mt-2"></p>
+          </div>
+
+          <!-- TEMPLATES TOOL -->
+          <div id="panelAI" class="hidden bg-slate-50 border border-slate-100 rounded-2xl p-5">
+            <div class="flex flex-wrap gap-2 mb-4">
+              <button onclick="loadTemplates('Hope')" class="bg-white border border-slate-200 px-3 py-1.5 rounded-full text-xs font-bold text-slate-600 hover:border-primary hover:text-primary">Hope</button>
+              <button onclick="loadTemplates('Courage')" class="bg-white border border-slate-200 px-3 py-1.5 rounded-full text-xs font-bold text-slate-600 hover:border-primary hover:text-primary">Courage</button>
+              <button onclick="loadTemplates('Love')" class="bg-white border border-slate-200 px-3 py-1.5 rounded-full text-xs font-bold text-slate-600 hover:border-primary hover:text-primary">Love</button>
+              <button onclick="loadTemplates('Strength')" class="bg-white border border-slate-200 px-3 py-1.5 rounded-full text-xs font-bold text-slate-600 hover:border-primary hover:text-primary">Strength</button>
+            </div>
+            <div id="templateResults" class="space-y-2 max-h-48 overflow-y-auto pr-2"></div>
+          </div>
+
+          <!-- MANUAL (Just hides tools) -->
+          <div id="panelManual" class="hidden"></div>
+
+          <!-- MAIN EDITOR FORM -->
+          <div class="space-y-5">
+            <div>
+              <div class="flex justify-between items-end mb-1">
+                <label class="font-body text-[11px] font-bold text-slate-400 uppercase tracking-wider">Quote Text *</label>
+                <span id="charCount" class="text-[10px] font-bold text-slate-400">0/500</span>
+              </div>
+              <textarea id="quoteText" required rows="4" oninput="updateCharCount()" class="w-full form-input rounded-xl px-4 py-3 text-[15px] font-medium leading-relaxed resize-none shadow-sm placeholder:text-slate-300" placeholder="Enter scripture or quote..."></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="font-body text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Reference / Source *</label>
+                <input type="text" id="quoteSource" required placeholder="e.g. John 3:16" class="w-full form-input rounded-xl px-4 py-3 text-sm font-semibold shadow-sm">
+              </div>
+              <div>
+                <label class="font-body text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Category</label>
+                <select id="quoteCategory" class="w-full form-input rounded-xl px-4 py-3 text-sm font-semibold shadow-sm cursor-pointer">
+                  <option value="Faith">Faith</option>
+                  <option value="Hope">Hope</option>
+                  <option value="Courage">Courage</option>
+                  <option value="Love">Love</option>
+                  <option value="Strength">Strength</option>
+                  <option value="Mission">Mission</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Background Picker -->
+            <div class="pt-2">
+              <div class="flex justify-between items-center mb-2">
+                <label class="font-body text-[11px] font-bold text-slate-400 uppercase tracking-wider">Background</label>
+                <button onclick="document.getElementById('bgFileInput').click()" class="text-[10px] font-bold text-primary uppercase flex items-center gap-1 hover:underline">
+                  <span class="material-symbols-outlined text-[14px]">upload</span> Upload
+                </button>
+              </div>
+              <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar" id="bgThumbsContainer">
+                <div class="skeleton w-[72px] h-[72px] flex-shrink-0"></div>
+              </div>
+              <p id="bgUploadStatus" class="hidden text-xs text-primary font-bold mt-1"><span class="material-symbols-outlined spin text-xs align-middle">progress_activity</span> Uploading...</p>
+            </div>
+
+            <!-- Publish State -->
+            <div class="bg-slate-50 border border-slate-100 rounded-2xl p-5 mt-6">
+              <label class="font-body text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-3">Publishing Status</label>
+              <div class="grid grid-cols-3 gap-2">
+                <label class="cursor-pointer">
+                  <input type="radio" name="status" value="live" class="hidden" onchange="updatePublishUI()">
+                  <div class="publish-card rounded-xl p-3 text-center border-2">
+                    <span class="material-symbols-outlined text-xl mb-1">bolt</span>
+                    <p class="text-[10px] font-bold uppercase tracking-wide">Live Now</p>
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="status" value="scheduled" checked class="hidden" onchange="updatePublishUI()">
+                  <div class="publish-card rounded-xl p-3 text-center border-2 active">
+                    <span class="material-symbols-outlined text-xl mb-1">calendar_month</span>
+                    <p class="text-[10px] font-bold uppercase tracking-wide">Schedule</p>
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="status" value="draft" class="hidden" onchange="updatePublishUI()">
+                  <div class="publish-card rounded-xl p-3 text-center border-2">
+                    <span class="material-symbols-outlined text-xl mb-1">drafts</span>
+                    <p class="text-[10px] font-bold uppercase tracking-wide">Draft</p>
+                  </div>
+                </label>
+              </div>
+
+              <div id="scheduleWrapper" class="mt-4 grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Date</label>
+                  <input type="date" id="scheduleDate" class="w-full form-input rounded-lg px-3 py-2 text-sm font-semibold">
+                </div>
+                <div>
+                  <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Time (AEST)</label>
+                  <input type="time" id="scheduleTime" value="05:30" class="w-full form-input rounded-lg px-3 py-2 text-sm font-semibold">
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
-        <div class="flex gap-3">
-          <button onclick="createAnother()" class="flex-1 py-3 signature-gradient text-on-primary font-headline font-semibold rounded-xl active:scale-[0.98] transition-transform" style="font-size:14px;">Create Another</button>
-          <a href="manage-quotes.html" class="flex-1 py-3 bg-surface-cl text-on-surface font-headline font-semibold rounded-xl text-center active:scale-[0.98] transition-transform" style="font-size:14px;">View All Quotes</a>
-        </div>
+      </div>
+
+      <!-- Editor Footer / Save Button -->
+      <div class="absolute bottom-0 w-full bg-white border-t border-slate-100 p-4 lg:px-8 flex items-center justify-end z-30">
+        <button onclick="saveQuote()" id="saveBtn" class="signature-gradient text-white font-headline font-bold text-sm px-8 py-3.5 rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center gap-2">
+          <span id="saveIcon" class="material-symbols-outlined text-[18px]">send</span>
+          <span id="saveLabel">Schedule Quote</span>
+        </button>
       </div>
 
     </div>
-  </main>
+  </div>
 </div>
 
 <!-- TOAST -->
-<div id="toast" class="hidden fixed top-6 right-6 z-50 bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-3 rounded-full shadow-float items-center gap-2" style="font-size:13px;">
-  <span class="material-symbols-outlined text-primary-container text-[16px] filled">check_circle</span>
+<div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-slate-900/90 backdrop-blur-md text-white font-body font-bold px-5 py-3 rounded-full shadow-2xl items-center gap-2 text-sm">
+  <span id="toastIcon" class="material-symbols-outlined text-green-400">check_circle</span>
   <span id="toastMsg"></span>
 </div>
 
@@ -645,875 +345,429 @@
 var supabaseClient = supabase.createClient(
   'https://nhymadutuhpjgkiurify.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
-)
+);
 
-// ════════════════════════════════════════════
-// STATE
-// ════════════════════════════════════════════
-var isEditMode = false
-var editQuoteId = null
-var currentMethod = 'bible'
-var lookupData = null
-var lookupTranslation = 'web'
-var generatedQuotes = []
-var currentUser = null
+var allQuotes = [];
+var backgrounds = [];
+var currentQuoteId = null;
+var activeBgUrl = null;
+var listFilter = 'scheduled'; // live, scheduled, drafts
 
-var hashtags = []
-var MAX_HASHTAGS = 8
-
-var selectedBgUrl = null
-var backgroundImages = []
-var campaigns = []
-
-// Home display overrides
-var homeFontSize = ''
-var homeTextAlign = 'left'
-var homeTextColor = '#ffffff'
-var homeTextPosition = 'center'
-
-// Sample templates (placeholder for AI)
-var sampleQuotes = {
+// SAMPLE TEMPLATES
+var templates = {
   Hope: [
-    { text: 'For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you, plans to give you hope and a future.', source: 'Jeremiah 29:11' },
-    { text: 'May the God of hope fill you with all joy and peace as you trust in him, so that you may overflow with hope by the power of the Holy Spirit.', source: 'Romans 15:13' },
-    { text: 'But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary.', source: 'Isaiah 40:31' }
+    { text: 'For I know the plans I have for you...', source: 'Jeremiah 29:11' },
+    { text: 'But those who hope in the Lord will renew their strength...', source: 'Isaiah 40:31' }
   ],
   Courage: [
-    { text: 'Have I not commanded you? Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go.', source: 'Joshua 1:9' },
-    { text: 'The Lord is my light and my salvation — whom shall I fear?', source: 'Psalm 27:1' },
-    { text: 'Be on your guard; stand firm in the faith; be courageous; be strong.', source: '1 Corinthians 16:13' }
+    { text: 'Have I not commanded you? Be strong and courageous...', source: 'Joshua 1:9' },
+    { text: 'The Lord is my light and my salvation...', source: 'Psalm 27:1' }
   ],
   Love: [
-    { text: 'For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.', source: 'John 3:16' },
-    { text: 'And now these three remain: faith, hope and love. But the greatest of these is love.', source: '1 Corinthians 13:13' },
-    { text: 'Dear friends, let us love one another, for love comes from God.', source: '1 John 4:7' }
-  ],
-  Faith: [
-    { text: 'Now faith is confidence in what we hope for and assurance about what we do not see.', source: 'Hebrews 11:1' },
-    { text: 'For we live by faith, not by sight.', source: '2 Corinthians 5:7' },
-    { text: 'Trust in the Lord with all your heart and lean not on your own understanding.', source: 'Proverbs 3:5' }
-  ],
-  Grace: [
-    { text: 'For it is by grace you have been saved, through faith — and this is not from yourselves, it is the gift of God.', source: 'Ephesians 2:8' },
-    { text: 'My grace is sufficient for you, for my power is made perfect in weakness.', source: '2 Corinthians 12:9' },
-    { text: 'The Lord is gracious and compassionate, slow to anger and rich in love.', source: 'Psalm 145:8' }
-  ],
-  Healing: [
-    { text: 'He heals the brokenhearted and binds up their wounds.', source: 'Psalm 147:3' },
-    { text: 'But I will restore you to health and heal your wounds, declares the Lord.', source: 'Jeremiah 30:17' },
-    { text: 'Come to me, all you who are weary and burdened, and I will give you rest.', source: 'Matthew 11:28' }
-  ],
-  Peace: [
-    { text: 'Peace I leave with you; my peace I give you.', source: 'John 14:27' },
-    { text: 'The Lord gives strength to his people; the Lord blesses his people with peace.', source: 'Psalm 29:11' },
-    { text: 'And the peace of God, which transcends all understanding, will guard your hearts and your minds.', source: 'Philippians 4:7' }
+    { text: 'For God so loved the world...', source: 'John 3:16' },
+    { text: 'And now these three remain: faith, hope and love...', source: '1 Corinthians 13:13' }
   ],
   Strength: [
     { text: 'I can do all this through him who gives me strength.', source: 'Philippians 4:13' },
-    { text: 'The Lord is my strength and my shield; my heart trusts in him, and he helps me.', source: 'Psalm 28:7' },
-    { text: 'God is our refuge and strength, an ever-present help in trouble.', source: 'Psalm 46:1' }
+    { text: 'God is our refuge and strength...', source: 'Psalm 46:1' }
   ]
-}
+};
 
-// ════════════════════════════════════════════
-// ADMIN AUTH
-// ════════════════════════════════════════════
-async function checkAdminAuth() {
-  try {
-    var result = await supabaseClient.auth.getSession()
-    if (!result.data.session) {
-      await new Promise(function(r) { setTimeout(r, 500) })
-      result = await supabaseClient.auth.getSession()
-    }
-    if (!result.data.session) {
-      try {
-        var refreshed = await supabaseClient.auth.refreshSession()
-        if (!refreshed.data.session) { window.location.href = 'login.html'; return false }
-        result = refreshed
-      } catch(e) { window.location.href = 'login.html'; return false }
-    }
+async function init() {
+  const { data: session } = await supabaseClient.auth.getSession();
+  if (!session?.session) return window.location.href = 'login.html';
+  
+  // Set default schedule date to tomorrow
+  var d = new Date(); d.setDate(d.getDate() + 1);
+  document.getElementById('scheduleDate').value = d.toISOString().split('T')[0];
 
-    currentUser = result.data.session.user
-    var profileResult = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single()
-
-    if (profileResult.error || !profileResult.data) { window.location.href = 'login.html'; return false }
-    if (profileResult.data.role !== 'admin') { window.location.href = '../app/index.html'; return false }
-
-    var email = currentUser.email || ''
-    var initials = '?'
-    if (profileResult.data.full_name) {
-      var parts = profileResult.data.full_name.trim().split(' ')
-      initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : parts[0].substring(0,2).toUpperCase()
-    } else if (email) { initials = email.substring(0,2).toUpperCase() }
-
-    document.querySelectorAll('.admin-initials').forEach(function(el) { el.textContent = initials })
-    document.querySelectorAll('.admin-name').forEach(function(el) { el.textContent = profileResult.data.full_name || email })
-
-    return true
-  } catch(e) {
-    console.error('checkAdminAuth error:', e)
-    window.location.href = 'login.html'
-    return false
-  }
+  await Promise.all([loadBackgrounds(), fetchQuotes()]);
+  filterList('scheduled');
 }
 
 function toggleSidebar() {
-  var s = document.getElementById('sidebar')
-  var o = document.getElementById('sidebarOverlay')
-  s.classList.toggle('hidden')
-  s.classList.toggle('flex')
-  o.classList.toggle('hidden')
+  document.getElementById('sidebar').classList.toggle('hidden');
+  document.getElementById('sidebar').classList.toggle('flex');
+  document.getElementById('sidebarOverlay').classList.toggle('hidden');
 }
 
-async function handleLogout() {
-  try { await supabaseClient.auth.signOut() } catch(e) {}
-  window.location.href = 'login.html'
+// ─── DATA LOADING ──────────────────────────────────────────────────────────
+
+async function loadBackgrounds() {
+  var { data } = await supabaseClient.from('media').select('*').eq('type', 'background').eq('is_active', true).order('sort_order');
+  backgrounds = data || [];
+  renderBackgrounds();
 }
 
-// ════════════════════════════════════════════
-// LOAD BACKGROUND IMAGES
-// ════════════════════════════════════════════
-// ════════════════════════════════════════════
-// LOAD BACKGROUND IMAGES (from media library)
-// ════════════════════════════════════════════
-async function loadBackgroundImages() {
-  var result = await supabaseClient
-    .from('media')
-    .select('*')
-    .eq('type', 'background')
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
+async function fetchQuotes() {
+  // Fire the RPC to ensure scheduled quotes are pushed live if it's time
+  try { await supabaseClient.rpc('promote_scheduled_quotes'); } catch(e){}
 
-  backgroundImages = result.data || []
-  renderBackgroundThumbs()
+  var { data } = await supabaseClient.from('quotes').select('*').order('scheduled_for', { ascending: true }).order('published_at', { ascending: false });
+  allQuotes = data || [];
 }
-function renderBackgroundThumbs() {
-  var container = document.getElementById('bgThumbsContainer')
-  container.innerHTML = ''
 
-  // "None" option
-  var noneEl = document.createElement('div')
-  noneEl.className = 'bg-thumb ' + (selectedBgUrl === null ? 'selected' : '')
-  noneEl.style.background = '#f5f4ed'
-  noneEl.style.display = 'flex'
-  noneEl.style.alignItems = 'center'
-  noneEl.style.justifyContent = 'center'
-  noneEl.onclick = function() { selectBackground(null, this) }
-  noneEl.innerHTML =
-    '<div style="display:flex;flex-direction:column;align-items:center;gap:2px">'
-      + '<span class="material-symbols-outlined text-outline" style="font-size:20px;">block</span>'
-      + '<span class="font-body text-outline" style="font-size:9px;font-weight:600;">None</span>'
-    + '</div>'
-    + '<div class="check-overlay"><span class="material-symbols-outlined text-white filled" style="font-size:24px;">check_circle</span></div>'
-  container.appendChild(noneEl)
+// ─── LEFT PANE: LIST RENDERING ─────────────────────────────────────────────
 
-  // Global library images
-  backgroundImages.forEach(function(img) {
-    var thumb = document.createElement('div')
-    thumb.className = 'bg-thumb ' + (selectedBgUrl === img.url ? 'selected' : '')
-    thumb.onclick = (function(url, el) { return function() { selectBackground(url, el) } })(img.url, thumb)
-    thumb.innerHTML =
-      '<img src="' + (img.thumbnail_url || img.url) + '" class="w-full h-full object-cover" alt="' + (img.label || '') + '">'
-      + '<div class="check-overlay"><span class="material-symbols-outlined text-white filled" style="font-size:24px;">check_circle</span></div>'
-    container.appendChild(thumb)
-  })
+function filterList(filter) {
+  listFilter = filter;
+  document.querySelectorAll('[id^="tab-"]').forEach(el => {
+    el.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
+    el.classList.add('bg-surface-c', 'text-slate-500');
+  });
+  var activeTab = document.getElementById('tab-' + filter);
+  activeTab.classList.remove('bg-surface-c', 'text-slate-500');
+  activeTab.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
 
-  // If selected is not in library (custom upload), show it
-  if (selectedBgUrl && !backgroundImages.find(function(i) { return i.url === selectedBgUrl })) {
-    var custom = document.createElement('div')
-    custom.className = 'bg-thumb selected'
-    custom.innerHTML =
-      '<img src="' + selectedBgUrl + '" class="w-full h-full object-cover" alt="Custom">'
-      + '<div class="check-overlay"><span class="material-symbols-outlined text-white filled" style="font-size:24px;">check_circle</span></div>'
-    container.appendChild(custom)
+  var listContainer = document.getElementById('quotesList');
+  listContainer.innerHTML = '';
+
+  var filtered = [];
+  if (filter === 'live') {
+    filtered = allQuotes.filter(q => q.status === 'live');
+    // Also grab the very next scheduled quote
+    var next = allQuotes.filter(q => q.status === 'scheduled')[0];
+    if (next) filtered.push(next);
+  } else if (filter === 'scheduled') {
+    filtered = allQuotes.filter(q => q.status === 'scheduled');
+  } else {
+    filtered = allQuotes.filter(q => q.status === 'draft' || q.status === 'archived');
   }
-}
 
-function selectBackground(url, el) {
-  selectedBgUrl = url
-  document.querySelectorAll('.bg-thumb').forEach(function(t) { t.classList.remove('selected') })
-  if (el) el.classList.add('selected')
-}
-
-// ════════════════════════════════════════════
-// UPLOAD BACKGROUND
-// ════════════════════════════════════════════
-function triggerBgUpload() {
-  document.getElementById('bgFileInput').click()
-}
-
-async function handleBgUpload(input) {
-  var file = input.files[0]
-  if (!file) return
-
-  if (!file.type.startsWith('image/')) { showToast('Please select an image'); return }
-  if (file.size > 10 * 1024 * 1024) { showToast('Image must be under 10MB'); return }
-
-  var progressEl = document.getElementById('bgUploadProgress')
-  progressEl.classList.remove('hidden')
-
-  try {
-    // Resize to reasonable dimensions
-    var resized = await resizeImage(file, 1200)
-
-    // Upload to quote-backgrounds bucket, under 'quotes/' folder
-    var timestamp = Date.now()
-    var filePath = 'quotes/' + timestamp + '.png'
-    var uploadResult = await supabaseClient.storage
-      .from('quote-backgrounds')
-      .upload(filePath, resized, { upsert: false, contentType: 'image/png' })
-
-    if (uploadResult.error) throw uploadResult.error
-
-    var urlResult = supabaseClient.storage.from('quote-backgrounds').getPublicUrl(filePath)
-    var publicUrl = urlResult.data.publicUrl
-
-    selectedBgUrl = publicUrl
-    renderBackgroundThumbs()
-    showToast('Background uploaded')
-  } catch(e) {
-    console.error('BG upload error:', e)
-    showToast('Upload failed. Try again.')
-  } finally {
-    progressEl.classList.add('hidden')
-    input.value = ''
+  if (filtered.length === 0) {
+    listContainer.innerHTML = `<div class="p-6 text-center text-slate-400 text-sm font-bold mt-10">No quotes found here.</div>`;
+    return;
   }
-}
 
-function resizeImage(file, maxWidth) {
-  return new Promise(function(resolve, reject) {
-    var reader = new FileReader()
-    reader.onload = function(e) {
-      var img = new Image()
-      img.onload = function() {
-        var scale = Math.min(1, maxWidth / img.width)
-        var canvas = document.createElement('canvas')
-        canvas.width = img.width * scale
-        canvas.height = img.height * scale
-        var ctx = canvas.getContext('2d')
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-        canvas.toBlob(function(blob) {
-          if (blob) resolve(blob)
-          else reject(new Error('Blob failed'))
-        }, 'image/png', 0.92)
+  // Group by Date for Scheduled
+  var lastDate = null;
+
+  filtered.forEach(q => {
+    // Inject Date Headers for Schedule view
+    if (filter === 'scheduled' && q.scheduled_for) {
+      var d = new Date(q.scheduled_for);
+      var dateKey = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      if (dateKey !== lastDate) {
+        listContainer.innerHTML += `<div class="px-4 pt-4 pb-2 text-[10px] font-black text-slate-400 uppercase tracking-widest sticky top-0 bg-surface-clow/90 backdrop-blur-sm z-10">${dateKey}</div>`;
+        lastDate = dateKey;
       }
-      img.onerror = reject
-      img.src = e.target.result
     }
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
+
+    var text = q.text || 'Empty quote';
+    var dot = q.status === 'live' ? 'dot-live' : q.status === 'scheduled' ? 'dot-sched' : 'dot-draft';
+    var label = q.status === 'live' ? 'Live Now' : q.status === 'scheduled' ? new Date(q.scheduled_for).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Draft';
+    
+    var div = document.createElement('div');
+    div.className = `list-card ${currentQuoteId === q.id ? 'active' : ''}`;
+    div.onclick = () => loadQuoteIntoEditor(q.id);
+    div.innerHTML = `
+      <div class="flex items-center gap-2 mb-1.5">
+        <span class="status-dot ${dot}"></span>
+        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">${label}</span>
+      </div>
+      <p class="font-headline font-bold text-slate-800 text-sm line-clamp-2 leading-snug">${escapeHtml(text)}</p>
+      <p class="text-xs text-primary font-bold mt-1">— ${escapeHtml(q.source)}</p>
+    `;
+    listContainer.appendChild(div);
+  });
 }
 
-// ════════════════════════════════════════════
-// LOAD CAMPAIGNS
-// ════════════════════════════════════════════
-async function loadCampaigns() {
-  var result = await supabaseClient
-    .from('campaigns')
-    .select('*')
-    .eq('status', 'active')
-    .order('name', { ascending: true })
+// ─── RIGHT PANE: EDITOR LOGIC ──────────────────────────────────────────────
 
-  campaigns = result.data || []
-  var select = document.getElementById('quoteCampaign')
-  select.innerHTML = '<option value="">— None —</option>'
-  campaigns.forEach(function(c) {
-    var opt = document.createElement('option')
-    opt.value = c.id
-    opt.textContent = c.name
-    select.appendChild(opt)
-  })
+function createNewQuote() {
+  currentQuoteId = null;
+  document.getElementById('editorTitle').textContent = "New Quote";
+  document.getElementById('editorSubtitle').textContent = "Unsaved Draft";
+  document.getElementById('deleteBtn').classList.add('hidden');
+  
+  document.getElementById('quoteText').value = '';
+  document.getElementById('quoteSource').value = '';
+  document.getElementById('quoteCategory').value = 'Faith';
+  updateCharCount();
+  
+  activeBgUrl = null;
+  renderBackgrounds();
+
+  var d = new Date(); d.setDate(d.getDate() + 1);
+  document.getElementById('scheduleDate').value = d.toISOString().split('T')[0];
+  document.querySelector('input[name="status"][value="scheduled"]').checked = true;
+  updatePublishUI();
+
+  // Update List selection state
+  document.querySelectorAll('.list-card').forEach(c => c.classList.remove('active'));
+
+  if (window.innerWidth < 1024) openEditorMobile();
 }
 
-// ════════════════════════════════════════════
-// HASHTAGS
-// ════════════════════════════════════════════
-function renderHashtags() {
-  var container = document.getElementById('hashtagsContainer')
-  container.innerHTML = ''
-  hashtags.forEach(function(tag) {
-    var safe = tag.replace(/'/g, "\\'")
-    var chip = document.createElement('span')
-    chip.className = 'hashtag-chip'
-    chip.innerHTML = tag + ' <button onclick="removeHashtag(\'' + safe + '\')"><span class="material-symbols-outlined text-[14px]">close</span></button>'
-    container.appendChild(chip)
-  })
-  var counter = document.getElementById('hashtagCounter')
-  if (counter) counter.textContent = hashtags.length + ' / ' + MAX_HASHTAGS
+function loadQuoteIntoEditor(id) {
+  var q = allQuotes.find(x => x.id === id);
+  if (!q) return;
+  currentQuoteId = q.id;
+
+  document.getElementById('editorTitle').textContent = "Edit Quote";
+  document.getElementById('editorSubtitle').textContent = q.status.toUpperCase();
+  document.getElementById('deleteBtn').classList.remove('hidden');
+
+  document.getElementById('quoteText').value = q.text || '';
+  document.getElementById('quoteSource').value = q.source || '';
+  document.getElementById('quoteCategory').value = q.category || 'Faith';
+  updateCharCount();
+
+  activeBgUrl = q.background_url || null;
+  renderBackgrounds();
+
+  // Publish Status
+  var r = document.querySelector(`input[name="status"][value="${q.status === 'archived' ? 'draft' : q.status}"]`);
+  if (r) r.checked = true;
+  if (q.scheduled_for) {
+    try {
+      var d = new Date(q.scheduled_for);
+      // Convert to local for the input (AEST approximation for simplicity in admin panel)
+      document.getElementById('scheduleDate').value = d.toISOString().split('T')[0];
+      document.getElementById('scheduleTime').value = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+    } catch(e){}
+  }
+  updatePublishUI();
+
+  // Highlight in list
+  filterList(listFilter); 
+
+  if (window.innerWidth < 1024) openEditorMobile();
 }
 
-function addHashtagFromInput() {
-  var field = document.getElementById('hashtagField')
-  var tag = field.value.trim()
-  if (!tag) return
-  if (tag.charAt(0) !== '#') tag = '#' + tag
-  if (hashtags.length >= MAX_HASHTAGS) { showToast('Max ' + MAX_HASHTAGS + ' hashtags'); return }
-  if (hashtags.indexOf(tag) !== -1) { showToast('Already added'); return }
-  hashtags.push(tag)
-  field.value = ''
-  renderHashtags()
+function updatePublishUI() {
+  var status = document.querySelector('input[name="status"]:checked').value;
+  document.querySelectorAll('.publish-card').forEach(c => c.classList.remove('active'));
+  document.querySelector(`input[name="status"]:checked`).nextElementSibling.classList.add('active');
+
+  var wrapper = document.getElementById('scheduleWrapper');
+  var btnLbl = document.getElementById('saveLabel');
+  var btnIcon = document.getElementById('saveIcon');
+
+  if (status === 'scheduled') {
+    wrapper.classList.remove('hidden');
+    btnLbl.textContent = currentQuoteId ? 'Update Schedule' : 'Schedule Quote';
+    btnIcon.textContent = 'calendar_month';
+  } else if (status === 'live') {
+    wrapper.classList.add('hidden');
+    btnLbl.textContent = 'Push Live Now';
+    btnIcon.textContent = 'bolt';
+  } else {
+    wrapper.classList.add('hidden');
+    btnLbl.textContent = 'Save Draft';
+    btnIcon.textContent = 'save';
+  }
 }
 
-function removeHashtag(tag) {
-  hashtags = hashtags.filter(function(h) { return h !== tag })
-  renderHashtags()
-}
+// ─── EDITOR TOOLS ──────────────────────────────────────────────────────────
 
-// ════════════════════════════════════════════
-// METHOD SWITCHING
-// ════════════════════════════════════════════
 function switchMethod(method) {
-  currentMethod = method
-  document.querySelectorAll('.method-tab').forEach(function(tab) { tab.classList.remove('active') })
-  var activeTab = document.querySelector('[onclick="switchMethod(\'' + method + '\')"]')
-  if (activeTab) activeTab.classList.add('active')
-  document.getElementById('panelBible').classList.toggle('hidden', method !== 'bible')
-  document.getElementById('panelAI').classList.toggle('hidden', method !== 'ai')
-  document.getElementById('panelManual').classList.toggle('hidden', method !== 'manual')
+  document.querySelectorAll('.method-tab').forEach(b => b.classList.remove('active', 'border-primary', 'text-primary'));
+  event.currentTarget.classList.add('active', 'border-primary', 'text-primary');
+  
+  document.getElementById('panelBible').classList.toggle('hidden', method !== 'bible');
+  document.getElementById('panelAI').classList.toggle('hidden', method !== 'ai');
 }
 
-// ════════════════════════════════════════════
-// BIBLE LOOKUP
-// ════════════════════════════════════════════
-function setLookupTranslation(code, btn) {
-  lookupTranslation = code
-  document.querySelectorAll('#panelBible .theme-pill').forEach(function(b) {
-    // Only affect translation buttons (top row)
-    if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf('setLookupTranslation') === 0) {
-      b.classList.remove('active')
-    }
-  })
-  if (btn) btn.classList.add('active')
+var currentTrans = 'web';
+function setTranslation(code, btn) {
+  currentTrans = code;
+  document.querySelectorAll('.trans-btn').forEach(b => { b.classList.remove('active', 'border-primary', 'text-primary'); });
+  btn.classList.add('active', 'border-primary', 'text-primary');
 }
 
 async function lookupBible() {
-  var ref = document.getElementById('bibleRef').value.trim()
-  if (!ref) { showToast('Enter a Bible reference'); return }
+  var ref = document.getElementById('bibleRef').value.trim();
+  var err = document.getElementById('lookupError');
+  var btn = document.getElementById('lookupBtn');
+  var icon = document.getElementById('lookupIcon');
+  if(!ref) return;
 
-  var btn = document.getElementById('lookupBtn')
-  var icon = document.getElementById('lookupIcon')
-  var statusEl = document.getElementById('lookupStatus')
-  var resultEl = document.getElementById('lookupResult')
-
-  icon.classList.add('spin')
-  icon.textContent = 'progress_activity'
-  btn.disabled = true
-  resultEl.classList.add('hidden')
-  statusEl.classList.remove('hidden')
-  statusEl.innerHTML = '<div class="flex items-center gap-2"><span class="material-symbols-outlined text-primary spin" style="font-size:16px;">progress_activity</span><span class="font-body font-semibold text-primary" style="font-size:12px;">Looking up ' + ref + '...</span></div>'
+  err.classList.add('hidden');
+  btn.disabled = true; icon.textContent = 'progress_activity'; icon.classList.add('spin');
 
   try {
-    var encoded = encodeURIComponent(ref.replace(/\s+/g, '+'))
-    var response = await fetch('https://bible-api.com/' + encoded + '?translation=' + lookupTranslation)
-    if (!response.ok) throw new Error('Not found')
-    var data = await response.json()
-    if (!data.text) throw new Error('No text')
-
-    var verseText = data.text.trim().replace(/\n/g, ' ')
-    var reference = data.reference || ref
-    lookupData = { text: verseText, source: reference }
-
-    document.getElementById('lookupText').textContent = verseText
-    document.getElementById('lookupSource').textContent = reference
-    statusEl.classList.add('hidden')
-    resultEl.classList.remove('hidden')
-    showToast('Found: ' + reference)
-  } catch(err) {
-    statusEl.innerHTML = '<div class="flex items-center gap-2"><span class="material-symbols-outlined text-tertiary" style="font-size:16px;">error</span><span class="font-body font-semibold text-tertiary" style="font-size:12px;">Could not find "' + ref + '"</span></div>'
+    var encoded = encodeURIComponent(ref.replace(/\s+/g, '+'));
+    var response = await fetch(`https://bible-api.com/${encoded}?translation=${currentTrans}`);
+    if (!response.ok) throw new Error();
+    var data = await response.json();
+    
+    document.getElementById('quoteText').value = data.text.trim().replace(/\n/g, ' ');
+    document.getElementById('quoteSource').value = data.reference || ref;
+    updateCharCount();
+  } catch (e) {
+    err.textContent = "Could not find that verse.";
+    err.classList.remove('hidden');
   } finally {
-    icon.classList.remove('spin')
-    icon.textContent = 'search'
-    btn.disabled = false
+    btn.disabled = false; icon.textContent = 'search'; icon.classList.remove('spin');
   }
 }
 
-function quickLookup(ref) {
-  document.getElementById('bibleRef').value = ref
-  lookupBible()
+function loadTemplates(theme) {
+  var res = document.getElementById('templateResults');
+  res.innerHTML = '';
+  (templates[theme] || []).forEach(q => {
+    res.innerHTML += `
+      <div class="bg-white p-3 rounded-xl border border-slate-200 hover:border-primary cursor-pointer transition-colors"
+           onclick="useTemplate('${escapeHtml(q.text)}', '${escapeHtml(q.source)}', '${theme}')">
+        <p class="text-xs font-bold text-slate-800 leading-relaxed">"${q.text}"</p>
+        <p class="text-[10px] text-primary font-bold mt-1">— ${q.source}</p>
+      </div>
+    `;
+  });
 }
 
-function useLookupResult() {
-  if (!lookupData) return
-  document.getElementById('quoteText').value = lookupData.text
-  document.getElementById('quoteSource').value = lookupData.source
-  updateCharCount()
-
-  // Suggest category from text
-  var text = lookupData.text.toLowerCase()
-  var category = 'Faith'
-  if (text.indexOf('hope') > -1 || text.indexOf('future') > -1) category = 'Hope'
-  else if (text.indexOf('strength') > -1 || text.indexOf('strong') > -1) category = 'Strength'
-  else if (text.indexOf('love') > -1) category = 'Love'
-  else if (text.indexOf('peace') > -1) category = 'Peace'
-  else if (text.indexOf('courage') > -1 || text.indexOf('afraid') > -1) category = 'Courage'
-  else if (text.indexOf('heal') > -1 || text.indexOf('weary') > -1) category = 'Healing'
-  document.getElementById('quoteCategory').value = category
-
-  // Update context placeholder
-  var contextEl = document.getElementById('quoteContext')
-  if (contextEl && !contextEl.value.trim()) {
-    contextEl.placeholder = 'Add context for ' + lookupData.source + ' — explain meaning, background, or application...'
-  }
-
-  showToast('Verse loaded')
+function useTemplate(text, source, cat) {
+  document.getElementById('quoteText').value = text;
+  document.getElementById('quoteSource').value = source;
+  document.getElementById('quoteCategory').value = cat;
+  updateCharCount();
+  showToast("Template applied");
 }
 
-function clearLookup() {
-  lookupData = null
-  document.getElementById('lookupResult').classList.add('hidden')
-  document.getElementById('lookupStatus').classList.add('hidden')
-  document.getElementById('bibleRef').value = ''
-}
-
-// ════════════════════════════════════════════
-// TEMPLATES
-// ════════════════════════════════════════════
-function selectAITheme(btn, theme) {
-  document.querySelectorAll('#panelAI .theme-pill').forEach(function(p) { p.classList.remove('active') })
-  if (btn) btn.classList.add('active')
-  window.selectedAITheme = theme
-}
-
-function generateAIQuotes() {
-  var theme = window.selectedAITheme || 'Faith'
-  var icon = document.getElementById('genIcon')
-  var label = document.getElementById('genLabel')
-  var loading = document.getElementById('aiLoadingState')
-  var results = document.getElementById('aiResults')
-
-  loading.classList.remove('hidden')
-  results.innerHTML = ''
-  icon.classList.add('spin')
-  icon.textContent = 'progress_activity'
-  label.textContent = 'Loading...'
-
-  setTimeout(function() {
-    var themeKey = Object.keys(sampleQuotes).find(function(k) { return k.toLowerCase() === theme.toLowerCase() }) || 'Faith'
-    generatedQuotes = sampleQuotes[themeKey].slice().sort(function() { return Math.random() - 0.5 })
-    loading.classList.add('hidden')
-    icon.classList.remove('spin')
-    icon.textContent = 'auto_awesome'
-    label.textContent = 'Load Templates'
-    renderAIResults()
-  }, 1000)
-}
-
-function renderAIResults() {
-  var container = document.getElementById('aiResults')
-  container.innerHTML = ''
-  generatedQuotes.forEach(function(q, i) {
-    var card = document.createElement('div')
-    card.className = 'bg-surface-clow rounded-xl p-4 space-y-3'
-    card.innerHTML =
-      '<p class="font-headline font-semibold text-on-surface leading-relaxed" style="font-size:14px;">"' + escapeHtml(q.text) + '"</p>'
-      + '<p class="font-body font-semibold text-primary" style="font-size:12px;">— ' + escapeHtml(q.source) + '</p>'
-      + '<div class="flex gap-2 pt-1">'
-        + '<button onclick="useAIQuote(' + i + ')" class="flex-1 py-2 bg-primary text-on-primary font-body font-semibold rounded-lg active:scale-95 transition-transform" style="font-size:12px;">Use This</button>'
-        + '<button onclick="this.closest(\'.bg-surface-clow\').remove()" class="px-4 py-2 bg-surface-cl text-on-surface-variant font-body font-semibold rounded-lg active:scale-95 transition-transform" style="font-size:12px;">Skip</button>'
-      + '</div>'
-    container.appendChild(card)
-  })
-}
-
-function useAIQuote(index) {
-  var q = generatedQuotes[index]
-  if (!q) return
-  document.getElementById('quoteText').value = q.text
-  document.getElementById('quoteSource').value = q.source
-  updateCharCount()
-  var theme = window.selectedAITheme || 'Faith'
-  var themeKey = Object.keys(sampleQuotes).find(function(k) { return k.toLowerCase() === theme.toLowerCase() }) || 'Faith'
-  document.getElementById('quoteCategory').value = themeKey
-  showToast('Loaded — review and save')
-  document.getElementById('aiResults').innerHTML = ''
-}
-
-// ════════════════════════════════════════════
-// CHARACTER COUNTS
-// ════════════════════════════════════════════
 function updateCharCount() {
-  var len = document.getElementById('quoteText').value.length
-  var el = document.getElementById('charCount')
-  el.textContent = len + ' / 500'
-  el.className = len > 450 ? 'font-body font-semibold text-tertiary' : 'font-body text-outline'
-  el.style.fontSize = '11px'
+  var len = document.getElementById('quoteText').value.length;
+  document.getElementById('charCount').textContent = len + '/500';
+  document.getElementById('charCount').classList.toggle('text-red-500', len > 450);
 }
 
-function updateContextCount() {
-  var len = document.getElementById('quoteContext').value.length
-  var el = document.getElementById('contextCount')
-  el.textContent = len + ' / 500'
-  el.className = len > 450 ? 'font-body font-semibold text-tertiary' : 'font-body text-outline'
-  el.style.fontSize = '11px'
+// ─── BACKGROUNDS ───────────────────────────────────────────────────────────
+
+function renderBackgrounds() {
+  var container = document.getElementById('bgThumbsContainer');
+  container.innerHTML = `
+    <div class="bg-thumb ${!activeBgUrl ? 'selected' : ''}" style="background:#f1f5f9" onclick="setBg(null)">
+      <div class="w-full h-full flex flex-col items-center justify-center">
+        <span class="material-symbols-outlined text-slate-400">block</span>
+        <span class="text-[8px] font-bold text-slate-400 uppercase mt-1">None</span>
+      </div>
+      <div class="check-overlay"><span class="material-symbols-outlined text-white">check_circle</span></div>
+    </div>
+  `;
+  backgrounds.forEach(b => {
+    container.innerHTML += `
+      <div class="bg-thumb ${activeBgUrl === b.url ? 'selected' : ''}" onclick="setBg('${b.url}')">
+        <img src="${b.url}" class="w-full h-full object-cover">
+        <div class="check-overlay"><span class="material-symbols-outlined text-white">check_circle</span></div>
+      </div>
+    `;
+  });
 }
 
-// ════════════════════════════════════════════
-// HOME DISPLAY OVERRIDES
-// ════════════════════════════════════════════
-function toggleAdvanced() {
-  var panel = document.getElementById('advPanel')
-  var caret = document.getElementById('advCaret')
-  panel.classList.toggle('open')
-  caret.style.transform = panel.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)'
+function setBg(url) {
+  activeBgUrl = url;
+  renderBackgrounds();
 }
 
-function setHomeFontSize(size, btn) {
-  homeFontSize = size
-  document.querySelectorAll('[data-size]').forEach(function(b) { b.classList.remove('active') })
-  if (btn) btn.classList.add('active')
-}
+async function handleBgUpload(input) {
+  var file = input.files[0];
+  if(!file) return;
+  document.getElementById('bgUploadStatus').classList.remove('hidden');
 
-function setHomeAlign(align, btn) {
-  homeTextAlign = align
-  document.querySelectorAll('[data-align]').forEach(function(b) { b.classList.remove('active') })
-  if (btn) btn.classList.add('active')
-}
-
-function setHomePosition(pos, btn) {
-  homeTextPosition = pos
-  document.querySelectorAll('[data-position]').forEach(function(b) { b.classList.remove('active') })
-  if (btn) btn.classList.add('active')
-}
-
-function setHomeTextColor(color, btn) {
-  homeTextColor = color
-  document.querySelectorAll('[data-color]').forEach(function(b) { b.classList.remove('ring-2','ring-primary') })
-  if (btn) btn.classList.add('ring-2','ring-primary')
-  var picker = document.getElementById('homeTextColorPicker')
-  if (picker) picker.value = color
-}
-
-// ════════════════════════════════════════════
-// PUBLISH STATE
-// ════════════════════════════════════════════
-function updatePublishState(radio) {
-  var statusText = document.getElementById('statusText')
-  var schedulePicker = document.getElementById('schedulePicker')
-  var submitLabel = document.getElementById('submitLabel')
-
-  document.querySelectorAll('.publish-card').forEach(function(card) { card.classList.remove('active') })
-  var card = radio.nextElementSibling
-  if (card) card.classList.add('active')
-
-  if (radio.value === 'now') {
-    statusText.textContent = 'Will go live immediately upon publishing'
-    schedulePicker.classList.add('hidden')
-    submitLabel.textContent = isEditMode ? 'Update & Publish' : 'Publish Quote'
-  } else if (radio.value === 'schedule') {
-    statusText.textContent = 'Will go live at your scheduled time (AEST)'
-    schedulePicker.classList.remove('hidden')
-    submitLabel.textContent = isEditMode ? 'Update & Schedule' : 'Schedule Quote'
-    updateScheduleNote()
-  } else {
-    statusText.textContent = 'Saved as draft — not visible to users'
-    schedulePicker.classList.add('hidden')
-    submitLabel.textContent = isEditMode ? 'Update Draft' : 'Save as Draft'
+  try {
+    var path = 'quotes/' + Date.now() + '.png';
+    await supabaseClient.storage.from('quote-backgrounds').upload(path, file);
+    var url = supabaseClient.storage.from('quote-backgrounds').getPublicUrl(path).data.publicUrl;
+    
+    // Save to media library so it stays
+    await supabaseClient.from('media').insert({ type: 'background', url: url, label: 'Custom Upload', is_active: true });
+    
+    activeBgUrl = url;
+    await loadBackgrounds();
+    showToast("Background uploaded!");
+  } catch(e) {
+    showToast("Upload failed");
+  } finally {
+    document.getElementById('bgUploadStatus').classList.add('hidden');
+    input.value = '';
   }
 }
 
-function updateScheduleNote() {
-  var dateStr = document.getElementById('scheduleDate').value
-  var timeStr = document.getElementById('scheduleTime').value || '05:30'
-  var noteEl = document.getElementById('scheduleNoteText')
-  if (!dateStr) { if (noteEl) noteEl.textContent = 'Select a date above'; return }
-  var d = new Date(dateStr + 'T00:00:00')
-  var dateLabel = d.toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
-  var timeParts = timeStr.split(':')
-  var hour = parseInt(timeParts[0])
-  var min = timeParts[1]
-  var ampm = hour >= 12 ? 'PM' : 'AM'
-  var displayHour = hour % 12 || 12
-  if (noteEl) noteEl.textContent = 'Publishes ' + dateLabel + ' at ' + displayHour + ':' + min + ' ' + ampm + ' AEST'
-}
+// ─── SAVE / DELETE ─────────────────────────────────────────────────────────
 
-function getScheduledUTC() {
-  var dateStr = document.getElementById('scheduleDate').value
-  var timeStr = document.getElementById('scheduleTime').value || '05:30'
-  if (!dateStr) return null
-  var parts = dateStr.split('-')
-  var timeParts = timeStr.split(':')
-  var utcHours = parseInt(timeParts[0]) - 10
-  return new Date(Date.UTC(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]), utcHours, parseInt(timeParts[1]), 0)).toISOString()
-}
+async function saveQuote() {
+  var text = document.getElementById('quoteText').value.trim();
+  var source = document.getElementById('quoteSource').value.trim();
+  if(!text || !source) return showToast("Quote text and source are required!", true);
 
-// ════════════════════════════════════════════
-// PUBLISH
-// ════════════════════════════════════════════
-async function handlePublish(e) {
-  e.preventDefault()
-  var text = document.getElementById('quoteText').value.trim()
-  var source = document.getElementById('quoteSource').value.trim()
-  var category = document.getElementById('quoteCategory').value
-  var campaign = document.getElementById('quoteCampaign').value || null
-  var context = document.getElementById('quoteContext').value.trim()
-  var pubState = document.querySelector('input[name="publish_state"]:checked').value
-  var btn = document.getElementById('submitBtn')
-  var icon = document.getElementById('submitIcon')
-  var label = document.getElementById('submitLabel')
+  var status = document.querySelector('input[name="status"]:checked').value;
+  var scheduledFor = null;
+  var publishedAt = null;
 
-  if (!text) { showToast('Please enter the quote text'); return }
-  if (!source) { showToast('Please add a source'); return }
-
-  icon.classList.add('spin')
-  icon.textContent = 'progress_activity'
-  label.textContent = isEditMode ? 'Updating...' : 'Publishing...'
-  btn.disabled = true
-
-  var status = 'draft'
-  var publishedAt = null
-  var scheduledFor = null
-
-  if (pubState === 'now') {
-    status = 'live'
-    publishedAt = new Date().toISOString()
-  } else if (pubState === 'schedule') {
-    status = 'scheduled'
-    scheduledFor = getScheduledUTC()
-    if (!scheduledFor) {
-      showToast('Please select a date')
-      icon.classList.remove('spin')
-      icon.textContent = 'send'
-      label.textContent = 'Schedule Quote'
-      btn.disabled = false
-      return
-    }
+  if (status === 'scheduled') {
+    var d = document.getElementById('scheduleDate').value;
+    var t = document.getElementById('scheduleTime').value;
+    if (!d || !t) return showToast("Select schedule date and time", true);
+    // Parse as local, convert to UTC string
+    scheduledFor = new Date(d + 'T' + t + ':00').toISOString();
+  } else if (status === 'live') {
+    publishedAt = new Date().toISOString();
   }
 
-  var quoteData = {
+  var data = {
     text: text,
     source: source,
-    category: category,
-    campaign_id: campaign,
-    context: context || null,
+    category: document.getElementById('quoteCategory').value,
     status: status,
-    published_at: publishedAt,
     scheduled_for: scheduledFor,
-    hashtags: hashtags,
-    background_url: selectedBgUrl,
-    home_font_size: homeFontSize || null,
-    home_text_align: homeTextAlign,
-    home_text_color: homeTextColor,
-    home_text_position: homeTextPosition
-  }
+    published_at: publishedAt,
+    background_url: activeBgUrl
+  };
 
-  var result = isEditMode && editQuoteId
-    ? await supabaseClient.from('quotes').update(quoteData).eq('id', editQuoteId).select().single()
-    : await supabaseClient.from('quotes').insert([quoteData]).select().single()
+  var btn = document.getElementById('saveBtn');
+  var icon = document.getElementById('saveIcon');
+  btn.disabled = true; icon.className = "material-symbols-outlined spin text-[18px]"; icon.textContent = "progress_activity";
 
-  icon.classList.remove('spin')
-  btn.disabled = false
-
-  if (result.error) {
-    icon.textContent = 'send'
-    label.textContent = 'Try Again'
-    showToast('Error: ' + result.error.message)
-    return
-  }
-
-  icon.textContent = 'check_circle'
-  label.textContent = 'Done!'
-
-  var titleEl = document.getElementById('successTitle')
-  if (status === 'live') titleEl.textContent = isEditMode ? 'Quote Updated & Published!' : 'Quote Published!'
-  else if (status === 'scheduled') titleEl.textContent = 'Quote Scheduled!'
-  else titleEl.textContent = 'Draft Saved!'
-
-  document.getElementById('quoteForm').classList.add('hidden')
-  document.getElementById('successMsg').classList.remove('hidden')
-  showToast(isEditMode ? 'Quote updated' : 'Quote saved')
-}
-
-// ════════════════════════════════════════════
-// CREATE ANOTHER
-// ════════════════════════════════════════════
-function createAnother() {
-  // Reset everything
-  document.getElementById('quoteText').value = ''
-  document.getElementById('quoteSource').value = ''
-  document.getElementById('quoteContext').value = ''
-  document.getElementById('quoteCategory').value = 'Faith'
-  document.getElementById('quoteCampaign').value = ''
-  document.getElementById('hashtagField').value = ''
-  hashtags = []
-  renderHashtags()
-  selectedBgUrl = null
-  renderBackgroundThumbs()
-  updateCharCount()
-  updateContextCount()
-
-  // Reset publish state to "now"
-  var nowRadio = document.querySelector('input[value="now"]')
-  if (nowRadio) { nowRadio.checked = true; updatePublishState(nowRadio) }
-
-  // Reset home overrides
-  homeFontSize = ''
-  homeTextAlign = 'left'
-  homeTextColor = '#ffffff'
-  homeTextPosition = 'center'
-
-  // Reset submit button
-  document.getElementById('submitIcon').textContent = 'send'
-  document.getElementById('submitLabel').textContent = 'Publish Quote'
-
-  // Show form, hide success
-  document.getElementById('successMsg').classList.add('hidden')
-  document.getElementById('quoteForm').classList.remove('hidden')
-
-  // Clear edit mode
-  isEditMode = false
-  editQuoteId = null
-
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-// ════════════════════════════════════════════
-// EDIT MODE
-// ════════════════════════════════════════════
-async function checkEditMode() {
-  var editId = new URLSearchParams(window.location.search).get('edit')
-  if (!editId) editId = sessionStorage.getItem('gstw_admin_edit_quote')
-  sessionStorage.removeItem('gstw_admin_edit_quote')
-  if (!editId) return
-
-  isEditMode = true
-  editQuoteId = editId
-
-  document.getElementById('pageTitle').textContent = 'Edit Quote'
-  document.getElementById('formTitle').textContent = 'Edit Quote'
-  document.getElementById('submitLabel').textContent = 'Update Quote'
-
-  var result = await supabaseClient.from('quotes').select('*').eq('id', editId).single()
-  if (result.error || !result.data) { showToast('Error loading quote'); return }
-
-  var q = result.data
-  document.getElementById('quoteText').value = q.text || ''
-  document.getElementById('quoteSource').value = q.source || ''
-  document.getElementById('quoteCategory').value = q.category || 'Faith'
-  document.getElementById('quoteContext').value = q.context || ''
-  document.getElementById('quoteCampaign').value = q.campaign_id || ''
-
-  hashtags = q.hashtags || []
-  renderHashtags()
-
-  selectedBgUrl = q.background_url || null
-  renderBackgroundThumbs()
-
-  homeFontSize = q.home_font_size || ''
-  homeTextAlign = q.home_text_align || 'left'
-  homeTextColor = q.home_text_color || '#ffffff'
-  homeTextPosition = q.home_text_position || 'center'
-
-  updateCharCount()
-  updateContextCount()
-
-  // Update button states based on loaded values
-  document.querySelectorAll('[data-size]').forEach(function(b) {
-    if (b.dataset.size === homeFontSize) { b.classList.add('active') }
-    else { b.classList.remove('active') }
-  })
-  document.querySelectorAll('[data-align]').forEach(function(b) {
-    if (b.dataset.align === homeTextAlign) { b.classList.add('active') }
-    else { b.classList.remove('active') }
-  })
-  document.querySelectorAll('[data-position]').forEach(function(b) {
-    if (b.dataset.position === homeTextPosition) { b.classList.add('active') }
-    else { b.classList.remove('active') }
-  })
-  document.querySelectorAll('[data-color]').forEach(function(b) {
-    if (b.dataset.color === homeTextColor) { b.classList.add('ring-2','ring-primary') }
-    else { b.classList.remove('ring-2','ring-primary') }
-  })
-  var picker = document.getElementById('homeTextColorPicker')
-  if (picker) picker.value = homeTextColor
-
-  // Set publish state
-  if (q.status === 'live') {
-    var nowRadio = document.querySelector('input[value="now"]')
-    if (nowRadio) { nowRadio.checked = true; updatePublishState(nowRadio) }
-  } else if (q.status === 'scheduled' && q.scheduled_for) {
-    var schedRadio = document.querySelector('input[value="schedule"]')
-    if (schedRadio) { schedRadio.checked = true; updatePublishState(schedRadio) }
-    try {
-      var utcDate = new Date(q.scheduled_for)
-      var aestDate = new Date(utcDate.getTime() + (10 * 60 * 60 * 1000))
-      document.getElementById('scheduleDate').value = aestDate.toISOString().split('T')[0]
-      document.getElementById('scheduleTime').value = String(aestDate.getUTCHours()).padStart(2,'0') + ':' + String(aestDate.getUTCMinutes()).padStart(2,'0')
-      updateScheduleNote()
-    } catch(e) { console.error('Date parse error:', e) }
+  if (currentQuoteId) {
+    await supabaseClient.from('quotes').update(data).eq('id', currentQuoteId);
+    showToast("Quote updated!");
   } else {
-    var draftRadio = document.querySelector('input[value="draft"]')
-    if (draftRadio) { draftRadio.checked = true; updatePublishState(draftRadio) }
+    var res = await supabaseClient.from('quotes').insert([data]).select().single();
+    currentQuoteId = res.data.id;
+    showToast("Quote created!");
   }
+
+  btn.disabled = false; icon.className = "material-symbols-outlined text-[18px]"; icon.textContent = "send";
+  
+  await fetchQuotes();
+  filterList(listFilter); // Refresh list but stay on current tab
 }
 
-// ════════════════════════════════════════════
-// HELPERS
-// ════════════════════════════════════════════
-function escapeHtml(str) {
-  if (!str) return ''
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')
+async function deleteCurrentQuote() {
+  if(!currentQuoteId || !confirm("Delete this quote permanently?")) return;
+  await supabaseClient.from('quotes').delete().eq('id', currentQuoteId);
+  showToast("Quote deleted");
+  await fetchQuotes();
+  createNewQuote();
+  filterList(listFilter);
 }
 
-var toastTimer
-function showToast(msg) {
-  var toast = document.getElementById('toast')
-  var toastMsg = document.getElementById('toastMsg')
-  if (!toast || !toastMsg) return
-  toastMsg.textContent = msg
-  toast.classList.remove('hidden')
-  toast.classList.add('flex')
-  clearTimeout(toastTimer)
-  toastTimer = setTimeout(function() {
-    toast.classList.add('hidden')
-    toast.classList.remove('flex')
-  }, 2500)
+// ─── MOBILE UI ─────────────────────────────────────────────────────────────
+function openEditorMobile() {
+  document.getElementById('listPane').classList.add('hidden', 'lg:flex');
+  document.getElementById('editorPane').classList.remove('hidden');
+  document.getElementById('editorPane').classList.add('flex');
+}
+function closeEditorMobile() {
+  document.getElementById('listPane').classList.remove('hidden');
+  document.getElementById('editorPane').classList.add('hidden', 'lg:flex');
+  document.getElementById('editorPane').classList.remove('flex');
 }
 
-// ════════════════════════════════════════════
-// INIT
-// ════════════════════════════════════════════
-async function init() {
-  var isAdmin = await checkAdminAuth()
-  if (!isAdmin) return
-
-  // Set default schedule date to tomorrow
-  var tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  var schedDate = document.getElementById('scheduleDate')
-  if (schedDate) schedDate.value = tomorrow.toISOString().split('T')[0]
-
-  // Load parallel data
-  await Promise.all([
-    loadBackgroundImages(),
-    loadCampaigns()
-  ])
-
-  // Then load quote if editing
-  await checkEditMode()
-
-  // Check for prefill date from schedule page
-  var prefillDate = sessionStorage.getItem('gstw_admin_prefill_date')
-  sessionStorage.removeItem('gstw_admin_prefill_date')
-
-  if (prefillDate && !isEditMode) {
-    // Auto-switch to schedule mode
-    var schedRadio = document.querySelector('input[value="schedule"]')
-    if (schedRadio) {
-      schedRadio.checked = true
-      updatePublishState(schedRadio)
-    }
-    // Set the date
-    var schedDateEl = document.getElementById('scheduleDate')
-    if (schedDateEl) {
-      schedDateEl.value = prefillDate
-      updateScheduleNote()
-    }
-    showToast('Scheduling for ' + new Date(prefillDate + 'T00:00:00').toLocaleDateString('en-AU', { weekday:'long', month:'long', day:'numeric' }))
-  }
+// ─── UTILS ─────────────────────────────────────────────────────────────────
+function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+var toastTimer;
+function showToast(msg, isErr=false) {
+  var t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('toastIcon').textContent = isErr ? 'error' : 'check_circle';
+  document.getElementById('toastIcon').className = 'material-symbols-outlined ' + (isErr ? 'text-red-400' : 'text-green-400');
+  t.classList.remove('hidden'); t.classList.add('flex');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.classList.add('hidden'); t.classList.remove('flex'); }, 3000);
 }
 
-init()
+init();
 </script>
 </body>
 </html>
