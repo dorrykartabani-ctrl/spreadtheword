@@ -827,6 +827,52 @@ function renderUpdates() {
   list.innerHTML = updates.map(u => `
     <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 flex gap-3 shadow-sm">
       <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-slate-500 text-sm">campaign</span></div>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">${new Date(u.created_at).toLocaleDateString()} ${new Date(u.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</p>
+        <p class="text-sm font-medium text-slate-800 leading-snug break-words">${escapeHtml(u.message)}</p>
+      </div>
+      <div class="flex gap-1 shrink-0">
+        <button onclick="editUpdate('${u.id}', \`${escapeHtml(u.message).replace(/`/g, '\\`').replace(/\\/g, '\\\\')}\`)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-white rounded-lg transition-colors" title="Edit">
+          <span class="material-symbols-outlined text-[18px]">edit</span>
+        </button>
+        <button onclick="deleteUpdate('${u.id}')" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-white rounded-lg transition-colors" title="Delete">
+          <span class="material-symbols-outlined text-[18px]">delete</span>
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function editUpdate(id, currentMsg) {
+  var newMsg = prompt("Edit field report:", currentMsg);
+  if (newMsg === null || newMsg.trim() === currentMsg) return;
+  if (!newMsg.trim()) return showToast("Message cannot be empty", true);
+
+  try {
+    var res = await supabaseClient.from('project_updates').update({ message: newMsg.trim() }).eq('id', id);
+    if (res.error) throw new Error(res.error.message);
+    showToast("Update edited!");
+    if (currentMissionId) fetchUpdates(currentMissionId);
+  } catch(e) {
+    showToast("Failed to edit: " + e.message, true);
+  }
+}
+
+async function deleteUpdate(id) {
+  if (!confirm("Delete this field report permanently?")) return;
+  try {
+    var res = await supabaseClient.from('project_updates').delete().eq('id', id);
+    if (res.error) throw new Error(res.error.message);
+    showToast("Update deleted!");
+    if (currentMissionId) fetchUpdates(currentMissionId);
+  } catch(e) {
+    showToast("Failed to delete: " + e.message, true);
+  }
+}
+  
+  list.innerHTML = updates.map(u => `
+    <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 flex gap-3 shadow-sm">
+      <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-slate-500 text-sm">campaign</span></div>
       <div>
         <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">${new Date(u.created_at).toLocaleDateString()} ${new Date(u.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</p>
         <p class="text-sm font-medium text-slate-800 leading-snug">${escapeHtml(u.message)}</p>
