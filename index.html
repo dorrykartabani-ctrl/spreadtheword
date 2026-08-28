@@ -102,27 +102,32 @@ var supabaseClient = supabase.createClient(
 
 // ─── RENDER ENGINE ──────────────────────────────────────────────
 async function initLandingPage() {
-  // Fetch Blocks, Live Stats, Active Missions, and Active Tiers concurrently!
   var res = await Promise.allSettled([
     supabaseClient.from('page_blocks').select('*').eq('is_visible', true).order('sort_order'),
     supabaseClient.from('profiles').select('id', { count: 'exact', head: true }),
     supabaseClient.from('shares').select('id', { count: 'exact', head: true }),
     supabaseClient.from('projects').select('*').eq('status', 'active').order('created_at', { ascending: false }).limit(3),
-    supabaseClient.from('subscription_tiers').select('*').eq('is_active', true).eq('is_public', true).order('sort_order')
+    supabaseClient.from('subscription_tiers').select('*').eq('is_active', true).eq('is_public', true).order('sort_order'),
+    supabaseClient.from('site_settings').select('value').eq('id', 'page_bg_color').single() // ← Add this!
   ]);
 
   var blocks = res[0].status === 'fulfilled' ? res[0].value.data : [];
   var stats = {
     warriors: res[1].status === 'fulfilled' ? res[1].value.count || 0 : 0,
     shares: res[2].status === 'fulfilled' ? res[2].value.count || 0 : 0,
-    countries: 42 // Mocked distinct countries for now to save DB load
+    countries: 42
   };
   var missions = res[3].status === 'fulfilled' ? res[3].value.data : [];
   var tiers = res[4].status === 'fulfilled' ? res[4].value.data : [];
+  
+  // Set Body Background Color dynamically!
+  var bgColor = (res[5].status === 'fulfilled' && res[5].value.data) ? res[5].value.data.value : '#eef4f9';
+  document.body.style.backgroundColor = bgColor;
 
   var container = document.getElementById('page-renderer');
   container.innerHTML = '';
 
+  // ... (rest of render code)
   // Render blocks in order
   blocks.forEach(block => {
     var c = block.content;
