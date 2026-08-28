@@ -83,7 +83,7 @@
   </style>
 </head>
 
-<body class="min-h-screen flex">
+<body class="min-h-screen flex bg-surface">
 <input type="file" id="bgFileInput" accept="image/*" class="hidden" onchange="handleBgUpload(this)">
 
 <!-- ═══════════════════════════════════════════ -->
@@ -102,9 +102,9 @@
     </div>
   </div>
 
-    <nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
+  <nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
     <a href="index.html" class="sidebar-item"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
-    <a href="quotes.html" class="sidebar-item"><span class="material-symbols-outlined">add_circle</span>Create Quote</a>
+    <a href="quotes.html" class="sidebar-item active"><span class="material-symbols-outlined">add_circle</span>Create Quote</a>
     <a href="manage-quotes.html" class="sidebar-item"><span class="material-symbols-outlined">format_quote</span>Manage Quotes</a>
     <a href="schedule.html" class="sidebar-item"><span class="material-symbols-outlined">calendar_today</span>Schedule</a>
     <a href="campaigns.html" class="sidebar-item"><span class="material-symbols-outlined">campaign</span>Campaigns</a>
@@ -134,11 +134,14 @@
 
 <div id="sidebarOverlay" class="fixed inset-0 bg-inverse-surface/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
 
-
+<!-- ═══════════════════════════════════════════ -->
+<!-- MAIN CONTENT WRAPPER -->
+<!-- ═══════════════════════════════════════════ -->
 <div class="flex-1 md:ml-64 flex flex-col min-h-screen">
+  
   <header class="sticky top-0 z-20 bg-surface/85 backdrop-blur-xl border-b border-surface-c">
     <div class="flex items-center gap-4 px-6 lg:px-8 py-4">
-      <button onclick="document.getElementById('sidebar').classList.toggle('hidden')" class="md:hidden text-on-surface">
+      <button onclick="toggleSidebar()" class="md:hidden text-on-surface">
         <span class="material-symbols-outlined">menu</span>
       </button>
       <h2 id="pageTitle" class="font-headline font-bold text-on-surface" style="font-size:22px;">Create Quote</h2>
@@ -146,377 +149,272 @@
   </header>
 
   <main class="p-6 lg:p-8 flex-1">
-    <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-  
-  <!-- LEFT COLUMN: THE FORM -->
-  <div class="space-y-6">
     
-    <div>
-      <h2 id="formTitle" class="font-headline font-bold text-on-surface text-2xl">Create New Quote</h2>
-      <p class="font-body text-on-surface-variant mt-1 text-sm">Choose your input method, customise, and publish.</p>
-    </div>
-
-    <!-- INPUT METHODS -->
-    <div>
-      <div class="grid grid-cols-3 gap-3">
-        <button onclick="switchMethod('bible')" class="method-tab active flex flex-col items-center gap-2 p-4 rounded-2xl">
-          <span class="method-icon material-symbols-outlined text-[24px] filled">menu_book</span>
-          <span class="font-body font-semibold text-xs">Bible Lookup</span>
-        </button>
-        <button onclick="switchMethod('ai')" class="method-tab flex flex-col items-center gap-2 p-4 rounded-2xl">
-          <span class="method-icon material-symbols-outlined text-[24px]">auto_awesome</span>
-          <span class="font-body font-semibold text-xs">Templates</span>
-        </button>
-        <button onclick="switchMethod('manual')" class="method-tab flex flex-col items-center gap-2 p-4 rounded-2xl">
-          <span class="method-icon material-symbols-outlined text-[24px]">edit_note</span>
-          <span class="font-body font-semibold text-xs">Manual</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- BIBLE LOOKUP PANEL -->
-    <div id="panelBible" class="bg-surface-cl rounded-2xl p-6 space-y-4 shadow-sm border border-surface-c">
-      <div class="flex items-center gap-2">
-        <span class="material-symbols-outlined text-primary text-[18px] filled">menu_book</span>
-        <h3 class="font-headline font-bold text-sm">Bible Reference Lookup</h3>
-      </div>
-      <div class="flex gap-2 flex-wrap">
-        <button onclick="setLookupTranslation('web',this)" class="theme-pill active px-3 py-1.5 rounded-full text-xs font-bold">WEB</button>
-        <button onclick="setLookupTranslation('kjv',this)" class="theme-pill px-3 py-1.5 rounded-full text-xs font-bold">KJV</button>
-        <button onclick="setLookupTranslation('niv',this)" class="theme-pill px-3 py-1.5 rounded-full text-xs font-bold">NIV</button>
-        <button onclick="setLookupTranslation('esv',this)" class="theme-pill px-3 py-1.5 rounded-full text-xs font-bold">ESV</button>
-      </div>
-      <div class="flex gap-2">
-        <input id="bibleRef" type="text" placeholder="e.g. John 3:16" onkeydown="if(event.key==='Enter'){lookupBible()}" class="form-input flex-1 rounded-xl px-4 py-3 text-sm">
-        <button onclick="lookupBible()" id="lookupBtn" class="signature-gradient text-white font-bold px-5 py-3 rounded-xl flex items-center gap-2 text-sm">
-          <span id="lookupIcon" class="material-symbols-outlined text-[18px]">search</span> Lookup
-        </button>
-      </div>
-      <div id="lookupStatus" class="hidden text-xs text-primary font-bold"></div>
-    </div>
-
-    <!-- TEMPLATES PANEL -->
-    <div id="panelAI" class="hidden bg-surface-cl rounded-2xl p-6 space-y-4 border border-surface-c">
-      <div class="flex items-center gap-2">
-        <span class="material-symbols-outlined text-primary text-[18px] filled">auto_awesome</span>
-        <h3 class="font-headline font-bold text-sm">Quote Templates</h3>
-      </div>
-      <div class="flex flex-wrap gap-2">
-        <button onclick="selectAITheme(this,'Hope')" class="theme-pill px-3 py-1.5 rounded-full text-xs font-bold">Hope</button>
-        <button onclick="selectAITheme(this,'Courage')" class="theme-pill px-3 py-1.5 rounded-full text-xs font-bold">Courage</button>
-      </div>
-      <button onclick="generateAIQuotes()" id="generateBtn" class="w-full py-3 signature-gradient text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm">
-        <span id="genIcon" class="material-symbols-outlined text-[18px]">auto_awesome</span> Load Templates
-      </button>
-      <div id="aiResults" class="space-y-3"></div>
-    </div>
-
-    <!-- MAIN FORM -->
-    <form id="quoteForm" onsubmit="handlePublish(event)" class="space-y-5">
+    <!-- SPLIT SCREEN GRID -->
+    <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
       
-      <!-- Quote Text -->
-      <div class="bg-surface-cl rounded-2xl p-5 space-y-3 shadow-sm border border-surface-c">
-        <div class="flex justify-between items-end">
-          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">The Quote *</label>
-          <span id="charCount" class="text-[11px] text-slate-400">0 / 500</span>
+      <!-- LEFT COLUMN: THE FORM (Takes up 2/3 space) -->
+      <div class="lg:col-span-2 space-y-6">
+        
+        <div>
+          <h2 id="formTitle" class="font-headline font-bold text-on-surface text-2xl">Create New Quote</h2>
+          <p class="font-body text-on-surface-variant mt-1 text-sm">Choose your input method, customise, and publish.</p>
         </div>
-        <textarea id="quoteText" required maxlength="500" oninput="updateCharCount()" class="form-input w-full h-32 rounded-xl p-4 text-[15px] resize-none" placeholder="Enter scripture..."></textarea>
-      </div>
 
-      <!-- Source -->
-      <div class="bg-surface-cl rounded-2xl p-5 space-y-2 shadow-sm border border-surface-c">
-        <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Source / Reference *</label>
-        <input id="quoteSource" required type="text" oninput="updatePreview()" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. John 3:16">
-      </div>
-
-      <!-- Context -->
-      <div class="bg-surface-cl rounded-2xl p-5 space-y-3 shadow-sm border border-surface-c">
-        <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Context (Optional)</label>
-        <textarea id="quoteContext" class="form-input w-full h-24 rounded-xl p-4 text-sm resize-none" placeholder="Historical background or meaning..."></textarea>
-      </div>
-
-      <!-- Category & Campaign -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <div class="bg-surface-cl rounded-2xl p-5 space-y-3 shadow-sm border border-surface-c">
-          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Category</label>
-          <div id="categoryChips" class="flex flex-wrap gap-2"></div>
-          <div class="flex gap-2">
-            <input id="newCategoryInput" type="text" placeholder="Add new..." class="form-input flex-1 rounded-lg px-3 py-2 text-sm">
-            <button type="button" onclick="addCategory()" class="bg-primary text-white font-bold px-4 py-2 rounded-lg text-sm">Add</button>
+        <!-- INPUT METHODS -->
+        <div>
+          <div class="grid grid-cols-3 gap-3">
+            <button onclick="switchMethod('bible')" class="method-tab active flex flex-col items-center gap-2 p-4 rounded-2xl">
+              <span class="method-icon material-symbols-outlined text-[24px] filled">menu_book</span>
+              <span class="font-body font-semibold text-xs">Bible Lookup</span>
+            </button>
+            <button onclick="switchMethod('ai')" class="method-tab flex flex-col items-center gap-2 p-4 rounded-2xl">
+              <span class="method-icon material-symbols-outlined text-[24px]">auto_awesome</span>
+              <span class="font-body font-semibold text-xs">Templates</span>
+            </button>
+            <button onclick="switchMethod('manual')" class="method-tab flex flex-col items-center gap-2 p-4 rounded-2xl">
+              <span class="method-icon material-symbols-outlined text-[24px]">edit_note</span>
+              <span class="font-body font-semibold text-xs">Manual</span>
+            </button>
           </div>
         </div>
-        <div class="bg-surface-cl rounded-2xl p-5 shadow-sm border border-surface-c">
-          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Campaign</label>
-          <select id="quoteCampaign" class="form-input w-full rounded-xl px-4 py-3 text-sm cursor-pointer">
-            <option value="">— None —</option>
-          </select>
-        </div>
-      </div>
 
-      <!-- Hashtags -->
-      <div class="bg-surface-cl rounded-2xl p-5 space-y-3 shadow-sm border border-surface-c">
-        <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Hashtags</label>
-        <div id="hashtagsContainer" class="flex flex-wrap gap-2"></div>
-        <div class="flex gap-2">
-          <input id="hashtagField" type="text" placeholder="#Tag" onkeydown="if(event.key==='Enter'){event.preventDefault();addHashtag()}" class="form-input flex-1 rounded-lg px-3 py-2 text-sm">
-          <button type="button" onclick="addHashtag()" class="bg-primary text-white font-bold px-4 py-2 rounded-lg text-sm">Add</button>
+        <!-- BIBLE LOOKUP PANEL -->
+        <div id="panelBible" class="bg-surface-cl rounded-2xl p-6 space-y-4 shadow-sm border border-surface-c">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary text-[18px] filled">menu_book</span>
+            <h3 class="font-headline font-bold text-sm">Bible Reference Lookup</h3>
+          </div>
+          <div class="flex gap-2 flex-wrap">
+            <button onclick="setLookupTranslation('web',this)" class="theme-pill active px-3 py-1.5 rounded-full text-xs font-bold">WEB</button>
+            <button onclick="setLookupTranslation('kjv',this)" class="theme-pill px-3 py-1.5 rounded-full text-xs font-bold">KJV</button>
+            <button onclick="setLookupTranslation('niv',this)" class="theme-pill px-3 py-1.5 rounded-full text-xs font-bold">NIV</button>
+            <button onclick="setLookupTranslation('esv',this)" class="theme-pill px-3 py-1.5 rounded-full text-xs font-bold">ESV</button>
+          </div>
+          <div class="flex gap-2">
+            <input id="bibleRef" type="text" placeholder="e.g. John 3:16" onkeydown="if(event.key==='Enter'){lookupBible()}" class="form-input flex-1 rounded-xl px-4 py-3 text-sm">
+            <button onclick="lookupBible()" id="lookupBtn" class="signature-gradient text-white font-bold px-5 py-3 rounded-xl flex items-center gap-2 text-sm">
+              <span id="lookupIcon" class="material-symbols-outlined text-[18px]">search</span> Lookup
+            </button>
+          </div>
+          <div id="lookupStatus" class="hidden text-xs text-primary font-bold"></div>
         </div>
-      </div>
 
-      <!-- Background -->
-      <div class="bg-surface-cl rounded-2xl p-5 space-y-3 shadow-sm border border-surface-c">
-        <div class="flex items-center justify-between">
-          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Background Image</label>
-          <button type="button" onclick="document.getElementById('bgFileInput').click()" class="text-primary text-xs font-bold flex items-center gap-1 hover:underline">
-            <span class="material-symbols-outlined text-[16px]">upload</span> Upload Custom
+        <!-- TEMPLATES PANEL -->
+        <div id="panelAI" class="hidden bg-surface-cl rounded-2xl p-6 space-y-4 border border-surface-c">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary text-[18px] filled">auto_awesome</span>
+            <h3 class="font-headline font-bold text-sm">Quote Templates</h3>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="selectAITheme(this,'Hope')" class="theme-pill px-3 py-1.5 rounded-full text-xs font-bold">Hope</button>
+            <button onclick="selectAITheme(this,'Courage')" class="theme-pill px-3 py-1.5 rounded-full text-xs font-bold">Courage</button>
+          </div>
+          <button onclick="generateAIQuotes()" id="generateBtn" class="w-full py-3 signature-gradient text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm">
+            <span id="genIcon" class="material-symbols-outlined text-[18px]">auto_awesome</span> Load Templates
           </button>
+          <div id="aiResults" class="space-y-3"></div>
         </div>
-        <div class="flex gap-3 overflow-x-auto pb-2" id="bgThumbsContainer"></div>
-        <p id="bgUploadProgress" class="hidden text-xs text-primary font-bold"><span class="material-symbols-outlined spin text-xs align-middle">progress_activity</span> Uploading...</p>
-      </div>
 
-      <!-- Advanced Home Display -->
-      <div class="bg-surface-cl rounded-2xl p-5 shadow-sm border border-surface-c">
-        <button type="button" onclick="document.getElementById('advPanel').classList.toggle('open')" class="w-full flex justify-between items-center">
-          <div class="flex items-center gap-2"><span class="material-symbols-outlined text-slate-500 text-lg">tune</span><span class="font-bold text-sm">Advanced Home Display</span></div>
-          <span class="material-symbols-outlined text-slate-400">expand_more</span>
-        </button>
-        <div id="advPanel" class="collapse-content">
-          <div class="pt-4 space-y-4">
-            <div>
-              <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Font Family</label>
-              <select id="homeFontFamily" onchange="updatePreview()" class="form-input w-full rounded-lg px-3 py-2 text-sm cursor-pointer">
-                <option value="Lora">Lora (Serif)</option>
-                <option value="Plus Jakarta Sans">Plus Jakarta Sans (Sans)</option>
-                <option value="Manrope">Manrope (Sans)</option>
+        <!-- MAIN FORM -->
+        <form id="quoteForm" onsubmit="handlePublish(event)" class="space-y-5">
+          
+          <!-- Quote Text -->
+          <div class="bg-surface-cl rounded-2xl p-5 space-y-3 shadow-sm border border-surface-c">
+            <div class="flex justify-between items-end">
+              <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">The Quote *</label>
+              <span id="charCount" class="text-[11px] text-slate-400">0 / 500</span>
+            </div>
+            <textarea id="quoteText" required maxlength="500" oninput="updateCharCount()" class="form-input w-full h-32 rounded-xl p-4 text-[15px] resize-none" placeholder="Enter scripture..."></textarea>
+          </div>
+
+          <!-- Source -->
+          <div class="bg-surface-cl rounded-2xl p-5 space-y-2 shadow-sm border border-surface-c">
+            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Source / Reference *</label>
+            <input id="quoteSource" required type="text" oninput="updatePreview()" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. John 3:16">
+          </div>
+
+          <!-- Context -->
+          <div class="bg-surface-cl rounded-2xl p-5 space-y-3 shadow-sm border border-surface-c">
+            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Context (Optional)</label>
+            <textarea id="quoteContext" class="form-input w-full h-24 rounded-xl p-4 text-sm resize-none" placeholder="Historical background or meaning..."></textarea>
+          </div>
+
+          <!-- Category & Campaign -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div class="bg-surface-cl rounded-2xl p-5 space-y-3 shadow-sm border border-surface-c">
+              <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Category</label>
+              <div id="categoryChips" class="flex flex-wrap gap-2"></div>
+              <div class="flex gap-2">
+                <input id="newCategoryInput" type="text" placeholder="Add new..." class="form-input flex-1 rounded-lg px-3 py-2 text-sm">
+                <button type="button" onclick="addCategory()" class="bg-primary text-white font-bold px-4 py-2 rounded-lg text-sm">Add</button>
+              </div>
+            </div>
+            <div class="bg-surface-cl rounded-2xl p-5 shadow-sm border border-surface-c">
+              <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Campaign</label>
+              <select id="quoteCampaign" class="form-input w-full rounded-xl px-4 py-3 text-sm cursor-pointer">
+                <option value="">— None —</option>
               </select>
             </div>
-            <div>
-              <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Font Weight</label>
-              <div class="flex gap-2">
-                <button type="button" onclick="setHomeWeight('400',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-weight="400">Normal</button>
-                <button type="button" onclick="setHomeWeight('600',this)" class="theme-pill active px-3 py-1.5 rounded-lg text-xs font-bold" data-weight="600">Semi Bold</button>
-                <button type="button" onclick="setHomeWeight('800',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-weight="800">Extra Bold</button>
-              </div>
+          </div>
+
+          <!-- Hashtags -->
+          <div class="bg-surface-cl rounded-2xl p-5 space-y-3 shadow-sm border border-surface-c">
+            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Hashtags</label>
+            <div id="hashtagsContainer" class="flex flex-wrap gap-2"></div>
+            <div class="flex gap-2">
+              <input id="hashtagField" type="text" placeholder="#Tag" onkeydown="if(event.key==='Enter'){event.preventDefault();addHashtag()}" class="form-input flex-1 rounded-lg px-3 py-2 text-sm">
+              <button type="button" onclick="addHashtag()" class="bg-primary text-white font-bold px-4 py-2 rounded-lg text-sm">Add</button>
             </div>
-            <div>
-              <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Font Size</label>
-              <div class="flex gap-2 flex-wrap">
-                <button type="button" onclick="setHomeSize('20px',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-size="20px">Small</button>
-                <button type="button" onclick="setHomeSize('26px',this)" class="theme-pill active px-3 py-1.5 rounded-lg text-xs font-bold" data-size="26px">Default</button>
-                <button type="button" onclick="setHomeSize('32px',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-size="32px">Large</button>
-              </div>
+          </div>
+
+          <!-- Background -->
+          <div class="bg-surface-cl rounded-2xl p-5 space-y-3 shadow-sm border border-surface-c">
+            <div class="flex items-center justify-between">
+              <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Background Image</label>
+              <button type="button" onclick="document.getElementById('bgFileInput').click()" class="text-primary text-xs font-bold flex items-center gap-1 hover:underline">
+                <span class="material-symbols-outlined text-[16px]">upload</span> Upload Custom
+              </button>
             </div>
-            <div>
-              <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Alignment</label>
-              <div class="flex gap-2">
-                <button type="button" onclick="setHomeAlign('left',this)" class="theme-pill active px-3 py-1.5 rounded-lg text-xs font-bold" data-align="left">Left</button>
-                <button type="button" onclick="setHomeAlign('center',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-align="center">Center</button>
-                <button type="button" onclick="setHomeAlign('right',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-align="right">Right</button>
-              </div>
-            </div>
-            <div>
-              <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Text Color</label>
-              <div class="flex items-center gap-3 mb-2">
-                <button type="button" onclick="setTextColor('#ffffff')" class="w-8 h-8 rounded-full border-2 border-slate-300 bg-white" title="White"></button>
-                <button type="button" onclick="setTextColor('#000000')" class="w-8 h-8 rounded-full border-2 border-slate-300 bg-black" title="Black"></button>
-                <button type="button" onclick="setTextColor('#3d6285')" class="w-8 h-8 rounded-full border-2 border-slate-300" style="background:#3d6285" title="Primary Blue"></button>
-                <input type="color" id="homeTextColor" value="#ffffff" onchange="updatePreview()" class="w-8 h-8 rounded border-0 bg-transparent p-0 cursor-pointer">
-              </div>
-            </div>
-            <div class="flex items-center justify-between pt-2 border-t border-slate-100">
-              <label class="text-[10px] font-bold text-slate-400 uppercase block">Heavy Text Shadow</label>
-              <div class="toggle-pill" id="shadowToggle" onclick="toggleShadow()">
-                <div class="toggle-dot"></div>
+            <div class="flex gap-3 overflow-x-auto pb-2" id="bgThumbsContainer"></div>
+            <p id="bgUploadProgress" class="hidden text-xs text-primary font-bold"><span class="material-symbols-outlined spin text-xs align-middle">progress_activity</span> Uploading...</p>
+          </div>
+
+          <!-- Advanced Home Display -->
+          <div class="bg-surface-cl rounded-2xl p-5 shadow-sm border border-surface-c">
+            <button type="button" onclick="document.getElementById('advPanel').classList.toggle('open')" class="w-full flex justify-between items-center">
+              <div class="flex items-center gap-2"><span class="material-symbols-outlined text-slate-500 text-lg">tune</span><span class="font-bold text-sm">Advanced Home Display</span></div>
+              <span class="material-symbols-outlined text-slate-400">expand_more</span>
+            </button>
+            <div id="advPanel" class="collapse-content">
+              <div class="pt-4 space-y-4">
+                <div>
+                  <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Font Family</label>
+                  <select id="homeFontFamily" onchange="updatePreview()" class="form-input w-full rounded-lg px-3 py-2 text-sm cursor-pointer">
+                    <option value="Lora">Lora (Serif)</option>
+                    <option value="Plus Jakarta Sans">Plus Jakarta Sans (Sans)</option>
+                    <option value="Manrope">Manrope (Sans)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Font Weight</label>
+                  <div class="flex gap-2">
+                    <button type="button" onclick="setHomeWeight('400',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-weight="400">Normal</button>
+                    <button type="button" onclick="setHomeWeight('600',this)" class="theme-pill active px-3 py-1.5 rounded-lg text-xs font-bold" data-weight="600">Semi Bold</button>
+                    <button type="button" onclick="setHomeWeight('800',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-weight="800">Extra Bold</button>
+                  </div>
+                </div>
+                <div>
+                  <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Font Size</label>
+                  <div class="flex gap-2 flex-wrap">
+                    <button type="button" onclick="setHomeSize('20px',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-size="20px">Small</button>
+                    <button type="button" onclick="setHomeSize('26px',this)" class="theme-pill active px-3 py-1.5 rounded-lg text-xs font-bold" data-size="26px">Default</button>
+                    <button type="button" onclick="setHomeSize('32px',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-size="32px">Large</button>
+                  </div>
+                </div>
+                <div>
+                  <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Alignment</label>
+                  <div class="flex gap-2">
+                    <button type="button" onclick="setHomeAlign('left',this)" class="theme-pill active px-3 py-1.5 rounded-lg text-xs font-bold" data-align="left">Left</button>
+                    <button type="button" onclick="setHomeAlign('center',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-align="center">Center</button>
+                    <button type="button" onclick="setHomeAlign('right',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-align="right">Right</button>
+                  </div>
+                </div>
+                <div>
+                  <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Text Color</label>
+                  <div class="flex items-center gap-3 mb-2">
+                    <button type="button" onclick="setTextColor('#ffffff')" class="w-8 h-8 rounded-full border-2 border-slate-300 bg-white" title="White"></button>
+                    <button type="button" onclick="setTextColor('#000000')" class="w-8 h-8 rounded-full border-2 border-slate-300 bg-black" title="Black"></button>
+                    <button type="button" onclick="setTextColor('#3d6285')" class="w-8 h-8 rounded-full border-2 border-slate-300" style="background:#3d6285" title="Primary Blue"></button>
+                    <input type="color" id="homeTextColor" value="#ffffff" onchange="updatePreview()" class="w-8 h-8 rounded border-0 bg-transparent p-0 cursor-pointer">
+                  </div>
+                </div>
+                <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <label class="text-[10px] font-bold text-slate-400 uppercase block">Heavy Text Shadow</label>
+                  <div class="toggle-pill" id="shadowToggle" onclick="toggleShadow()">
+                    <div class="toggle-dot"></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Publish Options -->
-      <div class="bg-surface-cl rounded-2xl p-5 space-y-4 shadow-sm border border-surface-c">
-        <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">When to Publish</label>
-        <div class="grid grid-cols-3 gap-3">
-          <label class="cursor-pointer">
-            <input type="radio" name="publish_state" value="now" checked class="hidden" onchange="updatePubState(this)">
-            <div class="publish-card active flex flex-col items-center p-3 rounded-xl border-2">
-              <span class="material-symbols-outlined mb-1 text-xl">bolt</span>
-              <span class="text-[10px] font-bold uppercase">Now</span>
+          <!-- Publish Options -->
+          <div class="bg-surface-cl rounded-2xl p-5 space-y-4 shadow-sm border border-surface-c">
+            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">When to Publish</label>
+            <div class="grid grid-cols-3 gap-3">
+              <label class="cursor-pointer">
+                <input type="radio" name="publish_state" value="now" checked class="hidden" onchange="updatePubState(this)">
+                <div class="publish-card active flex flex-col items-center p-3 rounded-xl border-2">
+                  <span class="material-symbols-outlined mb-1 text-xl">bolt</span>
+                  <span class="text-[10px] font-bold uppercase">Now</span>
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="publish_state" value="schedule" class="hidden" onchange="updatePubState(this)">
+                <div class="publish-card flex flex-col items-center p-3 rounded-xl border-2">
+                  <span class="material-symbols-outlined mb-1 text-xl">calendar_month</span>
+                  <span class="text-[10px] font-bold uppercase">Schedule</span>
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="publish_state" value="draft" class="hidden" onchange="updatePubState(this)">
+                <div class="publish-card flex flex-col items-center p-3 rounded-xl border-2">
+                  <span class="material-symbols-outlined mb-1 text-xl">drafts</span>
+                  <span class="text-[10px] font-bold uppercase">Draft</span>
+                </div>
+              </label>
             </div>
-          </label>
-          <label class="cursor-pointer">
-            <input type="radio" name="publish_state" value="schedule" class="hidden" onchange="updatePubState(this)">
-            <div class="publish-card flex flex-col items-center p-3 rounded-xl border-2">
-              <span class="material-symbols-outlined mb-1 text-xl">calendar_month</span>
-              <span class="text-[10px] font-bold uppercase">Schedule</span>
-            </div>
-          </label>
-          <label class="cursor-pointer">
-            <input type="radio" name="publish_state" value="draft" class="hidden" onchange="updatePubState(this)">
-            <div class="publish-card flex flex-col items-center p-3 rounded-xl border-2">
-              <span class="material-symbols-outlined mb-1 text-xl">drafts</span>
-              <span class="text-[10px] font-bold uppercase">Draft</span>
-            </div>
-          </label>
-        </div>
 
-        <div id="schedulePicker" class="hidden grid grid-cols-2 gap-3 mt-4">
-          <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Date</label><input type="date" id="scheduleDate" class="form-input w-full rounded-lg px-3 py-2 text-sm"></div>
-          <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Time (AEST)</label><input type="time" id="scheduleTime" value="05:30" class="form-input w-full rounded-lg px-3 py-2 text-sm"></div>
-        </div>
-      </div>
-
-      <!-- Submit -->
-      <button type="submit" id="submitBtn" class="w-full signature-gradient text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 text-sm shadow-md active:scale-95 transition-transform">
-        <span id="submitIcon" class="material-symbols-outlined text-lg">send</span> <span id="submitLabel">Publish Quote</span>
-      </button>
-
-    </form>
-  </div>
-
-  <!-- RIGHT COLUMN: STICKY PREVIEW (Desktop Only) -->
-  <div class="hidden lg:block">
-    <div class="sticky top-24 space-y-4">
-      <h3 class="font-headline font-bold text-on-surface text-lg px-2">Live Preview</h3>
-      
-      <!-- Sleek Phone Mockup -->
-      <div class="w-full max-w-[300px] mx-auto bg-slate-900 rounded-[2.5rem] border-[8px] border-slate-800 shadow-2xl overflow-hidden relative aspect-[9/19]">
-        <!-- Notch -->
-        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-5 bg-slate-800 rounded-b-xl z-20"></div>
-        
-        <!-- Background -->
-        <div id="previewBg" class="absolute inset-0 bg-cover bg-center opacity-50" style="background-image: url('');"></div>
-        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
-
-        <!-- Centered Content -->
-        <div class="absolute inset-0 flex flex-col justify-center items-center p-6 z-10">
-          <div class="w-full">
-            <p id="previewText" class="font-quote text-white leading-[1.4] mb-4 w-full" style="font-size: 22px; font-weight: 600; text-align: center;">Your quote will appear here...</p>
-            <div class="flex items-center gap-2 w-full" id="previewSourceContainer" style="justify-content: center;">
-              <div class="h-px w-6 bg-primary-container/60"></div>
-              <p id="previewSource" class="font-headline font-bold text-primary-container tracking-[0.15em] uppercase" style="font-size: 11px; text-align: center;">Source</p>
+            <div id="schedulePicker" class="hidden grid grid-cols-2 gap-3 mt-4">
+              <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Date</label><input type="date" id="scheduleDate" class="form-input w-full rounded-lg px-3 py-2 text-sm"></div>
+              <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Time (AEST)</label><input type="time" id="scheduleTime" value="05:30" class="form-input w-full rounded-lg px-3 py-2 text-sm"></div>
             </div>
           </div>
-        </div>
-      </div>
-      
-      <p class="text-center text-xs text-slate-500 font-body">Preview updates in real-time</p>
-    </div>
-  </div>
 
-</div>
-      
-      <!-- Font Family -->
-      <div>
-        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Font Family</label>
-        <select id="homeFontFamily" onchange="updatePreview()" class="form-input w-full rounded-lg px-3 py-2 text-sm cursor-pointer">
-          <option value="Lora">Lora (Serif)</option>
-          <option value="Plus Jakarta Sans">Plus Jakarta Sans (Sans)</option>
-          <option value="Manrope">Manrope (Sans)</option>
-          <option value="Georgia">Georgia (Classic Serif)</option>
-          <option value="Arial">Arial (Clean Sans)</option>
-        </select>
+          <!-- Submit -->
+          <button type="submit" id="submitBtn" class="w-full signature-gradient text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 text-sm shadow-md active:scale-95 transition-transform">
+            <span id="submitIcon" class="material-symbols-outlined text-lg">send</span> <span id="submitLabel">Publish Quote</span>
+          </button>
+
+        </form>
       </div>
 
-      <!-- Font Weight -->
-      <div>
-        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Font Weight</label>
-        <div class="flex gap-2">
-          <button type="button" onclick="setHomeWeight('400',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-weight="400">Normal</button>
-          <button type="button" onclick="setHomeWeight('600',this)" class="theme-pill active px-3 py-1.5 rounded-lg text-xs font-bold" data-weight="600">Semi Bold</button>
-          <button type="button" onclick="setHomeWeight('800',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-weight="800">Extra Bold</button>
-        </div>
-      </div>
+      <!-- RIGHT COLUMN: STICKY PREVIEW (Takes up 1/3 space) -->
+      <div class="hidden lg:block">
+        <div class="sticky top-24 space-y-4">
+          <h3 class="font-headline font-bold text-on-surface text-lg px-2">Live Preview</h3>
+          
+          <!-- Sleek Phone Mockup -->
+          <div class="w-full max-w-[320px] mx-auto bg-slate-900 rounded-[2.5rem] border-[8px] border-slate-800 shadow-2xl overflow-hidden relative aspect-[9/19]">
+            <!-- Notch -->
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-5 bg-slate-800 rounded-b-xl z-20"></div>
+            
+            <!-- Background -->
+            <div id="previewBg" class="absolute inset-0 bg-cover bg-center opacity-50" style="background-image: url('');"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
 
-      <!-- Font Size -->
-      <div>
-        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Font Size</label>
-        <div class="flex gap-2 flex-wrap">
-          <button type="button" onclick="setHomeSize('20px',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-size="20px">Small</button>
-          <button type="button" onclick="setHomeSize('26px',this)" class="theme-pill active px-3 py-1.5 rounded-lg text-xs font-bold" data-size="26px">Default</button>
-          <button type="button" onclick="setHomeSize('32px',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-size="32px">Large</button>
-          <button type="button" onclick="setHomeSize('40px',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-size="40px">XL</button>
+            <!-- Centered Content -->
+            <div class="absolute inset-0 flex flex-col justify-center items-center p-6 z-10">
+              <div class="w-full">
+                <p id="previewText" class="font-quote text-white leading-[1.4] mb-4 w-full" style="font-size: 22px; font-weight: 600; text-align: center;">Your quote will appear here...</p>
+                <div class="flex items-center gap-2 w-full" id="previewSourceContainer" style="justify-content: center;">
+                  <div class="h-px w-6 bg-primary-container/60"></div>
+                  <p id="previewSource" class="font-headline font-bold text-primary-container tracking-[0.15em] uppercase" style="font-size: 11px; text-align: center;">Source</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <p class="text-center text-xs text-slate-500 font-body">Preview updates in real-time</p>
         </div>
       </div>
 
-      <!-- Alignment -->
-      <div>
-        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Alignment</label>
-        <div class="flex gap-2">
-          <button type="button" onclick="setHomeAlign('left',this)" class="theme-pill active px-3 py-1.5 rounded-lg text-xs font-bold" data-align="left">Left</button>
-          <button type="button" onclick="setHomeAlign('center',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-align="center">Center</button>
-          <button type="button" onclick="setHomeAlign('right',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-align="right">Right</button>
-        </div>
-      </div>
-
-      <!-- Text Color with Presets -->
-      <div>
-        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Text Color</label>
-        <div class="flex items-center gap-3 mb-2">
-          <button type="button" onclick="setTextColor('#ffffff')" class="w-8 h-8 rounded-full border-2 border-slate-300 bg-white" title="White"></button>
-          <button type="button" onclick="setTextColor('#000000')" class="w-8 h-8 rounded-full border-2 border-slate-300 bg-black" title="Black"></button>
-          <button type="button" onclick="setTextColor('#3d6285')" class="w-8 h-8 rounded-full border-2 border-slate-300" style="background:#3d6285" title="Primary Blue"></button>
-          <button type="button" onclick="setTextColor('#D4A24C')" class="w-8 h-8 rounded-full border-2 border-slate-300" style="background:#D4A24C" title="Gold"></button>
-          <input type="color" id="homeTextColor" value="#ffffff" onchange="updatePreview()" class="w-8 h-8 rounded border-0 bg-transparent p-0 cursor-pointer">
-        </div>
-      </div>
-
-      <!-- Shadow Toggle -->
-      <div class="flex items-center justify-between pt-2 border-t border-slate-100">
-        <label class="text-[10px] font-bold text-slate-400 uppercase block">Heavy Text Shadow</label>
-        <div class="toggle-pill" id="shadowToggle" onclick="toggleShadow()">
-          <div class="toggle-dot"></div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<!-- PUBLISH OPTIONS (MOVED OUTSIDE ACCORDION) -->
-<div class="bg-surface-cl rounded-2xl p-5 space-y-4 shadow-sm border border-surface-c">
-  <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">When to Publish</label>
-  <div class="grid grid-cols-3 gap-3">
-    <label class="cursor-pointer">
-      <input type="radio" name="publish_state" value="now" checked class="hidden" onchange="updatePubState(this)">
-      <div class="publish-card active flex flex-col items-center p-3 rounded-xl border-2">
-        <span class="material-symbols-outlined mb-1 text-xl">bolt</span>
-        <span class="text-[10px] font-bold uppercase">Now</span>
-      </div>
-    </label>
-    <label class="cursor-pointer">
-      <input type="radio" name="publish_state" value="schedule" class="hidden" onchange="updatePubState(this)">
-      <div class="publish-card flex flex-col items-center p-3 rounded-xl border-2">
-        <span class="material-symbols-outlined mb-1 text-xl">calendar_month</span>
-        <span class="text-[10px] font-bold uppercase">Schedule</span>
-      </div>
-    </label>
-    <label class="cursor-pointer">
-      <input type="radio" name="publish_state" value="draft" class="hidden" onchange="updatePubState(this)">
-      <div class="publish-card flex flex-col items-center p-3 rounded-xl border-2">
-        <span class="material-symbols-outlined mb-1 text-xl">drafts</span>
-        <span class="text-[10px] font-bold uppercase">Draft</span>
-      </div>
-    </label>
-  </div>
-
-  <div id="schedulePicker" class="hidden grid grid-cols-2 gap-3 mt-4">
-    <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Date</label><input type="date" id="scheduleDate" class="form-input w-full rounded-lg px-3 py-2 text-sm"></div>
-    <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Time (AEST)</label><input type="time" id="scheduleTime" value="05:30" class="form-input w-full rounded-lg px-3 py-2 text-sm"></div>
-  </div>
-</div>
-
-<!-- SUBMIT -->
-<button type="submit" id="submitBtn" class="w-full signature-gradient text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 text-sm shadow-md active:scale-95 transition-transform">
-  <span id="submitIcon" class="material-symbols-outlined text-lg">send</span> <span id="submitLabel">Publish Quote</span>
-</button>
-
-      </form>
     </div>
   </main>
 </div>
 
+<!-- TOAST -->
 <div id="toast" class="hidden fixed top-6 right-6 z-50 bg-slate-900/90 backdrop-blur-md text-white font-bold px-5 py-3 rounded-full shadow-2xl items-center gap-2 text-sm">
   <span class="material-symbols-outlined text-green-400">check_circle</span> <span id="toastMsg"></span>
 </div>
