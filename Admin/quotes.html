@@ -71,6 +71,11 @@
     .hashtag-chip button{opacity:0.5;transition:opacity 0.15s ease;cursor:pointer;}
     .hashtag-chip button:hover{opacity:1}
 
+    .toggle-pill{ width:44px;height:24px;background:#b2b2ab;border-radius:12px; position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0; }
+    .toggle-pill.on{background:#3d6285}
+    .toggle-pill .toggle-dot{ width:18px;height:18px;background:white;border-radius:50%; position:absolute;top:3px;left:3px;transition:left 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
+    .toggle-pill.on .toggle-dot{left:23px}
+
     .collapse-content{max-height:0;overflow:hidden;opacity:0;transition:max-height 0.35s ease,opacity 0.25s ease;}
     .collapse-content.open{max-height:600px;opacity:1}
     @keyframes spin{to{transform:rotate(360deg)}}
@@ -173,9 +178,11 @@
           <h3 class="font-headline font-bold text-sm">Bible Reference Lookup</h3>
         </div>
         <div class="flex gap-2 flex-wrap">
-          <button onclick="setLookupTranslation('web',this)" class="theme-pill active px-3 py-1.5 rounded-full text-xs font-bold">WEB</button>
-          <button onclick="setLookupTranslation('kjv',this)" class="theme-pill px-3 py-1.5 rounded-full text-xs font-bold">KJV</button>
-        </div>
+  <button onclick="setLookupTranslation('web',this)" class="theme-pill active px-3 py-1.5 rounded-full text-xs font-bold">WEB</button>
+  <button onclick="setLookupTranslation('kjv',this)" class="theme-pill px-3 py-1.5 rounded-full text-xs font-bold">KJV</button>
+  <button onclick="setLookupTranslation('niv',this)" class="theme-pill px-3 py-1.5 rounded-full text-xs font-bold">NIV</button>
+  <button onclick="setLookupTranslation('esv',this)" class="theme-pill px-3 py-1.5 rounded-full text-xs font-bold">ESV</button>
+</div>
         <div class="flex gap-2">
           <input id="bibleRef" type="text" placeholder="e.g. John 3:16" onkeydown="if(event.key==='Enter'){lookupBible()}" class="form-input flex-1 rounded-xl px-4 py-3 text-sm">
           <button onclick="lookupBible()" id="lookupBtn" class="signature-gradient text-white font-bold px-5 py-3 rounded-xl flex items-center gap-2 text-sm">
@@ -229,14 +236,14 @@
 
         <!-- Category & Campaign -->
         <div class="grid grid-cols-2 gap-5">
-          <div class="bg-surface-cl rounded-2xl p-5 shadow-sm border border-surface-c">
-            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Category</label>
-            <select id="quoteCategory" class="form-input w-full rounded-xl px-4 py-3 text-sm cursor-pointer">
-              <option value="Faith">Faith</option><option value="Hope">Hope</option>
-              <option value="Courage">Courage</option><option value="Wisdom">Wisdom</option>
-              <option value="Mission">Mission</option>
-            </select>
-          </div>
+          <div class="bg-surface-cl rounded-2xl p-5 space-y-3 shadow-sm border border-surface-c">
+      <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Category</label>
+      <div id="categoryChips" class="flex flex-wrap gap-2"></div>
+      <div class="flex gap-2">
+        <input id="newCategoryInput" type="text" placeholder="Add new category..." class="form-input flex-1 rounded-lg px-3 py-2 text-sm">
+        <button type="button" onclick="addCategory()" class="bg-primary text-white font-bold px-4 py-2 rounded-lg text-sm">Add</button>
+    </div>
+  </div>
           <div class="bg-surface-cl rounded-2xl p-5 shadow-sm border border-surface-c">
             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Campaign</label>
             <select id="quoteCampaign" class="form-input w-full rounded-xl px-4 py-3 text-sm cursor-pointer">
@@ -273,23 +280,51 @@
             <div class="flex items-center gap-2"><span class="material-symbols-outlined text-slate-500 text-lg">tune</span><span class="font-bold text-sm">Advanced Home Display</span></div>
             <span class="material-symbols-outlined text-slate-400">expand_more</span>
           </button>
-          <div id="advPanel" class="collapse-content">
-            <div class="pt-4 space-y-4">
-              <div>
-                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Font Size</label>
-                <div class="flex gap-2"><button type="button" onclick="setHomeSize('',this)" class="theme-pill active px-3 py-1.5 rounded-lg text-xs font-bold" data-size="">Default</button><button type="button" onclick="setHomeSize('26px',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-size="26px">Medium</button></div>
-              </div>
-              <div>
-                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Alignment</label>
-                <div class="flex gap-2"><button type="button" onclick="setHomeAlign('left',this)" class="theme-pill active px-3 py-1.5 rounded-lg text-xs font-bold" data-align="left">Left</button><button type="button" onclick="setHomeAlign('center',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-align="center">Center</button></div>
-              </div>
-              <div>
-                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Color</label>
-                <input type="color" id="homeTextColor" value="#ffffff" class="w-8 h-8 rounded border-0 bg-transparent p-0 cursor-pointer">
-              </div>
-            </div>
-          </div>
-        </div>
+         <div id="advPanel" class="collapse-content">
+  <div class="pt-4 space-y-4">
+    <div>
+      <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Font Family</label>
+      <select id="homeFontFamily" class="form-input w-full rounded-lg px-3 py-2 text-sm cursor-pointer">
+        <option value="Lora">Lora (Serif)</option>
+        <option value="Plus Jakarta Sans">Plus Jakarta Sans (Sans)</option>
+        <option value="Manrope">Manrope (Sans)</option>
+      </select>
+    </div>
+    <div>
+      <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Font Weight</label>
+      <div class="flex gap-2">
+        <button type="button" onclick="setHomeWeight('500',this)" class="theme-pill active px-3 py-1.5 rounded-lg text-xs font-bold" data-weight="500">Normal</button>
+        <button type="button" onclick="setHomeWeight('700',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-weight="700">Bold</button>
+        <button type="button" onclick="setHomeWeight('800',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-weight="800">Extra Bold</button>
+      </div>
+    </div>
+    <div>
+      <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Font Size</label>
+      <div class="flex gap-2">
+        <button type="button" onclick="setHomeSize('',this)" class="theme-pill active px-3 py-1.5 rounded-lg text-xs font-bold" data-size="">Default</button>
+        <button type="button" onclick="setHomeSize('26px',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-size="26px">Medium</button>
+        <button type="button" onclick="setHomeSize('32px',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-size="32px">Large</button>
+      </div>
+    </div>
+    <div>
+      <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Alignment</label>
+      <div class="flex gap-2">
+        <button type="button" onclick="setHomeAlign('left',this)" class="theme-pill active px-3 py-1.5 rounded-lg text-xs font-bold" data-align="left">Left</button>
+        <button type="button" onclick="setHomeAlign('center',this)" class="theme-pill px-3 py-1.5 rounded-lg text-xs font-bold" data-align="center">Center</button>
+      </div>
+    </div>
+    <div class="flex items-center justify-between">
+      <label class="text-[10px] font-bold text-slate-400 uppercase block">Text Color</label>
+      <input type="color" id="homeTextColor" value="#ffffff" class="w-8 h-8 rounded border-0 bg-transparent p-0 cursor-pointer">
+    </div>
+    <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+      <label class="text-[10px] font-bold text-slate-400 uppercase block">Heavy Text Shadow</label>
+      <div class="toggle-pill" id="shadowToggle" onclick="toggleShadow()">
+        <div class="toggle-dot"></div>
+      </div>
+    </div>
+  </div>
+</div>
 
         <!-- Publish Options -->
         <div class="bg-surface-cl rounded-2xl p-5 space-y-4 shadow-sm border border-surface-c">
@@ -328,122 +363,290 @@ var supabaseClient = supabase.createClient(
 
 var isEditMode = false, editQuoteId = null, selectedBgUrl = null;
 var hashtags = [], backgrounds = [];
-var hSize = '', hAlign = 'left';
+var hSize = '', hAlign = 'left', hFont = 'Lora', hWeight = '500', hShadow = false;
+var currentCategory = 'None';
+var availableCategories = ['None', 'Faith', 'Hope', 'Courage', 'Wisdom', 'Mission'];
+var currentTranslation = 'web';
 
+// ─── UTILS ─────────────────────────────────────────────────────────────────
+function getEl(id) { return document.getElementById(id); }
+function toggleSidebar() { getEl('sidebar').classList.toggle('hidden'); getEl('sidebarOverlay').classList.toggle('hidden'); }
+async function handleLogout() { await supabaseClient.auth.signOut(); window.location.href = 'login.html'; }
+
+var toastTimer;
+function showToast(msg, isErr=false) {
+  var t = getEl('toast');
+  if (!t) return;
+  getEl('toastMsg').textContent = msg;
+  var icon = t.querySelector('.material-symbols-outlined');
+  icon.textContent = isErr ? 'error' : 'check_circle';
+  icon.className = 'material-symbols-outlined ' + (isErr ? 'text-red-400' : 'text-green-400');
+  t.classList.remove('hidden'); t.classList.add('flex');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.classList.add('hidden'); t.classList.remove('flex'); }, 3000);
+}
+
+// ─── INIT ──────────────────────────────────────────────────────────────────
 async function init() {
   await Promise.all([loadBackgrounds(), loadCampaigns()]);
+  renderCategories();
   var urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('edit')) loadEditData(urlParams.get('edit'));
 }
 
 async function loadBackgrounds() {
-  var { data } = await supabaseClient.from('media').select('*').eq('type','background').eq('is_active',true);
+  var { data, error } = await supabaseClient.from('media').select('*').eq('type','background').eq('is_active',true);
+  if (error) console.error(error);
   backgrounds = data || [];
   renderBgs();
 }
 
 function renderBgs() {
-  var container = document.getElementById('bgThumbsContainer');
+  var container = getEl('bgThumbsContainer');
   container.innerHTML = `<div class="bg-thumb ${!selectedBgUrl?'selected':''}" style="background:#f5f4ed" onclick="selectBg(null)"><div class="w-full h-full flex items-center justify-center"><span class="material-symbols-outlined text-slate-400">block</span></div></div>`;
   backgrounds.forEach(b => {
     container.innerHTML += `<div class="bg-thumb ${selectedBgUrl===b.url?'selected':''}" onclick="selectBg('${b.url}')"><img src="${b.url}" class="w-full h-full object-cover"></div>`;
   });
 }
-
 function selectBg(url) { selectedBgUrl = url; renderBgs(); }
 
 async function loadCampaigns() {
   var { data } = await supabaseClient.from('campaigns').select('id, name').eq('status','active');
-  var sel = document.getElementById('quoteCampaign');
+  var sel = getEl('quoteCampaign');
+  sel.innerHTML = '<option value="">— None —</option>';
   (data||[]).forEach(c => sel.innerHTML += `<option value="${c.id}">${c.name}</option>`);
 }
 
+// ─── CATEGORIES ────────────────────────────────────────────────────────────
+function renderCategories() {
+  var container = getEl('categoryChips');
+  container.innerHTML = availableCategories.map(cat => `
+    <span class="hashtag-chip ${currentCategory === cat ? 'bg-primary text-white' : ''} cursor-pointer" onclick="selectCategory('${cat}')">
+      ${cat}
+      ${cat !== 'None' ? `<button type="button" onclick="event.stopPropagation(); deleteCategory('${cat}')"><span class="material-symbols-outlined text-xs">close</span></button>` : ''}
+    </span>
+  `).join('');
+}
+function selectCategory(cat) { currentCategory = cat; renderCategories(); }
+function addCategory() {
+  var input = getEl('newCategoryInput');
+  var val = input.value.trim();
+  if (val && !availableCategories.includes(val)) {
+    availableCategories.push(val);
+    currentCategory = val;
+    renderCategories();
+    input.value = '';
+  }
+}
+function deleteCategory(cat) {
+  availableCategories = availableCategories.filter(c => c !== cat);
+  if (currentCategory === cat) currentCategory = 'None';
+  renderCategories();
+}
+
+// ─── METHODS & UI ──────────────────────────────────────────────────────────
 function switchMethod(m) {
   document.querySelectorAll('.method-tab').forEach(t => t.classList.remove('active'));
   event.currentTarget.classList.add('active');
-  document.getElementById('panelBible').classList.toggle('hidden', m !== 'bible');
-  document.getElementById('panelAI').classList.toggle('hidden', m !== 'ai');
+  getEl('panelBible').classList.toggle('hidden', m !== 'bible');
+  getEl('panelAI').classList.toggle('hidden', m !== 'ai');
 }
 
 function updateCharCount() {
-  var el = document.getElementById('charCount'), len = document.getElementById('quoteText').value.length;
-  el.textContent = len + ' / 500'; el.className = len > 450 ? 'text-[11px] font-bold text-red-500' : 'text-[11px] font-bold text-slate-400';
+  var el = getEl('charCount'), len = getEl('quoteText').value.length;
+  el.textContent = len + ' / 500'; 
+  el.className = len > 450 ? 'text-[11px] font-bold text-red-500' : 'text-[11px] font-bold text-slate-400';
 }
 
 function addHashtag() {
-  var tag = document.getElementById('hashtagField').value.trim();
+  var tag = getEl('hashtagField').value.trim();
   if(!tag) return;
   if(!tag.startsWith('#')) tag = '#' + tag;
   if(!hashtags.includes(tag)) { hashtags.push(tag); renderHashtags(); }
-  document.getElementById('hashtagField').value = '';
+  getEl('hashtagField').value = '';
 }
 function renderHashtags() {
-  document.getElementById('hashtagsContainer').innerHTML = hashtags.map((t,i) => `<span class="hashtag-chip">${t} <button type="button" onclick="hashtags.splice(${i},1);renderHashtags()"><span class="material-symbols-outlined text-xs">close</span></button></span>`).join('');
+  getEl('hashtagsContainer').innerHTML = hashtags.map((t,i) => `<span class="hashtag-chip">${t} <button type="button" onclick="hashtags.splice(${i},1);renderHashtags()"><span class="material-symbols-outlined text-xs">close</span></button></span>`).join('');
 }
 
+// ─── ADVANCED DISPLAY ─────────────────────────────────────────────────────
 function setHomeSize(sz, btn) { hSize = sz; document.querySelectorAll('[data-size]').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
 function setHomeAlign(al, btn) { hAlign = al; document.querySelectorAll('[data-align]').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+function setHomeFont(f, btn) { hFont = f; document.querySelectorAll('[data-font]').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active'); }
+function setHomeWeight(w, btn) { hWeight = w; document.querySelectorAll('[data-weight]').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+function toggleShadow() { hShadow = !hShadow; getEl('shadowToggle').classList.toggle('on', hShadow); }
 
+// ─── BIBLE LOOKUP ──────────────────────────────────────────────────────────
+function setLookupTranslation(trans, btn) {
+  currentTranslation = trans;
+  document.querySelectorAll('#panelBible .theme-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+async function lookupBible() {
+  var ref = getEl('bibleRef').value.trim();
+  if (!ref) return showToast('Enter a reference (e.g. John 3:16)', true);
+  
+  var btn = getEl('lookupBtn'), icon = getEl('lookupIcon'), status = getEl('lookupStatus');
+  btn.disabled = true; icon.textContent = 'progress_activity'; icon.classList.add('spin');
+  status.classList.remove('hidden'); status.textContent = 'Looking up...';
+
+  try {
+    // Note: bible-api.com supports WEB, KJV, ASV, YLT freely. 
+    // NIV/ESV are copyrighted. If selected, we fallback to WEB and notify user.
+    var apiTrans = currentTranslation;
+    if (currentTranslation === 'niv' || currentTranslation === 'esv') {
+      showToast(`${currentTranslation.toUpperCase()} is copyrighted. Showing WEB translation.`, true);
+      apiTrans = 'web';
+    }
+
+    var res = await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=${apiTrans}`);
+    var data = await res.json();
+
+    if (data.error || !data.text) throw new Error(data.error || 'Verse not found');
+
+    getEl('quoteText').value = data.text.trim();
+    getEl('quoteSource').value = data.reference;
+    updateCharCount();
+    status.textContent = 'Loaded successfully!';
+    status.classList.add('text-green-600');
+    showToast('Verse loaded!');
+  } catch(e) {
+    status.textContent = 'Error: ' + e.message;
+    status.classList.add('text-red-500');
+    showToast(e.message, true);
+  } finally {
+    btn.disabled = false; icon.textContent = 'search'; icon.classList.remove('spin');
+  }
+}
+
+// ── TEMPLATES (MOCK) ──────────────────────────────────────────────────────
+function selectAITheme(btn, theme) {
+  document.querySelectorAll('#panelAI .theme-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function generateAIQuotes() {
+  showToast('Template API not connected yet. Use Manual or Bible Lookup.', true);
+}
+
+// ─── BACKGROUND UPLOAD ─────────────────────────────────────────────────────
+async function handleBgUpload(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var progress = getEl('bgUploadProgress');
+  progress.classList.remove('hidden');
+
+  try {
+    var path = 'background/' + Date.now() + '.png';
+    var { error: uploadError } = await supabaseClient.storage.from('media').upload(path, file);
+    if (uploadError) throw uploadError;
+
+    var { data: urlData } = supabaseClient.storage.from('media').getPublicUrl(path);
+    var url = urlData.publicUrl;
+
+    var { error: dbError } = await supabaseClient.from('media').insert({
+      type: 'background', url: url, label: file.name, is_active: true, uploaded_by: (await supabaseClient.auth.getSession()).data.session?.user.id
+    });
+    if (dbError) throw dbError;
+
+    await loadBackgrounds();
+    selectBg(url);
+    showToast('Background uploaded!');
+  } catch(e) {
+    showToast('Upload failed: ' + e.message, true);
+  } finally {
+    progress.classList.add('hidden');
+    input.value = '';
+  }
+}
+
+// ─── PUBLISH / SAVE ────────────────────────────────────────────────────────
 function updatePubState(rad) {
   document.querySelectorAll('.publish-card').forEach(c => c.classList.remove('active'));
   rad.nextElementSibling.classList.add('active');
   var v = rad.value;
-  document.getElementById('schedulePicker').classList.toggle('hidden', v !== 'schedule');
-  document.getElementById('submitLabel').textContent = v === 'now' ? (isEditMode?'Update & Publish':'Publish Now') : v === 'schedule' ? (isEditMode?'Update Schedule':'Schedule Quote') : 'Save Draft';
+  getEl('schedulePicker').classList.toggle('hidden', v !== 'schedule');
+  getEl('submitLabel').textContent = v === 'now' ? (isEditMode?'Update & Publish':'Publish Now') : v === 'schedule' ? (isEditMode?'Update Schedule':'Schedule Quote') : 'Save Draft';
 }
 
 async function handlePublish(e) {
   e.preventDefault();
-  var text = document.getElementById('quoteText').value.trim(), source = document.getElementById('quoteSource').value.trim();
+  var text = getEl('quoteText').value.trim(), source = getEl('quoteSource').value.trim();
   var status = document.querySelector('input[name="publish_state"]:checked').value;
   
+  if (currentCategory === 'None') currentCategory = null;
+
   var data = {
-    text: text, source: source, category: document.getElementById('quoteCategory').value,
-    context: document.getElementById('quoteContext').value.trim() || null,
-    campaign_id: document.getElementById('quoteCampaign').value || null,
+    text: text, source: source, category: currentCategory,
+    context: getEl('quoteContext').value.trim() || null,
+    campaign_id: getEl('quoteCampaign').value || null,
     hashtags: hashtags, background_url: selectedBgUrl,
-    home_font_size: hSize || null, home_text_align: hAlign, home_text_color: document.getElementById('homeTextColor').value,
+    home_font_size: hSize || null, home_text_align: hAlign, 
+    home_text_color: getEl('homeTextColor').value,
+    home_font_family: hFont, home_font_weight: hWeight, home_text_shadow: hShadow,
     status: status === 'now' ? 'live' : status
   };
 
   if (status === 'schedule') {
-    var d = document.getElementById('scheduleDate').value, t = document.getElementById('scheduleTime').value;
-    if(!d || !t) return alert("Select date/time");
-    // Calculate AEST back to UTC roughly for DB storage
+    var d = getEl('scheduleDate').value, t = getEl('scheduleTime').value;
+    if(!d || !t) return showToast("Select date/time", true);
     var dObj = new Date(d + 'T' + t + ':00');
     data.scheduled_for = new Date(dObj.getTime() - (10 * 60 * 60 * 1000)).toISOString();
   } else if (status === 'now') {
     data.published_at = new Date().toISOString();
   }
 
-  var btn = document.getElementById('submitBtn'); btn.disabled = true; btn.innerHTML = 'Saving...';
+  var btn = getEl('submitBtn'); btn.disabled = true; btn.innerHTML = '<span class="material-symbols-outlined spin text-lg">progress_activity</span> Saving...';
   
-  if(isEditMode) await supabaseClient.from('quotes').update(data).eq('id', editQuoteId);
-  else await supabaseClient.from('quotes').insert([data]);
-
-  alert("Quote saved!");
-  window.location.href = 'manage-quotes.html';
+  try {
+    var res;
+    if(isEditMode) {
+      res = await supabaseClient.from('quotes').update(data).eq('id', editQuoteId);
+    } else {
+      res = await supabaseClient.from('quotes').insert([data]);
+    }
+    
+    if (res.error) throw new Error(res.error.message);
+    
+    showToast("Quote saved successfully!");
+    setTimeout(() => { window.location.href = 'manage-quotes.html'; }, 1000);
+  } catch(err) {
+    showToast("Failed to save: " + err.message, true);
+    btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined text-lg">send</span> <span id="submitLabel">Publish Quote</span>';
+  }
 }
 
+// ─── EDIT MODE ─────────────────────────────────────────────────────────────
 async function loadEditData(id) {
   isEditMode = true; editQuoteId = id;
-  document.getElementById('formTitle').textContent = 'Edit Quote';
+  getEl('formTitle').textContent = 'Edit Quote';
   var { data } = await supabaseClient.from('quotes').select('*').eq('id', id).single();
-  if(!data) return;
+  if(!data) return showToast('Quote not found', true);
 
-  document.getElementById('quoteText').value = data.text;
-  document.getElementById('quoteSource').value = data.source;
-  document.getElementById('quoteContext').value = data.context || '';
-  document.getElementById('quoteCategory').value = data.category || 'Faith';
-  if(data.campaign_id) document.getElementById('quoteCampaign').value = data.campaign_id;
+  getEl('quoteText').value = data.text;
+  getEl('quoteSource').value = data.source;
+  getEl('quoteContext').value = data.context || '';
+  
+  currentCategory = data.category || 'None';
+  if (!availableCategories.includes(currentCategory)) availableCategories.push(currentCategory);
+  renderCategories();
+
+  if(data.campaign_id) getEl('quoteCampaign').value = data.campaign_id;
   
   hashtags = data.hashtags || []; renderHashtags();
   selectedBgUrl = data.background_url || null; renderBgs();
 
-  document.getElementById('homeTextColor').value = data.home_text_color || '#ffffff';
+  getEl('homeTextColor').value = data.home_text_color || '#ffffff';
+  hFont = data.home_font_family || 'Lora';
+  hWeight = data.home_font_weight || '500';
+  hShadow = data.home_text_shadow || false;
+  if (hShadow) getEl('shadowToggle').classList.add('on');
+  
   updateCharCount();
 
-  var sRad = document.querySelector(`input[name="publish_state"][value="${data.status==='live'?'now':data.status}"]`);
+  var dbStatus = data.status;
+  var radioVal = dbStatus === 'live' ? 'now' : (dbStatus === 'scheduled' ? 'schedule' : 'draft');
+  var sRad = document.querySelector(`input[name="publish_state"][value="${radioVal}"]`);
   if(sRad) { sRad.checked = true; updatePubState(sRad); }
 }
 
