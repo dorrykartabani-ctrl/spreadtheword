@@ -25,7 +25,7 @@
             'surface':'#fbf9f4','surface-c':'#efeee7',
             'on-surface':'#31332e','on-surface-variant':'#5e6059',
             'outline':'#7a7b75', 'primary':'#3d6285', 'secondary':'#41637c',
-            'tertiary':'#ad332b', 'pale-blue':'#eef4f9', 'command-navy':'#1E4060'
+            'tertiary':'#ad332b', 'pale-blue':'#eef4f9', 'command-navy':'#1E4060', 'command-navy-dim':'#152E45'
           },
           fontFamily: {
             'headline':['Plus Jakarta Sans','sans-serif'],
@@ -58,27 +58,42 @@
     }
     .header-scrolled { box-shadow:0 8px 24px rgba(0,0,0,0.04); }
 
-    /* FIELD REPORT CARD - Sharp military dossier */
+    /* FIELD REPORT CARD - Navy command strip pops off pale blue bg */
     .mission-card {
       background:#ffffff;
       border: 1px solid #cbd5e1;
-      box-shadow: 0 4px 12px rgba(30, 64, 96, 0.06);
-      transition:box-shadow 0.25s ease, border-color 0.25s ease;
+      box-shadow: 0 4px 16px rgba(30, 64, 96, 0.08);
+      transition:box-shadow 0.25s ease, transform 0.15s ease;
       cursor:pointer; position: relative;
       overflow: hidden;
     }
-    .mission-card:hover { box-shadow:0 8px 24px rgba(30, 64, 96, 0.1); border-color: #94a3b8; }
-    .mission-card.expanded { box-shadow:0 20px 40px rgba(0,0,0,0.1); border-color: #3d6285; }
+    .mission-card:hover { box-shadow:0 12px 32px rgba(30, 64, 96, 0.12); transform: translateY(-2px); }
+    .mission-card.expanded { box-shadow:0 20px 40px rgba(0,0,0,0.15); }
 
-    /* Pale Blue Command Strip */
+    /* NAVY COMMAND STRIP - Pops against pale blue page */
     .command-strip {
-      background: #eef4f9;
-      border-bottom: 2px solid #1E4060;
-      padding: 14px 16px;
+      background: linear-gradient(135deg, #1E4060, #152E45);
+      padding: 16px 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
+      position: relative;
+    }
+    .command-strip::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      background: #D4A24C; /* Gold accent stripe */
+    }
+    .command-title {
+      color: white;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800;
+      font-size: 17px;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
     }
 
     /* Expandable */
@@ -91,7 +106,7 @@
     .expand-chevron { transition:transform 0.35s ease; }
     .mission-card.expanded .expand-chevron { transform:rotate(180deg); }
 
-    /* Progress bar (thin, sharp) */
+    /* Progress bar */
     .progress-track { height:6px; background:#f1f5f9; overflow:hidden; }
     .progress-fill { height:100%; transition:width 1.2s cubic-bezier(0.22,1,0.36,1); }
     .progress-monetary { background:#22c55e; }
@@ -140,11 +155,6 @@
     .filter-option.selected .filter-check { opacity:1; }
     .filter-check { opacity:0; color:#1E4060; transition:opacity 0.15s ease; }
 
-    /* Type accent color per mission */
-    .accent-monetary { color: #16a34a; }
-    .accent-growth { color: #2563eb; }
-    .accent-shares { color: #d97706; }
-
     .dossier-label { 
       font-family:'JetBrains Mono',monospace; 
       font-size: 9px; 
@@ -154,24 +164,20 @@
       letter-spacing: 0.15em; 
     }
 
-    /* Timeline dots */
     .timeline-line { border-left: 2px dashed rgba(30, 64, 96, 0.2); }
   </style>
 </head>
 
 <body>
 
-<!-- HEADER -->
+<!-- HEADER (cleaned up — no more "Command Ops") -->
 <header id="pageHeader" class="fixed top-0 w-full z-50 glass-header">
   <div class="max-w-[430px] mx-auto px-5 pt-3 pb-3 flex items-center justify-between">
-    <div>
-      <p class="text-[10px] font-black text-command-navy uppercase tracking-widest font-mono">Command Ops</p>
-      <h1 class="font-headline font-extrabold text-command-navy" style="font-size:22px;">Field Missions</h1>
-    </div>
+    <h1 class="font-headline font-extrabold text-command-navy" style="font-size:22px;">Field Missions</h1>
     
     <div class="flex items-center gap-1">
       <div class="tooltip-container" id="infoTooltip">
-        <button onclick="toggleTooltip()" class="w-10 h-10 flex items-center justify-center text-command-navy hover:bg-slate-100 active:scale-90 transition-all">
+        <button onclick="toggleTooltip()" class="w-10 h-10 flex items-center justify-center text-command-navy hover:bg-white/60 rounded-lg active:scale-90 transition-all">
           <span class="material-symbols-outlined text-[22px]">info</span>
         </button>
         <div class="tooltip-bubble">
@@ -179,7 +185,7 @@
         </div>
       </div>
 
-      <button onclick="openFilterSheet()" class="w-10 h-10 flex items-center justify-center text-command-navy hover:bg-slate-100 active:scale-90 transition-all" aria-label="Filter">
+      <button onclick="openFilterSheet()" class="w-10 h-10 flex items-center justify-center text-command-navy hover:bg-white/60 rounded-lg active:scale-90 transition-all" aria-label="Filter">
         <span class="material-symbols-outlined text-[22px]">tune</span>
       </button>
     </div>
@@ -187,23 +193,22 @@
 </header>
 
 <!-- MAIN -->
-<main class="pt-[calc(4.5rem+env(safe-area-inset-top))] pb-32 px-5 max-w-[430px] mx-auto">
+<main class="pt-[calc(4rem+env(safe-area-inset-top))] pb-32 px-5 max-w-[430px] mx-auto">
 
   <div id="priorityPrompt" class="hidden fade-up mb-6">
-    <div class="bg-command-navy text-white p-4 flex items-center gap-3 border-l-4 border-amber-400">
+    <div class="bg-command-navy text-white p-4 flex items-center gap-3 border-l-4 border-amber-400 shadow-md">
       <span class="material-symbols-outlined text-[24px] text-amber-400">flag</span>
       <div class="flex-1">
         <p class="font-headline font-bold text-sm">Set your first priority</p>
-        <p class="text-white/60 text-[11px] mt-0.5 font-mono uppercase tracking-widest">Tap monetary mission to rank</p>
+        <p class="text-white/60 text-[11px] mt-0.5">Tap any monetary mission to rank it</p>
       </div>
     </div>
   </div>
 
   <!-- ACTIVE MISSIONS -->
   <section class="mb-8">
-    <div class="flex items-center justify-between mb-4">
-      <p class="dossier-label">Active Ops <span id="activeCount"></span></p>
-      <p class="text-[9px] text-slate-400 font-mono">// CLASSIFIED</p>
+    <div class="flex items-center justify-between mb-4 px-1">
+      <p class="dossier-label">Active Missions <span id="activeCount"></span></p>
     </div>
     <div id="activeProjects" class="space-y-5">
       <div class="skeleton h-64 w-full"></div>
@@ -213,7 +218,7 @@
 
   <!-- COMPLETED MISSIONS -->
   <section class="mb-8">
-    <div class="flex items-center justify-between mb-4">
+    <div class="flex items-center justify-between mb-4 px-1">
       <p class="dossier-label">Completed <span id="completedCount"></span></p>
     </div>
     <div id="completedProjects" class="space-y-3">
@@ -255,7 +260,7 @@
       <div class="filter-option" data-filter="sort" data-value="funded"><span class="font-body font-semibold text-slate-800 text-sm">Most Funded</span><span class="filter-check material-symbols-outlined text-lg">check</span></div>
     </div>
 
-    <button onclick="applyFilters()" class="w-full py-3.5 bg-command-navy text-white font-headline font-bold active:scale-[0.98] transition-transform text-sm">Apply</button>
+    <button onclick="applyFilters()" class="w-full py-3.5 bg-command-navy text-white font-headline font-bold active:scale-[0.98] transition-transform text-sm rounded-lg">Apply</button>
   </div>
 </div>
 
@@ -380,7 +385,7 @@ function buildMissionCard(project, index) {
   var typeConfig = getTypeConfig(goalType);
   var remaining = Math.max(goal - raised, 0);
   
-  // Buttons (Distinct Actions)
+  // Action buttons
   var buttons = [];
   if (project.accept_donations) {
     buttons.push(`
@@ -413,20 +418,20 @@ function buildMissionCard(project, index) {
       </div>`;
   } else {
     actionHtml = `
-      <button onclick="event.stopPropagation();${typeConfig.actionFn}('${project.id}')" class="w-full py-3 mt-4 bg-command-navy text-white font-headline font-bold flex items-center justify-center gap-2 active:scale-95 shadow-sm text-sm font-mono uppercase tracking-widest text-xs">
+      <button onclick="event.stopPropagation();${typeConfig.actionFn}('${project.id}')" class="w-full py-3 mt-4 bg-command-navy text-white font-headline font-bold flex items-center justify-center gap-2 active:scale-95 shadow-sm font-mono uppercase tracking-widest text-xs">
         <span class="material-symbols-outlined text-[18px]">${typeConfig.actionIcon}</span> ${typeConfig.actionLabel}
       </button>`;
   }
 
-  // Reward Badge in Command Strip (Top Right)
+  // Reward Badge (right side of command strip)
   var rewardBadgeHtml = '';
   if (project.reward_badge_id) {
     var b = allBadges.find(x => x.id === project.reward_badge_id);
     if (b) {
       var bImg = b.image_url || `/images/badges/${b.id}.svg`;
       rewardBadgeHtml = `
-        <div class="flex items-center gap-2 shrink-0" title="${escapeAttr(b.name)} Reward">
-          <img src="${escapeAttr(bImg)}" class="w-8 h-8 object-contain drop-shadow-sm">
+        <div class="shrink-0" title="${escapeAttr(b.name)} Reward">
+          <img src="${escapeAttr(bImg)}" class="w-10 h-10 object-contain drop-shadow-lg">
         </div>`;
     }
   }
@@ -459,16 +464,13 @@ function buildMissionCard(project, index) {
   return `
     <article class="mission-card fade-up" id="card-${project.id}" onclick="toggleCardExpansion('${project.id}')">
       
-      <!-- COMMAND STRIP (PALE BLUE TOP) -->
+      <!-- COMMAND STRIP (NAVY - Pops off page) -->
       <div class="command-strip">
-        <div class="flex-1 min-w-0">
-          <p class="font-mono text-[9px] font-bold text-command-navy/60 uppercase tracking-widest mb-0.5">OP // ${goalType.toUpperCase()}</p>
-          <h3 class="font-headline font-extrabold text-command-navy text-base leading-tight truncate">${escapeHtml(project.title)}</h3>
-        </div>
+        <h3 class="command-title flex-1 min-w-0 truncate pl-2">${escapeHtml(project.title)}</h3>
         ${rewardBadgeHtml}
       </div>
 
-      <!-- IMAGE (Sharp corners, purely visual) -->
+      <!-- IMAGE -->
       <div class="relative h-44 bg-slate-800">
         <img src="${escapeAttr(imageUrl)}" class="w-full h-full object-cover">
       </div>
@@ -477,7 +479,7 @@ function buildMissionCard(project, index) {
       <div class="p-5 bg-white">
         <p class="font-body text-slate-600 text-sm line-clamp-2 leading-relaxed mb-5">${escapeHtml(project.description)}</p>
         
-        <!-- STATS GRID (Monospace Dossier Style) -->
+        <!-- STATS GRID -->
         <div class="grid grid-cols-3 gap-3 mb-4 pb-4 border-b border-slate-100">
           <div>
             <p class="dossier-label">Raised</p>
@@ -504,7 +506,7 @@ function buildMissionCard(project, index) {
 
         <!-- Expand Toggle -->
         <div class="flex justify-center mt-4">
-          <div class="expand-chevron w-7 h-7 bg-eef4f9 border border-slate-200 flex items-center justify-center" style="background:#eef4f9;">
+          <div class="expand-chevron w-7 h-7 bg-pale-blue border border-slate-200 flex items-center justify-center rounded-full">
             <span class="material-symbols-outlined text-command-navy text-[18px]">expand_more</span>
           </div>
         </div>
@@ -612,7 +614,7 @@ async function setPriority(e, btn, projectId, rank) {
   checkPriorityPrompt();
 }
 
-// ─── UTILS ─────────────────────────────────────────────────────────────
+// ─── UTILS ─────────────────────────────────────────────────────────
 function handleDonate(projectId) {
   showToast('Direct donations coming soon via Stripe!', false);
 }
@@ -636,7 +638,7 @@ function shareInvite() {
       if (navigator.share) navigator.share({ title:'Join Go Spread The Word', text:'Join me in spreading the Word every day.', url:link }).catch(()=>{});
       else { navigator.clipboard.writeText(link); showToast('Invite link copied'); }
     } else {
-      showToast('Set up your invite code in profile first', true);
+      showToast('Invite code not set up yet', true);
     }
   });
 }
