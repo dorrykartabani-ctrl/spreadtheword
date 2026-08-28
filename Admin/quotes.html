@@ -268,17 +268,22 @@
             </div>
           </div>
 
-          <!-- Background -->
-          <div class="bg-surface-cl rounded-2xl p-5 space-y-3 shadow-sm border border-surface-c">
-            <div class="flex items-center justify-between">
-              <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Background Image</label>
-              <button type="button" onclick="document.getElementById('bgFileInput').click()" class="text-primary text-xs font-bold flex items-center gap-1 hover:underline">
-                <span class="material-symbols-outlined text-[16px]">upload</span> Upload Custom
-              </button>
-            </div>
-            <div class="flex gap-3 overflow-x-auto pb-2" id="bgThumbsContainer"></div>
-            <p id="bgUploadProgress" class="hidden text-xs text-primary font-bold"><span class="material-symbols-outlined spin text-xs align-middle">progress_activity</span> Uploading...</p>
-          </div>
+       <!-- Background -->
+<div class="bg-surface-cl rounded-2xl p-5 space-y-3 shadow-sm border border-surface-c">
+  <div class="flex items-center justify-between">
+    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Background Image</label>
+    <div class="flex gap-3">
+      <button type="button" onclick="openLibraryModal()" class="text-primary text-xs font-bold flex items-center gap-1 hover:underline">
+        <span class="material-symbols-outlined text-[16px]">photo_library</span> Select from Library
+      </button>
+      <button type="button" onclick="document.getElementById('bgFileInput').click()" class="text-primary text-xs font-bold flex items-center gap-1 hover:underline">
+        <span class="material-symbols-outlined text-[16px]">upload</span> Upload Custom
+      </button>
+    </div>
+  </div>
+  <div class="flex gap-3 overflow-x-auto pb-2" id="bgThumbsContainer"></div>
+  <p id="bgUploadProgress" class="hidden text-xs text-primary font-bold"><span class="material-symbols-outlined spin text-xs align-middle">progress_activity</span> Uploading...</p>
+</div>
 
           <!-- Advanced Home Display -->
           <div class="bg-surface-cl rounded-2xl p-5 shadow-sm border border-surface-c">
@@ -418,7 +423,18 @@
 <div id="toast" class="hidden fixed top-6 right-6 z-50 bg-slate-900/90 backdrop-blur-md text-white font-bold px-5 py-3 rounded-full shadow-2xl items-center gap-2 text-sm">
   <span class="material-symbols-outlined text-green-400">check_circle</span> <span id="toastMsg"></span>
 </div>
-
+  
+<!-- LIBRARY SELECTION MODAL -->
+<div id="libraryModal" class="hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onclick="closeLibraryModal()">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col" onclick="event.stopPropagation()">
+    <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+      <h3 class="font-headline font-bold text-on-surface text-lg">Select from Library</h3>
+      <button onclick="closeLibraryModal()" class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div id="libraryGrid" class="p-5 overflow-y-auto grid grid-cols-3 sm:grid-cols-4 gap-3"></div>
+  </div>
+</div>
+  
 <script>
 var supabaseClient = supabase.createClient(
   'https://nhymadutuhpjgkiurify.supabase.co',
@@ -660,6 +676,32 @@ function updatePubState(rad) {
   getEl('submitLabel').textContent = v === 'now' ? (isEditMode?'Update & Publish':'Publish Now') : v === 'schedule' ? (isEditMode?'Update Schedule':'Schedule Quote') : 'Save Draft';
 }
 
+function openLibraryModal() {
+  var modal = getEl('libraryModal');
+  var grid = getEl('libraryGrid');
+  if(!modal || !grid) return;
+  
+  // Render the already loaded backgrounds array
+  grid.innerHTML = backgrounds.map(b => `
+    <div class="aspect-square rounded-xl overflow-hidden cursor-pointer border-2 ${selectedBgUrl === b.url ? 'border-primary' : 'border-transparent'} hover:border-primary transition-all" onclick="selectFromLibrary('${b.url}')">
+      <img src="${b.url}" class="w-full h-full object-cover">
+    </div>
+  `).join('');
+  
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeLibraryModal() {
+  var modal = getEl('libraryModal');
+  if(modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+}
+
+function selectFromLibrary(url) {
+  selectBg(url);
+  closeLibraryModal();
+}
+  
 async function handlePublish(e) {
   e.preventDefault();
   var text = getEl('quoteText').value.trim(), source = getEl('quoteSource').value.trim();
@@ -679,7 +721,7 @@ async function handlePublish(e) {
     status: status === 'now' ? 'live' : status
   };
 
-  if (status === 'schedule') {
+  if (status === 'scheduled') {
     var d = getEl('scheduleDate').value, t = getEl('scheduleTime').value;
     if(!d || !t) return showToast("Select date/time", true);
     var dObj = new Date(d + 'T' + t + ':00');
