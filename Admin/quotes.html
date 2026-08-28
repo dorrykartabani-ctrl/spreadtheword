@@ -707,8 +707,11 @@ async function handlePublish(e) {
   var text = getEl('quoteText').value.trim(), source = getEl('quoteSource').value.trim();
   var status = document.querySelector('input[name="publish_state"]:checked').value;
   
-  // FIX: Send 'None' string instead of null to satisfy database constraint
+  // FIX 1: Category cannot be null
   var categoryToSave = currentCategory === 'None' ? 'None' : currentCategory;
+
+  // FIX 2: Map 'schedule' to 'scheduled' to satisfy database constraint
+  var dbStatus = status === 'now' ? 'live' : (status === 'schedule' ? 'scheduled' : 'draft');
 
   var data = {
     text: text, source: source, category: categoryToSave,
@@ -718,10 +721,10 @@ async function handlePublish(e) {
     home_font_size: hSize, home_text_align: hAlign, 
     home_text_color: getEl('homeTextColor').value,
     home_font_family: hFont, home_font_weight: hWeight, home_text_shadow: hShadow,
-    status: status === 'now' ? 'live' : status
+    status: dbStatus 
   };
 
-  if (status === 'scheduled') {
+  if (status === 'schedule') {
     var d = getEl('scheduleDate').value, t = getEl('scheduleTime').value;
     if(!d || !t) return showToast("Select date/time", true);
     var dObj = new Date(d + 'T' + t + ':00');
