@@ -408,7 +408,6 @@ var mDonate = false;
 var mHasUrl = false;
 var fallbackImage = 'https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=800&q=80';
 
-// Safe Element Selector Helper
 function getEl(id) { return document.getElementById(id); }
 
 async function init() {
@@ -442,11 +441,9 @@ async function handleLogout() {
   window.location.href = 'login.html';
 }
 
-// ─── DATA LOADING ──────────────────────────────────────────────────────────
-
 async function loadMedia() {
   try {
-    var { data, error } = await supabaseClient.from('media').select('*').in('type', ['mission', 'landing']).eq('is_active', true).order('created_at', {ascending:false});
+    var { data, error } = await supabaseClient.from('media').select('*').eq('type', 'mission').eq('is_active', true).order('created_at', {ascending:false});
     if (error) throw error;
     mediaImages = data || [];
     var sel = getEl('mImage');
@@ -455,7 +452,7 @@ async function loadMedia() {
       mediaImages.forEach(m => sel.innerHTML += `<option value="${m.url}">${escapeHtml(m.label)}</option>`);
     }
   } catch (e) {
-    showToast("Could not load media images", true);
+    showToast("Could not load media images: " + e.message, true);
   }
 }
 
@@ -470,7 +467,7 @@ async function loadBadges() {
       badges.forEach(b => sel.innerHTML += `<option value="${b.id}">${escapeHtml(b.name)}</option>`);
     }
   } catch (e) {
-    showToast("Could not load badges", true);
+    showToast("Could not load badges: " + e.message, true);
   }
 }
 
@@ -480,7 +477,7 @@ async function fetchMissions() {
     if (error) throw error;
     allMissions = data || [];
   } catch (e) {
-    showToast("Could not load missions", true);
+    showToast("Could not load missions: " + e.message, true);
   }
 }
 
@@ -491,11 +488,9 @@ async function fetchUpdates(projectId) {
     updates = data || [];
     renderUpdates();
   } catch (e) {
-    showToast("Could not load updates", true);
+    showToast("Could not load updates: " + e.message, true);
   }
 }
-
-// ─── LEFT PANE ─────────────────────────────────────────────────────────────
 
 function filterList(filter) {
   listFilter = filter;
@@ -543,8 +538,6 @@ function filterList(filter) {
   });
 }
 
-// ─── EDITOR ─────────────────────────────────────────────────────────────
-
 function createNewMission() {
   currentMissionId = null; isEditMode = false;
   if (getEl('editorTitle')) getEl('editorTitle').textContent = "New Mission";
@@ -587,7 +580,7 @@ function loadMissionIntoEditor(id) {
   if (getEl('mGoal')) getEl('mGoal').value = m.goal_amount || '';
   if (getEl('mCountry')) getEl('mCountry').value = m.country || 'Global';
   if (getEl('mImage')) getEl('mImage').value = m.image_url || '';
-  if (getEl('mBadge')) getEl('mBadge').value = m.reward_badge_id || '';
+  if (getEl('mBadge')) getEl('mBadge').value = m.reward_badge || ''; // FIXED: matched DB column
   if (getEl('mExternalUrl')) getEl('mExternalUrl').value = m.external_url || '';
   if (getEl('mDonateUrl')) getEl('mDonateUrl').value = m.donate_url || '';
   if (getEl('mStartDate')) getEl('mStartDate').value = m.start_date || '';
@@ -655,8 +648,6 @@ function toggleExternalUrl() {
   syncPreview(); 
 }
 
-// ─── WYSIWYG PREVIEW ───────────────────────────────────────────────────────
-
 function syncPreview() {
   var title = (getEl('mTitle') && getEl('mTitle').value) || 'Mission Title';
   var desc = (getEl('mDesc') && getEl('mDesc').value) || 'Mission description goes here.';
@@ -712,33 +703,38 @@ function syncPreview() {
   }
 }
 
-// ─── UPLOAD IMAGE ──────────────────────────────────────────────────────────
-
 async function handleImageUpload(input) {
   var file = input.files[0];
   if(!file) return;
   if (getEl('mUploadStatus')) getEl('mUploadStatus').classList.remove('hidden');
 
   try {
-    var path = 'missions/' + Date.now() + '.png';
-    await supabaseClient.storage.from('media').upload(path, file);
+    var path = 'mission/' + Date.now() + '.png';
+    var uploadRes = await supabaseClient.storage.from('media').upload(path, file);
+    if (uploadRes.error) throw new Error(uploadRes.error.message);
+    
     var url = supabaseClient.storage.from('media').getPublicUrl(path).data.publicUrl;
     
-    await supabaseClient.from('media').insert({ type: 'mission', url: url, label: file.name, is_active: true });
+    var insertRes = await supabaseClient.from('media').insert({ 
+      type: 'mission', 
+      url: url, 
+      label: file.name, 
+      is_active: true, 
+      uploaded_by: currentUser.id 
+    });
+    if (insertRes.error) throw new Error(insertRes.error.message);
     
     await loadMedia(); 
     if (getEl('mImage')) getEl('mImage').value = url;
     syncPreview();
     showToast("Image uploaded to library!");
   } catch(e) {
-    showToast("Upload failed", true);
+    showToast("Upload failed: " + e.message, true);
   } finally {
     if (getEl('mUploadStatus')) getEl('mUploadStatus').classList.add('hidden');
     input.value = '';
   }
 }
-
-// ─── SAVE / DELETE ─────────────────────────────────────────────────────────
 
 async function saveMission() {
   var title = getEl('mTitle') ? getEl('mTitle').value.trim() : '';
@@ -752,7 +748,7 @@ async function saveMission() {
     goal_amount: goal,
     country: (getEl('mCountry') && getEl('mCountry').value.trim()) || 'Global',
     image_url: (getEl('mImage') && getEl('mImage').value) || null,
-    reward_badge_id: (getEl('mBadge') && getEl('mBadge').value) || null,
+    reward_badge: (getEl('mBadge') && getEl('mBadge').value) || null, // FIXED: matched DB column
     accept_donations: mDonate,
     donate_url: mDonate ? ((getEl('mDonateUrl') && getEl('mDonateUrl').value.trim()) || null) : null,
     external_url: mHasUrl ? ((getEl('mExternalUrl') && getEl('mExternalUrl').value.trim()) || null) : null,
@@ -761,6 +757,7 @@ async function saveMission() {
     auto_track: mType !== 'monetary',
     auto_track_source: mType === 'users' ? 'profiles_count' : mType === 'shares' ? 'shares_count' : null,
     status: mActive ? 'active' : 'paused',
+    is_visible: mActive, // ADDED: required by DB to show on live site
     start_date: (getEl('mStartDate') && getEl('mStartDate').value) || null,
     end_date: (getEl('mEndDate') && getEl('mEndDate').value) || null
   };
@@ -770,12 +767,15 @@ async function saveMission() {
   if (icon) { icon.className = "material-symbols-outlined spin text-[18px]"; icon.textContent = "progress_activity"; }
 
   try {
+    var res;
     if (currentMissionId) {
-      await supabaseClient.from('projects').update(data).eq('id', currentMissionId);
+      res = await supabaseClient.from('projects').update(data).eq('id', currentMissionId);
+      if (res.error) throw new Error(res.error.message); // FIXED: Actually check for errors
       showToast("Mission updated!");
     } else {
       data.raised_amount = 0; data.warrior_count = 0;
-      var res = await supabaseClient.from('projects').insert([data]).select().single();
+      res = await supabaseClient.from('projects').insert([data]).select().single();
+      if (res.error) throw new Error(res.error.message); // FIXED: Actually check for errors
       currentMissionId = res.data.id;
       showToast("Mission created!");
       if (getEl('updatesSection')) getEl('updatesSection').classList.remove('hidden');
@@ -796,8 +796,6 @@ async function deleteCurrentMission() {
   await fetchMissions(); createNewMission(); filterList(listFilter);
 }
 
-// ─── FIELD REPORTS (UPDATES) ───────────────────────────────────────────────
-
 async function postUpdate() {
   var input = getEl('newUpdateText');
   var msg = input ? input.value.trim() : '';
@@ -807,7 +805,8 @@ async function postUpdate() {
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="material-symbols-outlined spin text-sm">progress_activity</span>'; }
 
   try {
-    await supabaseClient.from('project_updates').insert([{ project_id: currentMissionId, message: msg, created_by: currentUser.id }]);
+    var res = await supabaseClient.from('project_updates').insert([{ project_id: currentMissionId, message: msg, created_by: currentUser.id }]);
+    if (res.error) throw new Error(res.error.message);
     if (input) input.value = '';
     showToast("Update posted!");
     fetchUpdates(currentMissionId);
@@ -836,7 +835,6 @@ function renderUpdates() {
   `).join('');
 }
 
-// ─── MOBILE UI ─────────────────────────────────────────────────────────────
 function openEditorMobile() {
   if (getEl('listPane')) getEl('listPane').classList.add('hidden', 'lg:flex');
   if (getEl('editorPane')) { getEl('editorPane').classList.remove('hidden'); getEl('editorPane').classList.add('flex'); }
@@ -846,7 +844,6 @@ function closeEditorMobile() {
   if (getEl('editorPane')) { getEl('editorPane').classList.add('hidden', 'lg:flex'); getEl('editorPane').classList.remove('flex'); }
 }
 
-// ─── UTILS ─────────────────────────────────────────────────────────────────
 function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 var toastTimer;
 function showToast(msg, isErr=false) {
