@@ -269,7 +269,19 @@
   <span class="material-symbols-outlined text-green-400">check_circle</span>
   <span id="toastMsg"></span>
 </div>
-
+  
+<!-- MISSION DETAILS MODAL -->
+<div id="missionModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4" onclick="if(event.target === this) closeMissionModal()">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
+    <button onclick="closeMissionModal()" class="absolute top-4 right-4 w-8 h-8 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center transition-colors z-10">
+      <span class="material-symbols-outlined text-slate-600">close</span>
+    </button>
+    <div id="modalContent" class="p-6 sm:p-8 modal-content">
+      <!-- Content injected via JS -->
+    </div>
+  </div>
+</div>
+  
 <script>
 var supabaseClient = supabase.createClient(
   'https://nhymadutuhpjgkiurify.supabase.co',
@@ -299,9 +311,7 @@ async function init() {
   currentUser = s.data.session.user;
 
   setupListeners();
-
   await Promise.all([loadBadges(), loadUpdates(), loadUserPriorities(), loadProjects()]);
-
   document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
   checkPriorityPrompt();
 }
@@ -383,45 +393,9 @@ function buildMissionCard(project, index) {
   var typeConfig = getTypeConfig(goalType);
   var remaining = Math.max(goal - raised, 0);
   
-  var buttons = [];
-  if (project.accept_donations) {
-    buttons.push(`
-      <button onclick="event.stopPropagation();handleDonate('${project.id}')" class="flex-1 bg-green-500 text-white text-[11px] font-bold uppercase tracking-widest py-3 flex items-center justify-center gap-1 shadow-sm hover:bg-green-600 transition-colors font-mono">
-        <span class="material-symbols-outlined text-[16px]">favorite</span> Donate
-      </button>`);
-  }
-  if (project.external_url) {
-    buttons.push(`
-      <a href="${escapeAttr(project.external_url)}" target="_blank" onclick="event.stopPropagation()" class="flex-1 bg-command-navy text-white text-[11px] font-bold uppercase tracking-widest py-3 flex items-center justify-center gap-1 shadow-sm hover:bg-slate-700 transition-colors font-mono">
-        <span class="material-symbols-outlined text-[16px]">open_in_new</span> Visit
-      </a>`);
-  }
-  var linksHtml = buttons.length > 0 ? `<div class="flex gap-2 mt-4">${buttons.join('')}</div>` : '';
-
-  var actionHtml = '';
-  if (goalType === 'monetary') {
-    actionHtml = `
-      <div class="pt-4 mt-4 border-t border-slate-100" onclick="event.stopPropagation()">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="dossier-label mb-1">Set Priority</p>
-            <p class="font-headline text-command-navy text-sm font-bold priority-label">${userPriorities[project.id] ? 'RANKED #' + userPriorities[project.id] : 'Not Set'}</p>
-          </div>
-          <div class="flex gap-1.5 priority-group" data-project="${project.id}">
-            ${buildPriorityButton(project.id, 1)} ${buildPriorityButton(project.id, 2)} ${buildPriorityButton(project.id, 3)}
-          </div>
-        </div>
-      </div>`;
-  } else {
-    actionHtml = `
-      <button onclick="event.stopPropagation();${typeConfig.actionFn}('${project.id}')" class="w-full py-3 mt-4 bg-command-navy text-white font-headline font-bold flex items-center justify-center gap-2 active:scale-95 shadow-sm font-mono uppercase tracking-widest text-xs">
-        <span class="material-symbols-outlined text-[18px]">${typeConfig.actionIcon}</span> ${typeConfig.actionLabel}
-      </button>`;
-  }
-
   var rewardBadgeHtml = '';
-  if (project.reward_badge) { // FIXED: matched DB column
-    var b = allBadges.find(x => x.id === project.reward_badge); // FIXED: matched DB column
+  if (project.reward_badge) {
+    var b = allBadges.find(x => x.id === project.reward_badge);
     if (b) {
       var bImg = b.image_url || `/images/badges/${b.id}.svg`;
       rewardBadgeHtml = `
@@ -435,37 +409,11 @@ function buildMissionCard(project, index) {
     }
   }
 
-  var projectUpdates = allUpdates.filter(u => u.project_id === project.id);
-  var updatesHtml = '';
-  if (projectUpdates.length > 0) {
-    var timeline = projectUpdates.map(u => {
-      var d = new Date(u.created_at);
-      var dateStr = d.toLocaleDateString('en-US', {month:'short', day:'numeric'}).toUpperCase() + ' · ' + d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-      return `
-        <div class="relative">
-          <div class="absolute -left-[26px] top-1.5 w-3 h-3 bg-command-navy ring-4 ring-white"></div>
-          <p class="font-mono text-[9px] font-bold text-command-navy uppercase tracking-widest">${dateStr}</p>
-          <p class="text-xs text-slate-700 leading-relaxed mt-1">${escapeHtml(u.message)}</p>
-        </div>`;
-    }).join('');
-    
-    updatesHtml = `
-      <div class="mt-6 pt-5 border-t border-slate-100">
-        <div class="flex items-center gap-2 mb-4">
-          <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-          <h4 class="dossier-label">Live Field Reports</h4>
-        </div>
-        <div class="space-y-4 timeline-line ml-2 pl-6">${timeline}</div>
-      </div>`;
-  }
-
   return `
-    <article class="mission-card fade-up" id="card-${project.id}" onclick="toggleCardExpansion('${project.id}')">
-      
+    <article class="mission-card fade-up cursor-pointer" id="card-${project.id}" onclick="openMissionModal('${project.id}')">
       <div class="relative h-44 bg-slate-800">
         <img src="${escapeAttr(imageUrl)}" class="w-full h-full object-cover">
       </div>
-
       <div class="p-5 bg-white">
         <h3 class="font-headline font-bold text-xl text-command-navy mb-2 leading-tight">${escapeHtml(project.title)}</h3>
         <p class="font-body text-slate-600 text-sm line-clamp-2 leading-relaxed mb-5">${escapeHtml(project.description)}</p>
@@ -490,24 +438,10 @@ function buildMissionCard(project, index) {
           <span class="dossier-label">Complete</span>
         </div>
         <div class="progress-track">
-          <div class="progress-fill ${typeConfig.progressClass}" style="width:0%" data-w="${percent}"></div>
-        </div>
-
-        <div class="flex justify-center mt-4">
-          <div class="expand-chevron w-7 h-7 bg-pale-blue border border-slate-200 flex items-center justify-center rounded-full">
-            <span class="material-symbols-outlined text-command-navy text-[18px]">expand_more</span>
-          </div>
-        </div>
-
-        <div class="mission-expanded-content">
-          ${linksHtml}
-          ${actionHtml}
-          ${updatesHtml}
+          <div class="progress-fill ${typeConfig.progressClass}" style="width:${percent}%"></div>
         </div>
       </div>
-
       ${rewardBadgeHtml}
-
     </article>
   `;
 }
@@ -532,39 +466,101 @@ function buildCompletedCard(project) {
   `;
 }
 
-function toggleCardExpansion(projectId) {
-  var card = document.getElementById('card-' + projectId);
-  if (!card) return;
-  var wasExpanded = card.classList.contains('expanded');
+// ─── MODAL LOGIC ────────────────────────────────────────────────────────────
 
-  document.querySelectorAll('.mission-card.expanded').forEach(other => {
-    if (other !== card) {
-      other.classList.remove('expanded');
-      var bar = other.querySelector('.progress-fill');
-      if (bar) bar.style.width = '0%';
-    }
-  });
+function openMissionModal(projectId) {
+  var project = allProjects.find(p => p.id === projectId);
+  if (!project) return;
 
-  if (wasExpanded) {
-    card.classList.remove('expanded');
-    var bar = card.querySelector('.progress-fill');
-    if (bar) bar.style.width = '0%';
-  } else {
-    card.classList.add('expanded');
-    setTimeout(() => {
-      var bar = card.querySelector('.progress-fill');
-      if (bar && bar.dataset.w) bar.style.width = bar.dataset.w + '%';
-    }, 100);
-    setTimeout(() => {
-      var rect = card.getBoundingClientRect();
-      if (rect.top < 100) window.scrollBy({ top: rect.top - 100 - 8, behavior: 'smooth' });
-    }, 200);
+  var goalType = project.goal_type || 'monetary';
+  var typeConfig = getTypeConfig(goalType);
+  var raised = Number(project.raised_amount || 0);
+  var goal = Number(project.goal_amount || 1);
+  var percent = Math.min(Math.round((raised / goal) * 100), 100);
+  var remaining = Math.max(goal - raised, 0);
+
+  // Action Buttons
+  var buttons = [];
+  if (project.accept_donations) {
+    buttons.push(`<button onclick="handleDonate('${project.id}')" class="flex-1 bg-green-500 text-white text-sm font-bold uppercase tracking-widest py-3 flex items-center justify-center gap-2 shadow-sm hover:bg-green-600 transition-colors rounded-lg"><span class="material-symbols-outlined">favorite</span> Donate</button>`);
   }
+  if (project.external_url) {
+    buttons.push(`<a href="${escapeAttr(project.external_url)}" target="_blank" class="flex-1 bg-slate-800 text-white text-sm font-bold uppercase tracking-widest py-3 flex items-center justify-center gap-2 shadow-sm hover:bg-slate-700 transition-colors rounded-lg"><span class="material-symbols-outlined">open_in_new</span> Visit</a>`);
+  }
+  var linksHtml = buttons.length > 0 ? `<div class="flex gap-3 mt-6">${buttons.join('')}</div>` : '';
+
+  // Priority Action
+  var actionHtml = '';
+  if (goalType === 'monetary') {
+    actionHtml = `
+      <div class="pt-6 mt-6 border-t border-slate-100">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="dossier-label mb-1">Set Priority</p>
+            <p class="font-headline text-command-navy text-lg font-bold priority-label">${userPriorities[project.id] ? 'RANKED #' + userPriorities[project.id] : 'Not Set'}</p>
+          </div>
+          <div class="flex gap-2 priority-group" data-project="${project.id}">
+            ${buildPriorityButton(project.id, 1)} ${buildPriorityButton(project.id, 2)} ${buildPriorityButton(project.id, 3)}
+          </div>
+        </div>
+      </div>`;
+  } else {
+    actionHtml = `<button onclick="${typeConfig.actionFn}('${project.id}')" class="w-full py-3 mt-6 bg-command-navy text-white font-headline font-bold flex items-center justify-center gap-2 active:scale-95 shadow-sm rounded-lg uppercase tracking-widest text-sm"><span class="material-symbols-outlined">${typeConfig.actionIcon}</span> ${typeConfig.actionLabel}</button>`;
+  }
+
+  // Field Reports
+  var projectUpdates = allUpdates.filter(u => u.project_id === project.id);
+  var updatesHtml = '';
+  if (projectUpdates.length > 0) {
+    var timeline = projectUpdates.map(u => {
+      var d = new Date(u.created_at);
+      var dateStr = d.toLocaleDateString('en-US', {month:'short', day:'numeric'}).toUpperCase() + ' · ' + d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+      return `<div class="relative pl-6 border-l-2 border-slate-200 pb-4 last:border-0 last:pb-0">
+        <div class="absolute -left-[9px] top-0 w-4 h-4 bg-command-navy rounded-full ring-4 ring-white"></div>
+        <p class="font-mono text-[10px] font-bold text-command-navy uppercase tracking-widest mb-1">${dateStr}</p>
+        <p class="text-sm text-slate-700 leading-relaxed">${escapeHtml(u.message)}</p>
+      </div>`;
+    }).join('');
+    updatesHtml = `<div class="mt-6 pt-6 border-t border-slate-100"><div class="flex items-center gap-2 mb-4"><span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span><h4 class="dossier-label text-sm">Live Field Reports</h4></div><div class="space-y-4">${timeline}</div></div>`;
+  }
+
+  var html = `
+    <div class="relative h-48 -m-6 -mt-8 mb-6 bg-slate-800 rounded-t-2xl overflow-hidden">
+      <img src="${escapeAttr(project.image_url || fallbackImages[0])}" class="w-full h-full object-cover">
+      <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+      <div class="absolute bottom-0 left-0 right-0 p-6">
+        <h2 class="font-headline font-bold text-2xl text-white leading-tight">${escapeHtml(project.title)}</h2>
+        <div class="flex items-center gap-2 mt-2">
+          <span class="font-mono font-bold ${typeConfig.textClass} text-lg bg-white/90 px-2 py-0.5 rounded">${percent}%</span>
+          <span class="text-white/80 text-xs font-bold uppercase tracking-widest">${typeConfig.label} · ${formatShort(raised, goalType)} / ${formatShort(goal, goalType)}</span>
+        </div>
+      </div>
+    </div>
+    <p class="font-body text-slate-700 text-base leading-relaxed whitespace-pre-wrap">${escapeHtml(project.description)}</p>
+    ${linksHtml}
+    ${actionHtml}
+    ${updatesHtml}
+  `;
+
+  document.getElementById('modalContent').innerHTML = html;
+  var modal = document.getElementById('missionModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  document.body.style.overflow = 'hidden';
 }
+
+function closeMissionModal() {
+  var modal = document.getElementById('missionModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  document.body.style.overflow = '';
+}
+
+// ─── PRIORITY & UTILS ───────────────────────────────────────────────────────
 
 function buildPriorityButton(projectId, rank) {
   var isActive = userPriorities[projectId] === rank;
-  return `<button onclick="setPriority(event, this, '${projectId}', ${rank})" class="priority-btn ${isActive ? 'active' : ''}" data-rank="${rank}">${rank}</button>`;
+  return `<button onclick="setPriority(event, this, '${projectId}', ${rank})" class="priority-btn ${isActive ? 'active' : ''} w-10 h-10 rounded-lg border border-slate-200 font-bold text-sm flex items-center justify-center transition-all ${isActive ? 'bg-command-navy text-white border-command-navy' : 'bg-white text-slate-600 hover:bg-slate-50'}" data-rank="${rank}">${rank}</button>`;
 }
 
 async function setPriority(e, btn, projectId, rank) {
@@ -576,7 +572,7 @@ async function setPriority(e, btn, projectId, rank) {
       if (parseInt(b.dataset.rank) === rank && b.classList.contains('active')) {
         b.classList.remove('active');
         delete userPriorities[gid];
-        var otherLabel = b.closest('.mission-card').querySelector('.priority-label');
+        var otherLabel = b.closest('.mission-card, .modal-content').querySelector('.priority-label');
         if (otherLabel) otherLabel.textContent = 'Not Set';
         supabaseClient.from('project_priorities').delete().eq('user_id', currentUser.id).eq('project_id', gid).then(()=>{});
       }
@@ -597,36 +593,29 @@ async function setPriority(e, btn, projectId, rank) {
     showToast(`Priority #${rank} assigned`);
     await supabaseClient.from('project_priorities').upsert({ user_id: currentUser.id, project_id: projectId, priority: rank });
   }
-  var label = btn.closest('.mission-card').querySelector('.priority-label');
+  var label = btn.closest('.mission-card, .modal-content').querySelector('.priority-label');
   if (label) label.textContent = userPriorities[projectId] ? 'RANKED #' + userPriorities[projectId] : 'Not Set';
   checkPriorityPrompt();
 }
 
-function handleDonate(projectId) {
-  showToast('Direct donations coming soon via Stripe!', false);
-}
-
+function handleDonate(projectId) { showToast('Direct donations coming soon via Stripe!', false); }
 function getTypeConfig(goalType) {
   if (goalType === 'users') return { label:'Growth', icon:'group_add', progressClass:'progress-growth', textClass:'text-blue-600', actionLabel:'Invite Warrior', actionIcon:'person_add', actionFn:'shareInvite' };
   if (goalType === 'shares') return { label:'Shares', icon:'share', progressClass:'progress-shares', textClass:'text-amber-600', actionLabel:'Share Quote', actionIcon:'share', actionFn:'goToHome' };
   return { label:'Monetary', icon:'payments', progressClass:'progress-monetary', textClass:'text-green-600', actionLabel:'', actionIcon:'', actionFn:'' };
 }
-
 function formatShort(val, goalType) {
   var v = Number(val || 0);
   if (goalType === 'monetary') return '$' + v.toLocaleString();
   return v.toLocaleString();
 }
-
 function shareInvite() {
   supabaseClient.from('profiles').select('invite_code').eq('id', currentUser.id).single().then(r => {
     if (r.data?.invite_code) {
       var link = window.location.origin + '/app/signup.html?ref=' + r.data.invite_code;
       if (navigator.share) navigator.share({ title:'Join Go Spread The Word', text:'Join me in spreading the Word every day.', url:link }).catch(()=>{});
       else { navigator.clipboard.writeText(link); showToast('Invite link copied'); }
-    } else {
-      showToast('Invite code not set up yet', true);
-    }
+    } else { showToast('Invite code not set up yet', true); }
   });
 }
 function goToHome() { window.location.href = 'index.html'; }
@@ -650,13 +639,9 @@ function applyFilters() {
   closeFilterSheet();
 }
 
-function toggleTooltip() {
-  document.getElementById('infoTooltip').classList.toggle('active');
-}
+function toggleTooltip() { document.getElementById('infoTooltip').classList.toggle('active'); }
 document.addEventListener('click', function(e) {
-  if (!e.target.closest('#infoTooltip')) {
-    document.getElementById('infoTooltip').classList.remove('active');
-  }
+  if (!e.target.closest('#infoTooltip')) document.getElementById('infoTooltip').classList.remove('active');
 });
 
 function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
