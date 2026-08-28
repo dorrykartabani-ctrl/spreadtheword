@@ -276,482 +276,413 @@ var supabaseClient = supabase.createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
 );
 
-var allMissions = [];
-var mediaImages = [];
-var badges = [];
-var updates = [];
-
 var currentUser = null;
-var currentMissionId = null;
-var isEditMode = false;
-var listFilter = 'active';
-var mType = 'monetary';
-var mActive = true;
-var mDonate = false;
-var mHasUrl = false;
-var fallbackImage = 'https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=800&q=80';
+var userPriorities = {};
+var allProjects = [];
+var allBadges = [];
+var allUpdates = [];
+var filters = { type: 'all', sort: 'newest' };
+var pendingFilters = { type: 'all', sort: 'newest' };
 
-// Safe Element Selector Helper
-function getEl(id) { return document.getElementById(id); }
+var fallbackImages = [
+  'https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=800&q=80',
+  'https://images.unsplash.com/photo-1594398901394-4e34939a02eb?w=800&q=80'
+];
+
+var observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); });
+}, { threshold: 0.1 });
 
 async function init() {
-  try {
-    const { data: session } = await supabaseClient.auth.getSession();
-    if (!session?.session) return window.location.href = 'login.html';
-    currentUser = session.session.user;
+  var s = await supabaseClient.auth.getSession();
+  if (!s.data.session) return window.location.href = 'login.html';
+  currentUser = s.data.session.user;
 
-    var p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single();
-    if (!p.data || p.data.role !== 'admin') return window.location.href = '../app/index.html';
-    
-    document.querySelectorAll('.admin-name').forEach(el => el.textContent = p.data.full_name || currentUser.email);
-    document.querySelectorAll('.admin-initials').forEach(el => el.textContent = (p.data.full_name || 'AD').substring(0,2).toUpperCase());
+  setupListeners();
 
-    await Promise.all([loadMedia(), loadBadges(), fetchMissions()]);
-    filterList('active');
-  } catch (err) {
-    console.error("Init Error:", err);
-    showToast("Error loading page: " + err.message, true);
-  }
-}
+  await Promise.all([loadBadges(), loadUpdates(), loadUserPriorities(), loadProjects()]);
 
-function toggleSidebar() {
-  var sb = getEl('sidebar'), overlay = getEl('sidebarOverlay');
-  if (sb) { sb.classList.toggle('hidden'); sb.classList.toggle('flex'); }
-  if (overlay) overlay.classList.toggle('hidden');
-}
-
-async function handleLogout() {
-  await supabaseClient.auth.signOut();
-  window.location.href = 'login.html';
-}
-
-// ─── DATA LOADING ──────────────────────────────────────────────────────────
-
-async function loadMedia() {
-  try {
-    // UPDATED: Strictly looks for 'mission' type now
-    var { data, error } = await supabaseClient.from('media').select('*').eq('type', 'mission').eq('is_active', true).order('created_at', {ascending:false});
-    if (error) throw error;
-    mediaImages = data || [];
-    var sel = getEl('mImage');
-    if (sel) {
-      sel.innerHTML = '<option value="">-- Choose from Media Library --</option>';
-      mediaImages.forEach(m => sel.innerHTML += `<option value="${m.url}">${escapeHtml(m.label)}</option>`);
-    }
-  } catch (e) {
-    showToast("Could not load media images", true);
-  }
+  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+  checkPriorityPrompt();
 }
 
 async function loadBadges() {
-  try {
-    var { data, error } = await supabaseClient.from('badge_definitions').select('id, name, image_url').eq('is_active', true);
-    if (error) throw error;
-    badges = data || [];
-    var sel = getEl('mBadge');
-    if (sel) {
-      sel.innerHTML = '<option value="">-- No Badge Reward --</option>';
-      badges.forEach(b => sel.innerHTML += `<option value="${b.id}">${escapeHtml(b.name)}</option>`);
-    }
-  } catch (e) {
-    showToast("Could not load badges", true);
-  }
+  var { data } = await supabaseClient.from('badge_definitions').select('id, name, image_url');
+  allBadges = data || [];
 }
 
-async function fetchMissions() {
-  try {
-    var { data, error } = await supabaseClient.from('projects').select('*').order('created_at', { ascending: false });
-    if (error) throw error;
-    allMissions = data || [];
-  } catch (e) {
-    showToast("Could not load missions", true);
-  }
+async function loadUpdates() {
+  var { data } = await supabaseClient.from('project_updates').select('*').order('created_at', { ascending: false });
+  allUpdates = data || [];
 }
 
-async function fetchUpdates(projectId) {
-  try {
-    var { data, error } = await supabaseClient.from('project_updates').select('*').eq('project_id', projectId).order('created_at', {ascending: false});
-    if (error) throw error;
-    updates = data || [];
-    renderUpdates();
-  } catch (e) {
-    showToast("Could not load updates", true);
-  }
+async function loadUserPriorities() {
+  var { data } = await supabaseClient.from('project_priorities').select('*').eq('user_id', currentUser.id);
+  if (data) data.forEach(p => userPriorities[p.project_id] = p.priority);
 }
 
-// ─── LEFT PANE ─────────────────────────────────────────────────────────────
-
-function filterList(filter) {
-  listFilter = filter;
-  document.querySelectorAll('[id^="tab-"]').forEach(el => {
-    el.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
-    el.classList.add('bg-surface-c', 'text-slate-500');
-  });
-  var activeTab = getEl('tab-' + filter);
-  if (activeTab) {
-    activeTab.classList.remove('bg-surface-c', 'text-slate-500');
-    activeTab.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
-  }
-
-  var listContainer = getEl('missionList');
-  if (!listContainer) return;
-  listContainer.innerHTML = '';
-
-  var filtered = filter === 'all' ? allMissions : allMissions.filter(m => m.status === filter);
-
-  if (filtered.length === 0) {
-    listContainer.innerHTML = `<div class="p-6 text-center text-slate-400 text-sm font-bold mt-10">No missions found.</div>`;
-    return;
-  }
-
-  filtered.forEach(m => {
-    var pct = Math.min(Math.round(((m.raised_amount || 0) / Math.max(m.goal_amount || 1, 1)) * 100), 100);
-    var dot = m.status === 'active' ? 'dot-active' : m.status === 'paused' ? 'dot-paused' : 'dot-completed';
-    var icon = m.goal_type === 'shares' ? 'share' : m.goal_type === 'users' ? 'group_add' : 'payments';
-    
-    var div = document.createElement('div');
-    div.className = `list-card ${currentMissionId === m.id ? 'active' : ''}`;
-    div.onclick = () => loadMissionIntoEditor(m.id);
-    div.innerHTML = `
-      <div class="flex items-center justify-between mb-1.5">
-        <div class="flex items-center gap-2">
-          <span class="status-dot ${dot}"></span>
-          <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">${m.status}</span>
-        </div>
-        <span class="material-symbols-outlined text-slate-300 text-sm">${icon}</span>
-      </div>
-      <p class="font-headline font-bold text-slate-800 text-sm line-clamp-1 leading-snug">${escapeHtml(m.title)}</p>
-      <div class="mt-2 w-full h-1 bg-slate-100 rounded-full"><div class="h-full bg-slate-400 rounded-full" style="width:${pct}%"></div></div>
-    `;
-    listContainer.appendChild(div);
-  });
+function checkPriorityPrompt() {
+  var hasAny = Object.keys(userPriorities).length > 0;
+  var prompt = document.getElementById('priorityPrompt');
+  if (hasAny) prompt.classList.add('hidden');
+  else { prompt.classList.remove('hidden'); observer.observe(prompt); }
 }
 
-// ─── EDITOR ────────────────────────────────────────────────────────────
-
-function createNewMission() {
-  currentMissionId = null; isEditMode = false;
-  if (getEl('editorTitle')) getEl('editorTitle').textContent = "New Mission";
-  if (getEl('editorSubtitle')) getEl('editorSubtitle').textContent = "Drafting";
-  if (getEl('deleteBtn')) getEl('deleteBtn').classList.add('hidden');
-  if (getEl('updatesSection')) getEl('updatesSection').classList.add('hidden');
-  
-  if (getEl('mTitle')) getEl('mTitle').value = '';
-  if (getEl('mDesc')) getEl('mDesc').value = '';
-  if (getEl('mGoal')) getEl('mGoal').value = '';
-  if (getEl('mCountry')) getEl('mCountry').value = 'Global';
-  if (getEl('mImage')) getEl('mImage').value = '';
-  if (getEl('mBadge')) getEl('mBadge').value = '';
-  if (getEl('mExternalUrl')) getEl('mExternalUrl').value = '';
-  if (getEl('mDonateUrl')) getEl('mDonateUrl').value = '';
-  if (getEl('mStartDate')) getEl('mStartDate').value = '';
-  if (getEl('mEndDate')) getEl('mEndDate').value = '';
-  
-  setMissionType('monetary');
-  mActive = true; if (getEl('mActiveToggle')) getEl('mActiveToggle').classList.add('on');
-  mDonate = false; if (getEl('mDonateToggle')) getEl('mDonateToggle').classList.remove('on'); if (getEl('mDonateInputRow')) getEl('mDonateInputRow').classList.add('hidden');
-  mHasUrl = false; if (getEl('mUrlToggle')) getEl('mUrlToggle').classList.remove('on'); if (getEl('mUrlInputRow')) getEl('mUrlInputRow').classList.add('hidden');
-  
-  syncPreview();
-  document.querySelectorAll('.list-card').forEach(c => c.classList.remove('active'));
-  if (window.innerWidth < 1024) openEditorMobile();
+async function loadProjects() {
+  var { data, error } = await supabaseClient.from('projects').select('*').eq('is_visible', true).order('created_at', { ascending: false });
+  if (error) return showToast('Could not load missions', true);
+  allProjects = data || [];
+  renderProjects();
 }
 
-function loadMissionIntoEditor(id) {
-  var m = allMissions.find(x => x.id === id);
-  if (!m) return;
-  currentMissionId = m.id; isEditMode = true;
-
-  if (getEl('editorTitle')) getEl('editorTitle').textContent = "Edit Mission";
-  if (getEl('editorSubtitle')) getEl('editorSubtitle').textContent = (m.status || 'ACTIVE').toUpperCase();
-  if (getEl('deleteBtn')) getEl('deleteBtn').classList.remove('hidden');
-
-  if (getEl('mTitle')) getEl('mTitle').value = m.title || '';
-  if (getEl('mDesc')) getEl('mDesc').value = m.description || '';
-  if (getEl('mGoal')) getEl('mGoal').value = m.goal_amount || '';
-  if (getEl('mCountry')) getEl('mCountry').value = m.country || 'Global';
-  if (getEl('mImage')) getEl('mImage').value = m.image_url || '';
-  if (getEl('mBadge')) getEl('mBadge').value = m.reward_badge || ''; // UPDATED: matched to DB column
-  if (getEl('mExternalUrl')) getEl('mExternalUrl').value = m.external_url || '';
-  if (getEl('mDonateUrl')) getEl('mDonateUrl').value = m.donate_url || '';
-  if (getEl('mStartDate')) getEl('mStartDate').value = m.start_date || '';
-  if (getEl('mEndDate')) getEl('mEndDate').value = m.end_date || '';
-
-  setMissionType(m.goal_type || 'monetary');
-  
-  mActive = m.status === 'active';
-  if (getEl('mActiveToggle')) getEl('mActiveToggle').classList.toggle('on', mActive);
-  
-  mDonate = !!m.accept_donations;
-  if (getEl('mDonateToggle')) getEl('mDonateToggle').classList.toggle('on', mDonate);
-  if (getEl('mDonateInputRow')) getEl('mDonateInputRow').classList.toggle('hidden', !mDonate);
-
-  mHasUrl = !!m.external_url;
-  if (getEl('mUrlToggle')) getEl('mUrlToggle').classList.toggle('on', mHasUrl);
-  if (getEl('mUrlInputRow')) getEl('mUrlInputRow').classList.toggle('hidden', !mHasUrl);
-
-  syncPreview();
-  filterList(listFilter); 
-  
-  if (getEl('updatesSection')) getEl('updatesSection').classList.remove('hidden');
-  fetchUpdates(m.id);
-
-  if (window.innerWidth < 1024) openEditorMobile();
-}
-
-function setMissionType(type) {
-  mType = type;
-  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
-  var activeBtn = document.querySelector(`.type-btn[data-type="${type}"]`);
-  if (activeBtn) activeBtn.classList.add('active');
-  
-  var lbl = getEl('mGoalLabel');
-  var note = getEl('mAutoTrackNote');
-  var donateRow = getEl('mDonateRow');
-  
-  if (type === 'monetary') {
-    if (lbl) lbl.textContent = 'Target Amount ($) *';
-    if (note) note.classList.add('hidden');
-    if (donateRow) donateRow.classList.remove('hidden');
-  } else if (type === 'users') {
-    if (lbl) lbl.textContent = 'Target Warriors *';
-    if (note) note.classList.remove('hidden');
-    if (donateRow) donateRow.classList.add('hidden'); mDonate = false; if (getEl('mDonateToggle')) getEl('mDonateToggle').classList.remove('on'); if (getEl('mDonateInputRow')) getEl('mDonateInputRow').classList.add('hidden');
-  } else {
-    if (lbl) lbl.textContent = 'Target Shares *';
-    if (note) note.classList.remove('hidden');
-    if (donateRow) donateRow.classList.add('hidden'); mDonate = false; if (getEl('mDonateToggle')) getEl('mDonateToggle').classList.remove('on'); if (getEl('mDonateInputRow')) getEl('mDonateInputRow').classList.add('hidden');
-  }
-  syncPreview();
-}
-
-function toggleActive() { mActive = !mActive; if (getEl('mActiveToggle')) getEl('mActiveToggle').classList.toggle('on', mActive); }
-function toggleDonate() { 
-  mDonate = !mDonate; 
-  if (getEl('mDonateToggle')) getEl('mDonateToggle').classList.toggle('on', mDonate); 
-  if (getEl('mDonateInputRow')) getEl('mDonateInputRow').classList.toggle('hidden', !mDonate); 
-  syncPreview(); 
-}
-function toggleExternalUrl() { 
-  mHasUrl = !mHasUrl; 
-  if (getEl('mUrlToggle')) getEl('mUrlToggle').classList.toggle('on', mHasUrl); 
-  if (getEl('mUrlInputRow')) getEl('mUrlInputRow').classList.toggle('hidden', !mHasUrl); 
-  syncPreview(); 
-}
-
-// ─── WYSIWYG PREVIEW ───────────────────────────────────────────────────────
-
-function syncPreview() {
-  var title = (getEl('mTitle') && getEl('mTitle').value) || 'Mission Title';
-  var desc = (getEl('mDesc') && getEl('mDesc').value) || 'Mission description goes here.';
-  var img = (getEl('mImage') && getEl('mImage').value) || fallbackImage;
-  var goal = (getEl('mGoal') && parseFloat(getEl('mGoal').value)) || 1000;
-  var badgeId = getEl('mBadge') ? getEl('mBadge').value : '';
-  
-  var raised = 0;
-  if (currentMissionId) {
-    var m = allMissions.find(x => x.id === currentMissionId);
-    if (m) raised = m.raised_amount || 0;
-  }
-  var pct = Math.min(Math.round((raised / Math.max(goal, 1)) * 100), 100);
-
-  if (getEl('prevTitle')) getEl('prevTitle').textContent = title;
-  if (getEl('prevDesc')) getEl('prevDesc').textContent = desc;
-  if (getEl('prevImg')) getEl('prevImg').src = img;
-  if (getEl('prevPct')) getEl('prevPct').textContent = pct + '%';
-  if (getEl('prevProgressBar')) getEl('prevProgressBar').style.width = pct + '%';
-  
-  var tBadge = getEl('prevTypeBadge');
-  var bar = getEl('prevProgressBar');
-  var goalTxt = getEl('prevGoalText');
-  
-  if (mType === 'monetary') {
-    if (tBadge) { tBadge.className = 'absolute top-3 left-3 bg-green-600 text-white text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 shadow-sm flex items-center gap-1 rounded-full'; tBadge.innerHTML = '<span class="material-symbols-outlined text-xs">payments</span> Monetary'; }
-    if (bar) bar.className = 'h-full bg-green-500';
-    if (getEl('prevPct')) getEl('prevPct').className = 'font-headline font-extrabold text-lg text-green-600';
-    if (goalTxt) goalTxt.textContent = `$${raised.toLocaleString()} / $${goal.toLocaleString()}`;
-  } else if (mType === 'users') {
-    if (tBadge) { tBadge.className = 'absolute top-3 left-3 bg-blue-600 text-white text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 shadow-sm flex items-center gap-1 rounded-full'; tBadge.innerHTML = '<span class="material-symbols-outlined text-xs">group_add</span> Growth'; }
-    if (bar) bar.className = 'h-full bg-blue-500';
-    if (getEl('prevPct')) getEl('prevPct').className = 'font-headline font-extrabold text-lg text-blue-600';
-    if (goalTxt) goalTxt.textContent = `${raised.toLocaleString()} / ${goal.toLocaleString()} warriors`;
-  } else {
-    if (tBadge) { tBadge.className = 'absolute top-3 left-3 bg-amber-500 text-white text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 shadow-sm flex items-center gap-1 rounded-full'; tBadge.innerHTML = '<span class="material-symbols-outlined text-xs">share</span> Shares'; }
-    if (bar) bar.className = 'h-full bg-amber-500';
-    if (getEl('prevPct')) getEl('prevPct').className = 'font-headline font-extrabold text-lg text-amber-600';
-    if (goalTxt) goalTxt.textContent = `${raised.toLocaleString()} / ${goal.toLocaleString()} shares`;
-  }
-
-  if (getEl('prevDonateBtn')) getEl('prevDonateBtn').classList.toggle('hidden', !mDonate);
-  if (getEl('prevExternalBtn')) getEl('prevExternalBtn').classList.toggle('hidden', !mHasUrl);
-
-  var badgeContainer = getEl('prevRewardFooter');
-  if (badgeId && badgeContainer) {
-    var bDef = badges.find(x => x.id === badgeId);
-    if (getEl('prevRewardBadgeImg')) getEl('prevRewardBadgeImg').src = bDef ? (bDef.image_url || `/images/badges/${bDef.id}.svg`) : '';
-    if (getEl('prevRewardName')) getEl('prevRewardName').textContent = bDef ? bDef.name : 'Reward Badge';
-    badgeContainer.classList.remove('hidden');
-  } else if (badgeContainer) {
-    badgeContainer.classList.add('hidden');
-  }
-}
-
-// ─── UPLOAD IMAGE ──────────────────────────────────────────────────────────
-
-async function handleImageUpload(input) {
-  var file = input.files[0];
-  if(!file) return;
-  if (getEl('mUploadStatus')) getEl('mUploadStatus').classList.remove('hidden');
-
-  try {
-    var path = 'mission/' + Date.now() + '.png';
-    await supabaseClient.storage.from('media').upload(path, file);
-    var url = supabaseClient.storage.from('media').getPublicUrl(path).data.publicUrl;
-    
-    // UPDATED: Added uploaded_by to satisfy security rules
-    await supabaseClient.from('media').insert({ 
-      type: 'mission', 
-      url: url, 
-      label: file.name, 
-      is_active: true, 
-      uploaded_by: currentUser.id 
+function getFilteredProjects(list) {
+  var filtered = filters.type === 'all' ? list.slice() : list.filter(p => (p.goal_type || 'monetary') === filters.type);
+  if (filters.sort === 'funded') {
+    filtered.sort((a, b) => {
+      var aP = a.goal_amount > 0 ? a.raised_amount / a.goal_amount : 0;
+      var bP = b.goal_amount > 0 ? b.raised_amount / b.goal_amount : 0;
+      return bP - aP;
     });
-    
-    await loadMedia(); 
-    if (getEl('mImage')) getEl('mImage').value = url;
-    syncPreview();
-    showToast("Image uploaded to library!");
-  } catch(e) {
-    showToast("Upload failed", true);
-  } finally {
-    if (getEl('mUploadStatus')) getEl('mUploadStatus').classList.add('hidden');
-    input.value = '';
   }
+  return filtered;
 }
 
-// ─── SAVE / DELETE ─────────────────────────────────────────────────────────
+function renderProjects() {
+  var activeContainer = document.getElementById('activeProjects');
+  var completedContainer = document.getElementById('completedProjects');
 
-async function saveMission() {
-  var title = getEl('mTitle') ? getEl('mTitle').value.trim() : '';
-  var desc = getEl('mDesc') ? getEl('mDesc').value.trim() : '';
-  var goal = getEl('mGoal') ? parseFloat(getEl('mGoal').value) : 0;
-  if(!title || !desc || !goal) return showToast("Title, Description, and Goal are required", true);
+  var active = getFilteredProjects(allProjects.filter(p => p.status === 'active'));
+  var completed = getFilteredProjects(allProjects.filter(p => p.status === 'completed'));
 
-  var data = {
-    title: title,
-    description: desc,
-    goal_amount: goal,
-    country: (getEl('mCountry') && getEl('mCountry').value.trim()) || 'Global',
-    image_url: (getEl('mImage') && getEl('mImage').value) || null,
-    reward_badge: (getEl('mBadge') && getEl('mBadge').value) || null, // FIXED: matched to DB column
-    accept_donations: mDonate,
-    donate_url: mDonate ? ((getEl('mDonateUrl') && getEl('mDonateUrl').value.trim()) || null) : null,
-    external_url: mHasUrl ? ((getEl('mExternalUrl') && getEl('mExternalUrl').value.trim()) || null) : null,
-    goal_type: mType,
-    goal_unit: mType === 'monetary' ? 'USD' : mType,
-    auto_track: mType !== 'monetary',
-    auto_track_source: mType === 'users' ? 'profiles_count' : mType === 'shares' ? 'shares_count' : null,
-    status: mActive ? 'active' : 'paused',
-    is_visible: mActive, // ADDED: required by DB to show on live site
-    start_date: (getEl('mStartDate') && getEl('mStartDate').value) || null,
-    end_date: (getEl('mEndDate') && getEl('mEndDate').value) || null
-  };
+  document.getElementById('activeCount').textContent = active.length > 0 ? `(${active.length})` : '';
+  document.getElementById('completedCount').textContent = completed.length > 0 ? `(${completed.length})` : '';
 
-  var btn = getEl('saveBtn'), icon = getEl('saveIcon');
-  if (btn) btn.disabled = true; 
-  if (icon) { icon.className = "material-symbols-outlined spin text-[18px]"; icon.textContent = "progress_activity"; }
-
-  try {
-    if (currentMissionId) {
-      await supabaseClient.from('projects').update(data).eq('id', currentMissionId);
-      showToast("Mission updated!");
-    } else {
-      data.raised_amount = 0; data.warrior_count = 0;
-      var res = await supabaseClient.from('projects').insert([data]).select().single();
-      currentMissionId = res.data.id;
-      showToast("Mission created!");
-      if (getEl('updatesSection')) getEl('updatesSection').classList.remove('hidden');
-    }
-  } catch (err) {
-    showToast("Failed to save: " + err.message, true);
+  activeContainer.innerHTML = '';
+  if (active.length === 0) {
+    activeContainer.innerHTML = '<div class="text-center py-10 border border-dashed border-slate-300 bg-white"><span class="material-symbols-outlined text-slate-300 text-[36px] block mb-2">filter_alt_off</span><p class="font-mono text-slate-500 text-xs uppercase tracking-widest">No Missions Match</p></div>';
   }
+  active.forEach((p, i) => activeContainer.innerHTML += buildMissionCard(p, i));
 
-  if (btn) btn.disabled = false; 
-  if (icon) { icon.className = "material-symbols-outlined text-[18px]"; icon.textContent = "save"; }
-  await fetchMissions(); filterList(listFilter);
+  completedContainer.innerHTML = '';
+  if (completed.length === 0) {
+    completedContainer.innerHTML = '<p class="text-center text-slate-400 text-[10px] py-4 font-mono uppercase tracking-widest">No Completed Missions</p>';
+  }
+  completed.forEach(p => completedContainer.innerHTML += buildCompletedCard(p));
+
+  setTimeout(() => {
+    document.querySelectorAll('.fade-up:not(.visible)').forEach(el => observer.observe(el));
+  }, 50);
 }
 
-async function deleteCurrentMission() {
-  if(!currentMissionId || !confirm("Delete this mission permanently?")) return;
-  await supabaseClient.from('projects').delete().eq('id', currentMissionId);
-  showToast("Mission deleted");
-  await fetchMissions(); createNewMission(); filterList(listFilter);
-}
-
-// ─── FIELD REPORTS (UPDATES) ───────────────────────────────────────────────
-
-async function postUpdate() {
-  var input = getEl('newUpdateText');
-  var msg = input ? input.value.trim() : '';
-  if(!msg || !currentMissionId) return;
-
-  var btn = getEl('postUpdateBtn');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="material-symbols-outlined spin text-sm">progress_activity</span>'; }
-
-  try {
-    await supabaseClient.from('project_updates').insert([{ project_id: currentMissionId, message: msg, created_by: currentUser.id }]);
-    if (input) input.value = '';
-    showToast("Update posted!");
-    fetchUpdates(currentMissionId);
-  } catch(e) {
-    showToast("Failed to post update: " + e.message, true);
-  }
-  if (btn) { btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined text-sm">send</span> Post'; }
-}
-
-function renderUpdates() {
-  var list = getEl('updatesList');
-  if (!list) return;
-  if(updates.length === 0) {
-    list.innerHTML = '<p class="text-xs text-slate-400 italic">No updates posted yet.</p>';
-    return;
-  }
+function buildMissionCard(project, index) {
+  var goalType = project.goal_type || 'monetary';
+  var raised = Number(project.raised_amount || 0);
+  var goal = Number(project.goal_amount || 1);
+  var percent = Math.min(Math.round((raised / goal) * 100), 100);
+  var imageUrl = project.image_url || fallbackImages[index % fallbackImages.length];
+  var typeConfig = getTypeConfig(goalType);
+  var remaining = Math.max(goal - raised, 0);
   
-  list.innerHTML = updates.map(u => `
-    <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 flex gap-3 shadow-sm">
-      <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-slate-500 text-sm">campaign</span></div>
-      <div>
-        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">${new Date(u.created_at).toLocaleDateString()} ${new Date(u.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</p>
-        <p class="text-sm font-medium text-slate-800 leading-snug">${escapeHtml(u.message)}</p>
+  var buttons = [];
+  if (project.accept_donations) {
+    buttons.push(`
+      <button onclick="event.stopPropagation();handleDonate('${project.id}')" class="flex-1 bg-green-500 text-white text-[11px] font-bold uppercase tracking-widest py-3 flex items-center justify-center gap-1 shadow-sm hover:bg-green-600 transition-colors font-mono">
+        <span class="material-symbols-outlined text-[16px]">favorite</span> Donate
+      </button>`);
+  }
+  if (project.external_url) {
+    buttons.push(`
+      <a href="${escapeAttr(project.external_url)}" target="_blank" onclick="event.stopPropagation()" class="flex-1 bg-command-navy text-white text-[11px] font-bold uppercase tracking-widest py-3 flex items-center justify-center gap-1 shadow-sm hover:bg-slate-700 transition-colors font-mono">
+        <span class="material-symbols-outlined text-[16px]">open_in_new</span> Visit
+      </a>`);
+  }
+  var linksHtml = buttons.length > 0 ? `<div class="flex gap-2 mt-4">${buttons.join('')}</div>` : '';
+
+  var actionHtml = '';
+  if (goalType === 'monetary') {
+    actionHtml = `
+      <div class="pt-4 mt-4 border-t border-slate-100" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="dossier-label mb-1">Set Priority</p>
+            <p class="font-headline text-command-navy text-sm font-bold priority-label">${userPriorities[project.id] ? 'RANKED #' + userPriorities[project.id] : 'Not Set'}</p>
+          </div>
+          <div class="flex gap-1.5 priority-group" data-project="${project.id}">
+            ${buildPriorityButton(project.id, 1)} ${buildPriorityButton(project.id, 2)} ${buildPriorityButton(project.id, 3)}
+          </div>
+        </div>
+      </div>`;
+  } else {
+    actionHtml = `
+      <button onclick="event.stopPropagation();${typeConfig.actionFn}('${project.id}')" class="w-full py-3 mt-4 bg-command-navy text-white font-headline font-bold flex items-center justify-center gap-2 active:scale-95 shadow-sm font-mono uppercase tracking-widest text-xs">
+        <span class="material-symbols-outlined text-[18px]">${typeConfig.actionIcon}</span> ${typeConfig.actionLabel}
+      </button>`;
+  }
+
+  var rewardBadgeHtml = '';
+  if (project.reward_badge) { // FIXED: matched DB column
+    var b = allBadges.find(x => x.id === project.reward_badge); // FIXED: matched DB column
+    if (b) {
+      var bImg = b.image_url || `/images/badges/${b.id}.svg`;
+      rewardBadgeHtml = `
+        <div class="bg-amber-50 border-t border-amber-100 p-3 flex items-center gap-3">
+          <img src="${escapeAttr(bImg)}" class="w-8 h-8 object-contain drop-shadow-md shrink-0">
+          <div>
+            <p class="text-[9px] font-black text-amber-600 uppercase tracking-widest">Reward Available</p>
+            <p class="font-bold text-sm text-amber-900">${escapeHtml(b.name)}</p>
+          </div>
+        </div>`;
+    }
+  }
+
+  var projectUpdates = allUpdates.filter(u => u.project_id === project.id);
+  var updatesHtml = '';
+  if (projectUpdates.length > 0) {
+    var timeline = projectUpdates.map(u => {
+      var d = new Date(u.created_at);
+      var dateStr = d.toLocaleDateString('en-US', {month:'short', day:'numeric'}).toUpperCase() + ' · ' + d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+      return `
+        <div class="relative">
+          <div class="absolute -left-[26px] top-1.5 w-3 h-3 bg-command-navy ring-4 ring-white"></div>
+          <p class="font-mono text-[9px] font-bold text-command-navy uppercase tracking-widest">${dateStr}</p>
+          <p class="text-xs text-slate-700 leading-relaxed mt-1">${escapeHtml(u.message)}</p>
+        </div>`;
+    }).join('');
+    
+    updatesHtml = `
+      <div class="mt-6 pt-5 border-t border-slate-100">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+          <h4 class="dossier-label">Live Field Reports</h4>
+        </div>
+        <div class="space-y-4 timeline-line ml-2 pl-6">${timeline}</div>
+      </div>`;
+  }
+
+  return `
+    <article class="mission-card fade-up" id="card-${project.id}" onclick="toggleCardExpansion('${project.id}')">
+      
+      <div class="relative h-44 bg-slate-800">
+        <img src="${escapeAttr(imageUrl)}" class="w-full h-full object-cover">
+      </div>
+
+      <div class="p-5 bg-white">
+        <h3 class="font-headline font-bold text-xl text-command-navy mb-2 leading-tight">${escapeHtml(project.title)}</h3>
+        <p class="font-body text-slate-600 text-sm line-clamp-2 leading-relaxed mb-5">${escapeHtml(project.description)}</p>
+        
+        <div class="grid grid-cols-3 gap-3 mb-4 pb-4 border-b border-slate-100">
+          <div>
+            <p class="dossier-label">Raised</p>
+            <p class="font-mono font-bold text-command-navy text-sm mt-1">${formatShort(raised, goalType)}</p>
+          </div>
+          <div>
+            <p class="dossier-label">Target</p>
+            <p class="font-mono font-bold text-slate-500 text-sm mt-1">${formatShort(goal, goalType)}</p>
+          </div>
+          <div>
+            <p class="dossier-label">Remaining</p>
+            <p class="font-mono font-bold text-slate-500 text-sm mt-1">${formatShort(remaining, goalType)}</p>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="font-mono font-bold ${typeConfig.textClass} text-lg">${percent}%</span>
+          <span class="dossier-label">Complete</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill ${typeConfig.progressClass}" style="width:0%" data-w="${percent}"></div>
+        </div>
+
+        <div class="flex justify-center mt-4">
+          <div class="expand-chevron w-7 h-7 bg-pale-blue border border-slate-200 flex items-center justify-center rounded-full">
+            <span class="material-symbols-outlined text-command-navy text-[18px]">expand_more</span>
+          </div>
+        </div>
+
+        <div class="mission-expanded-content">
+          ${linksHtml}
+          ${actionHtml}
+          ${updatesHtml}
+        </div>
+      </div>
+
+      ${rewardBadgeHtml}
+
+    </article>
+  `;
+}
+
+function buildCompletedCard(project) {
+  var typeConfig = getTypeConfig(project.goal_type || 'monetary');
+  var finalAmount = project.goal_type === 'monetary' ? '$' + Number(project.raised_amount || 0).toLocaleString() : Number(project.raised_amount || 0).toLocaleString();
+
+  return `
+    <div class="mission-card fade-up p-4 flex items-center gap-4 cursor-default border-l-4" style="border-left-color: #22c55e;">
+      <div class="w-10 h-10 bg-green-50 flex items-center justify-center shrink-0 border border-green-100">
+        <span class="material-symbols-outlined text-green-500 text-xl filled">check_circle</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-mono text-[9px] font-bold text-green-600 uppercase tracking-widest">Completed · ${typeConfig.label}</p>
+        <h3 class="font-headline font-bold text-command-navy truncate text-sm mt-0.5">${escapeHtml(project.title)}</h3>
+      </div>
+      <div class="text-right shrink-0">
+        <p class="font-mono font-bold text-command-navy text-sm">${finalAmount}</p>
       </div>
     </div>
-  `).join('');
+  `;
 }
 
-// ─── MOBILE UI ─────────────────────────────────────────────────────────────
-function openEditorMobile() {
-  if (getEl('listPane')) getEl('listPane').classList.add('hidden', 'lg:flex');
-  if (getEl('editorPane')) { getEl('editorPane').classList.remove('hidden'); getEl('editorPane').classList.add('flex'); }
-}
-function closeEditorMobile() {
-  if (getEl('listPane')) getEl('listPane').classList.remove('hidden');
-  if (getEl('editorPane')) { getEl('editorPane').classList.add('hidden', 'lg:flex'); getEl('editorPane').classList.remove('flex'); }
+function toggleCardExpansion(projectId) {
+  var card = document.getElementById('card-' + projectId);
+  if (!card) return;
+  var wasExpanded = card.classList.contains('expanded');
+
+  document.querySelectorAll('.mission-card.expanded').forEach(other => {
+    if (other !== card) {
+      other.classList.remove('expanded');
+      var bar = other.querySelector('.progress-fill');
+      if (bar) bar.style.width = '0%';
+    }
+  });
+
+  if (wasExpanded) {
+    card.classList.remove('expanded');
+    var bar = card.querySelector('.progress-fill');
+    if (bar) bar.style.width = '0%';
+  } else {
+    card.classList.add('expanded');
+    setTimeout(() => {
+      var bar = card.querySelector('.progress-fill');
+      if (bar && bar.dataset.w) bar.style.width = bar.dataset.w + '%';
+    }, 100);
+    setTimeout(() => {
+      var rect = card.getBoundingClientRect();
+      if (rect.top < 100) window.scrollBy({ top: rect.top - 100 - 8, behavior: 'smooth' });
+    }, 200);
+  }
 }
 
-// ─── UTILS ─────────────────────────────────────────────────────────────────
+function buildPriorityButton(projectId, rank) {
+  var isActive = userPriorities[projectId] === rank;
+  return `<button onclick="setPriority(event, this, '${projectId}', ${rank})" class="priority-btn ${isActive ? 'active' : ''}" data-rank="${rank}">${rank}</button>`;
+}
+
+async function setPriority(e, btn, projectId, rank) {
+  e.stopPropagation();
+  document.querySelectorAll('.priority-group').forEach(group => {
+    var gid = group.dataset.project;
+    if (gid === projectId) return;
+    group.querySelectorAll('.priority-btn').forEach(b => {
+      if (parseInt(b.dataset.rank) === rank && b.classList.contains('active')) {
+        b.classList.remove('active');
+        delete userPriorities[gid];
+        var otherLabel = b.closest('.mission-card').querySelector('.priority-label');
+        if (otherLabel) otherLabel.textContent = 'Not Set';
+        supabaseClient.from('project_priorities').delete().eq('user_id', currentUser.id).eq('project_id', gid).then(()=>{});
+      }
+    });
+  });
+
+  var currentRank = userPriorities[projectId];
+  if (currentRank === rank) {
+    btn.classList.remove('active');
+    delete userPriorities[projectId];
+    await supabaseClient.from('project_priorities').delete().eq('user_id', currentUser.id).eq('project_id', projectId);
+    showToast('Priority cleared');
+  } else {
+    var group = btn.closest('.priority-group');
+    group.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    userPriorities[projectId] = rank;
+    showToast(`Priority #${rank} assigned`);
+    await supabaseClient.from('project_priorities').upsert({ user_id: currentUser.id, project_id: projectId, priority: rank });
+  }
+  var label = btn.closest('.mission-card').querySelector('.priority-label');
+  if (label) label.textContent = userPriorities[projectId] ? 'RANKED #' + userPriorities[projectId] : 'Not Set';
+  checkPriorityPrompt();
+}
+
+function handleDonate(projectId) {
+  showToast('Direct donations coming soon via Stripe!', false);
+}
+
+function getTypeConfig(goalType) {
+  if (goalType === 'users') return { label:'Growth', icon:'group_add', progressClass:'progress-growth', textClass:'text-blue-600', actionLabel:'Invite Warrior', actionIcon:'person_add', actionFn:'shareInvite' };
+  if (goalType === 'shares') return { label:'Shares', icon:'share', progressClass:'progress-shares', textClass:'text-amber-600', actionLabel:'Share Quote', actionIcon:'share', actionFn:'goToHome' };
+  return { label:'Monetary', icon:'payments', progressClass:'progress-monetary', textClass:'text-green-600', actionLabel:'', actionIcon:'', actionFn:'' };
+}
+
+function formatShort(val, goalType) {
+  var v = Number(val || 0);
+  if (goalType === 'monetary') return '$' + v.toLocaleString();
+  return v.toLocaleString();
+}
+
+function shareInvite() {
+  supabaseClient.from('profiles').select('invite_code').eq('id', currentUser.id).single().then(r => {
+    if (r.data?.invite_code) {
+      var link = window.location.origin + '/app/signup.html?ref=' + r.data.invite_code;
+      if (navigator.share) navigator.share({ title:'Join Go Spread The Word', text:'Join me in spreading the Word every day.', url:link }).catch(()=>{});
+      else { navigator.clipboard.writeText(link); showToast('Invite link copied'); }
+    } else {
+      showToast('Invite code not set up yet', true);
+    }
+  });
+}
+function goToHome() { window.location.href = 'index.html'; }
+
+function openFilterSheet() {
+  pendingFilters = Object.assign({}, filters);
+  syncFilterUI();
+  document.getElementById('filterOverlay').classList.remove('hidden');
+  requestAnimationFrame(() => document.getElementById('filterSheet').classList.add('open'));
+}
+function closeFilterSheet() {
+  document.getElementById('filterSheet').classList.remove('open');
+  setTimeout(() => document.getElementById('filterOverlay').classList.add('hidden'), 300);
+}
+function syncFilterUI() {
+  document.querySelectorAll('.filter-option').forEach(opt => opt.classList.toggle('selected', pendingFilters[opt.dataset.filter] === opt.dataset.value));
+}
+function applyFilters() {
+  filters = Object.assign({}, pendingFilters);
+  renderProjects();
+  closeFilterSheet();
+}
+
+function toggleTooltip() {
+  document.getElementById('infoTooltip').classList.toggle('active');
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#infoTooltip')) {
+    document.getElementById('infoTooltip').classList.remove('active');
+  }
+});
+
 function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escapeAttr(s) { return escapeHtml(s); }
+
 var toastTimer;
 function showToast(msg, isErr=false) {
-  var t = getEl('toast');
-  if (!t) return;
-  if (getEl('toastMsg')) getEl('toastMsg').textContent = msg;
-  if (getEl('toastIcon')) {
-    getEl('toastIcon').textContent = isErr ? 'error' : 'check_circle';
-    getEl('toastIcon').className = 'material-symbols-outlined ' + (isErr ? 'text-red-400' : 'text-green-400');
-  }
+  var t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.querySelector('span').textContent = isErr ? 'error' : 'check_circle';
+  t.querySelector('span').className = 'material-symbols-outlined ' + (isErr ? 'text-red-400' : 'text-green-400');
   t.classList.remove('hidden'); t.classList.add('flex');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.classList.add('hidden'); t.classList.remove('flex'); }, 3000);
+}
+
+function setupListeners() {
+  window.addEventListener('scroll', () => document.getElementById('pageHeader').classList.toggle('header-scrolled', window.scrollY > 8));
+  document.querySelectorAll('.filter-option').forEach(opt => {
+    opt.addEventListener('click', function() {
+      pendingFilters[this.dataset.filter] = this.dataset.value;
+      var group = this.dataset.filter === 'type' ? document.getElementById('typeFilters') : document.getElementById('sortFilters');
+      group.querySelectorAll('.filter-option').forEach(o => o.classList.remove('selected'));
+      this.classList.add('selected');
+    });
+  });
 }
 
 init();
