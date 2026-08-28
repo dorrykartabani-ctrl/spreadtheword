@@ -102,33 +102,33 @@ var supabaseClient = supabase.createClient(
 
 // ─── RENDER ENGINE ──────────────────────────────────────────────
 async function initLandingPage() {
+  // Fetch Blocks, Live Stats, Active Missions, Tiers, Settings, and LIVE UPDATES
   var res = await Promise.allSettled([
     supabaseClient.from('page_blocks').select('*').eq('is_visible', true).order('sort_order'),
     supabaseClient.from('profiles').select('id', { count: 'exact', head: true }),
     supabaseClient.from('shares').select('id', { count: 'exact', head: true }),
     supabaseClient.from('projects').select('*').eq('status', 'active').order('created_at', { ascending: false }).limit(3),
     supabaseClient.from('subscription_tiers').select('*').eq('is_active', true).eq('is_public', true).order('sort_order'),
-    supabaseClient.from('site_settings').select('value').eq('id', 'page_bg_color').single() // ← Add this!
+    supabaseClient.from('site_settings').select('value').eq('id', 'page_bg_color').single(),
+    supabaseClient.from('project_updates').select('message, created_at, projects(title)').order('created_at', { ascending: false }).limit(5)
   ]);
 
   var blocks = res[0].status === 'fulfilled' ? res[0].value.data : [];
   var stats = {
     warriors: res[1].status === 'fulfilled' ? res[1].value.count || 0 : 0,
     shares: res[2].status === 'fulfilled' ? res[2].value.count || 0 : 0,
-    countries: 42
+    countries: 42 
   };
   var missions = res[3].status === 'fulfilled' ? res[3].value.data : [];
   var tiers = res[4].status === 'fulfilled' ? res[4].value.data : [];
+  var updates = res[6].status === 'fulfilled' ? res[6].value.data : [];
   
-  // Set Body Background Color dynamically!
   var bgColor = (res[5].status === 'fulfilled' && res[5].value.data) ? res[5].value.data.value : '#eef4f9';
   document.body.style.backgroundColor = bgColor;
 
   var container = document.getElementById('page-renderer');
   container.innerHTML = '';
 
-  // ... (rest of render code)
-  // Render blocks in order
   blocks.forEach(block => {
     var c = block.content;
     var html = '';
@@ -159,24 +159,24 @@ async function initLandingPage() {
 
     else if (block.type === 'features') {
       html = `
-        <section id="features" class="py-24 bg-white scroll-mt">
+        <section id="features" class="py-24 bg-white/50 scroll-mt">
           <div class="max-w-6xl mx-auto px-6 text-center mb-16">
             <span class="font-body font-bold text-xs text-primary uppercase tracking-widest mb-3 block">${c.eyebrow}</span>
             <h2 class="font-headline font-extrabold text-3xl md:text-5xl text-text-dark mb-4">${c.heading}</h2>
             <p class="font-body text-lg text-text-muted">${c.subheading}</p>
           </div>
           <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-8">
-            <div class="bg-cream rounded-2xl p-8 border border-border-soft hover:shadow-lifted transition-all">
+            <div class="bg-white rounded-2xl p-8 border border-border-soft hover:shadow-lifted transition-all">
               <span class="font-headline font-extrabold text-5xl text-primary/10 block mb-4">01</span>
               <h3 class="font-headline font-bold text-xl text-text-dark mb-2">Receive Orders</h3>
               <p class="font-body text-sm text-text-muted">A daily scripture drops into your briefing. Hand-picked for the season.</p>
             </div>
-            <div class="bg-cream rounded-2xl p-8 border border-border-soft hover:shadow-lifted transition-all">
+            <div class="bg-white rounded-2xl p-8 border border-border-soft hover:shadow-lifted transition-all">
               <span class="font-headline font-extrabold text-5xl text-primary/10 block mb-4">02</span>
               <h3 class="font-headline font-bold text-xl text-text-dark mb-2">Lock & Load</h3>
               <p class="font-body text-sm text-text-muted">Take a selfie or use our backgrounds. Make the Word impossible to scroll past.</p>
             </div>
-            <div class="bg-cream rounded-2xl p-8 border border-border-soft hover:shadow-lifted transition-all">
+            <div class="bg-white rounded-2xl p-8 border border-border-soft hover:shadow-lifted transition-all">
               <span class="font-headline font-extrabold text-5xl text-primary/10 block mb-4">03</span>
               <h3 class="font-headline font-bold text-xl text-text-dark mb-2">Deploy</h3>
               <p class="font-body text-sm text-text-muted">One tap sends it to Instagram, TikTok, and WhatsApp. Watch your impact grow.</p>
@@ -190,19 +190,33 @@ async function initLandingPage() {
         var pct = Math.min(Math.round((m.raised_amount / Math.max(m.goal_amount, 1)) * 100), 100);
         var typeStr = m.goal_type === 'shares' ? 'Shares' : m.goal_type === 'users' ? 'Warriors' : '$';
         return `
-          <div class="bg-white rounded-2xl overflow-hidden shadow-natural ghost-border">
+          <div class="bg-white rounded-2xl overflow-hidden shadow-natural border border-border-soft">
             <div class="h-44 relative"><img src="${m.image_url || '/images/og/social-sharing-1200x630.png'}" class="w-full h-full object-cover"></div>
             <div class="p-6">
-              <h4 class="font-headline font-bold text-lg text-text-dark mb-2">${m.title}</h4>
-              <p class="font-body text-sm text-text-muted mb-4 line-clamp-2">${m.description}</p>
-              <div class="flex justify-between items-center mb-2"><span class="font-headline font-bold text-primary">${pct}%</span><span class="font-body text-xs text-text-muted">${typeStr}${m.raised_amount.toLocaleString()} Raised</span></div>
-              <div class="w-full h-2 bg-cream rounded-full overflow-hidden"><div class="h-full tactical-gradient" style="width: ${pct}%"></div></div>
+              <h4 class="font-headline font-bold text-lg text-text-dark mb-2">${escapeHtml(m.title)}</h4>
+              <p class="font-body text-sm text-text-muted mb-4 line-clamp-2">${escapeHtml(m.description)}</p>
+              <div class="flex justify-between items-center mb-2"><span class="font-headline font-bold text-primary">${pct}%</span><span class="font-body text-xs font-bold text-text-muted">${typeStr}${m.raised_amount.toLocaleString()} Raised</span></div>
+              <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full tactical-gradient" style="width: ${pct}%"></div></div>
             </div>
           </div>`;
       }).join('');
 
+      // Build Live Ticker HTML
+      var tickerHtml = '';
+      if (updates.length > 0) {
+        var tickerItems = updates.map(u => `<span class="inline-block mx-8"><span class="text-gold mr-2">LIVE:</span> <span class="font-bold text-white/90">${escapeHtml(u.projects?.title)}</span> — ${escapeHtml(u.message)}</span>`).join('');
+        tickerHtml = `
+          <div class="w-full bg-dark text-white/70 font-body text-sm py-3 overflow-hidden border-y border-white/10 mb-12 shadow-inner">
+            <div class="flex whitespace-nowrap animate-[marquee_25s_linear_infinite]">
+              ${tickerItems} ${tickerItems}
+            </div>
+          </div>
+        `;
+      }
+
       html = `
-        <section id="missions" class="py-24 bg-cream scroll-mt">
+        <section id="missions" class="py-24 scroll-mt">
+          ${tickerHtml}
           <div class="max-w-6xl mx-auto px-6 text-center mb-16">
             <span class="font-body font-bold text-xs text-primary uppercase tracking-widest mb-3 block">${c.eyebrow}</span>
             <h2 class="font-headline font-extrabold text-3xl md:text-5xl text-text-dark mb-4">${c.heading}</h2>
@@ -217,19 +231,19 @@ async function initLandingPage() {
     else if (block.type === 'pricing') {
       var tierCards = tiers.map(t => {
         var isFeatured = t.price > 0;
-        var features = (t.features || []).map(f => `<li class="flex gap-2 text-sm mb-2"><span class="${isFeatured?'text-gold':'text-primary'}">✓</span> ${f.label || f}</li>`).join('');
+        var features = (t.features || []).map(f => `<li class="flex gap-2 text-sm mb-2"><span class="${isFeatured?'text-gold':'text-primary'}">✓</span> ${escapeHtml(f.label || f)}</li>`).join('');
         return `
           <div class="rounded-2xl p-8 ${isFeatured ? 'tactical-gradient text-white shadow-lifted transform md:-translate-y-4 border-2 border-gold/30' : 'bg-white text-text-dark border border-border-soft'}">
-            <h3 class="font-headline font-bold text-2xl mb-1">${t.name}</h3>
-            <p class="text-sm ${isFeatured?'text-white/60':'text-text-muted'} mb-6">${t.description}</p>
+            <h3 class="font-headline font-bold text-2xl mb-1">${escapeHtml(t.name)}</h3>
+            <p class="text-sm ${isFeatured?'text-white/60':'text-text-muted'} mb-6">${escapeHtml(t.description)}</p>
             <div class="mb-6"><span class="font-headline font-extrabold text-4xl ${isFeatured?'text-gold':'text-primary'}">${t.price == 0 ? 'Free' : '$'+t.price}</span>${t.price > 0 ? '<span class="text-sm">/mo</span>':''}</div>
             <ul class="mb-8 font-body text-left opacity-90">${features}</ul>
-            <a href="app/signup.html${t.price>0?'?plan='+t.id:''}" class="block text-center w-full py-4 rounded-xl font-bold uppercase tracking-wider text-sm transition-transform hover:scale-[1.02] ${isFeatured ? 'bg-gold text-dark' : 'bg-cream text-primary'}">Enlist</a>
+            <a href="app/signup.html${t.price>0?'?plan='+t.id:''}" class="block text-center w-full py-4 rounded-xl font-bold uppercase tracking-wider text-sm transition-transform hover:scale-[1.02] ${isFeatured ? 'bg-gold text-dark' : 'bg-slate-100 text-primary hover:bg-slate-200'}">Enlist</a>
           </div>`;
       }).join('');
 
       html = `
-        <section id="pricing" class="py-24 bg-white scroll-mt text-center">
+        <section id="pricing" class="py-24 bg-white scroll-mt text-center border-y border-border-soft">
           <div class="max-w-6xl mx-auto px-6 mb-16">
             <span class="font-body font-bold text-xs text-primary uppercase tracking-widest mb-3 block">${c.eyebrow}</span>
             <h2 class="font-headline font-extrabold text-3xl md:text-5xl text-text-dark mb-4">${c.heading}</h2>
@@ -257,6 +271,8 @@ async function initLandingPage() {
     container.innerHTML += html;
   });
 }
+
+function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
 
 initLandingPage();
 </script>
