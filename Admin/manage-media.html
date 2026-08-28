@@ -602,9 +602,10 @@ var editingDefault = false
 var confirmAction = null
 var draggedItemId = null
 
-// Updated configurations per request + avatars
+// UPDATED: Added 'mission' configuration
 var TYPE_CONFIG = {
   all:         { label: 'All',            icon: 'apps',                short: 'All' },
+  mission:     { label: 'Mission Covers', icon: 'volunteer_activism',  short: 'Missions' },
   tier:        { label: 'Tier Graphics',  icon: 'workspace_premium',   short: 'Tiers' },
   badge:       { label: 'Badges',         icon: 'military_tech',       short: 'Badges' },
   trophy:      { label: 'Trophies',       icon: 'emoji_events',        short: 'Trophies' },
@@ -615,7 +616,9 @@ var TYPE_CONFIG = {
   other:       { label: 'Other',          icon: 'more_horiz',          short: 'Other' }
 }
 
+// UPDATED: Added 'mission' guidance
 var TYPE_GUIDANCE = {
+  mission:     { name:'Mission Cover',   dims:'1200×800',  ratio:1.5,    note:'Landscape · used for mission cards on the live site' },
   tier:        { name:'Tier Graphic',    dims:'512×512',   ratio:1,      note:'Square or landscape · used on subscription pages' },
   badge:       { name:'Badge',           dims:'512×512',   ratio:1,      note:'Square · icon-style with transparent background (PNG or SVG)' },
   trophy:      { name:'Trophy',          dims:'512×512',   ratio:1,      note:'Square · gamification rewards (PNG or SVG)' },
@@ -768,7 +771,6 @@ async function handleReplaceFile(input) {
 
     if (updateResult.error) throw updateResult.error
 
-    // Best-effort delete previous storage object (skip static /images paths)
     try {
       if (oldUrl && oldUrl.indexOf('/media/') !== -1) {
         var oldPath = oldUrl.split('/media/')[1]
@@ -1057,7 +1059,6 @@ async function renderFileList() {
       }
     }
 
-    // Special flag for SVG
     var isSvg = f.type === 'image/svg+xml' || f.name.toLowerCase().endsWith('.svg');
     if (isSvg) {
       dimText = (dimText ? dimText + ' (SVG)' : 'SVG Vector');
@@ -1110,7 +1111,6 @@ document.addEventListener('DOMContentLoaded', function() {
   })
 })
 
-// === UPLOAD LOGIC with Safe SVG handling ===
 async function startUpload() {
   if (selectedFiles.length === 0) return
 
@@ -1141,7 +1141,6 @@ async function startUpload() {
       var uploadData;
 
       if (isSvg) {
-        // SVGs bypass the resizer completely to preserve vector data
         uploadData = { blob: f, width: null, height: null, size: f.size, mimeType: 'image/svg+xml' };
         var dims = await checkFileDimensions(f);
         if (dims) {
@@ -1149,7 +1148,6 @@ async function startUpload() {
           uploadData.height = dims.height;
         }
       } else {
-        // Regular images get resized
         uploadData = await resizeImage(f, getMaxWidthForType(type), getFormatForType(type, f.type));
       }
 
@@ -1214,18 +1212,21 @@ async function startUpload() {
   btn.textContent = 'Upload'
 }
 
+// UPDATED: Added 'mission' to 1200px width
 function getMaxWidthForType(type) {
   if (type === 'background' || type === 'landing') return 1920
+  if (type === 'mission') return 1200
   if (type === 'badge' || type === 'trophy' || type === 'tier' || type === 'icon_logo' || type === 'avatar') return 800
   return 1200
 }
 
+// UPDATED: Added 'mission' to JPEG conversion
 function getFormatForType(type, originalMime) {
   if (originalMime === 'image/svg+xml') return 'image/svg+xml';
   if (type === 'badge' || type === 'trophy' || type === 'icon_logo') {
     return 'image/png' 
   }
-  if (originalMime === 'image/png' && (type === 'background' || type === 'landing' || type === 'avatar')) {
+  if (originalMime === 'image/png' && (type === 'background' || type === 'landing' || type === 'avatar' || type === 'mission')) {
     return 'image/jpeg' 
   }
   return originalMime === 'image/jpeg' ? 'image/jpeg' : 'image/png'
