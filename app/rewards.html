@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Rewards — Command Center</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com"></script>render
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
@@ -184,49 +184,6 @@ function renderTrophies() {
       if (currentProgress >= activeThresholds[i].threshold_value) { unlockedTier = activeThresholds[i]; break; }
     }
 
-    if (unlockedTier) {
-      var color = getTierColor(unlockedTier.tier_id);
-      unlocked.innerHTML += `<div class="bold-block text-white" style="background-color: ${color};" onclick="openModal('${t.id}', ${unlockedTier.tier_id}, false)">
-        ${t.image_url ? `<img src="${t.image_url}" class="w-16 h-16 object-contain mb-2 drop-shadow-md">` : '<span class="material-symbols-outlined text-4xl mb-2 filled">emoji_events</span>'}
-        <p class="font-headline font-bold text-sm leading-tight">${t.name}</p>
-        <p class="text-[9px] font-bold mt-1 opacity-80 uppercase tracking-wider">${getTierName(unlockedTier.tier_id)}</p>
-      </div>`;
-    }
-
-    var nextTier = activeThresholds.find(th => currentProgress < th.threshold_value);
-    if (nextTier) {
-      locked.innerHTML += `<div class="bold-block locked-block bg-slate-300 text-slate-600" onclick="openModal('${t.id}', ${nextTier.tier_id}, true)">
-        ${t.image_url ? `<img src="${t.image_url}" class="w-16 h-16 object-contain mb-2">` : '<span class="material-symbols-outlined text-4xl mb-2">lock</span>'}
-        <p class="font-headline font-bold text-sm leading-tight">${t.name}</p>
-        <p class="text-[9px] font-bold mt-1">${nextTier.threshold_value} ${t.stat_type || 'pts'}</p>
-      </div>`;
-    }
-  });
-  if (unlocked.innerHTML === '') unlocked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">No trophies unlocked yet.</p>';
-  if (locked.innerHTML === '') locked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">All caught up!</p>';
-}
-
-// 5. Render Badges
-function renderTrophies() {
-  var unlocked = document.getElementById('unlockedTrophies'); 
-  var locked = document.getElementById('lockedTrophies');
-  if(!unlocked || !locked) return;
-  
-  unlocked.innerHTML = ''; 
-  locked.innerHTML = '';
-  
-  allTrophies.forEach(t => {
-    var activeThresholds = allThresholds.filter(th => th.trophy_id === t.id && th.is_active !== false).sort((a,b) => a.tier_id - b.tier_id);
-    if (activeThresholds.length === 0) return;
-
-    var userProg = userProgress.find(p => p.trophy_id === t.id);
-    var currentProgress = userProg ? userProg.current_progress : 0;
-
-    var unlockedTier = null;
-    for (var i = activeThresholds.length - 1; i >= 0; i--) {
-      if (currentProgress >= activeThresholds[i].threshold_value) { unlockedTier = activeThresholds[i]; break; }
-    }
-
     // UNLOCKED BLOCK
     if (unlockedTier) {
       var color = getTierColor(unlockedTier.tier_id);
@@ -254,6 +211,37 @@ function renderTrophies() {
   if (locked.innerHTML === '') locked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">All caught up!</p>';
 }
 
+// 5. Render Badges
+function renderBadges() {
+  var unlocked = document.getElementById('unlockedBadges'); 
+  var locked = document.getElementById('lockedBadges');
+  if(!unlocked || !locked) return;
+  
+  unlocked.innerHTML = ''; 
+  locked.innerHTML = '';
+
+  allBadges.forEach(b => {
+    // Check if user has badge (by ID or Name)
+    var hasBadge = userBadges.includes(b.id) || userBadges.includes(b.name);
+    
+    if (hasBadge) {
+      unlocked.innerHTML += `
+        <div class="bold-block bg-white border-2 border-primary text-slate-800" style="aspect-ratio: 1/1;">
+          ${b.image_url ? `<img src="${b.image_url}" class="w-16 h-16 object-contain mb-2 drop-shadow-md">` : '<span class="material-symbols-outlined text-4xl mb-2 text-primary">military_tech</span>'}
+          <p class="font-headline font-bold text-sm leading-tight">${b.name}</p>
+        </div>`;
+    } else {
+      locked.innerHTML += `
+        <div class="bold-block locked-block bg-slate-200 text-slate-500" style="aspect-ratio: 1/1;">
+          ${b.image_url ? `<img src="${b.image_url}" class="w-16 h-16 object-contain mb-2 grayscale">` : '<span class="material-symbols-outlined text-4xl mb-2">lock</span>'}
+          <p class="font-headline font-bold text-sm leading-tight">${b.name}</p>
+        </div>`;
+    }
+  });
+
+  if (unlocked.innerHTML === '') unlocked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">No badges earned yet.</p>';
+  if (locked.innerHTML === '') locked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">No future missions available.</p>';
+}
 // 6. Helpers & Modal
 function getTierColor(tierId) { var t = allTiers.find(x => x.id === tierId); return t ? t.color_hex : '#94a3b8'; }
 function getTierName(tierId) { var t = allTiers.find(x => x.id === tierId); return t ? t.name : 'Unknown'; }
