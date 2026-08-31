@@ -205,11 +205,16 @@
 
 <!-- AVATAR MODAL -->
 <div id="avatarModal" class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-    <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-      <h3 class="font-headline font-bold text-xl" id="avatarModalTitle">Avatar Stage</h3>
-      <button onclick="closeAvatarModal()" class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined">close</span></button>
-    </div>
+  <div class="grid grid-cols-2 gap-4">
+  <div>
+    <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Male Image</label>
+    <select id="avatarImageMale" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select>
+  </div>
+  <div>
+    <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Female Image</label>
+    <select id="avatarImageFemale" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select>
+  </div>
+</div>
     <div class="p-6 space-y-5">
       <input type="hidden" id="avatarId">
       
@@ -334,12 +339,18 @@ function switchTab(tab) {
 }
 
 function populateDropdowns() {
-  var tImgSel = getEl('trophyImage'), aImgSel = getEl('avatarImage');
+  var tImgSel = getEl('trophyImage');
   tImgSel.innerHTML = '<option value="">-- Select Image --</option>';
   trophyImages.forEach(m => tImgSel.innerHTML += `<option value="${m.url}">${m.label}</option>`);
   
-  aImgSel.innerHTML = '<option value="">-- Select Image --</option>';
-  avatarImages.forEach(m => aImgSel.innerHTML += `<option value="${m.url}">${m.label}</option>`);
+  // Populate both Male and Female dropdowns for Avatars
+  var aImgMaleSel = getEl('avatarImageMale');
+  var aImgFemaleSel = getEl('avatarImageFemale');
+  var options = '<option value="">-- Select Image --</option>';
+  avatarImages.forEach(m => options += `<option value="${m.url}">${m.label}</option>`);
+  
+  aImgMaleSel.innerHTML = options;
+  aImgFemaleSel.innerHTML = options;
 }
 
 function toggleTrophyType() {
@@ -527,14 +538,18 @@ function renderAvatars() {
   list.innerHTML = allAvatars.map(a => {
     return `
       <div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="editAvatar('${a.id}')">
-        <div class="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-          ${a.image_url ? `<img src="${a.image_url}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300">person</span>'}
+        <div class="flex -space-x-2">
+          <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-white">
+            ${a.image_url_male ? `<img src="${a.image_url_male}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300 text-sm">male</span>'}
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-white">
+            ${a.image_url_female ? `<img src="${a.image_url_female}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300 text-sm">female</span>'}
+          </div>
         </div>
         <div class="flex-1">
           <div class="flex items-center gap-2">
             <span class="bg-primary/10 text-primary text-[10px] font-black px-2 py-0.5 rounded-full">STAGE ${a.stage_order}</span>
             <h4 class="font-headline font-bold text-slate-800">${a.journey_name}</h4>
-            <span class="text-[9px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-0.5 rounded-full">${a.gender}</span>
           </div>
           <p class="text-[11px] text-slate-500 mt-1">
             Unlocks at: <span class="font-bold text-slate-700">${a.mythic_trophies_required} Mythic Trophies</span>
@@ -545,13 +560,12 @@ function renderAvatars() {
     `;
   }).join('');
 }
-
 function openAvatarModal() {
   getEl('avatarId').value = '';
   getEl('avatarOrder').value = allAvatars.length + 1;
   getEl('avatarName').value = '';
-  getEl('avatarImage').value = '';
-  getEl('avatarGender').value = 'unisex';
+  getEl('avatarImageMale').value = '';
+  getEl('avatarImageFemale').value = '';
   getEl('avatarMythicReq').value = '0';
   getEl('avatarModalTitle').textContent = 'New Avatar Stage';
   getEl('avatarModal').classList.remove('hidden');
@@ -563,8 +577,8 @@ function editAvatar(id) {
   getEl('avatarId').value = a.id;
   getEl('avatarOrder').value = a.stage_order;
   getEl('avatarName').value = a.journey_name;
-  getEl('avatarImage').value = a.image_url || '';
-  getEl('avatarGender').value = a.gender || 'unisex';
+  getEl('avatarImageMale').value = a.image_url_male || '';
+  getEl('avatarImageFemale').value = a.image_url_female || '';
   getEl('avatarMythicReq').value = a.mythic_trophies_required || 0;
   getEl('avatarModalTitle').textContent = 'Edit Avatar Stage';
   getEl('avatarModal').classList.remove('hidden');
@@ -577,8 +591,8 @@ async function saveAvatar() {
   var data = {
     stage_order: parseInt(getEl('avatarOrder').value),
     journey_name: getEl('avatarName').value.trim(),
-    image_url: getEl('avatarImage').value || null,
-    gender: getEl('avatarGender').value,
+    image_url_male: getEl('avatarImageMale').value || null,
+    image_url_female: getEl('avatarImageFemale').value || null,
     mythic_trophies_required: parseInt(getEl('avatarMythicReq').value) || 0
   };
   
