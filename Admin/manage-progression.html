@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Progression Engine — GSTW Admin</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
+            'surface-c':'#efeee7','on-surface':'#31332e','on-surface-variant':'#5e6059',
+            'primary':'#3d6285','on-primary':'#f7f9ff','primary-container':'#b0d5fe',
+            'secondary':'#41637c','tertiary':'#ad332b','gold':'#D4A24C',
+          },
+          fontFamily: { 'headline':['Plus Jakarta Sans','sans-serif'], 'body':['Manrope','sans-serif'] }
+        },
+      },
+    }
+  </script>
+
+  <style>
+    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;overflow:hidden;}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
+    .filled{font-variation-settings:'FILL' 1}
+    .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
+
+    ::-webkit-scrollbar{width:5px;height:5px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:10px}
+
+    .sidebar{background:#0e0e0c;color:#f7f9ff; z-index: 50;}
+    .sidebar-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;color:rgba(247,249,255,0.6);font-size:13px;font-weight:600; transition:all 0.15s ease;}
+    .sidebar-item:hover{background:#1a1a18;color:#f7f9ff}
+    .sidebar-item.active{background:#3d6285;color:#f7f9ff}
+
+    .form-input { background: #f5f4ed; border: 1px solid transparent; transition: all 0.2s; color: #31332e; }
+    .form-input:focus { background: #ffffff; border-color: rgba(61,98,133,0.3); outline: none; }
+    
+    .tab-btn { padding: 10px 20px; font-weight: 700; font-size: 14px; color: #5e6059; border-bottom: 2px solid transparent; transition: all 0.2s; }
+    .tab-btn.active { color: #3d6285; border-bottom-color: #3d6285; }
+
+    .tier-row { display: grid; grid-template-columns: 100px 1fr 1fr 40px; gap: 12px; align-items: center; padding: 12px; background: #f5f4ed; border-radius: 12px; margin-bottom: 8px; }
+    
+    .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #efeee7; }
+
+    .skeleton{ background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:8px; }
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spin{animation:spin 1s linear infinite;display:inline-block}
+  </style>
+</head>
+
+<body class="flex bg-surface">
+
+<aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 hidden md:flex">
+  <div class="mb-8 px-2 pt-2">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0">
+        <img src="/images/icon/icon-light-512.png" alt="GSTW" class="w-full h-full object-contain">
+      </div>
+      <div>
+        <h1 class="font-headline font-bold text-white" style="font-size:16px;">Command</h1>
+        <p class="text-white/40 font-body" style="font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;">Admin Panel</p>
+      </div>
+    </div>
+  </div>
+
+  <nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
+    <a href="index.html" class="sidebar-item"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
+    <a href="quotes.html" class="sidebar-item"><span class="material-symbols-outlined">add_circle</span>Create Quote</a>
+    <a href="manage-quotes.html" class="sidebar-item"><span class="material-symbols-outlined">format_quote</span>Manage Quotes</a>
+    <a href="schedule.html" class="sidebar-item"><span class="material-symbols-outlined">calendar_today</span>Schedule</a>
+    <a href="campaigns.html" class="sidebar-item"><span class="material-symbols-outlined">campaign</span>Campaigns</a>
+    <a href="projects.html" class="sidebar-item"><span class="material-symbols-outlined">volunteer_activism</span>Missions</a>
+    <a href="manage-media.html" class="sidebar-item"><span class="material-symbols-outlined">perm_media</span>Media Library</a>
+    <a href="warriors.html" class="sidebar-item"><span class="material-symbols-outlined">group</span>Users</a>
+    <a href="manage-tiers.html" class="sidebar-item"><span class="material-symbols-outlined">workspace_premium</span>Tiers</a>
+    <a href="manage-rewards.html" class="sidebar-item"><span class="material-symbols-outlined">emoji_events</span>Rewards</a>
+    <!-- ADD THIS LINK TO YOUR OTHER PAGES TOO -->
+    <a href="manage-progression.html" class="sidebar-item active"><span class="material-symbols-outlined">psychology</span>Progression</a>
+    <a href="notifications.html" class="sidebar-item"><span class="material-symbols-outlined">notifications</span>Broadcasts</a>
+    <a href="manage-content.html" class="sidebar-item"><span class="material-symbols-outlined">web</span>Page Builder</a>  
+    <a href="analytics.html" class="sidebar-item"><span class="material-symbols-outlined">analytics</span>Analytics</a>
+  </nav>
+
+  <div class="mt-4 pt-4 border-t border-white/10 space-y-2 shrink-0">
+    <a href="settings.html" class="sidebar-item"><span class="material-symbols-outlined">settings</span>Settings</a>
+    <div class="flex items-center gap-3 px-2 py-2">
+      <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center text-on-primary font-headline font-bold flex-shrink-0 admin-initials" style="font-size:13px;">AD</div>
+      <div class="flex-1 min-w-0">
+        <p class="font-body font-semibold text-white truncate admin-name" style="font-size:12px;">Admin</p>
+        <p class="text-white/40 font-body" style="font-size:10px;">Super Admin</p>
+      </div>
+      <button onclick="handleLogout()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-all flex-shrink-0" title="Log out">
+        <span class="material-symbols-outlined" style="font-size:16px;">logout</span>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<div class="flex-1 md:ml-64 flex flex-col h-screen overflow-hidden bg-surface">
+
+  <header class="h-[72px] bg-white border-b border-surface-c flex items-center justify-between px-4 lg:px-6 shrink-0 z-20">
+    <h2 class="font-headline font-bold text-on-surface text-xl">Progression Engine</h2>
+    <div class="flex gap-2">
+      <button onclick="openTrophyModal()" class="signature-gradient text-white font-headline font-semibold rounded-xl px-4 py-2 flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform">
+        <span class="material-symbols-outlined text-lg">add</span> New Trophy
+      </button>
+      <button onclick="openAvatarModal()" class="bg-slate-800 text-white font-headline font-semibold rounded-xl px-4 py-2 flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform">
+        <span class="material-symbols-outlined text-lg">add</span> New Avatar Stage
+      </button>
+    </div>
+  </header>
+
+  <div class="flex-1 overflow-y-auto p-6 lg:p-8">
+    <div class="max-w-6xl mx-auto">
+      
+      <!-- TABS -->
+      <div class="flex border-b border-surface-c mb-6">
+        <button onclick="switchTab('trophies')" id="tab-trophies" class="tab-btn active">Trophies & Tiers</button>
+        <button onclick="switchTab('avatars')" id="tab-avatars" class="tab-btn">Avatar Journey</button>
+      </div>
+
+      <!-- TROPHIES TAB -->
+      <div id="view-trophies">
+        <div id="trophyGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="skeleton h-48 w-full"></div><div class="skeleton h-48 w-full"></div><div class="skeleton h-48 w-full"></div>
+        </div>
+      </div>
+
+      <!-- AVATARS TAB -->
+      <div id="view-avatars" class="hidden">
+        <div id="avatarList" class="space-y-3">
+          <div class="skeleton h-20 w-full"></div><div class="skeleton h-20 w-full"></div><div class="skeleton h-20 w-full"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- TROPHY MODAL -->
+<div id="trophyModal" class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div class="p-6 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10">
+      <h3 class="font-headline font-bold text-xl" id="trophyModalTitle">Create Trophy</h3>
+      <button onclick="closeTrophyModal()" class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="p-6 space-y-5">
+      <input type="hidden" id="trophyId">
+      
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Trophy Name</label>
+          <input type="text" id="trophyName" class="form-input w-full rounded-xl px-4 py-3 text-sm">
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Type</label>
+          <select id="trophyType" onchange="toggleStatType()" class="form-input w-full rounded-xl px-4 py-3 text-sm">
+            <option value="stat">Stat Based (Grind)</option>
+            <option value="collection">Collection Based (Campaigns)</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="statTypeContainer">
+        <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Stat Type</label>
+        <select id="trophyStatType" class="form-input w-full rounded-xl px-4 py-3 text-sm">
+          <option value="shares">Total Shares</option>
+          <option value="recruits">Warriors Recruited</option>
+          <option value="donations">Total Donations ($)</option>
+          <option value="countries_reached">Countries Reached</option>
+          <option value="platform_shares">Platform Shares</option>
+          <option value="streaks">Daily/Weekly Streaks</option>
+          <option value="missions_completed">Missions Completed</option>
+          <option value="badges_earned">Badges Earned</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Base Trophy Image</label>
+        <select id="trophyImage" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select>
+      </div>
+
+      <div class="pt-4 border-t border-slate-100">
+        <h4 class="font-headline font-bold text-sm mb-3">Tier Thresholds & Backgrounds</h4>
+        <p class="text-xs text-slate-500 mb-4">Set the number required to reach each level. For collections, this is the total number of badges/quotes needed.</p>
+        
+        <div id="tiersContainer" class="space-y-2">
+          <!-- Tiers injected via JS -->
+        </div>
+      </div>
+    </div>
+    <div class="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 sticky bottom-0">
+      <button onclick="closeTrophyModal()" class="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-200 transition-colors">Cancel</button>
+      <button onclick="saveTrophy()" id="saveTrophyBtn" class="signature-gradient text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform">Save Trophy</button>
+    </div>
+  </div>
+</div>
+
+<!-- AVATAR MODAL -->
+<div id="avatarModal" class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+      <h3 class="font-headline font-bold text-xl" id="avatarModalTitle">Avatar Stage</h3>
+      <button onclick="closeAvatarModal()" class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="p-6 space-y-5">
+      <input type="hidden" id="avatarId">
+      
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Stage Order</label>
+          <input type="number" id="avatarOrder" class="form-input w-full rounded-xl px-4 py-3 text-sm">
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Journey Name</label>
+          <input type="text" id="avatarName" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. The Servant">
+        </div>
+      </div>
+
+      <div>
+        <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Avatar Image</label>
+        <select id="avatarImage" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select>
+      </div>
+
+      <div class="pt-4 border-t border-slate-100">
+        <h4 class="font-headline font-bold text-sm mb-3">Unlock Condition</h4>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">When Trophy Reaches</label>
+            <select id="avatarUnlockTrophy" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select>
+          </div>
+          <div>
+            <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Tier Level</label>
+            <select id="avatarUnlockTier" class="form-input w-full rounded-xl px-4 py-3 text-sm">
+              <option value="1">1 (Common)</option>
+              <option value="2">2 (Uncommon)</option>
+              <option value="3">3 (Rare)</option>
+              <option value="4">4 (Epic)</option>
+              <option value="5">5 (Mythic)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+      <button onclick="closeAvatarModal()" class="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-200 transition-colors">Cancel</button>
+      <button onclick="saveAvatar()" id="saveAvatarBtn" class="signature-gradient text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform">Save Stage</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-slate-900/90 backdrop-blur-md text-white font-body font-bold px-5 py-3 rounded-full shadow-2xl items-center gap-2 text-sm">
+  <span id="toastIcon" class="material-symbols-outlined text-green-400">check_circle</span>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+var supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+);
+
+var currentUser = null;
+var allTrophies = [], allTiers = [], allAvatars = [];
+var trophyImages = [], avatarImages = [];
+
+function getEl(id) { return document.getElementById(id); }
+function toggleSidebar() { getEl('sidebar').classList.toggle('hidden'); getEl('sidebar').classList.toggle('flex'); }
+async function handleLogout() { await supabaseClient.auth.signOut(); window.location.href = 'login.html'; }
+
+var toastTimer;
+function showToast(msg, isErr=false) {
+  var t = getEl('toast');
+  getEl('toastMsg').textContent = msg;
+  var icon = getEl('toastIcon');
+  icon.textContent = isErr ? 'error' : 'check_circle';
+  icon.className = 'material-symbols-outlined ' + (isErr ? 'text-red-400' : 'text-green-400');
+  t.classList.remove('hidden'); t.classList.add('flex');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.classList.add('hidden'); t.classList.remove('flex'); }, 3000);
+}
+
+async function init() {
+  var s = await supabaseClient.auth.getSession();
+  if (!s.data.session) return window.location.href = 'login.html';
+  currentUser = s.data.session.user;
+  
+  var p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single();
+  if (!p.data || p.data.role !== 'admin') return window.location.href = '../app/index.html';
+  
+  document.querySelectorAll('.admin-name').forEach(el => el.textContent = p.data.full_name || currentUser.email);
+  document.querySelectorAll('.admin-initials').forEach(el => el.textContent = (p.data.full_name || 'AD').substring(0,2).toUpperCase());
+
+  await Promise.all([loadMedia(), loadData()]);
+}
+
+async function loadMedia() {
+  var { data } = await supabaseClient.from('media').select('*').in('type', ['trophy', 'avatar']).eq('is_active', true);
+  var media = data || [];
+  trophyImages = media.filter(m => m.type === 'trophy');
+  avatarImages = media.filter(m => m.type === 'avatar');
+}
+
+async function loadData() {
+  var [tRes, tierRes, aRes] = await Promise.all([
+    supabaseClient.from('trophy_definitions').select('*').order('created_at', {ascending: false}),
+    supabaseClient.from('trophy_tiers').select('*').order('tier_level'),
+    supabaseClient.from('avatar_stages').select('*').order('stage_order')
+  ]);
+  
+  allTrophies = tRes.data || [];
+  allTiers = tierRes.data || [];
+  allAvatars = aRes.data || [];
+  
+  renderTrophies();
+  renderAvatars();
+  populateDropdowns();
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  getEl('tab-' + tab).classList.add('active');
+  getEl('view-trophies').classList.toggle('hidden', tab !== 'trophies');
+  getEl('view-avatars').classList.toggle('hidden', tab !== 'avatars');
+}
+
+function populateDropdowns() {
+  var tImgSel = getEl('trophyImage'), aImgSel = getEl('avatarImage');
+  tImgSel.innerHTML = '<option value="">-- Select Image --</option>';
+  trophyImages.forEach(m => tImgSel.innerHTML += `<option value="${m.url}">${m.label}</option>`);
+  
+  aImgSel.innerHTML = '<option value="">-- Select Image --</option>';
+  avatarImages.forEach(m => aImgSel.innerHTML += `<option value="${m.url}">${m.label}</option>`);
+
+  var unlockSel = getEl('avatarUnlockTrophy');
+  unlockSel.innerHTML = '<option value="">-- None (Manual) --</option>';
+  allTrophies.forEach(t => unlockSel.innerHTML += `<option value="${t.id}">${t.name}</option>`);
+}
+
+function toggleStatType() {
+  getEl('statTypeContainer').classList.toggle('hidden', getEl('trophyType').value !== 'stat');
+}
+
+// ─── TROPHIES ──────────────────────────────────────────────────────────────
+
+function renderTrophies() {
+  var grid = getEl('trophyGrid');
+  if (allTrophies.length === 0) {
+    grid.innerHTML = '<div class="col-span-3 text-center py-10 text-slate-400">No trophies created yet.</div>';
+    return;
+  }
+  
+  grid.innerHTML = allTrophies.map(t => {
+    var tiers = allTiers.filter(tier => tier.trophy_id === t.id);
+    var maxTier = tiers.length > 0 ? tiers[tiers.length - 1].tier_name : 'Unconfigured';
+    return `
+      <div class="card flex flex-col gap-3 cursor-pointer hover:shadow-lg transition-shadow" onclick="editTrophy('${t.id}')">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden">
+            ${t.image_url ? `<img src="${t.image_url}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300">emoji_events</span>'}
+          </div>
+          <div>
+            <h4 class="font-headline font-bold text-slate-800">${t.name}</h4>
+            <p class="text-[10px] font-bold text-slate-400 uppercase">${t.type} · ${t.stat_type || 'N/A'}</p>
+          </div>
+        </div>
+        <div class="flex gap-1 mt-2">
+          ${[1,2,3,4,5].map(i => {
+            var tier = tiers.find(tier => tier.tier_level === i);
+            var color = i===1?'bg-slate-300':i===2?'bg-green-500':i===3?'bg-blue-500':i===4?'bg-purple-500':'bg-amber-500';
+            return `<div class="h-1.5 flex-1 rounded-full ${tier ? color : 'bg-slate-100'}"></div>`;
+          }).join('')}
+        </div>
+        <p class="text-[10px] text-slate-500 mt-1">Highest: <span class="font-bold text-slate-700">${maxTier}</span></p>
+      </div>
+    `;
+  }).join('');
+}
+
+function openTrophyModal() {
+  getEl('trophyId').value = '';
+  getEl('trophyName').value = '';
+  getEl('trophyType').value = 'stat';
+  getEl('trophyStatType').value = 'shares';
+  getEl('trophyImage').value = '';
+  getEl('trophyModalTitle').textContent = 'Create Trophy';
+  toggleStatType();
+  
+  // Default tiers
+  var container = getEl('tiersContainer');
+  container.innerHTML = '';
+  var defaults = [{l:1,n:'Common',t:1}, {l:2,n:'Uncommon',t:10}, {l:3,n:'Rare',t:50}, {l:4,n:'Epic',t:150}, {l:5,n:'Mythic',t:500}];
+  defaults.forEach(d => addTierRow(d.l, d.n, d.t, ''));
+  
+  getEl('trophyModal').classList.remove('hidden');
+}
+
+function editTrophy(id) {
+  var t = allTrophies.find(x => x.id === id);
+  if (!t) return;
+  
+  getEl('trophyId').value = t.id;
+  getEl('trophyName').value = t.name;
+  getEl('trophyType').value = t.type || 'stat';
+  getEl('trophyStatType').value = t.stat_type || 'shares';
+  getEl('trophyImage').value = t.image_url || '';
+  getEl('trophyModalTitle').textContent = 'Edit Trophy';
+  toggleStatType();
+  
+  var container = getEl('tiersContainer');
+  container.innerHTML = '';
+  var tiers = allTiers.filter(tier => tier.trophy_id === id);
+  
+  [1,2,3,4,5].forEach(l => {
+    var tier = tiers.find(tier => tier.tier_level === l);
+    var names = ['Common','Uncommon','Rare','Epic','Mythic'];
+    addTierRow(l, names[l-1], tier ? tier.threshold : l*10, tier ? tier.background_url : '');
+  });
+  
+  getEl('trophyModal').classList.remove('hidden');
+}
+
+function addTierRow(level, name, threshold, bgUrl) {
+  var container = getEl('tiersContainer');
+  var colors = ['bg-slate-300','bg-green-500','bg-blue-500','bg-purple-500','bg-amber-500'];
+  var div = document.createElement('div');
+  div.className = 'tier-row';
+  div.innerHTML = `
+    <div class="flex items-center gap-2">
+      <div class="w-3 h-3 rounded-full ${colors[level-1]}"></div>
+      <span class="text-xs font-bold text-slate-600">${name}</span>
+    </div>
+    <input type="number" placeholder="Threshold" value="${threshold}" class="tier-threshold form-input rounded-lg px-3 py-2 text-sm" data-level="${level}">
+    <select class="tier-bg form-input rounded-lg px-3 py-2 text-sm" data-level="${level}">
+      <option value="">-- No BG --</option>
+      ${trophyImages.map(m => `<option value="${m.url}" ${bgUrl===m.url?'selected':''}>${m.label}</option>`).join('')}
+    </select>
+    <div></div>
+  `;
+  container.appendChild(div);
+}
+
+function closeTrophyModal() { getEl('trophyModal').classList.add('hidden'); }
+
+async function saveTrophy() {
+  var id = getEl('trophyId').value;
+  var name = getEl('trophyName').value.trim();
+  var type = getEl('trophyType').value;
+  var statType = type === 'stat' ? getEl('trophyStatType').value : null;
+  var imgUrl = getEl('trophyImage').value || null;
+  
+  if (!name) return showToast('Name is required', true);
+  
+  var btn = getEl('saveTrophyBtn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  
+  try {
+    var data = { name, type, stat_type: statType, image_url: imgUrl };
+    var res;
+    
+    if (id) {
+      res = await supabaseClient.from('trophy_definitions').update(data).eq('id', id);
+    } else {
+      res = await supabaseClient.from('trophy_definitions').insert([data]).select().single();
+      id = res.data.id;
+    }
+    if (res.error) throw new Error(res.error.message);
+    
+    // Save Tiers
+    var tierRows = document.querySelectorAll('.tier-row');
+    var tierData = [];
+    tierRows.forEach(row => {
+      var level = row.querySelector('.tier-threshold').dataset.level;
+      var thresh = parseInt(row.querySelector('.tier-threshold').value) || 0;
+      var bg = row.querySelector('.tier-bg').value || null;
+      var names = ['Common','Uncommon','Rare','Epic','Mythic'];
+      tierData.push({ trophy_id: id, tier_level: parseInt(level), tier_name: names[level-1], threshold: thresh, background_url: bg });
+    });
+    
+    // Delete old tiers and insert new
+    await supabaseClient.from('trophy_tiers').delete().eq('trophy_id', id);
+    var tierRes = await supabaseClient.from('trophy_tiers').insert(tierData);
+    if (tierRes.error) throw new Error(tierRes.error.message);
+    
+    showToast('Trophy saved!');
+    closeTrophyModal();
+    await loadData();
+  } catch(e) {
+    showToast('Error: ' + e.message, true);
+  }
+  btn.disabled = false; btn.textContent = 'Save Trophy';
+}
+
+// ─── AVATARS ───────────────────────────────────────────────────────────────
+
+function renderAvatars() {
+  var list = getEl('avatarList');
+  if (allAvatars.length === 0) {
+    list.innerHTML = '<div class="text-center py-10 text-slate-400">No avatar stages created yet.</div>';
+    return;
+  }
+  
+  list.innerHTML = allAvatars.map(a => {
+    var trigger = a.unlock_trophy_id ? allTrophies.find(t => t.id === a.unlock_trophy_id) : null;
+    return `
+      <div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="editAvatar('${a.id}')">
+        <div class="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+          ${a.image_url ? `<img src="${a.image_url}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300">person</span>'}
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2">
+            <span class="bg-primary/10 text-primary text-[10px] font-black px-2 py-0.5 rounded-full">STAGE ${a.stage_order}</span>
+            <h4 class="font-headline font-bold text-slate-800">${a.journey_name}</h4>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-1">
+            Unlocks at: <span class="font-bold text-slate-700">${trigger ? trigger.name : 'Manual'} ${a.unlock_tier_level ? '(Tier ' + a.unlock_tier_level + ')' : ''}</span>
+          </p>
+        </div>
+        <span class="material-symbols-outlined text-slate-300">edit</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function openAvatarModal() {
+  getEl('avatarId').value = '';
+  getEl('avatarOrder').value = allAvatars.length + 1;
+  getEl('avatarName').value = '';
+  getEl('avatarImage').value = '';
+  getEl('avatarUnlockTrophy').value = '';
+  getEl('avatarUnlockTier').value = '1';
+  getEl('avatarModalTitle').textContent = 'New Avatar Stage';
+  getEl('avatarModal').classList.remove('hidden');
+}
+
+function editAvatar(id) {
+  var a = allAvatars.find(x => x.id === id);
+  if (!a) return;
+  getEl('avatarId').value = a.id;
+  getEl('avatarOrder').value = a.stage_order;
+  getEl('avatarName').value = a.journey_name;
+  getEl('avatarImage').value = a.image_url || '';
+  getEl('avatarUnlockTrophy').value = a.unlock_trophy_id || '';
+  getEl('avatarUnlockTier').value = a.unlock_tier_level || '1';
+  getEl('avatarModalTitle').textContent = 'Edit Avatar Stage';
+  getEl('avatarModal').classList.remove('hidden');
+}
+
+function closeAvatarModal() { getEl('avatarModal').classList.add('hidden'); }
+
+async function saveAvatar() {
+  var id = getEl('avatarId').value;
+  var data = {
+    stage_order: parseInt(getEl('avatarOrder').value),
+    journey_name: getEl('avatarName').value.trim(),
+    image_url: getEl('avatarImage').value || null,
+    unlock_trophy_id: getEl('avatarUnlockTrophy').value || null,
+    unlock_tier_level: parseInt(getEl('avatarUnlockTier').value)
+  };
+  
+  if (!data.journey_name) return showToast('Name is required', true);
+  
+  var btn = getEl('saveAvatarBtn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  
+  try {
+    var res;
+    if (id) {
+      res = await supabaseClient.from('avatar_stages').update(data).eq('id', id);
+    } else {
+      res = await supabaseClient.from('avatar_stages').insert([data]);
+    }
+    if (res.error) throw new Error(res.error.message);
+    
+    showToast('Avatar stage saved!');
+    closeAvatarModal();
+    await loadData();
+  } catch(e) {
+    showToast('Error: ' + e.message, true);
+  }
+  btn.disabled = false; btn.textContent = 'Save Stage';
+}
+
+init();
+</script>
+</body>
+</html>
