@@ -86,40 +86,71 @@
 </nav>
 
 <script>
-<script>
-var supabaseClient = supabase.createClient('https://nhymadutuhpjgkiurify.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM');
-var currentUser = null, allTiers = [], allTrophies = [], allThresholds = [], userProgress = [], allBadges = [], userBadges = [];
+// 1. Initialize Supabase
+var supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+);
 
-function switchTab(tab) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById('tab-' + tab).classList.add('active'); document.getElementById('section-trophies').classList.add('hidden'); document.getElementById('section-badges').classList.add('hidden'); document.getElementById('section-' + tab).classList.remove('hidden'); }
+var currentUser = null;
+var allTiers = [], allTrophies = [], allThresholds = [], userProgress = [];
+var allBadges = [], userBadges = [];
 
+// 2. Tab Switching Logic (Global)
+window.switchTab = function(tab) { 
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); 
+  document.getElementById('tab-' + tab).classList.add('active'); 
+  document.getElementById('section-trophies').classList.add('hidden'); 
+  document.getElementById('section-badges').classList.add('hidden'); 
+  document.getElementById('section-' + tab).classList.remove('hidden'); 
+};
+
+// 3. Main Initialization
 async function init() {
-  var s = await supabaseClient.auth.getSession(); if (!s.data.session) { window.location.href = 'login.html'; return; } currentUser = s.data.session.user;
+  var s = await supabaseClient.auth.getSession(); 
+  if (!s.data.session) { window.location.href = 'login.html'; return; } 
+  currentUser = s.data.session.user;
   
-  // Fetch Trophies & Tiers
-  var [tierRes, tRes, threshRes, progRes, badgeRes, profileRes] = await Promise.all([
-    supabaseClient.from('trophy_tiers').select('*').order('id'),
-    supabaseClient.from('trophy_definitions').select('*'),
-    supabaseClient.from('trophy_thresholds').select('*'),
-    supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
-    supabaseClient.from('badge_definitions').select('*'),
-    supabaseClient.from('profiles').select('badges').eq('id', currentUser.id).single()
-  ]);
-  
-  allTiers = tierRes.data || []; allTrophies = tRes.data || []; allThresholds = threshRes.data || []; userProgress = progRes.data || [];
-  allBadges = badgeRes.data || []; 
-  userBadges = (profileRes.data && profileRes.data.badges) ? profileRes.data.badges : [];
-  
-  renderTrophies();
-  renderBadges();
+  try {
+    // Fetch all data in parallel
+    var results = await Promise.all([
+      supabaseClient.from('trophy_tiers').select('*').order('id'),
+      supabaseClient.from('trophy_definitions').select('*'),
+      supabaseClient.from('trophy_thresholds').select('*'),
+      supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
+      supabaseClient.from('badge_definitions').select('*'),
+      supabaseClient.from('profiles').select('badges').eq('id', currentUser.id).single()
+    ]);
+
+    // Assign data safely
+    allTiers = results[0].data || []; 
+    allTrophies = results[1].data || []; 
+    allThresholds = results[2].data || []; 
+    userProgress = results[3].data || [];
+    allBadges = results[4].data || []; 
+    
+    // Handle profile badges safely (in case column doesn't exist)
+    if (results[5].data && results[5].data.badges) {
+      userBadges = results[5].data.badges;
+    } else {
+      userBadges = [];
+    }
+
+    renderTrophies();
+    renderBadges();
+  } catch (err) {
+    console.error("Rewards Page Error:", err);
+  }
 }
 
-// --- TROPHY LOGIC ---
-function getTierColor(tierId) { var t = allTiers.find(x => x.id === tierId); return t ? t.color_hex : '#94a3b8'; }
-function getTierName(tierId) { var t = allTiers.find(x => x.id === tierId); return t ? t.name : 'Unknown'; }
-
+// 4. Render Trophies
 function renderTrophies() {
-  var unlocked = document.getElementById('unlockedTrophies'); var locked = document.getElementById('lockedTrophies');
-  unlocked.innerHTML = ''; locked.innerHTML = '';
+  var unlocked = document.getElementById('unlockedTrophies'); 
+  var locked = document.getElementById('lockedTrophies');
+  if(!unlocked || !locked) return;
+  
+  unlocked.innerHTML = ''; 
+  locked.innerHTML = '';
   
   allTrophies.forEach(t => {
     var activeThresholds = allThresholds.filter(th => th.trophy_id === t.id && th.is_active !== false).sort((a,b) => a.tier_id - b.tier_id);
@@ -155,13 +186,17 @@ function renderTrophies() {
   if (locked.innerHTML === '') locked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">All caught up!</p>';
 }
 
-// --- BADGE LOGIC ---
+// 5. Render Badges
 function renderBadges() {
-  var unlocked = document.getElementById('unlockedBadges'); var locked = document.getElementById('lockedBadges');
-  unlocked.innerHTML = ''; locked.innerHTML = '';
+  var unlocked = document.getElementById('unlockedBadges'); 
+  var locked = document.getElementById('lockedBadges');
+  if(!unlocked || !locked) return;
+  
+  unlocked.innerHTML = ''; 
+  locked.innerHTML = '';
 
   allBadges.forEach(b => {
-    // Check if user has this badge (assuming badges are stored as IDs or Names in the profile array)
+    // Check if user has badge (by ID or Name)
     var hasBadge = userBadges.includes(b.id) || userBadges.includes(b.name);
     
     if (hasBadge) {
@@ -180,8 +215,12 @@ function renderBadges() {
   if (locked.innerHTML === '') locked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">No future missions available.</p>';
 }
 
-// --- MODAL ---
-function openModal(trophyId, tierId, isLocked) {
+// 6. Helpers & Modal
+function getTierColor(tierId) { var t = allTiers.find(x => x.id === tierId); return t ? t.color_hex : '#94a3b8'; }
+function getTierName(tierId) { var t = allTiers.find(x => x.id === tierId); return t ? t.name : 'Unknown'; }
+function getThreshold(trophyId, tierId) { var th = allThresholds.find(x => x.trophy_id === trophyId && x.tier_id === tierId); return th ? th.threshold_value : 0; }
+
+window.openModal = function(trophyId, tierId, isLocked) {
   var t = allTrophies.find(x => x.id === trophyId); if (!t) return;
   var color = getTierColor(tierId);
   document.getElementById('modalTitle').textContent = t.name;
@@ -199,10 +238,10 @@ function openModal(trophyId, tierId, isLocked) {
   document.getElementById('rewardModal').classList.remove('hidden');
 }
 
-function getThreshold(trophyId, tierId) { var th = allThresholds.find(x => x.trophy_id === trophyId && x.tier_id === tierId); return th ? th.threshold_value : 0; }
-function closeModal() { document.getElementById('rewardModal').classList.add('hidden'); }
+window.closeModal = function() { document.getElementById('rewardModal').classList.add('hidden'); }
 document.getElementById('rewardModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
 
+// Start
 init();
 </script>
 </body>
