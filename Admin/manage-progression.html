@@ -48,14 +48,15 @@
     .tab-btn { padding: 10px 20px; font-weight: 700; font-size: 14px; color: #5e6059; border-bottom: 2px solid transparent; transition: all 0.2s; }
     .tab-btn.active { color: #3d6285; border-bottom-color: #3d6285; }
 
-    .tier-row { display: grid; grid-template-columns: 100px 1fr 1fr 40px; gap: 12px; align-items: center; padding: 12px; background: #f5f4ed; border-radius: 12px; margin-bottom: 8px; }
-    
+    .tier-row { display: grid; grid-template-columns: 100px 1fr; gap: 12px; align-items: center; padding: 12px; background: #f5f4ed; border-radius: 12px; margin-bottom: 8px; }
     .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #efeee7; }
-
     .skeleton{ background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:8px; }
     @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
     @keyframes spin{to{transform:rotate(360deg)}}
     .spin{animation:spin 1s linear infinite;display:inline-block}
+    
+    .campaign-checkbox { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
+    .campaign-checkbox:hover { background: #f5f4ed; }
   </style>
 </head>
 
@@ -85,7 +86,6 @@
     <a href="warriors.html" class="sidebar-item"><span class="material-symbols-outlined">group</span>Users</a>
     <a href="manage-tiers.html" class="sidebar-item"><span class="material-symbols-outlined">workspace_premium</span>Tiers</a>
     <a href="manage-rewards.html" class="sidebar-item"><span class="material-symbols-outlined">emoji_events</span>Rewards</a>
-    <!-- ADD THIS LINK TO YOUR OTHER PAGES TOO -->
     <a href="manage-progression.html" class="sidebar-item active"><span class="material-symbols-outlined">psychology</span>Progression</a>
     <a href="notifications.html" class="sidebar-item"><span class="material-symbols-outlined">notifications</span>Broadcasts</a>
     <a href="manage-content.html" class="sidebar-item"><span class="material-symbols-outlined">web</span>Page Builder</a>  
@@ -108,7 +108,6 @@
 </aside>
 
 <div class="flex-1 md:ml-64 flex flex-col h-screen overflow-hidden bg-surface">
-
   <header class="h-[72px] bg-white border-b border-surface-c flex items-center justify-between px-4 lg:px-6 shrink-0 z-20">
     <h2 class="font-headline font-bold text-on-surface text-xl">Progression Engine</h2>
     <div class="flex gap-2">
@@ -123,27 +122,22 @@
 
   <div class="flex-1 overflow-y-auto p-6 lg:p-8">
     <div class="max-w-6xl mx-auto">
-      
-      <!-- TABS -->
       <div class="flex border-b border-surface-c mb-6">
         <button onclick="switchTab('trophies')" id="tab-trophies" class="tab-btn active">Trophies & Tiers</button>
         <button onclick="switchTab('avatars')" id="tab-avatars" class="tab-btn">Avatar Journey</button>
       </div>
 
-      <!-- TROPHIES TAB -->
       <div id="view-trophies">
         <div id="trophyGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div class="skeleton h-48 w-full"></div><div class="skeleton h-48 w-full"></div><div class="skeleton h-48 w-full"></div>
         </div>
       </div>
 
-      <!-- AVATARS TAB -->
       <div id="view-avatars" class="hidden">
         <div id="avatarList" class="space-y-3">
           <div class="skeleton h-20 w-full"></div><div class="skeleton h-20 w-full"></div><div class="skeleton h-20 w-full"></div>
         </div>
       </div>
-
     </div>
   </div>
 </div>
@@ -165,7 +159,7 @@
         </div>
         <div>
           <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Type</label>
-          <select id="trophyType" onchange="toggleStatType()" class="form-input w-full rounded-xl px-4 py-3 text-sm">
+          <select id="trophyType" onchange="toggleTrophyType()" class="form-input w-full rounded-xl px-4 py-3 text-sm">
             <option value="stat">Stat Based (Grind)</option>
             <option value="collection">Collection Based (Campaigns)</option>
           </select>
@@ -187,18 +181,21 @@
         </select>
       </div>
 
+      <div id="campaignContainer" class="hidden">
+        <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Linked Campaigns</label>
+        <div id="campaignChecklist" class="bg-surface-clow rounded-xl p-3 max-h-40 overflow-y-auto space-y-1"></div>
+        <p class="text-[10px] text-slate-400 mt-1">Progress bar will auto-calculate based on quotes/badges in these campaigns.</p>
+      </div>
+
       <div>
         <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Base Trophy Image</label>
         <select id="trophyImage" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select>
       </div>
 
-      <div class="pt-4 border-t border-slate-100">
-        <h4 class="font-headline font-bold text-sm mb-3">Tier Thresholds & Backgrounds</h4>
-        <p class="text-xs text-slate-500 mb-4">Set the number required to reach each level. For collections, this is the total number of badges/quotes needed.</p>
-        
-        <div id="tiersContainer" class="space-y-2">
-          <!-- Tiers injected via JS -->
-        </div>
+      <div id="thresholdsContainer" class="pt-4 border-t border-slate-100">
+        <h4 class="font-headline font-bold text-sm mb-3">Tier Thresholds</h4>
+        <p class="text-xs text-slate-500 mb-4">Set the number required to reach each level. (Hidden for Collection trophies).</p>
+        <div id="tiersContainer" class="space-y-2"></div>
       </div>
     </div>
     <div class="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 sticky bottom-0">
@@ -218,40 +215,36 @@
     <div class="p-6 space-y-5">
       <input type="hidden" id="avatarId">
       
-      <div class="grid grid-cols-2 gap-4">
-        <div>
+      <div class="grid grid-cols-3 gap-3">
+        <div class="col-span-1">
           <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Stage Order</label>
           <input type="number" id="avatarOrder" class="form-input w-full rounded-xl px-4 py-3 text-sm">
         </div>
-        <div>
+        <div class="col-span-2">
           <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Journey Name</label>
           <input type="text" id="avatarName" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. The Servant">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Gender</label>
+          <select id="avatarGender" class="form-input w-full rounded-xl px-4 py-3 text-sm">
+            <option value="unisex">Unisex</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Mythic Trophies Required</label>
+          <input type="number" id="avatarMythicReq" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="0">
+          <p class="text-[9px] text-slate-400 mt-1">Total Mythic trophies needed to unlock this stage.</p>
         </div>
       </div>
 
       <div>
         <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Avatar Image</label>
         <select id="avatarImage" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select>
-      </div>
-
-      <div class="pt-4 border-t border-slate-100">
-        <h4 class="font-headline font-bold text-sm mb-3">Unlock Condition</h4>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">When Trophy Reaches</label>
-            <select id="avatarUnlockTrophy" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select>
-          </div>
-          <div>
-            <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Tier Level</label>
-            <select id="avatarUnlockTier" class="form-input w-full rounded-xl px-4 py-3 text-sm">
-              <option value="1">1 (Common)</option>
-              <option value="2">2 (Uncommon)</option>
-              <option value="3">3 (Rare)</option>
-              <option value="4">4 (Epic)</option>
-              <option value="5">5 (Mythic)</option>
-            </select>
-          </div>
-        </div>
       </div>
     </div>
     <div class="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
@@ -274,7 +267,7 @@ var supabaseClient = supabase.createClient(
 );
 
 var currentUser = null;
-var allTrophies = [], allTiers = [], allAvatars = [];
+var allTrophies = [], allTiers = [], allAvatars = [], allCampaigns = [];
 var trophyImages = [], avatarImages = [];
 
 function getEl(id) { return document.getElementById(id); }
@@ -304,7 +297,7 @@ async function init() {
   document.querySelectorAll('.admin-name').forEach(el => el.textContent = p.data.full_name || currentUser.email);
   document.querySelectorAll('.admin-initials').forEach(el => el.textContent = (p.data.full_name || 'AD').substring(0,2).toUpperCase());
 
-  await Promise.all([loadMedia(), loadData()]);
+  await Promise.all([loadMedia(), loadCampaigns(), loadData()]);
 }
 
 async function loadMedia() {
@@ -312,6 +305,11 @@ async function loadMedia() {
   var media = data || [];
   trophyImages = media.filter(m => m.type === 'trophy');
   avatarImages = media.filter(m => m.type === 'avatar');
+}
+
+async function loadCampaigns() {
+  var { data } = await supabaseClient.from('campaigns').select('id, name').order('name');
+  allCampaigns = data || [];
 }
 
 async function loadData() {
@@ -344,14 +342,25 @@ function populateDropdowns() {
   
   aImgSel.innerHTML = '<option value="">-- Select Image --</option>';
   avatarImages.forEach(m => aImgSel.innerHTML += `<option value="${m.url}">${m.label}</option>`);
-
-  var unlockSel = getEl('avatarUnlockTrophy');
-  unlockSel.innerHTML = '<option value="">-- None (Manual) --</option>';
-  allTrophies.forEach(t => unlockSel.innerHTML += `<option value="${t.id}">${t.name}</option>`);
 }
 
-function toggleStatType() {
-  getEl('statTypeContainer').classList.toggle('hidden', getEl('trophyType').value !== 'stat');
+function toggleTrophyType() {
+  var isCollection = getEl('trophyType').value === 'collection';
+  getEl('statTypeContainer').classList.toggle('hidden', isCollection);
+  getEl('campaignContainer').classList.toggle('hidden', !isCollection);
+  getEl('thresholdsContainer').classList.toggle('hidden', isCollection);
+  
+  if (isCollection) renderCampaignChecklist();
+}
+
+function renderCampaignChecklist(selectedIds = []) {
+  var container = getEl('campaignChecklist');
+  container.innerHTML = allCampaigns.map(c => `
+    <label class="campaign-checkbox">
+      <input type="checkbox" value="${c.id}" class="campaign-cb" ${selectedIds.includes(c.id) ? 'checked' : ''}>
+      <span class="text-sm font-semibold text-slate-700">${c.name}</span>
+    </label>
+  `).join('');
 }
 
 // ─── TROPHIES ──────────────────────────────────────────────────────────────
@@ -374,7 +383,7 @@ function renderTrophies() {
           </div>
           <div>
             <h4 class="font-headline font-bold text-slate-800">${t.name}</h4>
-            <p class="text-[10px] font-bold text-slate-400 uppercase">${t.type} · ${t.stat_type || 'N/A'}</p>
+            <p class="text-[10px] font-bold text-slate-400 uppercase">${t.type} · ${t.stat_type || (t.campaign_ids ? t.campaign_ids.length + ' Campaigns' : 'N/A')}</p>
           </div>
         </div>
         <div class="flex gap-1 mt-2">
@@ -397,13 +406,12 @@ function openTrophyModal() {
   getEl('trophyStatType').value = 'shares';
   getEl('trophyImage').value = '';
   getEl('trophyModalTitle').textContent = 'Create Trophy';
-  toggleStatType();
+  toggleTrophyType();
   
-  // Default tiers
   var container = getEl('tiersContainer');
   container.innerHTML = '';
   var defaults = [{l:1,n:'Common',t:1}, {l:2,n:'Uncommon',t:10}, {l:3,n:'Rare',t:50}, {l:4,n:'Epic',t:150}, {l:5,n:'Mythic',t:500}];
-  defaults.forEach(d => addTierRow(d.l, d.n, d.t, ''));
+  defaults.forEach(d => addTierRow(d.l, d.n, d.t));
   
   getEl('trophyModal').classList.remove('hidden');
 }
@@ -418,7 +426,11 @@ function editTrophy(id) {
   getEl('trophyStatType').value = t.stat_type || 'shares';
   getEl('trophyImage').value = t.image_url || '';
   getEl('trophyModalTitle').textContent = 'Edit Trophy';
-  toggleStatType();
+  toggleTrophyType();
+  
+  if (t.type === 'collection') {
+    renderCampaignChecklist(t.campaign_ids || []);
+  }
   
   var container = getEl('tiersContainer');
   container.innerHTML = '';
@@ -427,13 +439,13 @@ function editTrophy(id) {
   [1,2,3,4,5].forEach(l => {
     var tier = tiers.find(tier => tier.tier_level === l);
     var names = ['Common','Uncommon','Rare','Epic','Mythic'];
-    addTierRow(l, names[l-1], tier ? tier.threshold : l*10, tier ? tier.background_url : '');
+    addTierRow(l, names[l-1], tier ? tier.threshold : l*10);
   });
   
   getEl('trophyModal').classList.remove('hidden');
 }
 
-function addTierRow(level, name, threshold, bgUrl) {
+function addTierRow(level, name, threshold) {
   var container = getEl('tiersContainer');
   var colors = ['bg-slate-300','bg-green-500','bg-blue-500','bg-purple-500','bg-amber-500'];
   var div = document.createElement('div');
@@ -444,11 +456,6 @@ function addTierRow(level, name, threshold, bgUrl) {
       <span class="text-xs font-bold text-slate-600">${name}</span>
     </div>
     <input type="number" placeholder="Threshold" value="${threshold}" class="tier-threshold form-input rounded-lg px-3 py-2 text-sm" data-level="${level}">
-    <select class="tier-bg form-input rounded-lg px-3 py-2 text-sm" data-level="${level}">
-      <option value="">-- No BG --</option>
-      ${trophyImages.map(m => `<option value="${m.url}" ${bgUrl===m.url?'selected':''}>${m.label}</option>`).join('')}
-    </select>
-    <div></div>
   `;
   container.appendChild(div);
 }
@@ -462,13 +469,19 @@ async function saveTrophy() {
   var statType = type === 'stat' ? getEl('trophyStatType').value : null;
   var imgUrl = getEl('trophyImage').value || null;
   
+  // Get selected campaigns if collection
+  var campaignIds = [];
+  if (type === 'collection') {
+    document.querySelectorAll('.campaign-cb:checked').forEach(cb => campaignIds.push(cb.value));
+  }
+  
   if (!name) return showToast('Name is required', true);
   
   var btn = getEl('saveTrophyBtn');
   btn.disabled = true; btn.textContent = 'Saving...';
   
   try {
-    var data = { name, type, stat_type: statType, image_url: imgUrl };
+    var data = { name, type, stat_type: statType, image_url: imgUrl, campaign_ids: campaignIds };
     var res;
     
     if (id) {
@@ -479,21 +492,21 @@ async function saveTrophy() {
     }
     if (res.error) throw new Error(res.error.message);
     
-    // Save Tiers
-    var tierRows = document.querySelectorAll('.tier-row');
-    var tierData = [];
-    tierRows.forEach(row => {
-      var level = row.querySelector('.tier-threshold').dataset.level;
-      var thresh = parseInt(row.querySelector('.tier-threshold').value) || 0;
-      var bg = row.querySelector('.tier-bg').value || null;
-      var names = ['Common','Uncommon','Rare','Epic','Mythic'];
-      tierData.push({ trophy_id: id, tier_level: parseInt(level), tier_name: names[level-1], threshold: thresh, background_url: bg });
-    });
-    
-    // Delete old tiers and insert new
-    await supabaseClient.from('trophy_tiers').delete().eq('trophy_id', id);
-    var tierRes = await supabaseClient.from('trophy_tiers').insert(tierData);
-    if (tierRes.error) throw new Error(tierRes.error.message);
+    // Save Tiers (only for stat trophies)
+    if (type === 'stat') {
+      var tierRows = document.querySelectorAll('.tier-row');
+      var tierData = [];
+      tierRows.forEach(row => {
+        var level = row.querySelector('.tier-threshold').dataset.level;
+        var thresh = parseInt(row.querySelector('.tier-threshold').value) || 0;
+        var names = ['Common','Uncommon','Rare','Epic','Mythic'];
+        tierData.push({ trophy_id: id, tier_level: parseInt(level), tier_name: names[level-1], threshold: thresh });
+      });
+      
+      await supabaseClient.from('trophy_tiers').delete().eq('trophy_id', id);
+      var tierRes = await supabaseClient.from('trophy_tiers').insert(tierData);
+      if (tierRes.error) throw new Error(tierRes.error.message);
+    }
     
     showToast('Trophy saved!');
     closeTrophyModal();
@@ -514,7 +527,6 @@ function renderAvatars() {
   }
   
   list.innerHTML = allAvatars.map(a => {
-    var trigger = a.unlock_trophy_id ? allTrophies.find(t => t.id === a.unlock_trophy_id) : null;
     return `
       <div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="editAvatar('${a.id}')">
         <div class="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -524,9 +536,10 @@ function renderAvatars() {
           <div class="flex items-center gap-2">
             <span class="bg-primary/10 text-primary text-[10px] font-black px-2 py-0.5 rounded-full">STAGE ${a.stage_order}</span>
             <h4 class="font-headline font-bold text-slate-800">${a.journey_name}</h4>
+            <span class="text-[9px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-0.5 rounded-full">${a.gender}</span>
           </div>
           <p class="text-[11px] text-slate-500 mt-1">
-            Unlocks at: <span class="font-bold text-slate-700">${trigger ? trigger.name : 'Manual'} ${a.unlock_tier_level ? '(Tier ' + a.unlock_tier_level + ')' : ''}</span>
+            Unlocks at: <span class="font-bold text-slate-700">${a.mythic_trophies_required} Mythic Trophies</span>
           </p>
         </div>
         <span class="material-symbols-outlined text-slate-300">edit</span>
@@ -540,8 +553,8 @@ function openAvatarModal() {
   getEl('avatarOrder').value = allAvatars.length + 1;
   getEl('avatarName').value = '';
   getEl('avatarImage').value = '';
-  getEl('avatarUnlockTrophy').value = '';
-  getEl('avatarUnlockTier').value = '1';
+  getEl('avatarGender').value = 'unisex';
+  getEl('avatarMythicReq').value = '0';
   getEl('avatarModalTitle').textContent = 'New Avatar Stage';
   getEl('avatarModal').classList.remove('hidden');
 }
@@ -553,8 +566,8 @@ function editAvatar(id) {
   getEl('avatarOrder').value = a.stage_order;
   getEl('avatarName').value = a.journey_name;
   getEl('avatarImage').value = a.image_url || '';
-  getEl('avatarUnlockTrophy').value = a.unlock_trophy_id || '';
-  getEl('avatarUnlockTier').value = a.unlock_tier_level || '1';
+  getEl('avatarGender').value = a.gender || 'unisex';
+  getEl('avatarMythicReq').value = a.mythic_trophies_required || 0;
   getEl('avatarModalTitle').textContent = 'Edit Avatar Stage';
   getEl('avatarModal').classList.remove('hidden');
 }
@@ -567,8 +580,8 @@ async function saveAvatar() {
     stage_order: parseInt(getEl('avatarOrder').value),
     journey_name: getEl('avatarName').value.trim(),
     image_url: getEl('avatarImage').value || null,
-    unlock_trophy_id: getEl('avatarUnlockTrophy').value || null,
-    unlock_tier_level: parseInt(getEl('avatarUnlockTier').value)
+    gender: getEl('avatarGender').value,
+    mythic_trophies_required: parseInt(getEl('avatarMythicReq').value) || 0
   };
   
   if (!data.journey_name) return showToast('Name is required', true);
