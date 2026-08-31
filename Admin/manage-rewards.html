@@ -4,109 +4,48 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Manage Rewards — GSTW Admin</title>
-
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
-
   <script>
     tailwind.config = {
       theme: {
         extend: {
-          colors: {
-            'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
-            'surface-c':'#efeee7', 'on-surface':'#31332e','on-surface-variant':'#5e6059',
-            'inverse-surface':'#0e0e0c', 'outline':'#7a7b75',
-            'primary':'#3d6285','on-primary':'#f7f9ff','primary-container':'#b0d5fe',
-            'tertiary':'#ad332b',
-            
-            /* FORTNITE RARITY COLORS */
-            'common': '#64748b',    /* Slate Gray */
-            'uncommon': '#16a34a',  /* Green */
-            'rare': '#2563eb',      /* Blue */
-            'epic': '#9333ea',      /* Purple */
-            'mythic': '#d97706'     /* Gold/Orange */
-          },
-          fontFamily:{ 'headline':['Plus Jakarta Sans','sans-serif'], 'body':['Manrope','sans-serif'] },
-          boxShadow:{ 'float':'0 20px 40px rgba(49,51,46,0.08)' },
+          colors: { 'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed', 'surface-c':'#efeee7','on-surface':'#31332e','on-surface-variant':'#5e6059', 'primary':'#3d6285','on-primary':'#f7f9ff','primary-container':'#b0d5fe', 'secondary':'#41637c','tertiary':'#ad332b','gold':'#D4A24C' },
+          fontFamily: { 'headline':['Plus Jakarta Sans','sans-serif'], 'body':['Manrope','sans-serif'] }
         },
       },
     }
   </script>
-
   <style>
-    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;letter-spacing:-0.005em}
+    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;overflow:hidden;}
     .font-headline{font-family:'Plus Jakarta Sans',sans-serif;}
     .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
     .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
-    
-    ::-webkit-scrollbar{width:6px;height:6px}
-    ::-webkit-scrollbar-track{background:transparent}
-    ::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:3px}
-
-    /* Sidebar */
-    .sidebar{background:#0e0e0c;color:#f7f9ff}
-    .sidebar-item{
-      display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;
-      color:rgba(247,249,255,0.6);font-size:13px;font-weight:600;
-      transition:all 0.15s ease;text-decoration:none;
-    }
-    .sidebar-item:hover{background:#1a1a18;color:#f7f9ff}
-    .sidebar-item.active{background:#3d6285;color:#f7f9ff}
-
-    /* Cards */
-    .reward-card{
-      background:#ffffff;border-radius:16px;padding:20px;
-      position: relative; transition:all 0.2s ease;
-    }
-    .reward-card:hover{transform:translateY(-2px);box-shadow:0 20px 40px rgba(49,51,46,0.08)}
-    .reward-card.inactive{opacity:0.6;}
-    
-    .art-preview {
-      width: 64px; height: 64px; border-radius: 12px; background: #f5f4ed;
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    }
-    .art-preview img { width: 48px; height: 48px; object-fit: contain; }
-
-    /* Tabs */
-    .tab-btn {
-      padding: 10px 20px; font-weight: 700; font-size: 14px; border-bottom: 2px solid transparent;
-      color: #7a7b75; cursor: pointer; transition: all 0.2s ease;
-    }
+    ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:10px}
+    .sidebar{background:#0e0e0c;color:#f7f9ff; z-index: 50;}
+    .sidebar-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;color:rgba(247,249,255,0.6);font-size:13px;font-weight:600; transition:all 0.15s ease;}
+    .sidebar-item:hover{background:#1a1a18;color:#f7f9ff}.sidebar-item.active{background:#3d6285;color:#f7f9ff}
+    .form-input { background: #f5f4ed; border: 1px solid transparent; transition: all 0.2s; color: #31332e; }
+    .form-input:focus { background: #ffffff; border-color: rgba(61,98,133,0.3); outline: none; }
+    .tab-btn { padding: 10px 20px; font-weight: 700; font-size: 14px; color: #5e6059; border-bottom: 2px solid transparent; transition: all 0.2s; }
     .tab-btn.active { color: #3d6285; border-bottom-color: #3d6285; }
-
-    /* Rarities */
-    .rarity-common { background: rgba(100,116,139,0.15); color: #64748b; }
-    .rarity-uncommon { background: rgba(22,163,74,0.15); color: #16a34a; }
-    .rarity-rare { background: rgba(37,99,235,0.15); color: #2563eb; }
-    .rarity-epic { background: rgba(147,51,234,0.15); color: #9333ea; }
-    .rarity-mythic { background: rgba(217,119,6,0.15); color: #d97706; box-shadow: 0 0 10px rgba(217,119,6,0.2); }
-
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .spin{animation:spin 1s linear infinite;display:inline-block}
+    .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #efeee7; }
+    .skeleton{ background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:8px; }
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
   </style>
 </head>
+<body class="flex bg-surface">
 
-<body class="min-h-screen flex">
-
-<!-- ═══════════════════════════════════════════ -->
-<!-- SIDEBAR -->
-<!-- ═══════════════════════════════════════════ -->
-<aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 hidden md:flex">
-  <div class="mb-6 px-2 pt-2">
-    <div class="flex items-center gap-2.5">
-      <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center">
-        <span class="font-headline font-bold text-on-primary" style="font-size:10px;">GSTW</span>
-      </div>
-      <div>
-        <h1 class="font-headline font-bold text-white" style="font-size:15px;letter-spacing:-0.02em;">Command</h1>
-        <p class="text-white/40 font-body" style="font-size:9px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">Admin Panel</p>
-      </div>
+<aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 hidden md:flex">
+  <div class="mb-8 px-2 pt-2">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0"><img src="/images/icon/icon-light-512.png" alt="GSTW" class="w-full h-full object-contain"></div>
+      <div><h1 class="font-headline font-bold text-white" style="font-size:16px;">Command</h1><p class="text-white/40 font-body" style="font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;">Admin Panel</p></div>
     </div>
   </div>
-
-    <nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
+  <nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
     <a href="index.html" class="sidebar-item"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
     <a href="quotes.html" class="sidebar-item"><span class="material-symbols-outlined">add_circle</span>Create Quote</a>
     <a href="manage-quotes.html" class="sidebar-item"><span class="material-symbols-outlined">format_quote</span>Manage Quotes</a>
@@ -116,341 +55,191 @@
     <a href="manage-media.html" class="sidebar-item"><span class="material-symbols-outlined">perm_media</span>Media Library</a>
     <a href="warriors.html" class="sidebar-item"><span class="material-symbols-outlined">group</span>Users</a>
     <a href="manage-tiers.html" class="sidebar-item"><span class="material-symbols-outlined">workspace_premium</span>Tiers</a>
-    <a href="manage-rewards.html" class="sidebar-item"><span class="material-symbols-outlined">emoji_events</span>Rewards</a>
+    <a href="manage-rewards.html" class="sidebar-item active"><span class="material-symbols-outlined">emoji_events</span>Rewards</a>
+    <a href="manage-progression.html" class="sidebar-item"><span class="material-symbols-outlined">psychology</span>Progression</a>
     <a href="notifications.html" class="sidebar-item"><span class="material-symbols-outlined">notifications</span>Broadcasts</a>
+    <a href="manage-content.html" class="sidebar-item"><span class="material-symbols-outlined">web</span>Page Builder</a>  
     <a href="analytics.html" class="sidebar-item"><span class="material-symbols-outlined">analytics</span>Analytics</a>
   </nav>
-
-  <div class="mt-4 pt-4 border-t border-white/10 space-y-2">
+  <div class="mt-4 pt-4 border-t border-white/10 space-y-2 shrink-0">
     <a href="settings.html" class="sidebar-item"><span class="material-symbols-outlined">settings</span>Settings</a>
     <div class="flex items-center gap-3 px-2 py-2">
       <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center text-on-primary font-headline font-bold flex-shrink-0 admin-initials" style="font-size:13px;">AD</div>
-      <div class="flex-1 min-w-0">
-        <p class="font-body font-semibold text-white truncate admin-name" style="font-size:12px;">Admin</p>
-        <p class="text-white/40 font-body" style="font-size:10px;">Super Admin</p>
-      </div>
-      <button onclick="handleLogout()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-all flex-shrink-0" title="Log out">
-        <span class="material-symbols-outlined" style="font-size:16px;">logout</span>
-      </button>
+      <div class="flex-1 min-w-0"><p class="font-body font-semibold text-white truncate admin-name" style="font-size:12px;">Admin</p><p class="text-white/40 font-body" style="font-size:10px;">Super Admin</p></div>
+      <button onclick="handleLogout()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-all flex-shrink-0" title="Log out"><span class="material-symbols-outlined" style="font-size:16px;">logout</span></button>
     </div>
   </div>
 </aside>
 
-<div id="sidebarOverlay" class="fixed inset-0 bg-inverse-surface/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
-
-
-<!-- MAIN CONTENT -->
-<main class="flex-1 md:ml-64 min-h-screen flex flex-col">
-  <header class="sticky top-0 z-20 bg-surface/85 backdrop-blur-xl">
-    <div class="flex items-center gap-4 px-6 lg:px-8 py-4">
-      <button onclick="toggleSidebar()" class="md:hidden text-on-surface">
-        <span class="material-symbols-outlined">menu</span>
-      </button>
-      <h2 class="font-headline font-bold text-on-surface" style="font-size:22px;">Manage Rewards</h2>
-      
-      <button onclick="openNewModal()" class="ml-auto px-4 py-2 signature-gradient text-on-primary font-headline font-semibold rounded-lg flex items-center gap-1">
-        <span class="material-symbols-outlined" style="font-size:16px;">add</span>
-        <span id="headerBtnText">New Badge</span>
-      </button>
-    </div>
-
-    <!-- TABS -->
-    <div class="flex px-6 lg:px-8 border-b border-surface-c">
-      <div class="tab-btn active" id="tab-badges" onclick="switchTab('badges')">Badges</div>
-      <div class="tab-btn" id="tab-trophies" onclick="switchTab('trophies')">Trophies</div>
-    </div>
+<div class="flex-1 md:ml-64 flex flex-col h-screen overflow-hidden bg-surface">
+  <header class="h-[72px] bg-white border-b border-surface-c flex items-center justify-between px-4 lg:px-6 shrink-0 z-20">
+    <h2 class="font-headline font-bold text-on-surface text-xl">Reward Assets</h2>
+    <button onclick="openAssetModal()" class="signature-gradient text-white font-headline font-semibold rounded-xl px-4 py-2 flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform">
+      <span class="material-symbols-outlined text-lg">add</span> <span id="addBtnText">New Badge</span>
+    </button>
   </header>
 
-  <div class="p-6 lg:p-8 flex-1 max-w-7xl mx-auto w-full">
-    
-    <!-- BADGES VIEW -->
-    <div id="view-badges" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div class="col-span-full text-center py-12 text-outline"><span class="material-symbols-outlined spin">progress_activity</span></div>
-    </div>
+  <div class="flex-1 overflow-y-auto p-6 lg:p-8">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex border-b border-surface-c mb-6">
+        <button onclick="switchTab('badges')" id="tab-badges" class="tab-btn active">Badges</button>
+        <button onclick="switchTab('trophies')" id="tab-trophies" class="tab-btn">Trophies</button>
+      </div>
 
-    <!-- TROPHIES VIEW -->
-    <div id="view-trophies" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-
-  </div>
-</main>
-
-<!-- EDIT MODAL (Handles both Badges and Trophies dynamically) -->
-<div id="editModal" class="hidden fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm z-[100] flex items-center justify-center px-5 py-6">
-  <div class="bg-surface-cl rounded-2xl w-full max-w-lg shadow-float flex flex-col" style="max-height: 90vh;">
-    
-    <div class="p-6 pb-4 border-b border-surface-c flex items-center justify-between shrink-0">
-      <h3 id="modalTitle" class="font-headline font-bold text-on-surface" style="font-size:20px;">Edit Reward</h3>
-      <button onclick="closeModal()" class="text-on-surface-variant hover:bg-surface-clow p-1 rounded-lg">
-        <span class="material-symbols-outlined">close</span>
-      </button>
-    </div>
-
-    <div class="p-6 overflow-y-auto flex-1">
-      <form id="rewardForm" class="space-y-4">
-        
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">ID</label>
-            <input type="text" id="inputId" required class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30" style="font-size:14px;" placeholder="e.g. genesis">
-          </div>
-          <div>
-            <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Display Name</label>
-            <input type="text" id="inputName" required class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30" style="font-size:14px;" placeholder="e.g. Genesis">
-          </div>
+      <div id="view-badges">
+        <div id="badgeGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div class="skeleton h-32 w-full"></div><div class="skeleton h-32 w-full"></div><div class="skeleton h-32 w-full"></div>
         </div>
+      </div>
 
-        <div>
-          <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Description</label>
-          <textarea id="inputDesc" rows="2" class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30" style="font-size:14px;"></textarea>
+      <div id="view-trophies" class="hidden">
+        <div id="trophyGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div class="skeleton h-32 w-full"></div><div class="skeleton h-32 w-full"></div><div class="skeleton h-32 w-full"></div>
         </div>
-
-        <div>
-          <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Artwork (From Media Library)</label>
-          <select id="inputImage" class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30" style="font-size:14px;">
-            <option value="">None (Use default)</option>
-            <!-- Injected by loadMedia() -->
-          </select>
-        </div>
-
-        <!-- TROPHY SPECIFIC FIELDS -->
-        <div id="trophyFields" class="hidden border-t border-surface-c pt-4 mt-4 space-y-4">
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Requirement Type</label>
-              <select id="inputReqType" class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface">
-                <option value="shares">Shares</option>
-                <option value="recruits">Warriors Recruited</option>
-                <option value="countries">Countries Reached</option>
-              </select>
-            </div>
-            <div>
-              <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Requirement Target</label>
-              <input type="number" id="inputReqValue" min="1" class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface">
-            </div>
-          </div>
-          <div>
-            <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Rarity</label>
-            <select id="inputRarity" class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body font-semibold">
-              <option value="common" class="text-common">Common</option>
-              <option value="uncommon" class="text-uncommon">Uncommon</option>
-              <option value="rare" class="text-rare">Rare</option>
-              <option value="epic" class="text-epic">Epic</option>
-              <option value="mythic" class="text-mythic">Mythic</option>
-            </select>
-          </div>
-        </div>
-
-        <label class="flex items-center gap-2 cursor-pointer pt-2">
-          <input type="checkbox" id="inputActive" class="w-4 h-4">
-          <span class="font-body text-on-surface" style="font-size:13px;">Active and visible in app</span>
-        </label>
-      </form>
-    </div>
-
-    <div class="p-6 pt-4 border-t border-surface-c shrink-0 flex gap-3">
-      <button type="button" onclick="saveReward()" class="flex-1 py-3 signature-gradient text-on-primary font-headline font-semibold rounded-xl">Save</button>
-      <button type="button" onclick="closeModal()" class="px-6 py-3 bg-surface-clow text-on-surface-variant font-body font-semibold rounded-xl">Cancel</button>
+      </div>
     </div>
   </div>
 </div>
 
-<script>
-var supabaseClient = supabase.createClient(
-  'https://nhymadutuhpjgkiurify.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
-)
+<!-- ASSET MODAL -->
+<div id="assetModal" class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+      <h3 class="font-headline font-bold text-xl" id="assetModalTitle">Add Asset</h3>
+      <button onclick="closeAssetModal()" class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="p-6 space-y-5">
+      <div>
+        <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Name</label>
+        <input type="text" id="assetName" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. Clean Water Hero">
+      </div>
+      <div>
+        <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Image (From Media Library)</label>
+        <select id="assetImage" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select>
+      </div>
+    </div>
+    <div class="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+      <button onclick="closeAssetModal()" class="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-200 transition-colors">Cancel</button>
+      <button onclick="saveAsset()" id="saveAssetBtn" class="signature-gradient text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform">Save Asset</button>
+    </div>
+  </div>
+</div>
 
-var currentTab = 'badges'; // 'badges' or 'trophies'
-var badges = [];
-var trophies = [];
-var mediaOptions = { badge: [], trophy: [] };
-var editingRecord = null;
+<div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-slate-900/90 backdrop-blur-md text-white font-body font-bold px-5 py-3 rounded-full shadow-2xl items-center gap-2 text-sm"><span id="toastIcon" class="material-symbols-outlined text-green-400">check_circle</span><span id="toastMsg"></span></div>
+
+<script>
+var supabaseClient = supabase.createClient('https://nhymadutuhpjgkiurify.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM');
+var currentUser = null, currentTab = 'badges';
+var badgeMedia = [], trophyMedia = [], allBadges = [], allTrophies = [];
+
+function getEl(id) { return document.getElementById(id); }
+function toggleSidebar() { getEl('sidebar').classList.toggle('hidden'); getEl('sidebar').classList.toggle('flex'); }
+async function handleLogout() { await supabaseClient.auth.signOut(); window.location.href = 'login.html'; }
+var toastTimer;
+function showToast(msg, isErr=false) { var t = getEl('toast'); getEl('toastMsg').textContent = msg; var icon = getEl('toastIcon'); icon.textContent = isErr ? 'error' : 'check_circle'; icon.className = 'material-symbols-outlined ' + (isErr ? 'text-red-400' : 'text-green-400'); t.classList.remove('hidden'); t.classList.add('flex'); clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.classList.add('hidden'); t.classList.remove('flex'); }, 3000); }
 
 async function init() {
-  await Promise.all([loadMedia(), loadBadges(), loadTrophies()]);
+  var s = await supabaseClient.auth.getSession(); if (!s.data.session) return window.location.href = 'login.html'; currentUser = s.data.session.user;
+  var p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single(); if (!p.data || p.data.role !== 'admin') return window.location.href = '../app/index.html';
+  document.querySelectorAll('.admin-name').forEach(el => el.textContent = p.data.full_name || currentUser.email); document.querySelectorAll('.admin-initials').forEach(el => el.textContent = (p.data.full_name || 'AD').substring(0,2).toUpperCase());
+  
+  await loadMedia();
+  await loadAssets();
+}
+
+async function loadMedia() {
+  var { data } = await supabaseClient.from('media').select('*').in('type', ['badge', 'trophy']).eq('is_active', true);
+  var media = data || [];
+  badgeMedia = media.filter(m => m.type === 'badge');
+  trophyMedia = media.filter(m => m.type === 'trophy');
+}
+
+async function loadAssets() {
+  var [bRes, tRes] = await Promise.all([
+    supabaseClient.from('badge_definitions').select('*').order('created_at', {ascending: false}),
+    supabaseClient.from('trophy_definitions').select('*').order('created_at', {ascending: false})
+  ]);
+  allBadges = bRes.data || [];
+  allTrophies = tRes.data || [];
+  renderGrids();
 }
 
 function switchTab(tab) {
   currentTab = tab;
-  document.getElementById('tab-badges').classList.toggle('active', tab === 'badges');
-  document.getElementById('tab-trophies').classList.toggle('active', tab === 'trophies');
-  
-  document.getElementById('view-badges').classList.toggle('hidden', tab !== 'badges');
-  document.getElementById('view-trophies').classList.toggle('hidden', tab !== 'trophies');
-  
-  document.getElementById('headerBtnText').textContent = tab === 'badges' ? 'New Badge' : 'New Trophy';
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  getEl('tab-' + tab).classList.add('active');
+  getEl('view-badges').classList.toggle('hidden', tab !== 'badges');
+  getEl('view-trophies').classList.toggle('hidden', tab !== 'trophies');
+  getEl('addBtnText').textContent = tab === 'badges' ? 'New Badge' : 'New Trophy';
 }
 
-// ─── LOADERS ────────────────────────────────────────────────────────
-async function loadBadges() {
-  var { data } = await supabaseClient.from('badge_definitions').select('*').order('sort_order');
-  badges = data || [];
-  renderBadges();
-}
+function renderGrids() {
+  // Render Badges
+  var bGrid = getEl('badgeGrid');
+  if (allBadges.length === 0) { bGrid.innerHTML = '<div class="col-span-6 text-center py-10 text-slate-400">No badges created yet.</div>'; } 
+  else {
+    bGrid.innerHTML = allBadges.map(b => `
+      <div class="card flex flex-col items-center text-center p-4 gap-2">
+        <div class="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden">
+          ${b.image_url ? `<img src="${b.image_url}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300">emoji_events</span>'}
+        </div>
+        <p class="font-headline font-bold text-xs text-slate-800 truncate w-full">${b.name}</p>
+      </div>
+    `).join('');
+  }
 
-async function loadTrophies() {
-  var { data } = await supabaseClient.from('trophy_definitions').select('*').order('requirement_value');
-  trophies = data || [];
-  renderTrophies();
-}
-
-async function loadMedia() {
-  var { data } = await supabaseClient.from('media').select('url, label, type').in('type', ['badge', 'trophy']).eq('is_active', true);
-  if(data) {
-    mediaOptions.badge = data.filter(m => m.type === 'badge');
-    mediaOptions.trophy = data.filter(m => m.type === 'trophy');
+  // Render Trophies
+  var tGrid = getEl('trophyGrid');
+  if (allTrophies.length === 0) { tGrid.innerHTML = '<div class="col-span-6 text-center py-10 text-slate-400">No trophies created yet.</div>'; } 
+  else {
+    tGrid.innerHTML = allTrophies.map(t => `
+      <div class="card flex flex-col items-center text-center p-4 gap-2">
+        <div class="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden">
+          ${t.image_url ? `<img src="${t.image_url}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300">emoji_events</span>'}
+        </div>
+        <p class="font-headline font-bold text-xs text-slate-800 truncate w-full">${t.name}</p>
+      </div>
+    `).join('');
   }
 }
 
-// ─── RENDERERS ──────────────────────────────────────────────────────
-function renderBadges() {
-  var container = document.getElementById('view-badges');
-  container.innerHTML = '';
-  if(!badges.length) return container.innerHTML = '<p class="col-span-3 text-center py-10 text-outline">No badges found.</p>';
-
-  badges.forEach(b => {
-    var img = b.image_url || '/images/badges/default.svg';
-    container.innerHTML += `
-      <div class="reward-card ${b.is_active ? '' : 'inactive'} flex gap-4">
-        <div class="art-preview"><img src="${escapeHtml(img)}" onerror="this.style.display='none'"></div>
-        <div class="flex-1 min-w-0">
-          <div class="flex justify-between items-start mb-1">
-            <h4 class="font-headline font-bold text-on-surface truncate text-sm">${escapeHtml(b.name)}</h4>
-            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full ${b.is_active ? 'bg-primary/10 text-primary' : 'bg-outline/10 text-outline'}">${b.is_active ? 'LIVE' : 'HIDDEN'}</span>
-          </div>
-          <p class="font-body text-xs text-on-surface-variant line-clamp-2">${escapeHtml(b.description || '')}</p>
-          <div class="mt-3 flex gap-2">
-            <button onclick="openEdit('${b.id}')" class="text-primary text-xs font-bold hover:underline">Edit</button>
-            <button onclick="deleteRecord('${b.id}')" class="text-tertiary text-xs font-bold hover:underline ml-2">Delete</button>
-          </div>
-        </div>
-      </div>`;
-  });
+function openAssetModal() {
+  getEl('assetName').value = '';
+  getEl('assetModalTitle').textContent = currentTab === 'badges' ? 'Add Badge' : 'Add Trophy';
+  
+  var sel = getEl('assetImage');
+  sel.innerHTML = '<option value="">-- Select Image --</option>';
+  var images = currentTab === 'badges' ? badgeMedia : trophyMedia;
+  images.forEach(m => sel.innerHTML += `<option value="${m.url}">${m.label}</option>`);
+  
+  getEl('assetModal').classList.remove('hidden');
 }
 
-function renderTrophies() {
-  var container = document.getElementById('view-trophies');
-  container.innerHTML = '';
-  if(!trophies.length) return container.innerHTML = '<p class="col-span-3 text-center py-10 text-outline">No trophies found.</p>';
+function closeAssetModal() { getEl('assetModal').classList.add('hidden'); }
 
-  trophies.forEach(t => {
-    var img = t.image_url || '/images/trophies/default.svg';
-    var rarityClass = 'rarity-' + (t.rarity || 'common');
+async function saveAsset() {
+  var name = getEl('assetName').value.trim();
+  var imgUrl = getEl('assetImage').value;
+  if (!name) return showToast('Name is required', true);
+  if (!imgUrl) return showToast('Please select an image', true);
+
+  var btn = getEl('saveAssetBtn'); btn.disabled = true; btn.textContent = 'Saving...';
+  
+  try {
+    var data = { name: name, image_url: imgUrl };
+    var table = currentTab === 'badges' ? 'badge_definitions' : 'trophy_definitions';
     
-    container.innerHTML += `
-      <div class="reward-card ${t.is_active ? '' : 'inactive'} flex gap-4">
-        <div class="art-preview"><img src="${escapeHtml(img)}" onerror="this.style.display='none'"></div>
-        <div class="flex-1 min-w-0">
-          <div class="flex justify-between items-start mb-1">
-            <h4 class="font-headline font-bold text-on-surface truncate text-sm">${escapeHtml(t.name)}</h4>
-            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full ${rarityClass} uppercase">${escapeHtml(t.rarity)}</span>
-          </div>
-          <p class="font-body text-xs font-bold text-primary mb-1">Goal: ${t.requirement_value} ${t.requirement_type}</p>
-          <p class="font-body text-[11px] text-on-surface-variant line-clamp-2">${escapeHtml(t.description || '')}</p>
-          <div class="mt-3 flex gap-2">
-            <button onclick="openEdit('${t.id}')" class="text-primary text-xs font-bold hover:underline">Edit</button>
-            <button onclick="deleteRecord('${t.id}')" class="text-tertiary text-xs font-bold hover:underline ml-2">Delete</button>
-          </div>
-        </div>
-      </div>`;
-  });
-}
-
-// ─── MODAL LOGIC ────────────────────────────────────────────────────
-function openNewModal() {
-  editingRecord = null;
-  document.getElementById('modalTitle').textContent = currentTab === 'badges' ? 'New Badge' : 'New Trophy';
-  document.getElementById('rewardForm').reset();
-  document.getElementById('inputId').disabled = false;
-  populateMediaDropdown();
-  
-  document.getElementById('trophyFields').classList.toggle('hidden', currentTab === 'badges');
-  document.getElementById('editModal').classList.remove('hidden');
-}
-
-function openEdit(id) {
-  editingRecord = currentTab === 'badges' ? badges.find(b => b.id === id) : trophies.find(t => t.id === id);
-  if(!editingRecord) return;
-
-  document.getElementById('modalTitle').textContent = 'Edit ' + editingRecord.name;
-  document.getElementById('inputId').value = editingRecord.id;
-  document.getElementById('inputId').disabled = true;
-  document.getElementById('inputName').value = editingRecord.name || '';
-  document.getElementById('inputDesc').value = editingRecord.description || '';
-  document.getElementById('inputActive').checked = editingRecord.is_active !== false;
-
-  populateMediaDropdown();
-  document.getElementById('inputImage').value = editingRecord.image_url || '';
-
-  if (currentTab === 'trophies') {
-    document.getElementById('trophyFields').classList.remove('hidden');
-    document.getElementById('inputReqType').value = editingRecord.requirement_type || 'shares';
-    document.getElementById('inputReqValue').value = editingRecord.requirement_value || 0;
-    document.getElementById('inputRarity').value = editingRecord.rarity || 'common';
-  } else {
-    document.getElementById('trophyFields').classList.add('hidden');
+    var res = await supabaseClient.from(table).insert([data]);
+    if (res.error) throw new Error(res.error.message);
+    
+    showToast('Asset saved!');
+    closeAssetModal();
+    await loadAssets();
+  } catch(e) {
+    showToast('Error: ' + e.message, true);
   }
-
-  document.getElementById('editModal').classList.remove('hidden');
+  btn.disabled = false; btn.textContent = 'Save Asset';
 }
-
-function closeModal() {
-  document.getElementById('editModal').classList.add('hidden');
-}
-
-function populateMediaDropdown() {
-  var select = document.getElementById('inputImage');
-  select.innerHTML = '<option value="">None (Use default)</option>';
-  var options = currentTab === 'badges' ? mediaOptions.badge : mediaOptions.trophy;
-  
-  options.forEach(m => {
-    var opt = document.createElement('option');
-    opt.value = m.url;
-    opt.textContent = m.label || 'Unnamed Asset';
-    select.appendChild(opt);
-  });
-}
-
-// ─── SAVE & DELETE ──────────────────────────────────────────────────
-async function saveReward() {
-  var id = document.getElementById('inputId').value.trim().toLowerCase().replace(/\s+/g, '-');
-  if(!id || !document.getElementById('inputName').value.trim()) return alert("ID and Name required");
-
-  var data = {
-    id: id,
-    name: document.getElementById('inputName').value.trim(),
-    description: document.getElementById('inputDesc').value.trim(),
-    image_url: document.getElementById('inputImage').value || null,
-    is_active: document.getElementById('inputActive').checked
-  };
-
-  var table = currentTab === 'badges' ? 'badge_definitions' : 'trophy_definitions';
-
-  if (currentTab === 'trophies') {
-    data.requirement_type = document.getElementById('inputReqType').value;
-    data.requirement_value = parseInt(document.getElementById('inputReqValue').value) || 0;
-    data.rarity = document.getElementById('inputRarity').value;
-  }
-
-  if (editingRecord && editingRecord.id === id) {
-    await supabaseClient.from(table).update(data).eq('id', id);
-  } else {
-    data.sort_order = 99; // append to end
-    await supabaseClient.from(table).insert([data]);
-  }
-
-  closeModal();
-  currentTab === 'badges' ? await loadBadges() : await loadTrophies();
-}
-
-async function deleteRecord(id) {
-  if(!confirm("Delete this reward?")) return;
-  var table = currentTab === 'badges' ? 'badge_definitions' : 'trophy_definitions';
-  await supabaseClient.from(table).delete().eq('id', id);
-  currentTab === 'badges' ? await loadBadges() : await loadTrophies();
-}
-
-function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
 
 init();
 </script>
