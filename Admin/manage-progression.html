@@ -215,14 +215,26 @@ function editTrophy(id) {
   getEl('trophyId').value = t.id; getEl('trophyName').value = t.name; getEl('trophyType').value = t.type || 'stat'; getEl('trophyStatType').value = t.stat_type || 'shares'; getEl('trophyImage').value = t.image_url || ''; getEl('trophyModalTitle').textContent = 'Edit Trophy'; toggleTrophyType();
   if (t.type === 'collection') renderCampaignChecklist(t.campaign_ids || []);
   var container = getEl('thresholdsContainer'); container.innerHTML = '';
-  allTiers.forEach(tier => { var th = allThresholds.find(x => x.trophy_id === id && x.tier_id === tier.id); addThresholdRow(tier.id, tier.name, tier.color_hex, th ? th.threshold_value : 0); });
+  allTiers.forEach(tier => { var th = allThresholds.find(x => x.trophy_id === id && x.tier_id === tier.id); addThresholdRow(tier.id, tier.name, tier.color_hex, th ? th.threshold_value : 0, th ? th.is_active : true); });
   getEl('trophyModal').classList.remove('hidden');
 }
 
-function addThresholdRow(tierId, name, color, val) {
+function addThresholdRow(tierId, name, color, val, isActive = true) {
   var container = getEl('thresholdsContainer');
-  var div = document.createElement('div'); div.className = 'flex items-center gap-3 p-3 bg-surface-clow rounded-xl';
-  div.innerHTML = `<div class="w-4 h-4 rounded-full flex-shrink-0" style="background:${color}"></div><span class="text-xs font-bold text-slate-600 w-20">${name}</span><input type="number" placeholder="Threshold" value="${val}" class="tier-thresh form-input flex-1 rounded-lg px-3 py-2 text-sm" data-tier="${tierId}">`;
+  var div = document.createElement('div'); 
+  div.className = 'flex items-center gap-3 p-3 bg-surface-clow rounded-xl';
+  
+  // We use Tailwind's 'peer' class to style the toggle switch purely with CSS
+  div.innerHTML = `
+    <div class="w-4 h-4 rounded-full flex-shrink-0" style="background:${color}"></div>
+    <span class="text-xs font-bold text-slate-600 w-20">${name}</span>
+    <input type="number" placeholder="Threshold" value="${val}" class="tier-thresh form-input flex-1 rounded-lg px-3 py-2 text-sm" data-tier="${tierId}">
+    
+    <label class="relative inline-flex items-center cursor-pointer">
+      <input type="checkbox" class="sr-only peer tier-toggle" data-tier="${tierId}" ${isActive ? 'checked' : ''}>
+      <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+    </label>
+  `;
   container.appendChild(div);
 }
 
@@ -239,7 +251,16 @@ async function saveTrophy() {
     var res = id ? await supabaseClient.from('trophy_definitions').update(data).eq('id', id) : await supabaseClient.from('trophy_definitions').insert([data]).select().single();
     if (res.error) throw new Error(res.error.message);
     var trophyId = id || res.data.id;
-    var threshData = Array.from(document.querySelectorAll('.tier-thresh')).map(el => ({ trophy_id: trophyId, tier_id: parseInt(el.dataset.tier), threshold_value: parseInt(el.value) || 0 }));
+    var threshData = Array.from(document.querySelectorAll('.tier-thresh')).map(el => {
+  var tierId = parseInt(el.dataset.tier);
+  var toggle = document.querySelector(`.tier-toggle[data-tier="${tierId}"]`);
+  return { 
+    trophy_id: trophyId, 
+    tier_id: tierId, 
+    threshold_value: parseInt(el.value) || 0,
+    is_active: toggle ? toggle.checked : true 
+  };
+});
     await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', trophyId);
     var tRes = await supabaseClient.from('trophy_thresholds').insert(threshData); if (tRes.error) throw new Error(tRes.error.message);
     showToast('Trophy saved!'); closeTrophyModal(); await loadData();
