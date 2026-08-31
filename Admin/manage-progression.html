@@ -188,9 +188,40 @@ async function saveTiers() {
 
 // --- TROPHIES ---
 function populateDropdowns() { var sel = getEl('trophyImage'); sel.innerHTML = '<option value="">-- Select Image --</option>'; trophyImages.forEach(m => sel.innerHTML += `<option value="${m.url}">${m.label}</option>`); }
-function toggleTrophyType() { var isC = getEl('trophyType').value === 'collection'; getEl('statTypeContainer').classList.toggle('hidden', isC); getEl('campaignContainer').classList.toggle('hidden', !isC); if (isC) renderCampaignChecklist(); }
-function renderCampaignChecklist(selectedIds = []) { getEl('campaignChecklist').innerHTML = allCampaigns.map(c => `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer"><input type="checkbox" value="${c.id}" class="campaign-cb" ${selectedIds.includes(c.id) ? 'checked' : ''}><span class="text-sm font-semibold text-slate-700">${c.name}</span></label>`).join(''); }
+function toggleTrophyType() { 
+  var isC = getEl('trophyType').value === 'collection'; 
+  getEl('statTypeContainer').classList.toggle('hidden', isC); 
+  getEl('campaignContainer').classList.toggle('hidden', !isC); 
+  getEl('thresholdsContainer').classList.toggle('hidden', isC); // Hide manual thresholds for collections
+  if (isC) renderCampaignChecklist(); 
+}
+async function calculateCollectionThresholds() {
+  var selected = Array.from(document.querySelectorAll('.campaign-cb:checked')).map(cb => cb.value);
+  if (selected.length === 0) return;
 
+  // Count total quotes in these campaigns
+  var { count } = await supabaseClient.from('quotes').select('*', { count: 'exact', head: true }).in('campaign_id', selected);
+  var total = count || 0;
+
+  // Auto-fill the thresholds (20%, 40%, 60%, 80%, 100%)
+  var rows = document.querySelectorAll('.tier-thresh');
+  if (rows.length === 5) {
+    rows[0].value = Math.ceil(total * 0.2);
+    rows[1].value = Math.ceil(total * 0.4);
+    rows[2].value = Math.ceil(total * 0.6);
+    rows[3].value = Math.ceil(total * 0.8);
+    rows[4].value = total;
+  }
+}
+  
+function renderCampaignChecklist(selectedIds = []) { 
+  getEl('campaignChecklist').innerHTML = allCampaigns.map(c => `
+    <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer">
+      <input type="checkbox" value="${c.id}" class="campaign-cb" ${selectedIds.includes(c.id) ? 'checked' : ''} onchange="calculateCollectionThresholds()">
+      <span class="text-sm font-semibold text-slate-700">${c.name}</span>
+    </label>
+  `).join(''); 
+}
 function renderTrophies() {
   var grid = getEl('trophyGrid');
   if (allTrophies.length === 0) { grid.innerHTML = '<div class="col-span-3 text-center py-10 text-slate-400">No trophies created yet.</div>'; return; }
