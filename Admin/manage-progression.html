@@ -192,7 +192,8 @@ function toggleTrophyType() {
   var isC = getEl('trophyType').value === 'collection'; 
   getEl('statTypeContainer').classList.toggle('hidden', isC); 
   getEl('campaignContainer').classList.toggle('hidden', !isC); 
-  getEl('thresholdsContainer').classList.toggle('hidden', isC); // Hide manual thresholds for collections
+  var inputs = document.querySelectorAll('.tier-thresh');
+  inputs.forEach(input => input.disabled = isC); 
   if (isC) renderCampaignChecklist(); 
 }
 async function calculateCollectionThresholds() {
@@ -200,17 +201,20 @@ async function calculateCollectionThresholds() {
   if (selected.length === 0) return;
 
   // Count total quotes in these campaigns
-  var { count } = await supabaseClient.from('quotes').select('*', { count: 'exact', head: true }).in('campaign_id', selected);
+  var { count, error } = await supabaseClient.from('quotes').select('*', { count: 'exact', head: true }).in('campaign_id', selected);
+  
+  if (error) { console.error("Calc error:", error); return; }
+  
   var total = count || 0;
-
-  // Auto-fill the thresholds (20%, 40%, 60%, 80%, 100%)
   var rows = document.querySelectorAll('.tier-thresh');
+  
+  // Auto-fill: 20%, 40%, 60%, 80%, 100%
   if (rows.length === 5) {
-    rows[0].value = Math.ceil(total * 0.2);
-    rows[1].value = Math.ceil(total * 0.4);
-    rows[2].value = Math.ceil(total * 0.6);
-    rows[3].value = Math.ceil(total * 0.8);
-    rows[4].value = total;
+    rows[0].value = Math.ceil(total * 0.2) || 0;
+    rows[1].value = Math.ceil(total * 0.4) || 0;
+    rows[2].value = Math.ceil(total * 0.6) || 0;
+    rows[3].value = Math.ceil(total * 0.8) || 0;
+    rows[4].value = total || 0;
   }
 }
   
