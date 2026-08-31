@@ -18,9 +18,29 @@
     .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
     .tab-btn { flex: 1; padding: 12px; text-align: center; font-weight: 700; font-size: 14px; color: #64748b; border-bottom: 2px solid transparent; transition: all 0.2s; }
     .tab-btn.active { color: #3d6285; border-bottom-color: #3d6285; background: rgba(61, 98, 133, 0.05); }
-    .bold-block { transition: transform 0.2s ease; cursor: pointer; border-radius: 16px; overflow: hidden; position: relative; aspect-ratio: 1/1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; text-align: center; }
+    .bold-block { 
+      transition: transform 0.2s ease; 
+      cursor: pointer; 
+      border-radius: 1.5rem; /* rounded-3xl */
+      overflow: hidden; 
+      position: relative; 
+      height: 140px; /* Fixed height instead of a big square */
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: space-between; /* Pushes content to top and bottom */
+      padding: 12px 8px; 
+      text-align: center; 
+      color: white; 
+    }
     .bold-block:active { transform: scale(0.96); }
-    .locked-block { opacity: 0.4; filter: grayscale(100%); }
+    
+    .locked-block { 
+      opacity: 0.6; 
+      filter: grayscale(100%); 
+      background-color: #cbd5e1 !important; /* Force grey background */
+      color: #64748b; 
+    }
   </style>
 </head>
 <body class="pb-32">
@@ -187,32 +207,51 @@ function renderTrophies() {
 }
 
 // 5. Render Badges
-function renderBadges() {
-  var unlocked = document.getElementById('unlockedBadges'); 
-  var locked = document.getElementById('lockedBadges');
+function renderTrophies() {
+  var unlocked = document.getElementById('unlockedTrophies'); 
+  var locked = document.getElementById('lockedTrophies');
   if(!unlocked || !locked) return;
   
   unlocked.innerHTML = ''; 
   locked.innerHTML = '';
+  
+  allTrophies.forEach(t => {
+    var activeThresholds = allThresholds.filter(th => th.trophy_id === t.id && th.is_active !== false).sort((a,b) => a.tier_id - b.tier_id);
+    if (activeThresholds.length === 0) return;
 
-  allBadges.forEach(b => {
-    // Check if user has badge (by ID or Name)
-    var hasBadge = userBadges.includes(b.id) || userBadges.includes(b.name);
-    
-    if (hasBadge) {
-      unlocked.innerHTML += `<div class="bold-block bg-white border-2 border-primary text-slate-800" style="aspect-ratio: 1/1;">
-        ${b.image_url ? `<img src="${b.image_url}" class="w-16 h-16 object-contain mb-2 drop-shadow-md">` : '<span class="material-symbols-outlined text-4xl mb-2 text-primary">military_tech</span>'}
-        <p class="font-headline font-bold text-sm leading-tight">${b.name}</p>
-      </div>`;
-    } else {
-      locked.innerHTML += `<div class="bold-block locked-block bg-slate-200 text-slate-500" style="aspect-ratio: 1/1;">
-        ${b.image_url ? `<img src="${b.image_url}" class="w-16 h-16 object-contain mb-2 grayscale">` : '<span class="material-symbols-outlined text-4xl mb-2">lock</span>'}
-        <p class="font-headline font-bold text-sm leading-tight">${b.name}</p>
-      </div>`;
+    var userProg = userProgress.find(p => p.trophy_id === t.id);
+    var currentProgress = userProg ? userProg.current_progress : 0;
+
+    var unlockedTier = null;
+    for (var i = activeThresholds.length - 1; i >= 0; i--) {
+      if (currentProgress >= activeThresholds[i].threshold_value) { unlockedTier = activeThresholds[i]; break; }
+    }
+
+    // UNLOCKED BLOCK
+    if (unlockedTier) {
+      var color = getTierColor(unlockedTier.tier_id);
+      unlocked.innerHTML += `
+        <div class="bold-block" style="background-color: ${color};" onclick="openModal('${t.id}', ${unlockedTier.tier_id}, false)">
+          <span class="text-[9px] font-black uppercase tracking-widest opacity-80">${getTierName(unlockedTier.tier_id)}</span>
+          ${t.image_url ? `<img src="${t.image_url}" class="w-14 h-14 object-contain drop-shadow-md my-1">` : '<span class="material-symbols-outlined text-4xl my-1 filled">emoji_events</span>'}
+          <p class="font-headline font-bold text-xs leading-tight w-full truncate px-1">${t.name}</p>
+        </div>`;
+    }
+
+    // LOCKED BLOCK
+    var nextTier = activeThresholds.find(th => currentProgress < th.threshold_value);
+    if (nextTier) {
+      locked.innerHTML += `
+        <div class="bold-block locked-block" onclick="openModal('${t.id}', ${nextTier.tier_id}, true)">
+          <span class="text-[9px] font-black uppercase tracking-widest opacity-80">Locked</span>
+          ${t.image_url ? `<img src="${t.image_url}" class="w-14 h-14 object-contain my-1">` : '<span class="material-symbols-outlined text-4xl my-1">lock</span>'}
+          <p class="font-headline font-bold text-xs leading-tight w-full truncate px-1">${t.name}</p>
+        </div>`;
     }
   });
-  if (unlocked.innerHTML === '') unlocked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">No badges earned yet.</p>';
-  if (locked.innerHTML === '') locked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">No future missions available.</p>';
+  
+  if (unlocked.innerHTML === '') unlocked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">No trophies unlocked yet.</p>';
+  if (locked.innerHTML === '') locked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">All caught up!</p>';
 }
 
 // 6. Helpers & Modal
