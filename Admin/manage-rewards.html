@@ -130,6 +130,8 @@
 <script>
 var supabaseClient = supabase.createClient('https://nhymadutuhpjgkiurify.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM');
 var currentUser = null, currentTab = 'badges';
+var editingId = null;
+var editingType = null;
 var badgeMedia = [], trophyMedia = [], allBadges = [], allTrophies = [];
 
 function getEl(id) { return document.getElementById(id); }
@@ -179,7 +181,11 @@ function renderGrids() {
   if (allBadges.length === 0) { bGrid.innerHTML = '<div class="col-span-6 text-center py-10 text-slate-400">No badges created yet.</div>'; } 
   else {
     bGrid.innerHTML = allBadges.map(b => `
-      <div class="card flex flex-col items-center text-center p-4 gap-2">
+      <div class="card flex flex-col items-center text-center p-4 gap-2 relative group">
+        <div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onclick="editAsset('${b.id}', 'badges')" class="w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-500 hover:text-primary"><span class="material-symbols-outlined text-[14px]">edit</span></button>
+          <button onclick="deleteAsset('${b.id}', 'badges')" class="w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-500 hover:text-red-500"><span class="material-symbols-outlined text-[14px]">delete</span></button>
+        </div>
         <div class="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden">
           ${b.image_url ? `<img src="${b.image_url}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300">emoji_events</span>'}
         </div>
@@ -193,7 +199,11 @@ function renderGrids() {
   if (allTrophies.length === 0) { tGrid.innerHTML = '<div class="col-span-6 text-center py-10 text-slate-400">No trophies created yet.</div>'; } 
   else {
     tGrid.innerHTML = allTrophies.map(t => `
-      <div class="card flex flex-col items-center text-center p-4 gap-2">
+      <div class="card flex flex-col items-center text-center p-4 gap-2 relative group">
+        <div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onclick="editAsset('${t.id}', 'trophies')" class="w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-500 hover:text-primary"><span class="material-symbols-outlined text-[14px]">edit</span></button>
+          <button onclick="deleteAsset('${t.id}', 'trophies')" class="w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-500 hover:text-red-500"><span class="material-symbols-outlined text-[14px]">delete</span></button>
+        </div>
         <div class="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden">
           ${t.image_url ? `<img src="${t.image_url}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300">emoji_events</span>'}
         </div>
@@ -204,8 +214,12 @@ function renderGrids() {
 }
 
 function openAssetModal() {
+  // Reset state for a new asset
+  editingId = null;
+  editingType = currentTab;
   getEl('assetName').value = '';
   getEl('assetModalTitle').textContent = currentTab === 'badges' ? 'Add Badge' : 'Add Trophy';
+  getEl('saveAssetBtn').textContent = 'Save Asset';
   
   var sel = getEl('assetImage');
   sel.innerHTML = '<option value="">-- Select Image --</option>';
@@ -214,7 +228,26 @@ function openAssetModal() {
   
   getEl('assetModal').classList.remove('hidden');
 }
+function editAsset(id, type) {
+  editingId = id;
+  editingType = type;
+  
+  var assetList = type === 'badges' ? allBadges : allTrophies;
+  var asset = assetList.find(a => a.id === id);
+  if (!asset) return;
 
+  getEl('assetName').value = asset.name;
+  getEl('assetModalTitle').textContent = type === 'badges' ? 'Edit Badge' : 'Edit Trophy';
+  getEl('saveAssetBtn').textContent = 'Update Asset';
+  
+  var sel = getEl('assetImage');
+  sel.innerHTML = '<option value="">-- Select Image --</option>';
+  var images = type === 'badges' ? badgeMedia : trophyMedia;
+  images.forEach(m => sel.innerHTML += `<option value="${m.url}" ${m.url === asset.image_url ? 'selected' : ''}>${m.label}</option>`);
+  
+  getEl('assetModal').classList.remove('hidden');
+}
+  
 function closeAssetModal() { getEl('assetModal').classList.add('hidden'); }
 
 async function saveAsset() {
@@ -227,20 +260,39 @@ async function saveAsset() {
   
   try {
     var data = { name: name, image_url: imgUrl };
-    var table = currentTab === 'badges' ? 'badge_definitions' : 'trophy_definitions';
+    var table = editingType === 'badges' ? 'badge_definitions' : 'trophy_definitions';
     
-    var res = await supabaseClient.from(table).insert([data]);
+    var res;
+    if (editingId) {
+      // UPDATE existing
+      res = await supabaseClient.from(table).update(data).eq('id', editingId);
+    } else {
+      // INSERT new
+      res = await supabaseClient.from(table).insert([data]);
+    }
+    
     if (res.error) throw new Error(res.error.message);
     
-    showToast('Asset saved!');
+    showToast(editingId ? 'Asset updated!' : 'Asset saved!');
     closeAssetModal();
     await loadAssets();
   } catch(e) {
     showToast('Error: ' + e.message, true);
   }
-  btn.disabled = false; btn.textContent = 'Save Asset';
+  btn.disabled = false; btn.textContent = editingId ? 'Update Asset' : 'Save Asset';
 }
-
+async function deleteAsset(id, type) {
+  if (!confirm('Are you sure you want to delete this asset?')) return;
+  
+  var table = type === 'badges' ? 'badge_definitions' : 'trophy_definitions';
+  var res = await supabaseClient.from(table).delete().eq('id', id);
+  
+  if (res.error) return showToast('Error: ' + res.error.message, true);
+  
+  showToast('Asset deleted!');
+  await loadAssets();
+}
+  
 init();
 </script>
 </body>
