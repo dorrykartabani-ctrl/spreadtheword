@@ -53,7 +53,7 @@
     <div class="flex items-center gap-3">
       <!-- Brand Logo -->
       <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-        <span class="font-headline font-black text-white text-[10px]">GSTW</span>
+      <img src="/images/icon/icon-light-512.png" alt="GSTW" class="w-8 h-8 rounded-lg object-contain">
       </div>
       <h1 class="font-headline font-extrabold text-lg text-slate-900">Impact</h1>
     </div>
@@ -67,31 +67,40 @@
 <main class="pt-24 px-5 max-w-[430px] mx-auto space-y-6">
 
   <!-- HERO CARD: FLOATING AVATAR & PROGRESSION -->
-  <section class="dash-card flex flex-col items-center text-center relative overflow-hidden">
+  <section class="dash-card flex items-center gap-5 relative overflow-hidden !bg-white border-slate-100">
     <div class="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full blur-3xl"></div>
     
-    <!-- Floating Avatar Image -->
-    <div class="relative z-10 mt-2 mb-4" id="heroAvatarImg">
-      <!-- Placeholder for vertical avatar image -->
-      <img src="https://via.placeholder.com/120x180/3d6285/ffffff?text=Avatar" alt="Avatar" class="w-28 h-auto object-contain avatar-float">
+    <!-- Avatar Image (Left Side) -->
+    <div class="relative flex-shrink-0 z-10 mt-2">
+      <img id="heroAvatarImg" src="" alt="Avatar" class="w-24 h-auto object-contain avatar-float" style="display:none;">
+      <!-- Fallback if no image -->
+      <div id="avatarFallback" class="w-24 h-24 rounded-2xl bg-slate-100 flex items-center justify-center">
+        <span class="material-symbols-outlined text-slate-300 text-[40px]">person</span>
+      </div>
     </div>
 
-    <!-- Avatar Name (User Nickname) -->
-    <h2 id="userNameDisplay" class="font-headline font-black text-2xl text-slate-900 relative z-10">Marcus</h2>
-    
-    <!-- Journey Name -->
-    <p id="journeyNameDisplay" class="font-headline font-bold text-gold text-sm mt-1 mb-6 relative z-10 uppercase tracking-widest">The Servant</p>
+    <!-- Text Info (Right Side) -->
+    <div class="flex-1 z-10">
+      <!-- 1. Avatar Name (Nickname) -->
+      <h2 id="userNameDisplay" class="font-headline font-black text-2xl text-slate-900 leading-tight">Marcus</h2>
+      
+      <!-- 2. Journey Name -->
+      <p id="journeyNameDisplay" class="font-headline font-bold text-gold text-sm mt-1 uppercase tracking-widest">The Servant</p>
+      
+      <!-- 3. Avatar Title (Stage) -->
+      <p id="avatarTitleDisplay" class="text-[10px] font-bold text-slate-400 uppercase mt-1">Stage 2</p>
 
-    <!-- Stats / Progress Bar -->
-    <div class="w-full space-y-2 relative z-10 px-2">
-      <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase">
-        <span>Next: id="nextRankName" The Disciple</span>
-        <span>id="mythicProgressText" 1/2 Mythic</span>
+      <!-- Progress Bar Area -->
+      <div class="mt-4 space-y-1">
+        <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase">
+          <span id="nextRankName">Next: The Disciple</span>
+          <span id="mythicProgressText">1/2 Mythic</span>
+        </div>
+        <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div id="mythicProgressBar" class="h-full bg-gradient-to-r from-primary to-gold rounded-full" style="width: 50%"></div>
+        </div>
+        <p class="text-[10px] text-slate-500 mt-1">Earn 1 more Mythic Trophy to evolve.</p>
       </div>
-      <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-        <div class="h-full bg-gradient-to-r from-primary to-gold rounded-full" id="mythicProgressBar" style="width: 50%"></div>
-      </div>
-      <p class="text-[10px] text-slate-500 mt-1">Earn 1 more Mythic Trophy to evolve.</p>
     </div>
   </section>
 
@@ -444,6 +453,44 @@ async function loadImpactData() {
   }
 
   // --- UPDATE DOM ---
+
+  // 1. Update Avatar Image
+  var gender = userProfile.gender || 'male';
+  // Try to get female image, fallback to male
+  var avatarImg = (gender === 'female' && currentStage.image_url_female) ? currentStage.image_url_female : currentStage.image_url_male;
+  
+  var imgEl = document.getElementById('heroAvatarImg');
+  var fallbackEl = document.getElementById('avatarFallback');
+  
+  if (avatarImg) {
+    imgEl.src = avatarImg;
+    imgEl.style.display = 'block';
+    fallbackEl.style.display = 'none';
+  } else {
+    imgEl.style.display = 'none';
+    fallbackEl.style.display = 'flex';
+  }
+
+  // 2. Update Text Fields
+  document.getElementById('userNameDisplay').textContent = userProfile.nickname || userProfile.full_name || 'Warrior';
+  document.getElementById('journeyNameDisplay').textContent = currentStage.journey_name || 'The Seeker';
+  document.getElementById('avatarTitleDisplay').textContent = 'Stage ' + currentStage.stage_order;
+
+  // 3. Update Progress Bar
+  if (nextStage) {
+    document.getElementById('nextRankName').textContent = 'Next: ' + nextStage.journey_name;
+    var prevReq = currentStage.mythic_trophies_required;
+    var range = nextStage.mythic_trophies_required - prevReq;
+    var progress = mythicCount - prevReq;
+    var pct = Math.max(0, Math.min(100, (progress / range) * 100));
+    
+    document.getElementById('mythicProgressText').textContent = mythicCount + '/' + nextStage.mythic_trophies_required + ' Mythic';
+    document.getElementById('mythicProgressBar').style.width = pct + '%';
+  } else {
+    document.getElementById('nextRankName').textContent = 'Max Level Reached';
+    document.getElementById('mythicProgressText').textContent = mythicCount + ' Mythic';
+    document.getElementById('mythicProgressBar').style.width = '100%';
+  }
 
   // Hero
   var gender = userProfile.gender || 'male';
