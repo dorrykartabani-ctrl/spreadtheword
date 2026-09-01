@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Rewards — Command Center</title>
-  <script src="https://cdn.tailwindcss.com"></script>render
+  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
@@ -18,38 +18,39 @@
     .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
     .tab-btn { flex: 1; padding: 12px; text-align: center; font-weight: 700; font-size: 14px; color: #64748b; border-bottom: 2px solid transparent; transition: all 0.2s; }
     .tab-btn.active { color: #3d6285; border-bottom-color: #3d6285; background: rgba(61, 98, 133, 0.05); }
+    
+    /* The Bold Block Card */
     .bold-block { 
-      transition: transform 0.2s ease; 
-      cursor: pointer; 
-      border-radius: 1.5rem; /* rounded-3xl */
+      height: 140px; 
+      border-radius: 1.5rem; 
       overflow: hidden; 
       position: relative; 
-      height: 140px; /* Fixed height instead of a big square */
       display: flex; 
       flex-direction: column; 
       align-items: center; 
-      justify-content: space-between; /* Pushes content to top and bottom */
-      padding: 12px 8px; 
+      padding: 12px 8px 8px 8px; 
       text-align: center; 
       color: white; 
+      transition: transform 0.2s ease;
+      cursor: pointer;
     }
     .bold-block:active { transform: scale(0.96); }
     
+    /* Locked State */
     .locked-block { 
-      opacity: 0.6; 
-      filter: grayscale(100%); 
-      background-color: #cbd5e1 !important; /* Force grey background */
+      background-color: #cbd5e1 !important; 
       color: #64748b; 
+      opacity: 0.8;
     }
+    .locked-block img { filter: grayscale(100%) opacity(0.5); }
   </style>
 </head>
 <body class="pb-32">
 
-<!-- HEADER: Fixed with Safe Area for Mobile Notch -->
+<!-- HEADER -->
 <header class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 pt-[env(safe-area-inset-top)]">
   <div class="max-w-[430px] mx-auto px-6 py-4 flex justify-between items-center">
     <div class="flex items-center gap-3">
-      <!-- Brand Logo Icon -->
       <img src="/images/icon/icon-light-512.png" alt="GSTW" class="w-8 h-8 rounded-lg object-contain">
       <h1 class="font-headline font-extrabold text-lg text-slate-900">Rewards</h1>
     </div>
@@ -60,11 +61,22 @@
 </header>
 
 <main class="pt-24 px-5 max-w-[430px] mx-auto">
+  <!-- TABS -->
   <div class="flex bg-white rounded-2xl p-1 shadow-sm border border-slate-100 mb-8">
     <button onclick="switchTab('trophies')" id="tab-trophies" class="tab-btn active rounded-xl">Trophies</button>
     <button onclick="switchTab('badges')" id="tab-badges" class="tab-btn rounded-xl">Badges</button>
   </div>
 
+  <!-- TROPHIES SECTION -->
+  <div id="section-trophies">
+    <h3 class="font-headline font-bold text-lg mb-4 px-1 text-slate-900">Your Collection</h3>
+    <div id="unlockedTrophies" class="grid grid-cols-2 gap-4 mb-8"></div>
+    
+    <h3 class="font-headline font-bold text-lg mb-4 px-1 text-slate-900">Path to Glory</h3>
+    <div id="lockedTrophies" class="grid grid-cols-2 gap-4"></div>
+  </div>
+
+  <!-- BADGES SECTION -->
   <div id="section-badges" class="hidden">
     <h3 class="font-headline font-bold text-lg mb-4 px-1 text-slate-900">Earned Badges</h3>
     <div id="unlockedBadges" class="grid grid-cols-2 gap-4 mb-8"></div>
@@ -87,6 +99,7 @@
   </div>
 </div>
 
+<!-- BOTTOM NAV -->
 <nav class="fixed bottom-0 inset-x-0 z-40 bg-white/80 backdrop-blur-[20px] border-t border-slate-100" style="padding-bottom: env(safe-area-inset-bottom);">
   <div class="max-w-lg mx-auto flex items-center justify-around h-16 px-2">
     <a href="index.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">home</span><span class="text-[10px] font-bold">Home</span></a>
@@ -98,17 +111,10 @@
 </nav>
 
 <script>
-// 1. Initialize Supabase
-var supabaseClient = supabase.createClient(
-  'https://nhymadutuhpjgkiurify.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
-);
+var supabaseClient = supabase.createClient('https://nhymadutuhpjgkiurify.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM');
+var currentUser = null, allTiers = [], allTrophies = [], allThresholds = [], userProgress = [], allBadges = [], userBadges = [];
 
-var currentUser = null;
-var allTiers = [], allTrophies = [], allThresholds = [], userProgress = [];
-var allBadges = [], userBadges = [];
-
-// 2. Tab Switching Logic (Global)
+// 1. Tab Switching
 window.switchTab = function(tab) { 
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); 
   document.getElementById('tab-' + tab).classList.add('active'); 
@@ -117,14 +123,13 @@ window.switchTab = function(tab) {
   document.getElementById('section-' + tab).classList.remove('hidden'); 
 };
 
-// 3. Main Initialization
+// 2. Main Initialization
 async function init() {
   var s = await supabaseClient.auth.getSession(); 
   if (!s.data.session) { window.location.href = 'login.html'; return; } 
   currentUser = s.data.session.user;
   
   try {
-    // Fetch all data in parallel
     var results = await Promise.all([
       supabaseClient.from('trophy_tiers').select('*').order('id'),
       supabaseClient.from('trophy_definitions').select('*'),
@@ -134,28 +139,19 @@ async function init() {
       supabaseClient.from('profiles').select('badges').eq('id', currentUser.id).single()
     ]);
 
-    // Assign data safely
     allTiers = results[0].data || []; 
     allTrophies = results[1].data || []; 
     allThresholds = results[2].data || []; 
     userProgress = results[3].data || [];
     allBadges = results[4].data || []; 
-    
-    // Handle profile badges safely (in case column doesn't exist)
-    if (results[5].data && results[5].data.badges) {
-      userBadges = results[5].data.badges;
-    } else {
-      userBadges = [];
-    }
+    userBadges = (results[5].data && results[5].data.badges) ? results[5].data.badges : [];
 
     renderTrophies();
     renderBadges();
-  } catch (err) {
-    console.error("Rewards Page Error:", err);
-  }
+  } catch (err) { console.error("Rewards Page Error:", err); }
 }
 
-// 4. Render Trophies
+// 3. Render Trophies (With Progression Bar)
 function renderTrophies() {
   var unlocked = document.getElementById('unlockedTrophies'); 
   var locked = document.getElementById('lockedTrophies');
@@ -179,11 +175,21 @@ function renderTrophies() {
     // UNLOCKED BLOCK
     if (unlockedTier) {
       var color = getTierColor(unlockedTier.tier_id);
+      var currentLevel = unlockedTier.tier_id; // 1 to 5
+      
+      // Build the 5-segment progression bar
+      var progressHTML = '<div class="flex gap-1 w-full mt-auto pt-2 px-1">';
+      for(var i=1; i<=5; i++) {
+         var isActive = i <= currentLevel;
+         progressHTML += `<div class="h-1 flex-1 rounded-full ${isActive ? 'bg-white' : 'bg-white/30'}"></div>`;
+      }
+      progressHTML += '</div>';
+
       unlocked.innerHTML += `
         <div class="bold-block" style="background-color: ${color};" onclick="openModal('${t.id}', ${unlockedTier.tier_id}, false)">
-          <span class="text-[9px] font-black uppercase tracking-widest opacity-80">${getTierName(unlockedTier.tier_id)}</span>
-          ${t.image_url ? `<img src="${t.image_url}" class="w-14 h-14 object-contain drop-shadow-md my-1">` : '<span class="material-symbols-outlined text-4xl my-1 filled">emoji_events</span>'}
-          <p class="font-headline font-bold text-xs leading-tight w-full truncate px-1">${t.name}</p>
+          ${t.image_url ? `<img src="${t.image_url}" class="w-12 h-12 object-contain mt-2 drop-shadow-md">` : '<span class="material-symbols-outlined text-4xl mt-2 filled">emoji_events</span>'}
+          <p class="font-headline font-bold text-xs leading-tight w-full truncate px-1 mt-1">${t.name}</p>
+          ${progressHTML}
         </div>`;
     }
 
@@ -192,9 +198,15 @@ function renderTrophies() {
     if (nextTier) {
       locked.innerHTML += `
         <div class="bold-block locked-block" onclick="openModal('${t.id}', ${nextTier.tier_id}, true)">
-          <span class="text-[9px] font-black uppercase tracking-widest opacity-80">Locked</span>
-          ${t.image_url ? `<img src="${t.image_url}" class="w-14 h-14 object-contain my-1">` : '<span class="material-symbols-outlined text-4xl my-1">lock</span>'}
-          <p class="font-headline font-bold text-xs leading-tight w-full truncate px-1">${t.name}</p>
+          ${t.image_url ? `<img src="${t.image_url}" class="w-12 h-12 object-contain mt-2">` : '<span class="material-symbols-outlined text-4xl mt-2">lock</span>'}
+          <p class="font-headline font-bold text-xs leading-tight w-full truncate px-1 mt-1">${t.name}</p>
+          <div class="flex gap-1 w-full mt-auto pt-2 px-1">
+             <div class="h-1 flex-1 rounded-full bg-slate-400/30"></div>
+             <div class="h-1 flex-1 rounded-full bg-slate-400/30"></div>
+             <div class="h-1 flex-1 rounded-full bg-slate-400/30"></div>
+             <div class="h-1 flex-1 rounded-full bg-slate-400/30"></div>
+             <div class="h-1 flex-1 rounded-full bg-slate-400/30"></div>
+          </div>
         </div>`;
     }
   });
@@ -203,7 +215,7 @@ function renderTrophies() {
   if (locked.innerHTML === '') locked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">All caught up!</p>';
 }
 
-// 5. Render Badges
+// 4. Render Badges
 function renderBadges() {
   var unlocked = document.getElementById('unlockedBadges'); 
   var locked = document.getElementById('lockedBadges');
@@ -213,28 +225,28 @@ function renderBadges() {
   locked.innerHTML = '';
 
   allBadges.forEach(b => {
-    // Check if user has badge (by ID or Name)
     var hasBadge = userBadges.includes(b.id) || userBadges.includes(b.name);
     
     if (hasBadge) {
       unlocked.innerHTML += `
-        <div class="bold-block bg-white border-2 border-primary text-slate-800" style="aspect-ratio: 1/1;">
-          ${b.image_url ? `<img src="${b.image_url}" class="w-16 h-16 object-contain mb-2 drop-shadow-md">` : '<span class="material-symbols-outlined text-4xl mb-2 text-primary">military_tech</span>'}
-          <p class="font-headline font-bold text-sm leading-tight">${b.name}</p>
+        <div class="bold-block bg-white border-2 border-primary text-slate-800" style="height: 140px;">
+          ${b.image_url ? `<img src="${b.image_url}" class="w-14 h-14 object-contain mt-2 drop-shadow-md">` : '<span class="material-symbols-outlined text-4xl mt-2 text-primary">military_tech</span>'}
+          <p class="font-headline font-bold text-xs leading-tight w-full truncate px-1 mt-1">${b.name}</p>
         </div>`;
     } else {
       locked.innerHTML += `
-        <div class="bold-block locked-block bg-slate-200 text-slate-500" style="aspect-ratio: 1/1;">
-          ${b.image_url ? `<img src="${b.image_url}" class="w-16 h-16 object-contain mb-2 grayscale">` : '<span class="material-symbols-outlined text-4xl mb-2">lock</span>'}
-          <p class="font-headline font-bold text-sm leading-tight">${b.name}</p>
+        <div class="bold-block locked-block bg-slate-200 text-slate-500" style="height: 140px;">
+          ${b.image_url ? `<img src="${b.image_url}" class="w-14 h-14 object-contain mt-2">` : '<span class="material-symbols-outlined text-4xl mt-2">lock</span>'}
+          <p class="font-headline font-bold text-xs leading-tight w-full truncate px-1 mt-1">${b.name}</p>
         </div>`;
     }
   });
-
+  
   if (unlocked.innerHTML === '') unlocked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">No badges earned yet.</p>';
   if (locked.innerHTML === '') locked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">No future missions available.</p>';
 }
-// 6. Helpers & Modal
+
+// 5. Helpers & Modal
 function getTierColor(tierId) { var t = allTiers.find(x => x.id === tierId); return t ? t.color_hex : '#94a3b8'; }
 function getTierName(tierId) { var t = allTiers.find(x => x.id === tierId); return t ? t.name : 'Unknown'; }
 function getThreshold(trophyId, tierId) { var th = allThresholds.find(x => x.trophy_id === trophyId && x.tier_id === tierId); return th ? th.threshold_value : 0; }
