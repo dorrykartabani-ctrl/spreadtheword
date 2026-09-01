@@ -83,6 +83,7 @@
       <div class="flex border-b border-surface-c mb-6">
         <button onclick="switchTab('tiers')" id="tab-tiers" class="tab-btn active">Tier Styles</button>
         <button onclick="switchTab('trophies')" id="tab-trophies" class="tab-btn">Trophies</button>
+         <button onclick="switchTab('avatars')" id="tab-avatars" class="tab-btn">Avatars</button>
       </div>
 
       <!-- TIERS TAB -->
@@ -104,7 +105,18 @@
     </div>
   </div>
 </div>
-
+<!-- AVATARS TAB -->
+<div id="view-avatars" class="hidden">
+  <div class="flex justify-between items-center mb-4">
+    <h3 class="font-headline font-bold text-lg">Avatar Journey Stages</h3>
+    <button onclick="openAvatarModal()" class="bg-slate-800 text-white font-headline font-semibold rounded-xl px-4 py-2 flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform">
+      <span class="material-symbols-outlined text-lg">add</span> New Stage
+    </button>
+  </div>
+  <div id="avatarList" class="space-y-3">
+    <div class="skeleton h-20 w-full"></div><div class="skeleton h-20 w-full"></div>
+  </div>
+</div>
 <!-- TROPHY MODAL -->
 <div id="trophyModal" class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
   <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -140,10 +152,53 @@
 </div>
 
 <div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-slate-900/90 backdrop-blur-md text-white font-body font-bold px-5 py-3 rounded-full shadow-2xl items-center gap-2 text-sm"><span id="toastIcon" class="material-symbols-outlined text-green-400">check_circle</span><span id="toastMsg"></span></div>
+<!-- AVATAR MODAL -->
+<div id="avatarModal" class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+    <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+      <h3 class="font-headline font-bold text-xl" id="avatarModalTitle">Avatar Stage</h3>
+      <button onclick="closeAvatarModal()" class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="p-6 space-y-5">
+      <input type="hidden" id="avatarId">
+      
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Stage Order</label>
+          <input type="number" id="avatarOrder" class="form-input w-full rounded-xl px-4 py-3 text-sm">
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Journey Name</label>
+          <input type="text" id="avatarName" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. The Servant">
+        </div>
+      </div>
 
+      <div>
+        <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Mythic Trophies Required</label>
+        <input type="number" id="avatarMythicReq" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="0">
+        <p class="text-[9px] text-slate-400 mt-1">Total Mythic trophies needed to unlock this stage.</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Male Image</label>
+          <select id="avatarImageMale" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select>
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Female Image</label>
+          <select id="avatarImageFemale" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select>
+        </div>
+      </div>
+    </div>
+    <div class="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+      <button onclick="closeAvatarModal()" class="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-200 transition-colors">Cancel</button>
+      <button onclick="saveAvatar()" id="saveAvatarBtn" class="signature-gradient text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform">Save Stage</button>
+    </div>
+  </div>
+</div>
 <script>
 var supabaseClient = supabase.createClient('https://nhymadutuhpjgkiurify.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM');
-var currentUser = null, allTiers = [], allTrophies = [], allThresholds = [], allCampaigns = [], trophyImages = [];
+var currentUser = null, allTiers = [], allTrophies = [], allThresholds = [], allCampaigns = [], trophyImages = [], avatarImages = [], allAvatars = [];
 function getEl(id) { return document.getElementById(id); }
 function toggleSidebar() { getEl('sidebar').classList.toggle('hidden'); getEl('sidebar').classList.toggle('flex'); }
 async function handleLogout() { await supabaseClient.auth.signOut(); window.location.href = 'login.html'; }
@@ -157,21 +212,32 @@ async function init() {
   await Promise.all([loadMedia(), loadCampaigns(), loadData()]);
 }
 
-async function loadMedia() { var { data } = await supabaseClient.from('media').select('*').eq('type', 'trophy').eq('is_active', true); trophyImages = data || []; }
+async function loadMedia() { 
+  var { data } = await supabaseClient.from('media').select('*').in('type', ['trophy', 'avatar']).eq('is_active', true); 
+  var media = data || [];
+  trophyImages = media.filter(m => m.type === 'trophy');
+  avatarImages = media.filter(m => m.type === 'avatar');
+}
 async function loadCampaigns() { var { data } = await supabaseClient.from('campaigns').select('id, name').order('name'); allCampaigns = data || []; }
 
 async function loadData() {
-  var [tierRes, tRes, threshRes] = await Promise.all([
+  var [tierRes, tRes, threshRes, avatarRes] = await Promise.all([
     supabaseClient.from('trophy_tiers').select('*').order('id'),
     supabaseClient.from('trophy_definitions').select('*').order('created_at', {ascending: false}),
-    supabaseClient.from('trophy_thresholds').select('*')
+    supabaseClient.from('trophy_thresholds').select('*'),
+    supabaseClient.from('avatar_stages').select('*').order('stage_order')
   ]);
-  allTiers = tierRes.data || []; allTrophies = tRes.data || []; allThresholds = threshRes.data || [];
-  renderTiers(); renderTrophies(); populateDropdowns();
+  allTiers = tierRes.data || []; allTrophies = tRes.data || []; allThresholds = threshRes.data || []; allAvatars = avatarRes.data || [];
+  renderTiers(); renderTrophies(); renderAvatars(); populateDropdowns();
 }
 
-function switchTab(tab) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); getEl('tab-' + tab).classList.add('active'); getEl('view-tiers').classList.toggle('hidden', tab !== 'tiers'); getEl('view-trophies').classList.toggle('hidden', tab !== 'trophies'); }
-
+function switchTab(tab) { 
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); 
+  getEl('tab-' + tab).classList.add('active'); 
+  getEl('view-tiers').classList.toggle('hidden', tab !== 'tiers'); 
+  getEl('view-trophies').classList.toggle('hidden', tab !== 'trophies'); 
+  getEl('view-avatars').classList.toggle('hidden', tab !== 'avatars'); 
+}
 // --- TIERS ---
 function renderTiers() {
   getEl('tiersList').innerHTML = allTiers.map(t => `
@@ -307,6 +373,113 @@ async function saveTrophy() {
   } catch(e) { showToast('Error: ' + e.message, true); }
   btn.disabled = false; btn.textContent = 'Save Trophy';
 }
+// --- AVATAR MANAGEMENT ---
+function renderAvatars() {
+  var list = getEl('avatarList');
+  if (allAvatars.length === 0) {
+    list.innerHTML = '<div class="text-center py-10 text-slate-400">No avatar stages created yet.</div>';
+    return;
+  }
+  list.innerHTML = allAvatars.map(a => `
+    <div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="editAvatar('${a.id}')">
+      <div class="flex -space-x-2">
+        <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-white">
+          ${a.image_url_male ? `<img src="${a.image_url_male}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300 text-sm">male</span>'}
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-white">
+          ${a.image_url_female ? `<img src="${a.image_url_female}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300 text-sm">female</span>'}
+        </div>
+      </div>
+      <div class="flex-1">
+        <div class="flex items-center gap-2">
+          <span class="bg-primary/10 text-primary text-[10px] font-black px-2 py-0.5 rounded-full">STAGE ${a.stage_order}</span>
+          <h4 class="font-headline font-bold text-slate-800">${a.journey_name}</h4>
+        </div>
+        <p class="text-[11px] text-slate-500 mt-1">Unlocks at: <span class="font-bold text-slate-700">${a.mythic_trophies_required} Mythic Trophies</span></p>
+      </div>
+      <span class="material-symbols-outlined text-slate-300">edit</span>
+    </div>
+  `).join('');
+}
+
+function populateDropdowns() { 
+  // Trophy dropdown
+  var tImgSel = getEl('trophyImage'); 
+  if(tImgSel) {
+    tImgSel.innerHTML = '<option value="">-- Select Image --</option>';
+    trophyImages.forEach(m => tImgSel.innerHTML += `<option value="${m.url}">${m.label}</option>`);
+  }
+  
+  // Avatar dropdowns
+  var aImgMaleSel = getEl('avatarImageMale');
+  var aImgFemaleSel = getEl('avatarImageFemale');
+  if(aImgMaleSel && aImgFemaleSel) {
+    var options = '<option value="">-- Select Image --</option>';
+    avatarImages.forEach(m => options += `<option value="${m.url}">${m.label}</option>`);
+    aImgMaleSel.innerHTML = options;
+    aImgFemaleSel.innerHTML = options;
+  }
+}
+
+function openAvatarModal() {
+  getEl('avatarId').value = '';
+  getEl('avatarOrder').value = allAvatars.length + 1;
+  getEl('avatarName').value = '';
+  getEl('avatarImageMale').value = '';
+  getEl('avatarImageFemale').value = '';
+  getEl('avatarMythicReq').value = '0';
+  getEl('avatarModalTitle').textContent = 'New Avatar Stage';
+  getEl('avatarModal').classList.remove('hidden');
+}
+
+function editAvatar(id) {
+  var a = allAvatars.find(x => x.id === id);
+  if (!a) return;
+  getEl('avatarId').value = a.id;
+  getEl('avatarOrder').value = a.stage_order;
+  getEl('avatarName').value = a.journey_name;
+  getEl('avatarImageMale').value = a.image_url_male || '';
+  getEl('avatarImageFemale').value = a.image_url_female || '';
+  getEl('avatarMythicReq').value = a.mythic_trophies_required || 0;
+  getEl('avatarModalTitle').textContent = 'Edit Avatar Stage';
+  getEl('avatarModal').classList.remove('hidden');
+}
+
+function closeAvatarModal() { getEl('avatarModal').classList.add('hidden'); }
+
+async function saveAvatar() {
+  var id = getEl('avatarId').value;
+  var data = {
+    stage_order: parseInt(getEl('avatarOrder').value),
+    journey_name: getEl('avatarName').value.trim(),
+    image_url_male: getEl('avatarImageMale').value || null,
+    image_url_female: getEl('avatarImageFemale').value || null,
+    mythic_trophies_required: parseInt(getEl('avatarMythicReq').value) || 0
+  };
+  
+  if (!data.journey_name) return showToast('Name is required', true);
+  
+  var btn = getEl('saveAvatarBtn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  
+  try {
+    var res;
+    if (id) {
+      res = await supabaseClient.from('avatar_stages').update(data).eq('id', id);
+    } else {
+      res = await supabaseClient.from('avatar_stages').insert([data]);
+    }
+    if (res.error) throw new Error(res.error.message);
+    
+    showToast('Avatar stage saved!');
+    closeAvatarModal();
+    await loadData();
+  } catch(e) {
+    showToast('Error: ' + e.message, true);
+  }
+  btn.disabled = false; btn.textContent = 'Save Stage';
+}
+  
 init();
 </script>
 </body>
