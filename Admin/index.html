@@ -349,13 +349,13 @@ if (timeFilter) { qShares = qShares.gte('shared_at', timeFilter); }
 
 async function loadActivity() {
   var results = await Promise.all([
-    supabaseClient.from('profiles').select('id,full_name,nickname,email,created_at').order('shared_at',{ascending:false}).limit(5),
-    supabaseClient.from('shares').select('id,platform,created_at,user_id,quote_id').order('shared_at',{ascending:false}).limit(5), 
-    supabaseClient.from('quotes').select('id,text,source,status,created_at').order('shared_at',{ascending:false}).limit(3)
+    supabaseClient.from('profiles').select('id,full_name,nickname,email,shared_at').order('shared_at',{ascending:false}).limit(5),
+    supabaseClient.from('shares').select('id,platform,shared_at,user_id,quote_id').order('shared_at',{ascending:false}).limit(5), 
+    supabaseClient.from('quotes').select('id,text,source,status,shared_at').order('shared_at',{ascending:false}).limit(3)
   ]);
-  var signups = (results[0].data || []).map(s => ({ type:'signup', at:s.created_at, data:s }));
-  var shares = (results[1].data || []).map(s => ({ type:'share', at:s.created_at, data:s }));
-  var quotes = (results[2].data || []).map(q => ({ type:'quote', at:q.created_at, data:q }));
+  var signups = (results[0].data || []).map(s => ({ type:'signup', at:s.shared_at, data:s }));
+  var shares = (results[1].data || []).map(s => ({ type:'share', at:s.shared_at, data:s }));
+  var quotes = (results[2].data || []).map(q => ({ type:'quote', at:q.shared_at, data:q }));
   var combined = signups.concat(shares).concat(quotes).sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 10);
   var container = document.getElementById('activityList'); container.innerHTML = '';
   if (combined.length === 0) { container.innerHTML = '<p class="p-6 text-center font-body text-outline" style="font-size:13px;">No activity yet</p>'; return; }
@@ -371,7 +371,7 @@ async function loadActivity() {
 }
 
 async function loadProjects() {
-  var result = await supabaseClient.from('projects').select('*').eq('status', 'active').order('created_at', { ascending: false }).limit(3);
+  var result = await supabaseClient.from('projects').select('*').eq('status', 'active').order('shared_at', { ascending: false }).limit(3);
   var container = document.getElementById('projectCards'); container.innerHTML = '';
   if (!result.data || result.data.length === 0) { container.innerHTML = '<div class="bg-surface-cl rounded-2xl p-6 text-center"><span class="material-symbols-outlined text-outline" style="font-size:24px;">volunteer_activism</span><p class="font-body text-on-surface-variant mt-2" style="font-size:13px;">No active missions</p></div>'; return; }
   result.data.forEach(p => {
@@ -394,7 +394,7 @@ async function loadAnalytics() {
   // Group by day
   var days = {};
   for(var i=6; i>=0; i--) { var d = new Date(now); d.setDate(now.getDate() - i); var key = d.toLocaleDateString('en-US', {weekday:'short'}); days[key] = 0; }
-  result.data.forEach(s => { var d = new Date(s.created_at); var key = d.toLocaleDateString('en-US', {weekday:'short'}); if(days[key] !== undefined) days[key]++; });
+  result.data.forEach(s => { var d = new Date(s.shared_at); var key = d.toLocaleDateString('en-US', {weekday:'short'}); if(days[key] !== undefined) days[key]++; });
   
   var maxVal = Math.max(...Object.values(days), 1);
   Object.keys(days).forEach(day => {
