@@ -114,6 +114,10 @@
     </div>
     <div class="p-6 space-y-5">
       <input type="hidden" id="trophyId">
+      <div class="space-y-2">
+  <label class="text-[11px] font-bold text-slate-500 uppercase block">Description</label>
+  <textarea id="trophyDesc" rows="2" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. Awarded for sharing your first quote..."></textarea>
+</div>
       <div class="grid grid-cols-2 gap-4">
         <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Trophy Name</label><input type="text" id="trophyName" class="form-input w-full rounded-xl px-4 py-3 text-sm"></div>
         <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Type</label><select id="trophyType" onchange="toggleTrophyType()" class="form-input w-full rounded-xl px-4 py-3 text-sm"><option value="stat">Stat Based (Grind)</option><option value="collection">Collection Based (Campaigns)</option></select></div>
@@ -239,7 +243,7 @@ function renderTrophies() {
 }
 
 function openTrophyModal() {
-  getEl('trophyId').value = ''; getEl('trophyName').value = ''; getEl('trophyType').value = 'stat'; getEl('trophyStatType').value = 'shares'; getEl('trophyImage').value = ''; getEl('trophyModalTitle').textContent = 'Create Trophy'; toggleTrophyType();
+  getEl('trophyId').value = ''; getEl('trophyName').value = ''; getEl('trophyType').value = 'stat'; getEl('trophyStatType').value = 'shares'; getEl('trophyImage').value = ''; getEl('trophyDesc').value = ''; getEl('trophyModalTitle').textContent = 'Create Trophy'; toggleTrophyType();
   var container = getEl('thresholdsContainer'); container.innerHTML = '';
   allTiers.forEach(t => { var defaults = [1, 10, 50, 150, 500]; addThresholdRow(t.id, t.name, t.color_hex, defaults[t.id-1] || 0); });
   getEl('trophyModal').classList.remove('hidden');
@@ -247,7 +251,8 @@ function openTrophyModal() {
 
 function editTrophy(id) {
   var t = allTrophies.find(x => x.id === id); if (!t) return;
-  getEl('trophyId').value = t.id; getEl('trophyName').value = t.name; getEl('trophyType').value = t.type || 'stat'; getEl('trophyStatType').value = t.stat_type || 'shares'; getEl('trophyImage').value = t.image_url || ''; getEl('trophyModalTitle').textContent = 'Edit Trophy'; toggleTrophyType();
+  getEl('trophyId').value = t.id; getEl('trophyName').value = t.name; getEl('trophyType').value = t.type || 'stat'; getEl('trophyStatType').value = t.stat_type || 'shares'; getEl('trophyImage').value = t.image_url || ''; 
+  getEl('trophyDesc').value = t.description || ''; getEl('trophyModalTitle').textContent = 'Edit Trophy'; toggleTrophyType();
   if (t.type === 'collection') renderCampaignChecklist(t.campaign_ids || []);
   var container = getEl('thresholdsContainer'); container.innerHTML = '';
   allTiers.forEach(tier => { var th = allThresholds.find(x => x.trophy_id === id && x.tier_id === tier.id); addThresholdRow(tier.id, tier.name, tier.color_hex, th ? th.threshold_value : 0, th ? th.is_active : true); });
@@ -282,7 +287,7 @@ async function saveTrophy() {
   if (!name) return showToast('Name is required', true);
   var btn = getEl('saveTrophyBtn'); btn.disabled = true; btn.textContent = 'Saving...';
   try {
-    var data = { name, type, stat_type: statType, image_url: imgUrl, campaign_ids: campaignIds };
+    var data = { name, type, stat_type: statType, image_url: imgUrl, campaign_ids: campaignIds, description: getEl('trophyDesc').value };
     var res = id ? await supabaseClient.from('trophy_definitions').update(data).eq('id', id) : await supabaseClient.from('trophy_definitions').insert([data]).select().single();
     if (res.error) throw new Error(res.error.message);
     var trophyId = id || res.data.id;
