@@ -318,9 +318,9 @@ async function loadDashboard() {
   var timeFilter = getTimeRangeFilter(), label = getTimeRangeLabel();
   
   // 1. Warriors & Shares (Time filtered)
-  var qWarriors = supabaseClient.from('profiles').select('*', { count: 'exact', head: true });
-  var qShares = supabaseClient.from('shares').select('*', { count: 'exact', head: true });
-  if (timeFilter) { qWarriors = qWarriors.gte('created_at', timeFilter); qShares = qShares.gte('created_at', timeFilter); } // FIXED: shared_at -> created_at
+ var qWarriors = supabaseClient.from('profiles').select('*', { count: 'exact', head: true });
+ var qShares = supabaseClient.from('shares').select('*', { count: 'exact', head: true });
+if (timeFilter) { qShares = qShares.gte('shared_at', timeFilter); }
 
   // 2. Funds Raised (Sum of all projects)
   var qFunds = supabaseClient.from('projects').select('raised_amount');
@@ -349,9 +349,9 @@ async function loadDashboard() {
 
 async function loadActivity() {
   var results = await Promise.all([
-    supabaseClient.from('profiles').select('id,full_name,nickname,email,created_at').order('created_at',{ascending:false}).limit(5),
-    supabaseClient.from('shares').select('id,platform,created_at,user_id,quote_id').order('created_at',{ascending:false}).limit(5), // FIXED: shared_at -> created_at
-    supabaseClient.from('quotes').select('id,text,source,status,created_at').order('created_at',{ascending:false}).limit(3)
+    supabaseClient.from('profiles').select('id,full_name,nickname,email,created_at').order('shared_at',{ascending:false}).limit(5),
+    supabaseClient.from('shares').select('id,platform,created_at,user_id,quote_id').order('shared_at',{ascending:false}).limit(5), 
+    supabaseClient.from('quotes').select('id,text,source,status,created_at').order('shared_at',{ascending:false}).limit(3)
   ]);
   var signups = (results[0].data || []).map(s => ({ type:'signup', at:s.created_at, data:s }));
   var shares = (results[1].data || []).map(s => ({ type:'share', at:s.created_at, data:s }));
@@ -387,7 +387,7 @@ async function loadProjects() {
 
 async function loadAnalytics() {
   var now = new Date(), sevenDaysAgo = new Date(now); sevenDaysAgo.setDate(now.getDate() - 7);
-  var result = await supabaseClient.from('shares').select('created_at').gte('created_at', sevenDaysAgo.toISOString());
+  var result = await supabaseClient.from('shares').select('shared_at').gte('shared_at', sevenDaysAgo.toISOString());
   var container = document.getElementById('analyticsChart'); container.innerHTML = '';
   if (!result.data || result.data.length === 0) { container.innerHTML = '<p class="w-full text-center font-body text-outline py-6" style="font-size:13px;">No share data for the last 7 days</p>'; return; }
   
