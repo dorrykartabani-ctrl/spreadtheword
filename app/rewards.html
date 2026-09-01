@@ -19,30 +19,38 @@
     .tab-btn { flex: 1; padding: 12px; text-align: center; font-weight: 700; font-size: 14px; color: #64748b; border-bottom: 2px solid transparent; transition: all 0.2s; }
     .tab-btn.active { color: #3d6285; border-bottom-color: #3d6285; background: rgba(61, 98, 133, 0.05); }
     
-    /* The Bold Block Card */
+    /* Trophy Card */
     .bold-block { 
-      height: 140px; 
-      border-radius: 1.5rem; 
+      height: 110px; /* Compact height now that bar is gone */
+      border-radius: 1rem; 
       overflow: hidden; 
       position: relative; 
       display: flex; 
       flex-direction: column; 
       align-items: center; 
-      padding: 12px 8px 8px 8px; 
+      justify-content: center; 
+      padding: 8px; 
       text-align: center; 
       color: white; 
       transition: transform 0.2s ease;
       cursor: pointer;
     }
     .bold-block:active { transform: scale(0.96); }
+    .bold-block img { max-height: 65px; width: auto; margin-bottom: 4px; }
     
     /* Locked State */
-    .locked-block { 
-      background-color: #cbd5e1 !important; 
-      color: #64748b; 
-      opacity: 0.8;
-    }
+    .locked-block { background-color: #cbd5e1 !important; color: #64748b; opacity: 0.8; }
     .locked-block img { filter: grayscale(100%) opacity(0.5); }
+
+    /* Badge Card (Free floating, no box) */
+    .badge-item {
+      display: flex; flex-direction: column; align-items: center;
+      cursor: pointer; transition: transform 0.2s ease; padding: 10px;
+    }
+    .badge-item:active { transform: scale(0.95); }
+    .badge-item img { width: 80px; height: 80px; object-fit: contain; margin-bottom: 8px; }
+    .badge-item.locked img { filter: grayscale(100%) opacity(0.3); }
+    .badge-item p { font-size: 11px; font-weight: 700; color: #475569; text-align: center; line-height: 1.2; }
   </style>
 </head>
 <body class="pb-32">
@@ -62,13 +70,23 @@
 
 <main class="pt-24 px-5 max-w-[430px] mx-auto">
   <!-- TABS -->
-  <div class="flex bg-white rounded-2xl p-1 shadow-sm border border-slate-100 mb-8">
+  <div class="flex bg-white rounded-2xl p-1 shadow-sm border border-slate-100 mb-6">
     <button onclick="switchTab('trophies')" id="tab-trophies" class="tab-btn active rounded-xl">Trophies</button>
     <button onclick="switchTab('badges')" id="tab-badges" class="tab-btn rounded-xl">Badges</button>
   </div>
 
   <!-- TROPHIES SECTION -->
   <div id="section-trophies">
+    
+    <!-- NEW: TIER COLOR KEY -->
+    <div class="grid grid-cols-5 gap-2 mb-6">
+      <div class="flex flex-col items-center justify-center py-2 rounded-xl text-white" style="background-color: #94a3b8;"><span class="text-[8px] font-black uppercase">Common</span></div>
+      <div class="flex flex-col items-center justify-center py-2 rounded-xl text-white" style="background-color: #16a34a;"><span class="text-[8px] font-black uppercase">Uncommon</span></div>
+      <div class="flex flex-col items-center justify-center py-2 rounded-xl text-white" style="background-color: #2563eb;"><span class="text-[8px] font-black uppercase">Rare</span></div>
+      <div class="flex flex-col items-center justify-center py-2 rounded-xl text-white" style="background-color: #9333ea;"><span class="text-[8px] font-black uppercase">Epic</span></div>
+      <div class="flex flex-col items-center justify-center py-2 rounded-xl text-white" style="background-color: #d97706;"><span class="text-[8px] font-black uppercase">Mythic</span></div>
+    </div>
+
     <h3 class="font-headline font-bold text-lg mb-4 px-1 text-slate-900">Your Collection</h3>
     <div id="unlockedTrophies" class="grid grid-cols-2 gap-4 mb-8"></div>
     
@@ -79,9 +97,9 @@
   <!-- BADGES SECTION -->
   <div id="section-badges" class="hidden">
     <h3 class="font-headline font-bold text-lg mb-4 px-1 text-slate-900">Earned Badges</h3>
-    <div id="unlockedBadges" class="grid grid-cols-2 gap-4 mb-8"></div>
+    <div id="unlockedBadges" class="grid grid-cols-3 gap-2 mb-8"></div>
     <h3 class="font-headline font-bold text-lg mb-4 px-1 text-slate-900">Future Missions</h3>
-    <div id="lockedBadges" class="grid grid-cols-2 gap-4"></div>
+    <div id="lockedBadges" class="grid grid-cols-3 gap-2"></div>
   </div>
 </main>
 
@@ -91,9 +109,18 @@
     <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-6"></div>
     <button onclick="closeModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"><span class="material-symbols-outlined text-[20px]">close</span></button>
     <div class="flex flex-col items-center text-center">
-      <div id="modalIconContainer" class="w-28 h-28 flex items-center justify-center mb-4 rounded-2xl shadow-inner"></div>
+      <!-- Pale Blue Container for Modal Image -->
+      <div id="modalIconContainer" class="w-32 h-32 flex items-center justify-center mb-4 rounded-2xl shadow-inner" style="background-color: #eff6ff;">
+        <!-- Image injected via JS -->
+      </div>
       <h3 id="modalTitle" class="font-headline font-black text-2xl text-slate-900 mb-1">Trophy Name</h3>
-      <p id="modalTier" class="text-[10px] font-black uppercase tracking-widest mb-6">TIER</p>
+      <p id="modalTier" class="text-[10px] font-black uppercase tracking-widest mb-4">TIER</p>
+      
+      <!-- Progression Bar in Modal -->
+      <div id="modalProgressBar" class="flex gap-1 w-full max-w-[200px] mb-4">
+        <!-- Bars injected via JS -->
+      </div>
+
       <div id="modalDetails" class="w-full bg-slate-50 rounded-2xl p-5 text-left space-y-3 border border-slate-100"></div>
     </div>
   </div>
@@ -151,7 +178,7 @@ async function init() {
   } catch (err) { console.error("Rewards Page Error:", err); }
 }
 
-// 3. Render Trophies (With Progression Bar)
+// 3. Render Trophies (No progress bar on card)
 function renderTrophies() {
   var unlocked = document.getElementById('unlockedTrophies'); 
   var locked = document.getElementById('lockedTrophies');
@@ -175,21 +202,10 @@ function renderTrophies() {
     // UNLOCKED BLOCK
     if (unlockedTier) {
       var color = getTierColor(unlockedTier.tier_id);
-      var currentLevel = unlockedTier.tier_id; // 1 to 5
-      
-      // Build the 5-segment progression bar
-      var progressHTML = '<div class="flex gap-1 w-full mt-auto pt-2 px-1">';
-      for(var i=1; i<=5; i++) {
-         var isActive = i <= currentLevel;
-         progressHTML += `<div class="h-1 flex-1 rounded-full ${isActive ? 'bg-white' : 'bg-white/30'}"></div>`;
-      }
-      progressHTML += '</div>';
-
       unlocked.innerHTML += `
         <div class="bold-block" style="background-color: ${color};" onclick="openModal('${t.id}', ${unlockedTier.tier_id}, false)">
-          ${t.image_url ? `<img src="${t.image_url}" class="w-12 h-12 object-contain mt-2 drop-shadow-md">` : '<span class="material-symbols-outlined text-4xl mt-2 filled">emoji_events</span>'}
-          <p class="font-headline font-bold text-xs leading-tight w-full truncate px-1 mt-1">${t.name}</p>
-          ${progressHTML}
+          ${t.image_url ? `<img src="${t.image_url}">` : '<span class="material-symbols-outlined text-4xl filled">emoji_events</span>'}
+          <p class="font-headline font-bold text-xs leading-tight w-full truncate px-1">${t.name}</p>
         </div>`;
     }
 
@@ -198,15 +214,8 @@ function renderTrophies() {
     if (nextTier) {
       locked.innerHTML += `
         <div class="bold-block locked-block" onclick="openModal('${t.id}', ${nextTier.tier_id}, true)">
-          ${t.image_url ? `<img src="${t.image_url}" class="w-12 h-12 object-contain mt-2">` : '<span class="material-symbols-outlined text-4xl mt-2">lock</span>'}
-          <p class="font-headline font-bold text-xs leading-tight w-full truncate px-1 mt-1">${t.name}</p>
-          <div class="flex gap-1 w-full mt-auto pt-2 px-1">
-             <div class="h-1 flex-1 rounded-full bg-slate-400/30"></div>
-             <div class="h-1 flex-1 rounded-full bg-slate-400/30"></div>
-             <div class="h-1 flex-1 rounded-full bg-slate-400/30"></div>
-             <div class="h-1 flex-1 rounded-full bg-slate-400/30"></div>
-             <div class="h-1 flex-1 rounded-full bg-slate-400/30"></div>
-          </div>
+          ${t.image_url ? `<img src="${t.image_url}">` : '<span class="material-symbols-outlined text-4xl">lock</span>'}
+          <p class="font-headline font-bold text-xs leading-tight w-full truncate px-1">${t.name}</p>
         </div>`;
     }
   });
@@ -215,7 +224,7 @@ function renderTrophies() {
   if (locked.innerHTML === '') locked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">All caught up!</p>';
 }
 
-// 4. Render Badges
+// 4. Render Badges (Free floating, no box)
 function renderBadges() {
   var unlocked = document.getElementById('unlockedBadges'); 
   var locked = document.getElementById('lockedBadges');
@@ -229,21 +238,21 @@ function renderBadges() {
     
     if (hasBadge) {
       unlocked.innerHTML += `
-        <div class="bold-block bg-white border-2 border-primary text-slate-800" style="height: 140px;">
-          ${b.image_url ? `<img src="${b.image_url}" class="w-14 h-14 object-contain mt-2 drop-shadow-md">` : '<span class="material-symbols-outlined text-4xl mt-2 text-primary">military_tech</span>'}
-          <p class="font-headline font-bold text-xs leading-tight w-full truncate px-1 mt-1">${b.name}</p>
+        <div class="badge-item" onclick="openBadgeModal('${b.name}')">
+          ${b.image_url ? `<img src="${b.image_url}">` : '<span class="material-symbols-outlined text-4xl text-primary">military_tech</span>'}
+          <p>${b.name}</p>
         </div>`;
     } else {
       locked.innerHTML += `
-        <div class="bold-block locked-block bg-slate-200 text-slate-500" style="height: 140px;">
-          ${b.image_url ? `<img src="${b.image_url}" class="w-14 h-14 object-contain mt-2">` : '<span class="material-symbols-outlined text-4xl mt-2">lock</span>'}
-          <p class="font-headline font-bold text-xs leading-tight w-full truncate px-1 mt-1">${b.name}</p>
+        <div class="badge-item locked">
+          ${b.image_url ? `<img src="${b.image_url}">` : '<span class="material-symbols-outlined text-4xl">lock</span>'}
+          <p>${b.name}</p>
         </div>`;
     }
   });
   
-  if (unlocked.innerHTML === '') unlocked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">No badges earned yet.</p>';
-  if (locked.innerHTML === '') locked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">No future missions available.</p>';
+  if (unlocked.innerHTML === '') unlocked.innerHTML = '<p class="col-span-3 text-center text-slate-400 text-sm py-4">No badges earned yet.</p>';
+  if (locked.innerHTML === '') locked.innerHTML = '<p class="col-span-3 text-center text-slate-400 text-sm py-4">No future missions available.</p>';
 }
 
 // 5. Helpers & Modal
@@ -254,18 +263,44 @@ function getThreshold(trophyId, tierId) { var th = allThresholds.find(x => x.tro
 window.openModal = function(trophyId, tierId, isLocked) {
   var t = allTrophies.find(x => x.id === trophyId); if (!t) return;
   var color = getTierColor(tierId);
+  
   document.getElementById('modalTitle').textContent = t.name;
   document.getElementById('modalTier').textContent = isLocked ? 'Locked' : getTierName(tierId);
   document.getElementById('modalTier').style.color = isLocked ? '#94a3b8' : color;
   
   var container = document.getElementById('modalIconContainer');
-  container.style.backgroundColor = isLocked ? '#e2e8f0' : color;
-  container.innerHTML = t.image_url ? `<img src="${t.image_url}" class="w-20 h-20 object-contain ${isLocked ? 'opacity-50' : ''}">` : '<span class="material-symbols-outlined text-5xl text-white">emoji_events</span>';
+  // Pale blue background
+  container.style.backgroundColor = '#eff6ff'; 
+  container.innerHTML = t.image_url ? `<img src="${t.image_url}" class="w-20 h-20 object-contain ${isLocked ? 'opacity-50' : ''}">` : '<span class="material-symbols-outlined text-5xl text-primary">emoji_events</span>';
+
+  // Build Progression Bar in Modal
+  var currentLevel = isLocked ? 0 : tierId;
+  var barHTML = '';
+  for(var i=1; i<=5; i++) {
+     var isActive = i <= currentLevel;
+     barHTML += `<div class="h-2 flex-1 rounded-full ${isActive ? 'bg-primary' : 'bg-slate-200'}"></div>`;
+  }
+  document.getElementById('modalProgressBar').innerHTML = barHTML;
 
   var details = isLocked 
     ? `<p class="text-sm text-slate-600"><strong class="text-slate-900 block mb-1">Requirement</strong>Reach ${getThreshold(trophyId, tierId)} ${t.stat_type || 'points'} to unlock.</p>`
     : `<p class="text-sm text-slate-600"><strong class="text-slate-900 block mb-1">Status</strong>Unlocked at ${getTierName(tierId)} tier.</p>`;
   document.getElementById('modalDetails').innerHTML = details;
+  document.getElementById('rewardModal').classList.remove('hidden');
+}
+
+window.openBadgeModal = function(badgeName) {
+  var b = allBadges.find(x => x.name === badgeName); if (!b) return;
+  document.getElementById('modalTitle').textContent = b.name;
+  document.getElementById('modalTier').textContent = 'Badge Earned';
+  document.getElementById('modalTier').style.color = '#3d6285';
+  
+  var container = document.getElementById('modalIconContainer');
+  container.style.backgroundColor = '#eff6ff';
+  container.innerHTML = b.image_url ? `<img src="${b.image_url}" class="w-20 h-20 object-contain">` : '<span class="material-symbols-outlined text-5xl text-primary">military_tech</span>';
+  
+  document.getElementById('modalProgressBar').innerHTML = ''; // No bar for badges
+  document.getElementById('modalDetails').innerHTML = `<p class="text-sm text-slate-600"><strong class="text-slate-900 block mb-1">Mission Complete</strong>You have successfully earned the ${b.name} badge!</p>`;
   document.getElementById('rewardModal').classList.remove('hidden');
 }
 
