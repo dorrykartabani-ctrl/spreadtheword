@@ -4,102 +4,129 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Page Builder — GSTW Admin</title>
-
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
-
+  <link rel="icon" type="image/x-icon" href="/images/favicon/favicon.ico">
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
             'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
-            'surface-c':'#efeee7','on-surface':'#31332e','on-surface-variant':'#5e6059',
-            'primary':'#3d6285','on-primary':'#f7f9ff','primary-container':'#b0d5fe',
-            'secondary':'#41637c','tertiary':'#ad332b',
+            'surface-c':'#efeee7','surface-chigh':'#e9e8e1','surface-chighest':'#e3e3db',
+            'on-surface':'#31332e','on-surface-variant':'#5e6059',
+            'inverse-surface':'#0e0e0c','inverse-on-surface':'#9e9d99',
+            'outline':'#7a7b75','outline-variant':'#b2b2ab',
+            'primary':'#3d6285','on-primary':'#f7f9ff',
+            'primary-container':'#b0d5fe','on-primary-container':'#234a6c',
+            'secondary':'#41637c','on-secondary':'#f6f9ff',
+            'secondary-container':'#cae6ff',
+            'tertiary':'#ad332b','on-tertiary':'#fff7f6',
+            'primary-dim':'#305678','secondary-dim':'#355670','tertiary-dim':'#9d2621',
+            'sidebar-bg':'#0e0e0c','sidebar-hover':'#1a1a18','sidebar-active':'#3d6285',
           },
-          fontFamily: { 'headline':['Plus Jakarta Sans','sans-serif'], 'body':['Manrope','sans-serif'] }
+          fontFamily:{ 'headline':['Plus Jakarta Sans','sans-serif'], 'body':['Manrope','sans-serif'] },
+          boxShadow:{ 'ambient':'0 20px 40px rgba(49,51,46,0.05)', 'ambient-sm':'0 8px 24px rgba(49,51,46,0.04)', 'float':'0 20px 40px rgba(49,51,46,0.08)' },
         },
       },
     }
   </script>
-
   <style>
-    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;overflow:hidden;}
-    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;}
+    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;letter-spacing:-0.005em}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
     .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
-    .filled{font-variation-settings:'FILL' 1}
+    .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
     .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
-
-    ::-webkit-scrollbar{width:5px;height:5px}
+    ::-webkit-scrollbar{width:6px;height:6px}
     ::-webkit-scrollbar-track{background:transparent}
-    ::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:10px}
-
-    /* Sidebar */
-    .sidebar{background:#0e0e0c;color:#f7f9ff; z-index: 50;}
-    .sidebar-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;color:rgba(247,249,255,0.6);font-size:13px;font-weight:600; transition:all 0.15s ease;}
+    ::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:3px}
+    ::-webkit-scrollbar-thumb:hover{background:rgba(49,51,46,0.3)}
+    .sidebar{background:#0e0e0c;color:#f7f9ff}
+    .sidebar-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;color:rgba(247,249,255,0.6);font-size:13px;font-weight:600;transition:all 0.15s ease;text-decoration:none}
     .sidebar-item:hover{background:#1a1a18;color:#f7f9ff}
     .sidebar-item.active{background:#3d6285;color:#f7f9ff}
+    .sidebar-item .material-symbols-outlined{font-size:20px}
 
-    /* Split Pane Layout */
-    .pane-container { height: calc(100vh - 72px); }
-    
-    /* Drag & Drop Block List */
-    .block-card {
-      padding: 14px 16px; border-bottom: 1px solid #efeee7; cursor: grab; transition: all 0.15s ease;
-      background: #ffffff; border-left: 4px solid transparent; display: flex; justify-content: space-between; align-items: center;
-    }
-    .block-card:hover { background: #fbf9f4; }
-    .block-card.active { background: #ffffff; border-left-color: #3d6285; box-shadow: inset 0 2px 10px rgba(0,0,0,0.02); }
-    .block-card.dragging { opacity: 0.5; background: #f5f4ed; }
-    .block-card.drag-over { border-top: 2px solid #3d6285; }
-    .block-card.hidden-block { opacity: 0.6; }
+    /* CMS-specific styles */
+    .section-card{background:#fff;border:1px solid #e9e8e1;border-radius:12px;padding:12px 14px;cursor:pointer;transition:all 0.15s ease;position:relative}
+    .section-card:hover{border-color:#b2b2ab;box-shadow:0 4px 12px rgba(49,51,46,0.04)}
+    .section-card.active{border-color:#3d6285;box-shadow:0 0 0 2px rgba(61,98,133,0.15)}
+    .section-card.hidden-section{opacity:0.45}
+    .section-card .drag-handle{cursor:grab;color:#b2b2ab;transition:color 0.15s}
+    .section-card .drag-handle:hover{color:#5e6059}
+    .section-card .drag-handle:active{cursor:grabbing}
 
-    /* Forms */
-    .form-input { background: #f5f4ed; border: 1px solid transparent; transition: all 0.2s; color: #31332e; }
-    .form-input:focus { background: #ffffff; border-color: rgba(61,98,133,0.3); outline: none; }
-    
-    /* Swatch */
-    .theme-swatch {
-      width: 32px; height: 32px; border-radius: 50%; cursor: pointer; transition: all 0.15s ease;
-      border: 3px solid transparent; flex-shrink: 0; position: relative;
-    }
-    .theme-swatch:hover { transform: scale(1.1); }
-    .theme-swatch.selected { border-color: #3d6285; box-shadow: 0 0 0 2px #ffffff; transform: scale(1.1); }
+    .field-group{margin-bottom:16px}
+    .field-label{display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#5e6059;margin-bottom:6px}
+    .field-input{width:100%;padding:9px 12px;background:#fbf9f4;border:1px solid #e3e3db;border-radius:8px;font-family:'Manrope',sans-serif;font-size:13px;color:#31332e;transition:border-color 0.15s}
+    .field-input:focus{outline:none;border-color:#3d6285;background:#fff}
+    .field-textarea{width:100%;padding:9px 12px;background:#fbf9f4;border:1px solid #e3e3db;border-radius:8px;font-family:'Manrope',sans-serif;font-size:13px;color:#31332e;resize:vertical;min-height:80px;transition:border-color 0.15s}
+    .field-textarea:focus{outline:none;border-color:#3d6285;background:#fff}
+    .field-hint{font-size:11px;color:#7a7b75;margin-top:4px}
 
-    /* Toggle */
-    .toggle-pill{ width:44px;height:24px;background:#b2b2ab;border-radius:12px; position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0; }
-    .toggle-pill.on{background:#3d6285}
-    .toggle-pill .toggle-dot{ width:18px;height:18px;background:white;border-radius:50%; position:absolute;top:3px;left:3px;transition:left 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
-    .toggle-pill.on .toggle-dot{left:23px}
+    .toggle-track{width:36px;height:20px;border-radius:10px;background:#e3e3db;position:relative;cursor:pointer;transition:background 0.2s}
+    .toggle-track.on{background:#3d6285}
+    .toggle-thumb{width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.15)}
+    .toggle-track.on .toggle-thumb{transform:translateX(16px)}
 
-    /* Skeleton */
-    .skeleton{ background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:8px; }
+    .modal-overlay{position:fixed;inset:0;background:rgba(14,14,12,0.5);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s}
+    .modal-overlay.open{opacity:1;pointer-events:auto}
+    .modal-box{background:#fff;border-radius:16px;width:90%;max-width:640px;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;transform:translateY(12px);transition:transform 0.2s}
+    .modal-overlay.open .modal-box{transform:translateY(0)}
+
+    .chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:0.03em}
+    .chip-hero{background:#b0d5fe33;color:#234a6c}
+    .chip-features{background:#cae6ff33;color:#355670}
+    .chip-about{background:#d4edda33;color:#155724}
+    .chip-testimonials{background:#fff3cd33;color:#856404}
+    .chip-pricing{background:#f8d7da33;color:#721c24}
+    .chip-cta{background:#e2d9f333;color:#4a2d7a}
+    .chip-faq{background:#d1ecf133;color:#0c5460}
+    .chip-gallery{background:#fde2e233;color:#9d2621}
+    .chip-custom{background:#e9e8e133;color:#5e6059}
+
+    .img-thumb{width:64px;height:64px;border-radius:8px;object-fit:cover;border:1px solid #e9e8e1;cursor:pointer;transition:border-color 0.15s}
+    .img-thumb:hover{border-color:#3d6285}
+    .img-thumb.selected{border-color:#3d6285;box-shadow:0 0 0 2px rgba(61,98,133,0.3)}
+
+    .repeater-item{background:#fbf9f4;border:1px solid #e9e8e1;border-radius:10px;padding:14px;margin-bottom:10px;position:relative}
+    .repeater-item .remove-btn{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#7a7b75;cursor:pointer;transition:all 0.15s}
+    .repeater-item .remove-btn:hover{background:#f8d7da;color:#ad332b}
+
+    .toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:200;transform:translateY(80px);opacity:0;transition:all 0.3s ease}
+    .toast.show{transform:translateY(0);opacity:1}
+    .toast-success{background:#31332e;color:#f7f9ff}
+    .toast-error{background:#ad332b;color:#fff7f6}
+
+    .skeleton{background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px}
     @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
     @keyframes spin{to{transform:rotate(360deg)}}
     .spin{animation:spin 1s linear infinite;display:inline-block}
+
+    .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:#7a7b75}
   </style>
 </head>
 
-<body class="flex bg-surface">
+<body class="min-h-screen flex">
 
 <!-- SIDEBAR -->
-<aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 hidden md:flex">
-  <div class="mb-8 px-2 pt-2">
-    <div class="flex items-center gap-3">
+<aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 hidden md:flex">
+  <div class="mb-6 px-2 pt-2">
+    <div class="flex items-center gap-2.5">
       <div class="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0">
         <img src="/images/icon/icon-light-512.png" alt="GSTW" class="w-full h-full object-contain">
       </div>
       <div>
-        <h1 class="font-headline font-bold text-white" style="font-size:16px;">Command</h1>
-        <p class="text-white/40 font-body" style="font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;">Admin Panel</p>
+        <h1 class="font-headline font-bold text-white" style="font-size:15px;letter-spacing:-0.02em;">Command</h1>
+        <p class="text-white/40 font-body" style="font-size:9px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">Admin Panel</p>
       </div>
     </div>
   </div>
-
-<nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
+  <nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
     <a href="index.html" class="sidebar-item"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
     <a href="quotes.html" class="sidebar-item"><span class="material-symbols-outlined">add_circle</span>Create Quote</a>
     <a href="manage-quotes.html" class="sidebar-item"><span class="material-symbols-outlined">format_quote</span>Manage Quotes</a>
@@ -110,471 +137,1047 @@
     <a href="warriors.html" class="sidebar-item"><span class="material-symbols-outlined">group</span>Users</a>
     <a href="manage-tiers.html" class="sidebar-item"><span class="material-symbols-outlined">workspace_premium</span>Tiers</a>
     <a href="manage-rewards.html" class="sidebar-item"><span class="material-symbols-outlined">emoji_events</span>Rewards</a>
+    <a href="manage-progression.html" class="sidebar-item"><span class="material-symbols-outlined">emoji_events</span>Progression</a>
     <a href="notifications.html" class="sidebar-item"><span class="material-symbols-outlined">notifications</span>Broadcasts</a>
-    <a href="manage-content.html" class="sidebar-item active"><span class="material-symbols-outlined">web</span>Page Builder</a>  
+    <a href="manage-content.html" class="sidebar-item active"><span class="material-symbols-outlined">web</span>Page Builder</a>
     <a href="analytics.html" class="sidebar-item"><span class="material-symbols-outlined">analytics</span>Analytics</a>
   </nav>
-
-
   <div class="mt-4 pt-4 border-t border-white/10 space-y-2">
     <a href="settings.html" class="sidebar-item"><span class="material-symbols-outlined">settings</span>Settings</a>
+    <div class="flex items-center gap-3 px-2 py-2">
+      <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center text-on-primary font-headline font-bold flex-shrink-0" style="font-size:13px;">AD</div>
+      <div class="flex-1 min-w-0">
+        <p class="font-body font-semibold text-white truncate" style="font-size:12px;">Admin</p>
+        <p class="text-white/40 font-body" style="font-size:10px;">Super Admin</p>
+      </div>
+      <button onclick="handleLogout()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-all flex-shrink-0" title="Log out">
+        <span class="material-symbols-outlined" style="font-size:16px;">logout</span>
+      </button>
+    </div>
   </div>
 </aside>
 
-<!-- MAIN WORKSPACE -->
-<div class="flex-1 md:ml-64 flex flex-col h-screen overflow-hidden bg-surface">
+<div id="sidebarOverlay" class="fixed inset-0 bg-inverse-surface/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
 
-  <header class="h-[72px] bg-white border-b border-surface-c flex items-center justify-between px-4 lg:px-6 shrink-0 z-20">
-    <div class="flex items-center gap-3">
-      <button onclick="document.getElementById('sidebar').classList.toggle('hidden')" class="md:hidden text-on-surface p-1"><span class="material-symbols-outlined">menu</span></button>
-      <h2 class="font-headline font-bold text-on-surface text-xl">Page Builder</h2>
-    </div>
-    <div class="flex gap-2">
-      <a href="../index.html" target="_blank" class="px-4 py-2 bg-surface-clow text-on-surface font-headline font-semibold rounded-lg text-sm hover:bg-surface-c transition-colors flex items-center gap-2">
-        <span class="material-symbols-outlined text-[18px]">open_in_new</span>View Live
-      </a>
-      <button onclick="saveAll()" id="saveBtn" class="signature-gradient text-white font-headline font-semibold rounded-lg px-4 py-2 flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform text-sm">
-        <span id="saveIcon" class="material-symbols-outlined text-[18px]">save</span>
-        <span>Publish Website</span>
-      </button>
+<!-- MAIN -->
+<main class="flex-1 md:ml-64 min-h-screen flex flex-col">
+
+  <!-- HEADER -->
+  <header class="sticky top-0 z-20 bg-surface/85 backdrop-blur-xl border-b border-surface-chigh">
+    <div class="flex items-center gap-4 px-6 lg:px-8 py-4">
+      <button onclick="toggleSidebar()" class="md:hidden text-on-surface"><span class="material-symbols-outlined">menu</span></button>
+      <div class="flex-1 min-w-0">
+        <h2 class="font-headline font-bold text-on-surface" style="font-size:22px;line-height:28px;">Page Builder</h2>
+        <p class="font-body text-on-surface-variant" style="font-size:12px;">Manage your landing page sections</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="previewPage()" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-cl border border-surface-chigh text-on-surface-variant hover:text-on-surface font-body font-semibold transition-all" style="font-size:12px;">
+          <span class="material-symbols-outlined" style="font-size:16px;">visibility</span>Preview
+        </button>
+        <button onclick="saveAllSections()" id="saveBtn" class="flex items-center gap-1.5 px-4 py-2 rounded-lg signature-gradient text-on-primary font-headline font-semibold hover:shadow-ambient-sm transition-all active:scale-[0.97]" style="font-size:13px;">
+          <span class="material-symbols-outlined" style="font-size:16px;">save</span>
+          <span id="saveBtnText">Save Changes</span>
+        </button>
+      </div>
     </div>
   </header>
 
-  <!-- SPLIT PANE -->
-  <div class="flex pane-container w-full relative">
+  <!-- CMS BODY -->
+  <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
 
-    <!-- LEFT: BLOCKS LIST -->
-    <div class="w-full lg:w-[340px] flex-shrink-0 flex flex-col bg-surface-clow border-r border-surface-c h-full z-10">
-      
-      <!-- PAGE BACKGROUND COLOR SETTING -->
-      <div class="p-4 border-b border-surface-c bg-white shrink-0 space-y-2">
-        <div class="flex justify-between items-center">
-          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Website Page Color</p>
-          <span id="currentBgLabel" class="text-[10px] font-bold text-primary">Pale Blue</span>
-        </div>
-        <div class="flex items-center gap-2 pt-1">
-          <!-- Pale Blue Preset -->
-          <div title="Pale Blue" onclick="selectPageBg('#eef4f9', 'Pale Blue', this)" class="theme-swatch selected" style="background:#eef4f9; border-color:#cbd5e1;"></div>
-          <!-- Warm Cream Preset -->
-          <div title="Warm Cream" onclick="selectPageBg('#F7F4ED', 'Warm Cream', this)" class="theme-swatch" style="background:#F7F4ED; border-color:#cbd5e1;"></div>
-          <!-- Pure White Preset -->
-          <div title="Pure White" onclick="selectPageBg('#ffffff', 'Pure White', this)" class="theme-swatch" style="background:#ffffff; border-color:#cbd5e1;"></div>
-          <!-- Tactical Dark Preset -->
-          <div title="Tactical Dark" onclick="selectPageBg('#16202A', 'Tactical Dark', this)" class="theme-swatch" style="background:#16202A;"></div>
-          
-          <!-- Custom Color Picker -->
-          <input type="color" id="customBgPicker" value="#eef4f9" oninput="selectPageBg(this.value, 'Custom', null)" class="w-8 h-8 rounded-full border-0 bg-transparent cursor-pointer p-0 ml-auto" title="Choose custom color">
-        </div>
-      </div>
-
-      <div class="p-4 border-b border-surface-c bg-white shrink-0 flex justify-between items-center">
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Page Sections</p>
-        <button onclick="openAddBlockModal()" class="text-primary hover:text-primary-dim text-xs font-bold flex items-center gap-1">
-          <span class="material-symbols-outlined text-sm">add</span>Add Section
+    <!-- LEFT PANEL: Section List -->
+    <div class="w-full lg:w-80 xl:w-96 border-b lg:border-b-0 lg:border-r border-surface-chigh bg-surface-clow/50 flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-surface-chigh">
+        <h3 class="font-headline font-bold text-on-surface" style="font-size:14px;">Sections</h3>
+        <button onclick="openAddSectionModal()" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-on-primary font-body font-semibold transition-all hover:shadow-ambient-sm active:scale-[0.97]" style="font-size:11px;">
+          <span class="material-symbols-outlined" style="font-size:14px;">add</span>Add
         </button>
       </div>
-
-      <div id="blockList" class="flex-1 overflow-y-auto pb-20">
-        <div class="p-4"><div class="skeleton h-12 w-full mb-2"></div><div class="skeleton h-12 w-full"></div></div>
+      <div id="sectionList" class="flex-1 overflow-y-auto p-3 space-y-2">
+        <div class="p-8 text-center">
+          <span class="material-symbols-outlined text-primary spin" style="font-size:24px;">progress_activity</span>
+          <p class="font-body text-on-surface-variant mt-2" style="font-size:12px;">Loading sections...</p>
+        </div>
       </div>
     </div>
 
-    <!-- RIGHT: EDITOR -->
-    <div class="hidden lg:flex flex-1 flex-col bg-white h-full relative z-20">
-      
-      <div class="lg:hidden flex items-center p-3 border-b border-surface-c bg-white shrink-0">
-        <button onclick="document.querySelector('.lg\\:flex').classList.add('hidden')" class="flex items-center gap-1 text-primary font-bold text-sm">
-          <span class="material-symbols-outlined">arrow_back</span> Back to Layout
-        </button>
-      </div>
-
-      <div class="flex-1 overflow-y-auto p-5 lg:p-8 pb-32">
-        <div class="max-w-2xl mx-auto" id="editorContent">
-          <div class="text-center mt-20 text-slate-400">
-            <span class="material-symbols-outlined text-5xl mb-2">touch_app</span>
-            <p class="font-body text-sm">Select a section from the left to edit its content.</p>
-          </div>
+    <!-- RIGHT PANEL: Section Editor -->
+    <div class="flex-1 overflow-y-auto bg-surface">
+      <div id="editorPanel">
+        <div class="empty-state h-full min-h-[400px]">
+          <span class="material-symbols-outlined text-outline-variant" style="font-size:48px;">web</span>
+          <p class="font-headline font-bold text-on-surface-variant mt-4" style="font-size:16px;">Select a section to edit</p>
+          <p class="font-body text-outline mt-1" style="font-size:13px;">Choose from the list on the left or add a new section</p>
         </div>
       </div>
+    </div>
 
+  </div>
+</main>
+
+<!-- MODAL: Add Section -->
+<div id="addSectionModal" class="modal-overlay" onclick="if(event.target===this)closeAddSectionModal()">
+  <div class="modal-box">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-surface-chigh">
+      <h3 class="font-headline font-bold text-on-surface" style="font-size:16px;">Add Section</h3>
+      <button onclick="closeAddSectionModal()" class="w-8 h-8 rounded-lg hover:bg-surface-c flex items-center justify-center text-outline transition-colors">
+        <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+      </button>
+    </div>
+    <div class="p-6 overflow-y-auto">
+      <p class="font-body text-on-surface-variant mb-4" style="font-size:13px;">Choose a section type to add to your landing page.</p>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="sectionTypeGrid">
+        <!-- Populated by JS -->
+      </div>
     </div>
   </div>
 </div>
 
-<!-- ADD BLOCK MODAL -->
-<div id="addBlockModal" class="hidden fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-  <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
-    <div class="p-5 border-b border-surface-c flex justify-between items-center">
-      <h3 class="font-headline font-bold text-lg">Add New Section</h3>
-      <button onclick="document.getElementById('addBlockModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-700"><span class="material-symbols-outlined">close</span></button>
+<!-- MODAL: Image Picker -->
+<div id="imagePickerModal" class="modal-overlay" onclick="if(event.target===this)closeImagePicker()">
+  <div class="modal-box" style="max-width:720px">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-surface-chigh">
+      <h3 class="font-headline font-bold text-on-surface" style="font-size:16px;">Pick Image</h3>
+      <button onclick="closeImagePicker()" class="w-8 h-8 rounded-lg hover:bg-surface-c flex items-center justify-center text-outline transition-colors">
+        <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+      </button>
     </div>
-    <div class="p-5 space-y-2 max-h-[60vh] overflow-y-auto">
-      <button onclick="addBlock('hero')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-colors">
-        <p class="font-bold text-sm text-slate-800">Hero Banner</p>
-        <p class="text-xs text-slate-500">Large image, headline, and call to action.</p>
+    <div class="p-6 overflow-y-auto">
+      <div id="imagePickerGrid" class="grid grid-cols-4 sm:grid-cols-6 gap-3">
+        <div class="p-4 text-center col-span-full">
+          <span class="material-symbols-outlined text-primary spin" style="font-size:24px;">progress_activity</span>
+        </div>
+      </div>
+    </div>
+    <div class="px-6 py-4 border-t border-surface-chigh flex justify-end gap-2">
+      <button onclick="closeImagePicker()" class="px-4 py-2 rounded-lg bg-surface-c text-on-surface font-body font-semibold" style="font-size:12px;">Cancel</button>
+      <button onclick="confirmImagePick()" class="px-4 py-2 rounded-lg signature-gradient text-on-primary font-body font-semibold" style="font-size:12px;">Use Image</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Tier Picker -->
+<div id="tierPickerModal" class="modal-overlay" onclick="if(event.target===this)closeTierPicker()">
+  <div class="modal-box" style="max-width:560px">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-surface-chigh">
+      <h3 class="font-headline font-bold text-on-surface" style="font-size:16px;">Select Pricing Tiers</h3>
+      <button onclick="closeTierPicker()" class="w-8 h-8 rounded-lg hover:bg-surface-c flex items-center justify-center text-outline transition-colors">
+        <span class="material-symbols-outlined" style="font-size:20px;">close</span>
       </button>
-      <button onclick="addBlock('missions')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-colors">
-        <p class="font-bold text-sm text-slate-800">Missions Grid (Live Data)</p>
-        <p class="text-xs text-slate-500">Automatically displays active missions.</p>
-      </button>
-      <button onclick="addBlock('pricing')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-colors">
-        <p class="font-bold text-sm text-slate-800">Pricing / Tiers (Live Data)</p>
-        <p class="text-xs text-slate-500">Automatically displays subscription tiers.</p>
-      </button>
-      <button onclick="addBlock('stats')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-colors">
-        <p class="font-bold text-sm text-slate-800">Stats Counter (Live Data)</p>
-        <p class="text-xs text-slate-500">Shows total warriors, shares, and countries.</p>
-      </button>
-      <button onclick="addBlock('features')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-colors">
-        <p class="font-bold text-sm text-slate-800">Feature Grid</p>
-        <p class="text-xs text-slate-500">3-column text grid for "How it works".</p>
-      </button>
-      <button onclick="addBlock('cta')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-primary hover:bg-primary/5 transition-colors">
-        <p class="font-bold text-sm text-slate-800">Call to Action Banner</p>
-        <p class="text-xs text-slate-500">Bottom banner to drive signups.</p>
-      </button>
+    </div>
+    <div class="p-6 overflow-y-auto">
+      <p class="font-body text-on-surface-variant mb-4" style="font-size:13px;">Choose which tiers to display in this pricing section.</p>
+      <div id="tierPickerList" class="space-y-2">
+        <div class="p-4 text-center">
+          <span class="material-symbols-outlined text-primary spin" style="font-size:24px;">progress_activity</span>
+        </div>
+      </div>
+    </div>
+    <div class="px-6 py-4 border-t border-surface-chigh flex justify-end gap-2">
+      <button onclick="closeTierPicker()" class="px-4 py-2 rounded-lg bg-surface-c text-on-surface font-body font-semibold" style="font-size:12px;">Cancel</button>
+      <button onclick="confirmTierPick()" class="px-4 py-2 rounded-lg signature-gradient text-on-primary font-body font-semibold" style="font-size:12px;">Confirm</button>
     </div>
   </div>
 </div>
 
 <!-- TOAST -->
-<div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-slate-900/90 backdrop-blur-md text-white font-body font-bold px-5 py-3 rounded-full shadow-2xl items-center gap-2 text-sm">
-  <span class="material-symbols-outlined text-green-400">check_circle</span>
-  <span id="toastMsg"></span>
-</div>
+<div id="toast" class="toast toast-success"></div>
 
 <script>
-var supabaseClient = supabase.createClient(
+// ─── SUPABASE ──────────────────────────────────────────────
+const supabaseClient = supabase.createClient(
   'https://nhymadutuhpjgkiurify.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
 );
 
-var blocks = [];
-var mediaOptions = [];
-var activeBlockId = null;
-var draggedBlockId = null;
-var selectedBgColor = '#eef4f9'; // Default Pale Blue
+// ─── STATE ─────────────────────────────────────────────────
+let sections = [];
+let activeSectionId = null;
+let mediaLibrary = [];
+let allTiers = [];
+let imagePickerTarget = null;   // { sectionId, fieldPath }
+let tierPickerTarget = null;    // sectionId
+let selectedImageId = null;
+let selectedTierIds = [];
+let isDirty = false;
 
-var BLOCK_DEFAULTS = {
-  hero: { headline: "Spread the Word.<br>Change the World.", subheadline: "\"Go therefore and make disciples of all nations...\" — Matthew 28:19", cta_text: "Spread The Word", cta_link: "#features", bg_image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80" },
-  missions: { eyebrow: "CHOOSE YOUR FRONT LINE", heading: "Active Missions on the Ground", subheading: "When you enlist, your contribution fights for your top cause." },
-  pricing: { eyebrow: "THE COST", heading: "Enlist in the Mission", subheading: "Ammunition for the front lines. Choose your deployment level." },
-  stats: { heading: "Field Report" },
-  features: { eyebrow: "YOUR ORDERS", heading: "How It Works", subheading: "Four steps. Under 30 seconds. The Word reaches the world." },
-  cta: { eyebrow: "MATTHEW 28:20", heading: "You Are Not Alone Warriors", subheading: "The mission is bigger than any one soldier. Take your place.", btn_text: "Join the Mission", btn_link: "app/signup.html" }
-};
-
-var BLOCK_LABELS = {
-  hero: { name: 'Hero Banner', icon: 'view_day' },
-  missions: { name: 'Missions Grid', icon: 'volunteer_activism' },
-  pricing: { name: 'Pricing Tiers', icon: 'sell' },
-  stats: { name: 'Live Stats', icon: 'monitoring' },
-  features: { name: 'Features Grid', icon: 'grid_view' },
-  cta: { name: 'CTA Banner', icon: 'ads_click' }
-};
-
-async function init() {
-  const { data: session } = await supabaseClient.auth.getSession();
-  if (!session?.session) return window.location.href = 'login.html';
-  
-  await Promise.all([loadSettings(), loadBlocks(), loadMedia()]);
-}
-
-async function loadSettings() {
-  const { data } = await supabaseClient.from('site_settings').select('value').eq('id', 'page_bg_color').single();
-  if (data && data.value) {
-    selectedBgColor = data.value;
-    updateBgColorUI(selectedBgColor);
-  }
-}
-
-function selectPageBg(hex, name, element) {
-  selectedBgColor = hex;
-  document.getElementById('currentBgLabel').textContent = name || hex;
-  document.getElementById('customBgPicker').value = hex;
-
-  document.querySelectorAll('.theme-swatch').forEach(s => s.classList.remove('selected'));
-  if (element) element.classList.add('selected');
-}
-
-function updateBgColorUI(hex) {
-  document.getElementById('customBgPicker').value = hex;
-  document.querySelectorAll('.theme-swatch').forEach(s => {
-    var title = s.getAttribute('title');
-    if (
-      (hex === '#eef4f9' && title === 'Pale Blue') ||
-      (hex === '#F7F4ED' && title === 'Warm Cream') ||
-      (hex === '#ffffff' && title === 'Pure White') ||
-      (hex === '#16202A' && title === 'Tactical Dark')
-    ) {
-      s.classList.add('selected');
-    } else {
-      s.classList.remove('selected');
+// ─── SECTION TYPE DEFINITIONS ──────────────────────────────
+const SECTION_TYPES = {
+  hero: {
+    label: 'Hero', icon: 'hero', chipClass: 'chip-hero',
+    description: 'Main headline with CTA',
+    defaultData: {
+      headline: 'Your Headline Here',
+      subheadline: 'A compelling subheadline that explains your value proposition.',
+      cta_text: 'Get Started',
+      cta_link: '/signup',
+      secondary_cta_text: '',
+      secondary_cta_link: '',
+      background_image: ''
     }
-  });
-}
+  },
+  features: {
+    label: 'Features', icon: 'stars', chipClass: 'chip-features',
+    description: 'Grid of feature cards',
+    defaultData: {
+      section_title: 'Features',
+      section_subtitle: 'Everything you need to succeed',
+      items: [
+        { icon: 'rocket_launch', title: 'Fast', description: 'Lightning quick performance' },
+        { icon: 'shield', title: 'Secure', description: 'Enterprise-grade security' },
+        { icon: 'group', title: 'Community', description: 'Join thousands of warriors' }
+      ]
+    }
+  },
+  about: {
+    label: 'About / Story', icon: 'info', chipClass: 'chip-about',
+    description: 'Text block with image',
+    defaultData: {
+      section_title: 'Our Story',
+      body_text: 'Tell your story here. Explain the mission behind your app and why it matters.',
+      image: '',
+      cta_text: '',
+      cta_link: ''
+    }
+  },
+  testimonials: {
+    label: 'Testimonials', icon: 'format_quote', chipClass: 'chip-testimonials',
+    description: 'User quotes and reviews',
+    defaultData: {
+      section_title: 'What People Say',
+      section_subtitle: '',
+      items: [
+        { quote: 'This app changed my life.', author: 'Jane Doe', role: 'Warrior', avatar: '' }
+      ]
+    }
+  },
+  pricing: {
+    label: 'Pricing', icon: 'payments', chipClass: 'chip-pricing',
+    description: 'Pricing tiers from your Tiers tab',
+    defaultData: {
+      section_title: 'Pricing',
+      section_subtitle: 'Choose the plan that fits your mission',
+      tier_ids: []
+    }
+  },
+  cta: {
+    label: 'CTA Banner', icon: 'campaign', chipClass: 'chip-cta',
+    description: 'Call-to-action banner',
+    defaultData: {
+      headline: 'Ready to Get Started?',
+      subheadline: 'Join thousands of warriors making a difference.',
+      cta_text: 'Sign Up Free',
+      cta_link: '/signup',
+      background_image: ''
+    }
+  },
+  faq: {
+    label: 'FAQ', icon: 'help', chipClass: 'chip-faq',
+    description: 'Frequently asked questions',
+    defaultData: {
+      section_title: 'FAQ',
+      section_subtitle: '',
+      items: [
+        { question: 'What is this app?', answer: 'It helps you make a difference.' }
+      ]
+    }
+  },
+  gallery: {
+    label: 'Image Gallery', icon: 'photo_library', chipClass: 'chip-gallery',
+    description: 'Grid of images from Media Library',
+    defaultData: {
+      section_title: 'Gallery',
+      section_subtitle: '',
+      image_ids: []
+    }
+  },
+  custom: {
+    label: 'Custom HTML', icon: 'code', chipClass: 'chip-custom',
+    description: 'Raw HTML block',
+    defaultData: {
+      section_title: '',
+      html_content: '<div class="text-center py-12"><p>Your custom HTML here</p></div>'
+    }
+  }
+};
 
-async function loadBlocks() {
-  const { data, error } = await supabaseClient.from('page_blocks').select('*').order('sort_order');
-  if (error) return showToast('Error loading blocks', true);
-  blocks = data || [];
-  renderBlockList();
-}
+// ─── INIT ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadMediaLibrary();
+  await loadTiers();
+  await loadSections();
+});
 
-async function loadMedia() {
-  const { data } = await supabaseClient.from('media').select('url, label').eq('type', 'landing').eq('is_active', true);
-  mediaOptions = data || [];
-}
+// ─── DATA LOADING ──────────────────────────────────────────
+async function loadSections() {
+  const { data, error } = await supabaseClient
+    .from('landing_sections')
+    .select('*')
+    .order('sort_order', { ascending: true });
 
-// ─── DRAG & DROP LIST ──────────────────────────────────────────────
-
-function renderBlockList() {
-  var list = document.getElementById('blockList');
-  list.innerHTML = '';
-  
-  if (blocks.length === 0) {
-    list.innerHTML = '<p class="text-xs text-slate-400 p-4">No sections. Add one.</p>';
+  if (error) {
+    console.error('Error loading sections:', error);
+    showToast('Failed to load sections', 'error');
+    document.getElementById('sectionList').innerHTML = `
+      <div class="empty-state">
+        <span class="material-symbols-outlined text-tertiary" style="font-size:32px;">error</span>
+        <p class="font-body text-on-surface-variant mt-2" style="font-size:12px;">Error loading sections</p>
+        <button onclick="loadSections()" class="mt-3 px-3 py-1.5 rounded-lg bg-primary text-on-primary font-body font-semibold" style="font-size:11px;">Retry</button>
+      </div>`;
     return;
   }
 
-  blocks.forEach(b => {
-    var info = BLOCK_LABELS[b.type] || { name: 'Section', icon: 'web' };
-    var div = document.createElement('div');
-    div.className = `block-card ${b.id === activeBlockId ? 'active' : ''} ${b.is_visible ? '' : 'hidden-block'}`;
-    div.draggable = true;
-    div.dataset.id = b.id;
-    
-    div.ondragstart = (e) => { draggedBlockId = b.id; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; };
-    div.ondragover = (e) => { e.preventDefault(); e.currentTarget.classList.add('drag-over'); };
-    div.ondragleave = (e) => { e.currentTarget.classList.remove('drag-over'); };
-    div.ondrop = (e) => handleDrop(e, b.id);
-    div.ondragend = (e) => { e.currentTarget.classList.remove('dragging'); document.querySelectorAll('.block-card').forEach(c => c.classList.remove('drag-over')); };
+  sections = data || [];
+  renderSectionList();
+  if (sections.length === 0) {
+    renderEmptyEditor();
+  }
+}
 
-    div.innerHTML = `
-      <div class="flex items-center gap-3 cursor-pointer flex-1 min-w-0" onclick="selectBlock('${b.id}')">
-        <span class="material-symbols-outlined text-slate-300 cursor-grab" style="font-size:18px;">drag_indicator</span>
-        <div class="flex-1 min-w-0">
-          <p class="font-headline font-bold text-slate-800 text-sm truncate">${info.name}</p>
-          <p class="text-[10px] text-slate-400 mt-0.5 truncate">${b.content.heading || b.content.headline || 'No title'}</p>
+async function loadMediaLibrary() {
+  const { data, error } = await supabaseClient
+    .from('media')
+    .select('id, name, url, type')
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (!error && data) {
+    mediaLibrary = data.filter(m => m.type?.startsWith('image') || m.url?.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i));
+  }
+}
+
+async function loadTiers() {
+  const { data, error } = await supabaseClient
+    .from('tiers')
+    .select('id, name, price, description, features')
+    .order('sort_order', { ascending: true });
+  if (!error && data) allTiers = data;
+}
+
+// ─── RENDER: SECTION LIST ──────────────────────────────────
+function renderSectionList() {
+  const container = document.getElementById('sectionList');
+  if (sections.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state py-12">
+        <span class="material-symbols-outlined text-outline-variant" style="font-size:36px;">web</span>
+        <p class="font-headline font-bold text-on-surface-variant mt-3" style="font-size:14px;">No sections yet</p>
+        <p class="font-body text-outline mt-1" style="font-size:12px;">Add your first section to build the page</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = sections.map((s, i) => {
+    const type = SECTION_TYPES[s.section_type] || SECTION_TYPES.custom;
+    const isActive = s.id === activeSectionId;
+    const isHidden = !s.is_visible;
+    return `
+      <div class="section-card ${isActive ? 'active' : ''} ${isHidden ? 'hidden-section' : ''}"
+           onclick="selectSection('${s.id}')"
+           draggable="true"
+           ondragstart="onDragStart(event, ${i})"
+           ondragover="onDragOver(event)"
+           ondrop="onDrop(event, ${i})"
+           ondragend="onDragEnd(event)">
+        <div class="flex items-center gap-2.5">
+          <span class="material-symbols-outlined drag-handle" style="font-size:18px;" title="Drag to reorder">drag_indicator</span>
+          <span class="material-symbols-outlined text-on-surface-variant" style="font-size:18px;">${type.icon}</span>
+          <div class="flex-1 min-w-0">
+            <p class="font-headline font-bold text-on-surface truncate" style="font-size:13px;">
+              ${s.title || type.label}
+            </p>
+            <span class="chip ${type.chipClass}" style="font-size:9px;margin-top:2px;">${type.label}</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="event.stopPropagation();toggleVisibility('${s.id}')" class="w-7 h-7 rounded-md hover:bg-surface-c flex items-center justify-center transition-colors" title="${isHidden ? 'Show' : 'Hide'}">
+              <span class="material-symbols-outlined ${isHidden ? '' : 'filled'}" style="font-size:16px;color:${isHidden ? '#b2b2ab' : '#3d6285'};">${isHidden ? 'visibility_off' : 'visibility'}</span>
+            </button>
+            <button onclick="event.stopPropagation();duplicateSection('${s.id}')" class="w-7 h-7 rounded-md hover:bg-surface-c flex items-center justify-center transition-colors" title="Duplicate">
+              <span class="material-symbols-outlined" style="font-size:16px;color:#7a7b75;">content_copy</span>
+            </button>
+            <button onclick="event.stopPropagation();deleteSection('${s.id}')" class="w-7 h-7 rounded-md hover:bg-red-50 flex items-center justify-center transition-colors" title="Delete">
+              <span class="material-symbols-outlined" style="font-size:16px;color:#b2b2ab;">delete</span>
+            </button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ─── RENDER: EDITOR ────────────────────────────────────────
+function selectSection(id) {
+  activeSectionId = id;
+  renderSectionList();
+  renderEditor();
+}
+
+function renderEditor() {
+  const s = sections.find(x => x.id === activeSectionId);
+  if (!s) { renderEmptyEditor(); return; }
+
+  const type = SECTION_TYPES[s.section_type] || SECTION_TYPES.custom;
+  const d = s.data || {};
+  const panel = document.getElementById('editorPanel');
+
+  let fieldsHTML = '';
+
+  // Common fields based on section type
+  switch (s.section_type) {
+    case 'hero':
+      fieldsHTML = `
+        ${fieldText('Headline', 'headline', d.headline)}
+        ${fieldTextarea('Subheadline', 'subheadline', d.subheadline)}
+        <div class="grid grid-cols-2 gap-4">
+          ${fieldText('CTA Text', 'cta_text', d.cta_text)}
+          ${fieldText('CTA Link', 'cta_link', d.cta_link, 'e.g. /signup or https://...')}
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          ${fieldText('Secondary CTA Text', 'secondary_cta_text', d.secondary_cta_text)}
+          ${fieldText('Secondary CTA Link', 'secondary_cta_link', d.secondary_cta_link)}
+        </div>
+        ${fieldImage('Background Image', 'background_image', d.background_image)}
+      `;
+      break;
+
+    case 'features':
+      fieldsHTML = `
+        ${fieldText('Section Title', 'section_title', d.section_title)}
+        ${fieldText('Section Subtitle', 'section_subtitle', d.section_subtitle)}
+        <div class="field-group">
+          <label class="field-label">Feature Items</label>
+          <div id="repeater-features-items">
+            ${(d.items || []).map((item, i) => featureItemHTML(i, item)).join('')}
+          </div>
+          <button onclick="addRepeaterItem('features','items',featureItemHTML)" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-c text-on-surface-variant font-body font-semibold hover:bg-surface-chigh transition-colors" style="font-size:11px;">
+            <span class="material-symbols-outlined" style="font-size:14px;">add</span>Add Feature
+          </button>
+        </div>
+      `;
+      break;
+
+    case 'about':
+      fieldsHTML = `
+        ${fieldText('Section Title', 'section_title', d.section_title)}
+        ${fieldTextarea('Body Text', 'body_text', d.body_text, '', 6)}
+        ${fieldImage('Image', 'image', d.image)}
+        <div class="grid grid-cols-2 gap-4">
+          ${fieldText('CTA Text', 'cta_text', d.cta_text)}
+          ${fieldText('CTA Link', 'cta_link', d.cta_link)}
+        </div>
+      `;
+      break;
+
+    case 'testimonials':
+      fieldsHTML = `
+        ${fieldText('Section Title', 'section_title', d.section_title)}
+        ${fieldText('Section Subtitle', 'section_subtitle', d.section_subtitle)}
+        <div class="field-group">
+          <label class="field-label">Testimonials</label>
+          <div id="repeater-testimonials-items">
+            ${(d.items || []).map((item, i) => testimonialItemHTML(i, item)).join('')}
+          </div>
+          <button onclick="addRepeaterItem('testimonials','items',testimonialItemHTML)" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-c text-on-surface-variant font-body font-semibold hover:bg-surface-chigh transition-colors" style="font-size:11px;">
+            <span class="material-symbols-outlined" style="font-size:14px;">add</span>Add Testimonial
+          </button>
+        </div>
+      `;
+      break;
+
+    case 'pricing':
+      fieldsHTML = `
+        ${fieldText('Section Title', 'section_title', d.section_title)}
+        ${fieldText('Section Subtitle', 'section_subtitle', d.section_subtitle)}
+        <div class="field-group">
+          <label class="field-label">Pricing Tiers</label>
+          <p class="field-hint mb-3">Tiers are managed in the Tiers tab. Select which ones to show here.</p>
+          <div id="selectedTiersDisplay" class="flex flex-wrap gap-2 mb-3">
+            ${(d.tier_ids || []).map(tid => {
+              const t = allTiers.find(x => x.id === tid);
+              return t ? `<span class="chip chip-pricing">${t.name} <button onclick="removeTierFromSection('${tid}')" class="ml-1 hover:text-tertiary">&times;</button></span>` : '';
+            }).join('')}
+            ${(d.tier_ids || []).length === 0 ? '<span class="font-body text-outline" style="font-size:12px;">No tiers selected</span>' : ''}
+          </div>
+          <button onclick="openTierPicker()" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-c text-on-surface-variant font-body font-semibold hover:bg-surface-chigh transition-colors" style="font-size:11px;">
+            <span class="material-symbols-outlined" style="font-size:14px;">workspace_premium</span>Select Tiers
+          </button>
+        </div>
+      `;
+      break;
+
+    case 'cta':
+      fieldsHTML = `
+        ${fieldText('Headline', 'headline', d.headline)}
+        ${fieldTextarea('Subheadline', 'subheadline', d.subheadline, '', 3)}
+        <div class="grid grid-cols-2 gap-4">
+          ${fieldText('CTA Text', 'cta_text', d.cta_text)}
+          ${fieldText('CTA Link', 'cta_link', d.cta_link)}
+        </div>
+        ${fieldImage('Background Image', 'background_image', d.background_image)}
+      `;
+      break;
+
+    case 'faq':
+      fieldsHTML = `
+        ${fieldText('Section Title', 'section_title', d.section_title)}
+        ${fieldText('Section Subtitle', 'section_subtitle', d.section_subtitle)}
+        <div class="field-group">
+          <label class="field-label">Questions</label>
+          <div id="repeater-faq-items">
+            ${(d.items || []).map((item, i) => faqItemHTML(i, item)).join('')}
+          </div>
+          <button onclick="addRepeaterItem('faq','items',faqItemHTML)" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-c text-on-surface-variant font-body font-semibold hover:bg-surface-chigh transition-colors" style="font-size:11px;">
+            <span class="material-symbols-outlined" style="font-size:14px;">add</span>Add Question
+          </button>
+        </div>
+      `;
+      break;
+
+    case 'gallery':
+      fieldsHTML = `
+        ${fieldText('Section Title', 'section_title', d.section_title)}
+        ${fieldText('Section Subtitle', 'section_subtitle', d.section_subtitle)}
+        <div class="field-group">
+          <label class="field-label">Gallery Images</label>
+          <p class="field-hint mb-3">Images are pulled from your Media Library.</p>
+          <div id="selectedGalleryDisplay" class="flex flex-wrap gap-2 mb-3">
+            ${(d.image_ids || []).map(imgId => {
+              const m = mediaLibrary.find(x => x.id === imgId);
+              return m ? `<div class="relative"><img src="${m.url}" class="img-thumb"><button onclick="removeGalleryImage('${imgId}')" class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-tertiary text-white flex items-center justify-center" style="font-size:10px;">&times;</button></div>` : '';
+            }).join('')}
+            ${(d.image_ids || []).length === 0 ? '<span class="font-body text-outline" style="font-size:12px;">No images selected</span>' : ''}
+          </div>
+          <button onclick="openGalleryPicker()" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-c text-on-surface-variant font-body font-semibold hover:bg-surface-chigh transition-colors" style="font-size:11px;">
+            <span class="material-symbols-outlined" style="font-size:14px;">photo_library</span>Select Images
+          </button>
+        </div>
+      `;
+      break;
+
+    case 'custom':
+      fieldsHTML = `
+        ${fieldText('Section Title (optional)', 'section_title', d.section_title)}
+        <div class="field-group">
+          <label class="field-label">HTML Content</label>
+          <textarea class="field-textarea font-mono" style="min-height:200px;font-size:12px;" data-field="html_content" oninput="markDirty()">${escapeHtml(d.html_content || '')}</textarea>
+          <p class="field-hint">Raw HTML. Be careful with scripts and iframes.</p>
+        </div>
+      `;
+      break;
+  }
+
+  panel.innerHTML = `
+    <div class="p-6 lg:p-8 max-w-3xl">
+      <div class="flex items-center gap-3 mb-6">
+        <span class="material-symbols-outlined text-primary" style="font-size:24px;">${type.icon}</span>
+        <div>
+          <h3 class="font-headline font-bold text-on-surface" style="font-size:18px;">${s.title || type.label}</h3>
+          <span class="chip ${type.chipClass}">${type.label}</span>
         </div>
       </div>
-      <div class="flex items-center gap-1 shrink-0">
-        <button onclick="toggleVisibility('${b.id}')" class="text-slate-400 hover:text-primary p-1">
-          <span class="material-symbols-outlined text-[18px]">${b.is_visible ? 'visibility' : 'visibility_off'}</span>
+
+      <div class="bg-surface-cl rounded-2xl p-6 shadow-ambient-sm">
+        ${fieldText('Section Title / Name', 'title', s.title, 'Internal name shown in the sidebar')}
+        <hr class="border-surface-chigh my-5">
+        ${fieldsHTML}
+      </div>
+
+      <div class="mt-6 flex items-center justify-between">
+        <button onclick="deleteSection('${s.id}')" class="flex items-center gap-1 px-3 py-2 rounded-lg text-tertiary hover:bg-red-50 font-body font-semibold transition-colors" style="font-size:12px;">
+          <span class="material-symbols-outlined" style="font-size:16px;">delete</span>Delete Section
         </button>
-        <button onclick="deleteBlock('${b.id}')" class="text-slate-400 hover:text-red-500 p-1">
-          <span class="material-symbols-outlined text-[18px]">delete</span>
+        <button onclick="saveAllSections()" class="flex items-center gap-1.5 px-5 py-2.5 rounded-lg signature-gradient text-on-primary font-headline font-semibold hover:shadow-ambient-sm transition-all active:scale-[0.97]" style="font-size:13px;">
+          <span class="material-symbols-outlined" style="font-size:16px;">save</span>Save Changes
         </button>
       </div>
-    `;
-    list.appendChild(div);
+    </div>
+  `;
+}
+
+function renderEmptyEditor() {
+  document.getElementById('editorPanel').innerHTML = `
+    <div class="empty-state h-full min-h-[400px]">
+      <span class="material-symbols-outlined text-outline-variant" style="font-size:48px;">web</span>
+      <p class="font-headline font-bold text-on-surface-variant mt-4" style="font-size:16px;">Select a section to edit</p>
+      <p class="font-body text-outline mt-1" style="font-size:13px;">Choose from the list on the left or add a new section</p>
+    </div>`;
+}
+
+// ─── FIELD BUILDERS ────────────────────────────────────────
+function fieldText(label, field, value, hint = '') {
+  return `
+    <div class="field-group">
+      <label class="field-label">${label}</label>
+      <input type="text" class="field-input" data-field="${field}" value="${escapeAttr(value || '')}" oninput="markDirty()">
+      ${hint ? `<p class="field-hint">${hint}</p>` : ''}
+    </div>`;
+}
+
+function fieldTextarea(label, field, value, hint = '', rows = 3) {
+  return `
+    <div class="field-group">
+      <label class="field-label">${label}</label>
+      <textarea class="field-textarea" data-field="${field}" rows="${rows}" oninput="markDirty()">${escapeHtml(value || '')}</textarea>
+      ${hint ? `<p class="field-hint">${hint}</p>` : ''}
+    </div>`;
+}
+
+function fieldImage(label, field, value) {
+  const preview = value ? `<img src="${value}" class="img-thumb mt-2">` : '';
+  return `
+    <div class="field-group">
+      <label class="field-label">${label}</label>
+      <div class="flex items-center gap-2">
+        <input type="text" class="field-input flex-1" data-field="${field}" value="${escapeAttr(value || '')}" oninput="markDirty()" placeholder="Image URL or pick from library">
+        <button onclick="openImagePicker('${field}')" class="flex items-center gap-1 px-3 py-2 rounded-lg bg-surface-c text-on-surface-variant font-body font-semibold hover:bg-surface-chigh transition-colors whitespace-nowrap" style="font-size:11px;">
+          <span class="material-symbols-outlined" style="font-size:14px;">image</span>Pick
+        </button>
+      </div>
+      <div id="preview-${field}">${preview}</div>
+    </div>`;
+}
+
+// ─── REPEATER ITEM BUILDERS ────────────────────────────────
+function featureItemHTML(i, item = {}) {
+  return `
+    <div class="repeater-item" data-index="${i}">
+      <div class="remove-btn" onclick="removeRepeaterItem('features','items',${i})"><span class="material-symbols-outlined" style="font-size:14px;">close</span></div>
+      <div class="grid grid-cols-3 gap-3">
+        <div class="field-group mb-0">
+          <label class="field-label">Icon</label>
+          <input type="text" class="field-input" data-repeater="features-items-${i}-icon" value="${escapeAttr(item.icon || '')}" placeholder="material icon" oninput="markDirty()">
+        </div>
+        <div class="field-group mb-0">
+          <label class="field-label">Title</label>
+          <input type="text" class="field-input" data-repeater="features-items-${i}-title" value="${escapeAttr(item.title || '')}" oninput="markDirty()">
+        </div>
+        <div class="field-group mb-0">
+          <label class="field-label">Description</label>
+          <input type="text" class="field-input" data-repeater="features-items-${i}-description" value="${escapeAttr(item.description || '')}" oninput="markDirty()">
+        </div>
+      </div>
+    </div>`;
+}
+
+function testimonialItemHTML(i, item = {}) {
+  return `
+    <div class="repeater-item" data-index="${i}">
+      <div class="remove-btn" onclick="removeRepeaterItem('testimonials','items',${i})"><span class="material-symbols-outlined" style="font-size:14px;">close</span></div>
+      <div class="field-group">
+        <label class="field-label">Quote</label>
+        <textarea class="field-textarea" data-repeater="testimonials-items-${i}-quote" rows="2" oninput="markDirty()">${escapeHtml(item.quote || '')}</textarea>
+      </div>
+      <div class="grid grid-cols-3 gap-3">
+        <div class="field-group mb-0">
+          <label class="field-label">Author</label>
+          <input type="text" class="field-input" data-repeater="testimonials-items-${i}-author" value="${escapeAttr(item.author || '')}" oninput="markDirty()">
+        </div>
+        <div class="field-group mb-0">
+          <label class="field-label">Role</label>
+          <input type="text" class="field-input" data-repeater="testimonials-items-${i}-role" value="${escapeAttr(item.role || '')}" oninput="markDirty()">
+        </div>
+        <div class="field-group mb-0">
+          <label class="field-label">Avatar URL</label>
+          <input type="text" class="field-input" data-repeater="testimonials-items-${i}-avatar" value="${escapeAttr(item.avatar || '')}" oninput="markDirty()">
+        </div>
+      </div>
+    </div>`;
+}
+
+function faqItemHTML(i, item = {}) {
+  return `
+    <div class="repeater-item" data-index="${i}">
+      <div class="remove-btn" onclick="removeRepeaterItem('faq','items',${i})"><span class="material-symbols-outlined" style="font-size:14px;">close</span></div>
+      <div class="field-group">
+        <label class="field-label">Question</label>
+        <input type="text" class="field-input" data-repeater="faq-items-${i}-question" value="${escapeAttr(item.question || '')}" oninput="markDirty()">
+      </div>
+      <div class="field-group mb-0">
+        <label class="field-label">Answer</label>
+        <textarea class="field-textarea" data-repeater="faq-items-${i}-answer" rows="2" oninput="markDirty()">${escapeHtml(item.answer || '')}</textarea>
+      </div>
+    </div>`;
+}
+
+// ─── REPEATER ACTIONS ──────────────────────────────────────
+function addRepeaterItem(sectionType, arrayKey, builderFn) {
+  const s = sections.find(x => x.id === activeSectionId);
+  if (!s) return;
+  if (!s.data[arrayKey]) s.data[arrayKey] = [];
+  const newIndex = s.data[arrayKey].length;
+  s.data[arrayKey].push({});
+  const container = document.getElementById(`repeater-${sectionType}-${arrayKey}`);
+  container.insertAdjacentHTML('beforeend', builderFn(newIndex, {}));
+  markDirty();
+}
+
+function removeRepeaterItem(sectionType, arrayKey, index) {
+  const s = sections.find(x => x.id === activeSectionId);
+  if (!s || !s.data[arrayKey]) return;
+  s.data[arrayKey].splice(index, 1);
+  renderEditor();
+  markDirty();
+}
+
+// ─── COLLECT EDITOR DATA ───────────────────────────────────
+function collectEditorData() {
+  const s = sections.find(x => x.id === activeSectionId);
+  if (!s) return;
+
+  // Collect simple fields
+  document.querySelectorAll('[data-field]').forEach(el => {
+    const key = el.dataset.field;
+    if (key === 'title') {
+      s.title = el.value;
+    } else {
+      if (!s.data) s.data = {};
+      s.data[key] = el.value;
+    }
   });
-}
 
-function handleDrop(e, targetId) {
-  e.preventDefault(); e.currentTarget.classList.remove('drag-over');
-  if (!draggedBlockId || draggedBlockId === targetId) return;
-
-  var draggedIdx = blocks.findIndex(b => b.id === draggedBlockId);
-  var targetIdx = blocks.findIndex(b => b.id === targetId);
-  
-  var moved = blocks.splice(draggedIdx, 1)[0];
-  blocks.splice(targetIdx, 0, moved);
-  
-  blocks.forEach((b, i) => b.sort_order = i + 1);
-  renderBlockList();
-}
-
-function selectBlock(id) {
-  activeBlockId = id;
-  renderBlockList();
-  
-  var block = blocks.find(b => b.id === id);
-  renderEditor(block);
-  
-  if (window.innerWidth < 1024) {
-    document.querySelector('.lg\\:flex').classList.remove('hidden');
+  // Collect repeater fields
+  const repeaterFields = document.querySelectorAll('[data-repeater]');
+  if (repeaterFields.length > 0) {
+    const grouped = {};
+    repeaterFields.forEach(el => {
+      const parts = el.dataset.repeater.split('-');
+      // e.g. "features-items-0-icon" → type=features, key=items, idx=0, field=icon
+      const type = parts[0];
+      const key = parts[1];
+      const idx = parseInt(parts[2]);
+      const field = parts.slice(3).join('-');
+      const gKey = `${type}-${key}`;
+      if (!grouped[gKey]) grouped[gKey] = {};
+      if (!grouped[gKey][idx]) grouped[gKey][idx] = {};
+      grouped[gKey][idx][field] = el.value;
+    });
+    Object.keys(grouped).forEach(gKey => {
+      const [type, key] = gKey.split('-');
+      const arr = Object.values(grouped[gKey]);
+      s.data[key] = arr;
+    });
   }
+}
+
+// ─── SECTION CRUD ──────────────────────────────────────────
+function openAddSectionModal() {
+  const grid = document.getElementById('sectionTypeGrid');
+  grid.innerHTML = Object.entries(SECTION_TYPES).map(([key, t]) => `
+    <button onclick="addSection('${key}')" class="flex flex-col items-center gap-2 p-4 rounded-xl border border-surface-chigh hover:border-primary hover:bg-primary/5 transition-all text-center">
+      <span class="material-symbols-outlined text-primary" style="font-size:28px;">${t.icon}</span>
+      <span class="font-headline font-bold text-on-surface" style="font-size:12px;">${t.label}</span>
+      <span class="font-body text-outline" style="font-size:10px;">${t.description}</span>
+    </button>
+  `).join('');
+  document.getElementById('addSectionModal').classList.add('open');
+}
+
+function closeAddSectionModal() {
+  document.getElementById('addSectionModal').classList.remove('open');
+}
+
+async function addSection(type) {
+  const t = SECTION_TYPES[type];
+  const newSection = {
+    section_type: type,
+    title: t.label,
+    data: JSON.parse(JSON.stringify(t.defaultData)),
+    sort_order: sections.length,
+    is_visible: true
+  };
+
+  // Optimistic add
+  const tempId = 'temp-' + Date.now();
+  newSection.id = tempId;
+  sections.push(newSection);
+  renderSectionList();
+  selectSection(tempId);
+  closeAddSectionModal();
+  markDirty();
+  showToast('Section added — save to persist', 'success');
 }
 
 function toggleVisibility(id) {
-  var b = blocks.find(x => x.id === id);
-  if(b) b.is_visible = !b.is_visible;
-  renderBlockList();
-}
-
-async function deleteBlock(id) {
-  if(!confirm("Remove this section from the page?")) return;
-  blocks = blocks.filter(b => b.id !== id);
-  await supabaseClient.from('page_blocks').delete().eq('id', id);
-  
-  if (activeBlockId === id) {
-    activeBlockId = null;
-    document.getElementById('editorContent').innerHTML = '<div class="text-center mt-20 text-slate-400"><p>Section deleted.</p></div>';
-  }
-  renderBlockList();
-  showToast("Section removed");
-}
-
-function openAddBlockModal() {
-  document.getElementById('addBlockModal').classList.remove('hidden');
-}
-
-function addBlock(type) {
-  var newId = 'block_' + Date.now();
-  var newBlock = {
-    id: newId,
-    type: type,
-    sort_order: blocks.length + 1,
-    is_visible: true,
-    content: Object.assign({}, BLOCK_DEFAULTS[type] || {})
-  };
-  
-  blocks.push(newBlock);
-  document.getElementById('addBlockModal').classList.add('hidden');
-  renderBlockList();
-  selectBlock(newId);
-}
-
-// ─── RIGHT PANE EDITOR ─────────────────────────────────────────────
-
-function renderEditor(block) {
-  var info = BLOCK_LABELS[block.type] || { name: 'Section', icon: 'web' };
-  var c = block.content;
-  var html = `
-    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-surface-c">
-      <span class="material-symbols-outlined text-primary text-2xl">${info.icon}</span>
-      <div>
-        <h3 class="font-headline font-bold text-xl text-slate-900">${info.name}</h3>
-        <p class="text-xs text-slate-500">Edit content for this block</p>
-      </div>
-    </div>
-  `;
-
-  if (block.type === 'hero') {
-    html += buildField('Headline', 'headline', c.headline, true);
-    html += buildField('Subheadline', 'subheadline', c.subheadline);
-    html += buildField('Button Text', 'cta_text', c.cta_text);
-    html += buildField('Button Link', 'cta_link', c.cta_link);
-    html += buildMediaDropdown('Background Image', 'bg_image', c.bg_image);
-  } else if (['missions', 'pricing', 'features'].includes(block.type)) {
-    html += `<div class="bg-blue-50 text-blue-800 p-4 rounded-xl text-xs font-bold mb-5 flex items-center gap-2 border border-blue-100"><span class="material-symbols-outlined">auto_awesome</span> This block automatically loads live data from your database!</div>`;
-    html += buildField('Eyebrow (Small Top Text)', 'eyebrow', c.eyebrow);
-    html += buildField('Main Heading', 'heading', c.heading);
-    html += buildField('Subheading', 'subheading', c.subheading, true);
-  } else if (block.type === 'cta') {
-    html += buildField('Eyebrow', 'eyebrow', c.eyebrow);
-    html += buildField('Heading', 'heading', c.heading);
-    html += buildField('Subheading', 'subheading', c.subheading);
-    html += buildField('Button Text', 'btn_text', c.btn_text);
-    html += buildField('Button Link', 'btn_link', c.btn_link);
-  } else if (block.type === 'stats') {
-    html += `<div class="bg-blue-50 text-blue-800 p-4 rounded-xl text-xs font-bold mb-5 flex items-center gap-2 border border-blue-100"><span class="material-symbols-outlined">auto_awesome</span> Counters automatically update based on live app usage.</div>`;
-    html += buildField('Heading', 'heading', c.heading);
-  }
-
-  document.getElementById('editorContent').innerHTML = html;
-}
-
-function buildField(label, key, val, isTextarea = false) {
-  var v = escapeHtml(val || '');
-  var inputHtml = isTextarea 
-    ? `<textarea rows="3" class="w-full form-input rounded-xl px-4 py-3 text-sm font-medium resize-none" oninput="updateContent('${key}', this.value)">${v}</textarea>`
-    : `<input type="text" class="w-full form-input rounded-xl px-4 py-3 text-sm font-semibold" value="${v}" oninput="updateContent('${key}', this.value)">`;
-
-  return `
-    <div class="bg-white rounded-2xl p-5 shadow-sm border border-surface-c mb-4">
-      <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">${label}</label>
-      ${inputHtml}
-    </div>
-  `;
-}
-
-function buildMediaDropdown(label, key, val) {
-  var options = `<option value="">Default / None</option>`;
-  mediaOptions.forEach(m => {
-    options += `<option value="${m.url}" ${val === m.url ? 'selected' : ''}>${m.label}</option>`;
-  });
-
-  return `
-    <div class="bg-white rounded-2xl p-5 shadow-sm border border-surface-c mb-4">
-      <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">${label}</label>
-      <select class="w-full form-input rounded-xl px-4 py-3 text-sm font-semibold cursor-pointer" onchange="updateContent('${key}', this.value)">
-        ${options}
-      </select>
-      <p class="text-[10px] text-primary font-bold mt-2 hover:underline"><a href="manage-media.html">Upload more via Media Library</a></p>
-    </div>
-  `;
-}
-
-function updateContent(key, value) {
-  if (!activeBlockId) return;
-  var block = blocks.find(b => b.id === activeBlockId);
-  if (block) {
-    block.content[key] = value;
-    if (key === 'heading' || key === 'headline') renderBlockList(); 
+  const s = sections.find(x => x.id === id);
+  if (s) {
+    s.is_visible = !s.is_visible;
+    renderSectionList();
+    markDirty();
   }
 }
 
-function saveCurrentFormToMemory() {
-  var inputs = document.querySelectorAll('#editorContent input, #editorContent textarea, #editorContent select');
-  inputs.forEach(input => {
-    if (input.id && activeBlockId) {
-      var block = blocks.find(b => b.id === activeBlockId);
-      if (block) block.content[input.id] = input.value;
-    }
-  });
+function duplicateSection(id) {
+  const s = sections.find(x => x.id === id);
+  if (!s) return;
+  const dup = JSON.parse(JSON.stringify(s));
+  dup.id = 'temp-' + Date.now();
+  dup.title = s.title + ' (copy)';
+  dup.sort_order = sections.length;
+  sections.push(dup);
+  renderSectionList();
+  selectSection(dup.id);
+  markDirty();
 }
 
-// ─── SAVE EVERYTHING ───────────────────────────────────────────────
+async function deleteSection(id) {
+  if (!confirm('Delete this section?')) return;
+  sections = sections.filter(x => x.id !== id);
+  if (activeSectionId === id) {
+    activeSectionId = null;
+    renderEmptyEditor();
+  }
+  renderSectionList();
+  markDirty();
+  showToast('Section removed — save to persist', 'success');
+}
 
-async function saveAll() {
-  saveCurrentFormToMemory();
+// ─── DRAG & DROP REORDER ──────────────────────────────────
+let dragIndex = null;
 
-  var btn = document.getElementById('saveBtn');
-  var icon = document.getElementById('saveIcon');
-  btn.disabled = true; icon.classList.add('spin'); icon.textContent = 'progress_activity';
+function onDragStart(e, i) {
+  dragIndex = i;
+  e.dataTransfer.effectAllowed = 'move';
+  e.target.style.opacity = '0.5';
+}
 
-  // 1. Save Page Background Color Setting
-  await supabaseClient.from('site_settings').upsert({
-    id: 'page_bg_color',
-    value: selectedBgColor,
-    updated_at: new Date().toISOString()
-  });
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
 
-  // 2. Save Page Blocks
-  var payload = blocks.map(b => ({
-    id: b.id,
-    type: b.type,
-    sort_order: b.sort_order,
-    is_visible: b.is_visible,
-    content: b.content,
-    updated_at: new Date().toISOString()
-  }));
+function onDrop(e, targetIndex) {
+  e.preventDefault();
+  if (dragIndex === null || dragIndex === targetIndex) return;
+  const [moved] = sections.splice(dragIndex, 1);
+  sections.splice(targetIndex, 0, moved);
+  sections.forEach((s, i) => s.sort_order = i);
+  renderSectionList();
+  markDirty();
+}
 
-  const { error } = await supabaseClient.from('page_blocks').upsert(payload);
+function onDragEnd(e) {
+  e.target.style.opacity = '1';
+  dragIndex = null;
+}
 
-  btn.disabled = false; icon.classList.remove('spin'); icon.textContent = 'save';
+// ─── IMAGE PICKER ──────────────────────────────────────────
+function openImagePicker(field) {
+  imagePickerTarget = { sectionId: activeSectionId, field };
+  selectedImageId = null;
+  const grid = document.getElementById('imagePickerGrid');
 
-  if (error) {
-    console.error(error);
-    showToast('Error publishing changes', true);
+  if (mediaLibrary.length === 0) {
+    grid.innerHTML = `<div class="col-span-full text-center py-8"><p class="font-body text-outline" style="font-size:13px;">No images in Media Library yet.</p><a href="manage-media.html" class="text-primary font-semibold hover:underline" style="font-size:12px;">Upload images →</a></div>`;
   } else {
-    showToast('Website updated & published!');
+    grid.innerHTML = mediaLibrary.map(m => `
+      <div onclick="selectImage('${m.id}')" class="cursor-pointer">
+        <img src="${m.url}" class="img-thumb w-full h-20 object-cover" id="imgpick-${m.id}">
+        <p class="font-body text-outline truncate mt-1" style="font-size:9px;">${m.name || 'image'}</p>
+      </div>
+    `).join('');
+  }
+  document.getElementById('imagePickerModal').classList.add('open');
+}
+
+function selectImage(id) {
+  selectedImageId = id;
+  document.querySelectorAll('#imagePickerGrid .img-thumb').forEach(el => el.classList.remove('selected'));
+  const el = document.getElementById('imgpick-' + id);
+  if (el) el.classList.add('selected');
+}
+
+function confirmImagePick() {
+  if (!selectedImageId || !imagePickerTarget) return;
+  const m = mediaLibrary.find(x => x.id === selectedImageId);
+  if (!m) return;
+
+  const s = sections.find(x => x.id === imagePickerTarget.sectionId);
+  if (s) {
+    s.data[imagePickerTarget.field] = m.url;
+    renderEditor();
+    markDirty();
+  }
+  closeImagePicker();
+}
+
+function closeImagePicker() {
+  document.getElementById('imagePickerModal').classList.remove('open');
+  imagePickerTarget = null;
+}
+
+// ─── GALLERY PICKER (reuses image picker) ──────────────────
+function openGalleryPicker() {
+  imagePickerTarget = { sectionId: activeSectionId, field: '__gallery__' };
+  selectedImageId = null;
+  const grid = document.getElementById('imagePickerGrid');
+
+  if (mediaLibrary.length === 0) {
+    grid.innerHTML = `<div class="col-span-full text-center py-8"><p class="font-body text-outline" style="font-size:13px;">No images in Media Library yet.</p></div>`;
+  } else {
+    const s = sections.find(x => x.id === activeSectionId);
+    const currentIds = s?.data?.image_ids || [];
+    grid.innerHTML = mediaLibrary.map(m => {
+      const isSelected = currentIds.includes(m.id);
+      return `
+        <div onclick="toggleGalleryImage('${m.id}')" class="cursor-pointer">
+          <img src="${m.url}" class="img-thumb w-full h-20 object-cover ${isSelected ? 'selected' : ''}" id="imgpick-${m.id}">
+        </div>`;
+    }).join('');
+  }
+  document.getElementById('imagePickerModal').classList.add('open');
+}
+
+function toggleGalleryImage(id) {
+  const el = document.getElementById('imgpick-' + id);
+  if (el) el.classList.toggle('selected');
+}
+
+function confirmImagePick_override() {
+  // This is handled by confirmTierPick / confirmGalleryPick
+}
+
+// Override confirm for gallery mode
+const origConfirmImagePick = confirmImagePick;
+confirmImagePick = function() {
+  if (imagePickerTarget?.field === '__gallery__') {
+    const s = sections.find(x => x.id === imagePickerTarget.sectionId);
+    if (!s) return;
+    const selected = [];
+    document.querySelectorAll('#imagePickerGrid .img-thumb.selected').forEach(el => {
+      const id = el.id.replace('imgpick-', '');
+      selected.push(id);
+    });
+    s.data.image_ids = selected;
+    renderEditor();
+    markDirty();
+    closeImagePicker();
+  } else {
+    origConfirmImagePick();
+  }
+};
+
+function removeGalleryImage(imgId) {
+  const s = sections.find(x => x.id === activeSectionId);
+  if (!s) return;
+  s.data.image_ids = (s.data.image_ids || []).filter(id => id !== imgId);
+  renderEditor();
+  markDirty();
+}
+
+// ─── TIER PICKER ───────────────────────────────────────────
+function openTierPicker() {
+  tierPickerTarget = activeSectionId;
+  const s = sections.find(x => x.id === activeSectionId);
+  selectedTierIds = [...(s?.data?.tier_ids || [])];
+  const list = document.getElementById('tierPickerList');
+
+  if (allTiers.length === 0) {
+    list.innerHTML = `<div class="text-center py-8"><p class="font-body text-outline" style="font-size:13px;">No tiers found.</p><a href="manage-tiers.html" class="text-primary font-semibold hover:underline" style="font-size:12px;">Create tiers →</a></div>`;
+  } else {
+    list.innerHTML = allTiers.map(t => {
+      const checked = selectedTierIds.includes(t.id);
+      return `
+        <label class="flex items-center gap-3 p-3 rounded-lg border border-surface-chigh hover:bg-surface-clow cursor-pointer transition-colors">
+          <input type="checkbox" value="${t.id}" ${checked ? 'checked' : ''} onchange="toggleTierSelection('${t.id}')" class="accent-primary w-4 h-4">
+          <div class="flex-1">
+            <p class="font-headline font-bold text-on-surface" style="font-size:13px;">${t.name}</p>
+            <p class="font-body text-outline" style="font-size:11px;">${t.price ? '$' + t.price : 'Free'}${t.description ? ' · ' + t.description : ''}</p>
+          </div>
+        </label>`;
+    }).join('');
+  }
+  document.getElementById('tierPickerModal').classList.add('open');
+}
+
+function toggleTierSelection(id) {
+  if (selectedTierIds.includes(id)) {
+    selectedTierIds = selectedTierIds.filter(x => x !== id);
+  } else {
+    selectedTierIds.push(id);
   }
 }
 
-function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
-
-function showToast(msg, isErr=false) {
-  var t = document.getElementById('toast');
-  document.getElementById('toastMsg').textContent = msg;
-  t.querySelector('span').textContent = isErr ? 'error' : 'check_circle';
-  t.querySelector('span').className = 'material-symbols-outlined ' + (isErr ? 'text-red-400' : 'text-green-400');
-  t.classList.remove('hidden'); t.classList.add('flex');
-  setTimeout(() => { t.classList.add('hidden'); t.classList.remove('flex'); }, 3000);
+function confirmTierPick() {
+  const s = sections.find(x => x.id === tierPickerTarget);
+  if (s) {
+    s.data.tier_ids = [...selectedTierIds];
+    renderEditor();
+    markDirty();
+  }
+  closeTierPicker();
 }
 
+function closeTierPicker() {
+  document.getElementById('tierPickerModal').classList.remove('open');
+  tierPickerTarget = null;
+}
+
+function removeTierFromSection(tid) {
+  const s = sections.find(x => x.id === activeSectionId);
+  if (!s) return;
+  s.data.tier_ids = (s.data.tier_ids || []).filter(id => id !== tid);
+  renderEditor();
+  markDirty();
+}
+
+// ─── SAVE ──────────────────────────────────────────────────
+async function saveAllSections() {
+  collectEditorData();
+
+  const btn = document.getElementById('saveBtn');
+  const btnText = document.getElementById('saveBtnText');
+  btn.disabled = true;
+  btnText.textContent = 'Saving...';
+
+  try {
+    // Upsert each section
+    for (let i = 0; i < sections.length; i++) {
+      const s = sections[i];
+      s.sort_order = i;
+
+      const payload = {
+        section_type: s.section_type,
+        title: s.title,
+        data: s.data,
+        sort_order: s.sort_order,
+        is_visible: s.is_visible,
+        updated_at: new Date().toISOString()
+      };
+
+      if (s.id.startsWith('temp-')) {
+        // Insert new
+        const { data, error } = await supabaseClient
+          .from('landing_sections')
+          .insert(payload)
+          .select()
+          .single();
+        if (error) throw error;
+        s.id = data.id;
+      } else {
+        // Update existing
+        const { error } = await supabaseClient
+          .from('landing_sections')
+          .update(payload)
+          .eq('id', s.id);
+        if (error) throw error;
+      }
+    }
+
+    // Delete sections that were removed (check DB vs local)
+    const { data: dbSections } = await supabaseClient.from('landing_sections').select('id');
+    if (dbSections) {
+      const localIds = new Set(sections.map(s => s.id));
+      const toDelete = dbSections.filter(d => !localIds.has(d.id)).map(d => d.id);
+      if (toDelete.length > 0) {
+        await supabaseClient.from('landing_sections').delete().in('id', toDelete);
+      }
+    }
+
+    isDirty = false;
+    renderSectionList();
+    showToast('All changes saved successfully', 'success');
+  } catch (err) {
+    console.error('Save error:', err);
+    showToast('Error saving: ' + err.message, 'error');
+  }
 init();
 </script>
 </body>
