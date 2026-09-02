@@ -5,10 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Impact — Command Center</title>
   
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Fonts & Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Lora:ital@1&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
   
+  <!-- Supabase JS Client SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <script>
     tailwind.config = {
       theme: {
@@ -38,7 +43,7 @@
 
     .dash-card { background: white; border-radius: 24px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; }
     .time-toggle { display: flex; background: #f1f5f9; border-radius: 12px; padding: 4px; }
-    .time-btn { flex: 1; padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; color: #64748b; text-align: center; transition: all 0.2s; cursor: pointer; }
+    .time-btn { flex: 1; padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; color: #64748b; text-align: center; transition: all 0.2s; cursor: pointer; border: none; }
     .time-btn.active { background: white; color: #0f172a; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
     
     /* Floating Avatar Effect */
@@ -53,7 +58,7 @@
     <div class="flex items-center gap-3">
       <!-- Brand Logo -->
       <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-      <img src="/images/icon/icon-light-512.png" alt="GSTW" class="w-8 h-8 rounded-lg object-contain">
+        <img src="/images/icon/icon-light-512.png" alt="GSTW" class="w-8 h-8 rounded-lg object-contain" onerror="this.src='https://placehold.co/64x64/3d6285/white?text=I'">
       </div>
       <h1 class="font-headline font-extrabold text-lg text-slate-900">Impact</h1>
     </div>
@@ -81,25 +86,25 @@
 
     <!-- Text Info (Right Side) -->
     <div class="flex-1 z-10">
-      <!-- 1. Avatar Name (Nickname) -->
-      <h2 id="userNameDisplay" class="font-headline font-black text-2xl text-slate-900 leading-tight">Marcus</h2>
+      <!-- Avatar Name (Nickname) -->
+      <h2 id="userNameDisplay" class="font-headline font-black text-2xl text-slate-900 leading-tight">Loading...</h2>
       
-      <!-- 2. Journey Name -->
-      <p id="journeyNameDisplay" class="font-headline font-bold text-gold text-sm mt-1 uppercase tracking-widest">The Servant</p>
+      <!-- Journey Name -->
+      <p id="journeyNameDisplay" class="font-headline font-bold text-gold text-sm mt-1 uppercase tracking-widest">---</p>
       
-      <!-- 3. Avatar Title (Stage) -->
-      <p id="avatarTitleDisplay" class="text-[10px] font-bold text-slate-400 uppercase mt-1">Stage 2</p>
+      <!-- Avatar Title (Stage) -->
+      <p id="avatarTitleDisplay" class="text-[10px] font-bold text-slate-400 uppercase mt-1">Stage 0</p>
 
       <!-- Progress Bar Area -->
       <div class="mt-4 space-y-1">
         <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase">
-          <span id="nextRankName">Next: The Disciple</span>
-          <span id="mythicProgressText">1/2 Mythic</span>
+          <span id="nextRankName">Next: ...</span>
+          <span id="mythicProgressText">0/0 Mythic</span>
         </div>
         <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-          <div id="mythicProgressBar" class="h-full bg-gradient-to-r from-primary to-gold rounded-full" style="width: 50%"></div>
+          <div id="mythicProgressBar" class="h-full bg-gradient-to-r from-primary to-gold rounded-full" style="width: 0%"></div>
         </div>
-        <p class="text-[10px] text-slate-500 mt-1">Earn 1 more Mythic Trophy to evolve.</p>
+        <p id="mythicProgressSubtext" class="text-[10px] text-slate-500 mt-1">...</p>
       </div>
     </div>
   </section>
@@ -112,31 +117,31 @@
       <!-- Common -->
       <div class="rounded-2xl p-3 text-center bg-slate-400 text-white">
         <p class="text-[8px] font-black uppercase tracking-widest opacity-80">Common</p>
-        <p id="tierCommon" class="font-headline font-black text-xl mt-1">3</p>
+        <p id="tierCommon" class="font-headline font-black text-xl mt-1">-</p>
       </div>
 
       <!-- Uncommon -->
       <div class="rounded-2xl p-3 text-center bg-green-500 text-white">
         <p class="text-[8px] font-black uppercase tracking-widest opacity-80">Uncommon</p>
-        <p id="tierUncommon" class="font-headline font-black text-xl mt-1">2</p>
+        <p id="tierUncommon" class="font-headline font-black text-xl mt-1">-</p>
       </div>
 
       <!-- Rare -->
       <div class="rounded-2xl p-3 text-center bg-blue-500 text-white">
         <p class="text-[8px] font-black uppercase tracking-widest opacity-80">Rare</p>
-        <p id="tierRare" class="font-headline font-black text-xl mt-1">1</p>
+        <p id="tierRare" class="font-headline font-black text-xl mt-1">-</p>
       </div>
 
       <!-- Epic -->
       <div class="rounded-2xl p-3 text-center bg-purple-500 text-white">
         <p class="text-[8px] font-black uppercase tracking-widest opacity-80">Epic</p>
-        <p id="tierEpic" class="font-headline font-black text-xl mt-1">0</p>
+        <p id="tierEpic" class="font-headline font-black text-xl mt-1">-</p>
       </div>
 
       <!-- Mythic -->
       <div class="rounded-2xl p-3 text-center bg-amber-500 text-white">
         <p class="text-[8px] font-black uppercase tracking-widest opacity-80">Mythic</p>
-        <p id="tierMythic" class="font-headline font-black text-xl mt-1">1</p>
+        <p id="tierMythic" class="font-headline font-black text-xl mt-1">-</p>
       </div>
 
     </div>
@@ -147,35 +152,35 @@
     <div class="flex justify-between items-center mb-3 px-1 gap-3">
       <h3 class="font-headline font-bold text-lg text-slate-900">Personal Impact</h3>
       <div class="time-toggle">
-        <button type="button" class="time-btn">Week</button>
-        <button type="button" class="time-btn active">All Time</button>
+        <button type="button" id="timeBtnWeek" class="time-btn">Week</button>
+        <button type="button" id="timeBtnAll" class="time-btn active">All Time</button>
       </div>
     </div>
     <div class="grid grid-cols-3 gap-3">
       <div class="dash-card !p-4 text-center">
-        <p class="font-headline font-black text-2xl text-slate-900">142</p>
-        <p id="statShares" class="text-[9px] font-bold text-slate-400 uppercase mt-1">Shares</p>
+        <p id="numShares" class="font-headline font-black text-2xl text-slate-900">-</p>
+        <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Shares</p>
       </div>
       <div class="dash-card !p-4 text-center">
-        <p class="font-headline font-black text-2xl text-slate-900">12</p>
-        <p id="statRecruits" class="text-[9px] font-bold text-slate-400 uppercase mt-1">Recruits</p>
+        <p id="numRecruits" class="font-headline font-black text-2xl text-slate-900">-</p>
+        <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Recruits</p>
       </div>
       <div class="dash-card !p-4 text-center">
-        <p class="font-headline font-black text-2xl text-gold">4</p>
-        <p id="statNations" class="text-[9px] font-bold text-slate-400 uppercase mt-1">Nations</p>
+        <p id="numNations" class="font-headline font-black text-2xl text-gold">-</p>
+        <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Nations</p>
       </div>
       <!-- New Row -->
       <div class="dash-card !p-4 text-center">
-        <p class="font-headline font-black text-2xl text-slate-900">8</p>
-        <p id="statBadges" class="text-[9px] font-bold text-slate-400 uppercase mt-1">Badges</p>
+        <p id="numBadges" class="font-headline font-black text-2xl text-slate-900">-</p>
+        <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Badges</p>
       </div>
       <div class="dash-card !p-4 text-center">
-        <p class="font-headline font-black text-2xl text-slate-900">2</p>
-        <p id="statMissions" class="text-[9px] font-bold text-slate-400 uppercase mt-1">Missions</p>
+        <p id="numMissions" class="font-headline font-black text-2xl text-slate-900">-</p>
+        <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Missions</p>
       </div>
       <div class="dash-card !p-4 text-center">
-        <p class="font-headline font-black text-2xl text-slate-900">7</p>
-        <p id="statTrophies" class="text-[9px] font-bold text-slate-400 uppercase mt-1">Trophies</p>
+        <p id="numTrophies" class="font-headline font-black text-2xl text-slate-900">-</p>
+        <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Trophies</p>
       </div>
     </div>
   </section>
@@ -183,34 +188,8 @@
   <!-- PLATFORM BREAKDOWN -->
   <section>
     <h3 class="font-headline font-bold text-lg mb-3 px-1">Your Best Platforms</h3>
-    <div class="dash-card space-y-4">
-      <div>
-        <div class="flex justify-between text-xs font-bold mb-1">
-          <span class="text-slate-700">WhatsApp</span>
-          <span class="text-slate-500">80 shares</span>
-        </div>
-        <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-          <div class="h-full bg-green-500 rounded-full" style="width: 80%"></div>
-        </div>
-      </div>
-      <div>
-        <div class="flex justify-between text-xs font-bold mb-1">
-          <span class="text-slate-700">Instagram</span>
-          <span class="text-slate-500">40 shares</span>
-        </div>
-        <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-          <div class="h-full bg-pink-500 rounded-full" style="width: 40%"></div>
-        </div>
-      </div>
-      <div>
-        <div class="flex justify-between text-xs font-bold mb-1">
-          <span class="text-slate-700">Copy Link</span>
-          <span class="text-slate-500">22 shares</span>
-        </div>
-        <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-          <div class="h-full bg-slate-400 rounded-full" style="width: 22%"></div>
-        </div>
-      </div>
+    <div id="platformBreakdownContainer" class="dash-card space-y-4">
+      <p class="text-xs text-slate-400 py-2 text-center">Calculating performance...</p>
     </div>
   </section>
 
@@ -223,52 +202,21 @@
       <div class="flex items-center gap-2 mb-4">
         <span class="material-symbols-outlined text-primary text-[20px] filled">share</span>
         <h4 class="font-headline font-bold text-sm">Top Sharers</h4>
-        <span class="ml-auto bg-primary/10 text-primary text-[9px] font-black px-2 py-1 rounded-full">YOU: #14</span>
+        <span id="userShareRankBadge" class="ml-auto bg-primary/10 text-primary text-[9px] font-black px-2 py-1 rounded-full">YOU: --</span>
       </div>
-      <div class="space-y-3">
-        <div class="flex items-center gap-3">
-          <span class="font-headline font-black text-gold text-lg w-6">1</span>
-          <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-bold text-xs">SJ</div>
-          <div class="flex-1">
-            <p class="font-bold text-sm">Sarah Jenkins</p>
-            <p class="text-[10px] text-slate-400">42 shares</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-3">
-          <span class="font-headline font-black text-slate-400 text-lg w-6">2</span>
-          <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-bold text-xs">DM</div>
-          <div class="flex-1">
-            <p class="font-bold text-sm">David Miller</p>
-            <p class="text-[10px] text-slate-400">38 shares</p>
-          </div>
-        </div>
-        <!-- Current User Highlight -->
-        <div class="flex items-center gap-3 bg-primary/5 -mx-2 px-2 py-2 rounded-lg">
-          <span class="font-headline font-black text-primary text-lg w-6">14</span>
-          <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs">M</div>
-          <div class="flex-1">
-            <p class="font-bold text-sm text-primary">Marcus (You)</p>
-            <p class="text-[10px] text-primary/60">12 shares</p>
-          </div>
-        </div>
+      <div id="topSharersContainer" class="space-y-3">
+        <!-- Rendered dynamically -->
       </div>
     </div>
 
     <!-- Top Recruiters -->
     <div class="dash-card">
       <div class="flex items-center gap-2 mb-4">
-        <span class="material-symbols-outlined text-secondary text-[20px] filled">group_add</span>
+        <span class="material-symbols-outlined text-emerald-500 text-[20px] filled">group_add</span>
         <h4 class="font-headline font-bold text-sm">Top Recruiters</h4>
       </div>
-      <div class="space-y-3">
-        <div class="flex items-center gap-3">
-          <span class="font-headline font-black text-gold text-lg w-6">1</span>
-          <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-bold text-xs">JT</div>
-          <div class="flex-1">
-            <p class="font-bold text-sm">John Thomas</p>
-            <p class="text-[10px] text-slate-400">8 warriors</p>
-          </div>
-        </div>
+      <div id="topRecruitersContainer" class="space-y-3">
+        <!-- Rendered dynamically -->
       </div>
     </div>
   </section>
@@ -282,18 +230,18 @@
         <div class="flex justify-between items-end mb-4">
           <div>
             <p class="text-[10px] font-black text-gold uppercase tracking-widest">Your contribution</p>
-            <h2 class="font-headline font-black text-3xl mt-1 text-slate-900">$45.00</h2>
+            <h2 id="numTotalContribution" class="font-headline font-black text-3xl mt-1 text-slate-900">$0.00</h2>
           </div>
           <span class="material-symbols-outlined text-gold filled text-3xl">savings</span>
         </div>
         <!-- Visual Split Bar -->
         <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex mb-2">
-          <div class="h-full bg-primary" style="width: 60%"></div>
-          <div class="h-full bg-gold" style="width: 40%"></div>
+          <div id="kingdomSplitSubs" class="h-full bg-primary" style="width: 0%"></div>
+          <div id="kingdomSplitGifts" class="h-full bg-gold" style="width: 0%"></div>
         </div>
         <div class="flex justify-between text-[10px] font-bold text-slate-400">
-          <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-primary"></div> Subs ($27)</span>
-          <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-gold"></div> Gifts ($18)</span>
+          <span id="numSubsContribution" class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-primary"></div> Subs ($0)</span>
+          <span id="numGiftsContribution" class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-gold"></div> Gifts ($0)</span>
         </div>
       </div>
     </div>
@@ -304,27 +252,23 @@
     <h3 class="font-headline font-bold text-lg mb-3 px-1">Global Impact</h3>
     <div class="grid grid-cols-3 gap-3 mb-4">
       <div class="dash-card !p-3 text-center">
-        <p class="font-headline font-black text-xl text-slate-900">12.5k</p>
+        <p id="numGlobalShares" class="font-headline font-black text-xl text-slate-900">-</p>
         <p class="text-[8px] font-bold text-slate-400 uppercase mt-1">Shares</p>
       </div>
       <div class="dash-card !p-3 text-center">
-        <p class="font-headline font-black text-xl text-slate-900">840</p>
+        <p id="numGlobalWarriors" class="font-headline font-black text-xl text-slate-900">-</p>
         <p class="text-[8px] font-bold text-slate-400 uppercase mt-1">Warriors</p>
       </div>
       <div class="dash-card !p-3 text-center">
-        <p class="font-headline font-black text-xl text-gold">42</p>
+        <p id="numGlobalNations" class="font-headline font-black text-xl text-gold">-</p>
         <p class="text-[8px] font-bold text-slate-400 uppercase mt-1">Nations</p>
       </div>
     </div>
 
     <div class="dash-card">
       <h4 class="font-headline font-bold text-sm mb-3">Nations in the Field</h4>
-      <div class="flex flex-wrap gap-2">
-        <span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-3 py-1.5 rounded-full">🇺🇸 USA</span>
-        <span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-3 py-1.5 rounded-full">🇬🇧 UK</span>
-        <span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-3 py-1.5 rounded-full">🇰🇪 Kenya</span>
-        <span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-3 py-1.5 rounded-full">🇦🇺 Australia</span>
-        <span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-3 py-1.5 rounded-full">🇨 Canada</span>
+      <div id="globalNationsContainer" class="flex flex-wrap gap-2">
+        <!-- Loaded dynamically -->
       </div>
     </div>
   </section>
@@ -354,25 +298,59 @@
 </nav>
 
 <script>
-  document.querySelectorAll('.time-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-      this.parentElement.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-    });
-  });
-  
-</script>
-<script>
-var supabaseClient = supabase.createClient(
+// --- INITIALIZE SUPABASE CLIENT ---
+const supabaseClient = supabase.createClient(
   'https://nhymadutuhpjgkiurify.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
 );
 
-var currentUser = null;
-var userProfile = null;
-var currentTimeframe = 'all';
+let currentUser = null;
+let userProfile = null;
+let currentTimeframe = 'all';
 
-// UI Toggle Logic
+// --- FRAMEWORK-FREE DOM SELECTORS ---
+const elements = {
+  userName: document.getElementById('userNameDisplay'),
+  journeyName: document.getElementById('journeyNameDisplay'),
+  avatarTitle: document.getElementById('avatarTitleDisplay'),
+  nextRank: document.getElementById('nextRankName'),
+  progressText: document.getElementById('mythicProgressText'),
+  progressSubtext: document.getElementById('mythicProgressSubtext'),
+  progressBar: document.getElementById('mythicProgressBar'),
+  avatarImg: document.getElementById('heroAvatarImg'),
+  avatarFallback: document.getElementById('avatarFallback'),
+  
+  tierCommon: document.getElementById('tierCommon'),
+  tierUncommon: document.getElementById('tierUncommon'),
+  tierRare: document.getElementById('tierRare'),
+  tierEpic: document.getElementById('tierEpic'),
+  tierMythic: document.getElementById('tierMythic'),
+
+  numShares: document.getElementById('numShares'),
+  numRecruits: document.getElementById('numRecruits'),
+  numNations: document.getElementById('numNations'),
+  numBadges: document.getElementById('numBadges'),
+  numMissions: document.getElementById('numMissions'),
+  numTrophies: document.getElementById('numTrophies'),
+
+  platformsContainer: document.getElementById('platformBreakdownContainer'),
+  topSharers: document.getElementById('topSharersContainer'),
+  topRecruiters: document.getElementById('topRecruitersContainer'),
+  userShareRank: document.getElementById('userShareRankBadge'),
+
+  totalContribution: document.getElementById('numTotalContribution'),
+  subsContribution: document.getElementById('numSubsContribution'),
+  giftsContribution: document.getElementById('numGiftsContribution'),
+  splitSubs: document.getElementById('kingdomSplitSubs'),
+  splitGifts: document.getElementById('kingdomSplitGifts'),
+
+  globalShares: document.getElementById('numGlobalShares'),
+  globalWarriors: document.getElementById('numGlobalWarriors'),
+  globalNations: document.getElementById('numGlobalNations'),
+  globalNationsFlags: document.getElementById('globalNationsContainer')
+};
+
+// Toggle handler
 document.querySelectorAll('.time-btn').forEach(btn => {
   btn.addEventListener('click', function() {
     this.parentElement.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
@@ -383,152 +361,398 @@ document.querySelectorAll('.time-btn').forEach(btn => {
 });
 
 async function init() {
-  var s = await supabaseClient.auth.getSession();
-  if (!s.data.session) { window.location.href = 'login.html'; return; }
-  currentUser = s.data.session.user;
+  const sessionData = await supabaseClient.auth.getSession();
+  if (!sessionData.data.session) {
+    window.location.href = 'login.html';
+    return;
+  }
+  currentUser = sessionData.data.session.user;
   await loadImpactData();
+  await loadGlobalStats(); // Run once (All Time stats)
 }
 
 function getSinceDate() {
-  if (currentTimeframe !== 'week') return '1970-01-01';
-  var d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString();
+  if (currentTimeframe !== 'week') return '1970-01-01T00:00:00Z';
+  const d = new Date();
+  d.setDate(d.getDate() - 7);
+  return d.toISOString();
 }
 
 async function loadImpactData() {
-  var sinceISO = getSinceDate();
+  const sinceISO = getSinceDate();
 
-  // 1. Fetch User Profile
-  var { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-  userProfile = profile || {};
+  // 1. Fetch User Profile & Subscription Tier details
+  const { data: profile } = await supabaseClient
+    .from('profiles')
+    .select(`*, subscription_tiers(*), recruited:profiles!recruited_by(id, country, created_at)`)
+    .eq('id', currentUser.id)
+    .single();
 
-  // 2. Fetch All Data in Parallel
-  var [sharesRes, recruitsRes, globalRes, trophiesRes, avatarsRes, donationsRes] = await Promise.all([
-    supabaseClient.from('shares').select('platform, created_at').eq('user_id', currentUser.id).gte('created_at', sinceISO),
-    supabaseClient.from('profiles').select('id', { count: 'exact', head: true }).eq('referred_by', currentUser.id).gte('created_at', sinceISO),
-    supabaseClient.from('profiles').select('country', { count: 'exact', head: true }).not('country', 'is', null),
-    supabaseClient.from('user_trophy_progress').select('*, trophy_definitions!inner(type, stat_type), trophy_tiers!inner(tier_level, threshold)').eq('user_id', currentUser.id),
+  if (!profile) return;
+  userProfile = profile;
+
+  // 2. Process Personal Recruits (Apply timeframe filter)
+  const recruitsList = (userProfile.recruited || []).filter(r => r.created_at >= sinceISO);
+  const recruitsCount = recruitsList.length;
+
+  // Calculate Foreign Recruits dynamically (ignoring recruits from user's own country)
+  const foreignNationsSet = new Set(
+    recruitsList
+      .filter(r => r.country && r.country !== userProfile.country)
+      .map(r => r.country)
+  );
+  const foreignNationsCount = foreignNationsSet.size;
+
+  // 3. Process Badges
+  let badgesArray = [];
+  try {
+    badgesArray = typeof userProfile.badges === 'string' ? JSON.parse(userProfile.badges) : (userProfile.badges || []);
+  } catch (e) {
+    badgesArray = [];
+  }
+  elements.numBadges.textContent = badgesArray.length;
+
+  // 4. Query Dynamic Actions in Parallel
+  const [sharesRes, trophiesRes, avatarsRes, campaignsRes] = await Promise.all([
+    supabaseClient.from('shares').select('platform, created_at').eq('user_id', currentUser.id),
+    supabaseClient.from('user_trophy_progress').select('*, trophy_tiers!inner(tier_level)').eq('user_id', currentUser.id),
     supabaseClient.from('avatar_stages').select('*').order('stage_order', { ascending: true }),
-    supabaseClient.from('donations').select('amount').eq('user_id', currentUser.id)
+    supabaseClient.from('campaigns').select('id, reward_badge_id')
   ]);
 
-  // --- CALCULATIONS ---
-
-  // Personal Stats
-  var sharesData = sharesRes.data || [];
-  var totalShares = sharesData.length;
-  var recruits = recruitsRes.count || 0;
-  var nations = new Set((globalRes.data || []).map(p => p.country)).size;
-  var badges = (userProfile.badges || []).length;
-  var missions = 0; // Placeholder: Requires project_priorities query
-  var donations = donationsRes.data || [];
-  var donationTotal = donations.reduce((sum, d) => sum + Number(d.amount || 0), 0);
-
-  // Trophy & Avatar Logic
-  var userProgress = trophiesRes.data || [];
-  var allAvatars = avatarsRes.data || [];
+  // Dynamic Shares Logic
+  const allShares = sharesRes.data || [];
+  const filteredShares = allShares.filter(s => s.created_at >= sinceISO);
   
-  // Count tiers
-  var tierCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-  var mythicCount = 0;
-  var totalTrophies = 0;
+  // Performance optimization: Trust total_shares for all-time
+  const calculatedShares = (currentTimeframe === 'all' && userProfile.total_shares) 
+    ? userProfile.total_shares 
+    : filteredShares.length;
+  elements.numShares.textContent = calculatedShares;
 
-  userProgress.forEach(p => {
-    var level = p.current_tier_level || 0;
-    if (level > 0) {
-      tierCounts[level] = (tierCounts[level] || 0) + 1;
+  // Process Completed Campaigns (Missions) - Verified through Badge/Trophy Rewards mapping
+  const campaignsList = campaignsRes.data || [];
+  const completedMissionsCount = campaignsList.filter(camp => 
+    camp.reward_badge_id && badgesArray.includes(camp.reward_badge_id)
+  ).length;
+  elements.numMissions.textContent = completedMissionsCount;
+
+  // 5. Trophies Progression Analysis
+  const trophyProgress = trophiesRes.data || [];
+  const tierCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  let totalTrophies = 0;
+  let mythicCount = 0;
+
+  trophyProgress.forEach(p => {
+    const level = p.trophy_tiers?.tier_level || 0;
+    if (level >= 1 && level <= 5) {
+      tierCounts[level]++;
       totalTrophies++;
       if (level === 5) mythicCount++;
     }
   });
 
-  // Find Current Avatar Stage
-  var currentStage = allAvatars[0] || { journey_name: 'The Seeker', image_url_male: '', mythic_trophies_required: 0 };
-  var nextStage = allAvatars.find(a => a.mythic_trophies_required > mythicCount) || null;
+  elements.tierCommon.textContent = tierCounts[1];
+  elements.tierUncommon.textContent = tierCounts[2];
+  elements.tierRare.textContent = tierCounts[3];
+  elements.tierEpic.textContent = tierCounts[4];
+  elements.tierMythic.textContent = tierCounts[5];
+  elements.numTrophies.textContent = totalTrophies;
 
-  for (var i = allAvatars.length - 1; i >= 0; i--) {
-    if (mythicCount >= allAvatars[i].mythic_trophies_required) {
-      currentStage = allAvatars[i];
+  // 6. Find Current Stage & Next Stage
+  const allStages = avatarsRes.data || [];
+  let currentStage = allStages[0] || { journey_name: 'The Seeker', stage_order: 1, mythic_trophies_required: 0 };
+  let nextStage = null;
+
+  for (let i = allStages.length - 1; i >= 0; i--) {
+    if (mythicCount >= allStages[i].mythic_trophies_required) {
+      currentStage = allStages[i];
+      nextStage = allStages[i + 1] || null;
       break;
     }
   }
 
-  // --- UPDATE DOM ---
-
-  // 1. Update Avatar Image
-  var gender = userProfile.gender || 'male';
-  // Try to get female image, fallback to male
-  var avatarImg = (gender === 'female' && currentStage.image_url_female) ? currentStage.image_url_female : currentStage.image_url_male;
+  // Bind Progression Details
+  const gender = userProfile.gender || 'male';
+  const avatarImgUrl = (gender === 'female' && currentStage.image_url_female) ? currentStage.image_url_female : currentStage.image_url_male;
   
-  var imgEl = document.getElementById('heroAvatarImg');
-  var fallbackEl = document.getElementById('avatarFallback');
-  
-  if (avatarImg) {
-    imgEl.src = avatarImg;
-    imgEl.style.display = 'block';
-    fallbackEl.style.display = 'none';
+  if (avatarImgUrl) {
+    elements.avatarImg.src = avatarImgUrl;
+    elements.avatarImg.style.display = 'block';
+    elements.avatarFallback.style.display = 'none';
   } else {
-    imgEl.style.display = 'none';
-    fallbackEl.style.display = 'flex';
+    elements.avatarImg.style.display = 'none';
+    elements.avatarFallback.style.display = 'flex';
   }
 
-  // 2. Update Text Fields
-  document.getElementById('userNameDisplay').textContent = userProfile.nickname || userProfile.full_name || 'Warrior';
-  document.getElementById('journeyNameDisplay').textContent = currentStage.journey_name || 'The Seeker';
-  document.getElementById('avatarTitleDisplay').textContent = 'Stage ' + currentStage.stage_order;
+  elements.userName.textContent = userProfile.nickname || userProfile.full_name || 'Warrior';
+  elements.journeyName.textContent = currentStage.journey_name;
+  elements.avatarTitle.textContent = `Stage ${currentStage.stage_order}`;
 
-  // 3. Update Progress Bar
   if (nextStage) {
-    document.getElementById('nextRankName').textContent = 'Next: ' + nextStage.journey_name;
-    var prevReq = currentStage.mythic_trophies_required;
-    var range = nextStage.mythic_trophies_required - prevReq;
-    var progress = mythicCount - prevReq;
-    var pct = Math.max(0, Math.min(100, (progress / range) * 100));
+    elements.nextRank.textContent = `Next: ${nextStage.journey_name}`;
+    const range = nextStage.mythic_trophies_required - currentStage.mythic_trophies_required;
+    const progress = mythicCount - currentStage.mythic_trophies_required;
+    const pct = Math.max(0, Math.min(100, (progress / range) * 100));
+    elements.progressText.textContent = `${mythicCount}/${nextStage.mythic_trophies_required} Mythic`;
+    elements.progressBar.style.width = `${pct}%`;
     
-    document.getElementById('mythicProgressText').textContent = mythicCount + '/' + nextStage.mythic_trophies_required + ' Mythic';
-    document.getElementById('mythicProgressBar').style.width = pct + '%';
+    const needed = nextStage.mythic_trophies_required - mythicCount;
+    elements.progressSubtext.textContent = `Earn ${needed} more Mythic Trophy${needed > 1 ? 's' : ''} to evolve.`;
   } else {
-    document.getElementById('nextRankName').textContent = 'Max Level Reached';
-    document.getElementById('mythicProgressText').textContent = mythicCount + ' Mythic';
-    document.getElementById('mythicProgressBar').style.width = '100%';
+    elements.nextRank.textContent = 'Highest Rank Achieved';
+    elements.progressText.textContent = `${mythicCount} Mythic`;
+    elements.progressBar.style.width = '100%';
+    elements.progressSubtext.textContent = `You have completed your path of evolution.`;
   }
 
-  // Hero
-  var gender = userProfile.gender || 'male';
-  var avatarImg = (gender === 'female' && currentStage.image_url_female) ? currentStage.image_url_female : currentStage.image_url_male;
-  document.getElementById('userNameDisplay').textContent = userProfile.nickname || userProfile.full_name || 'Warrior';
-  document.getElementById('journeyNameDisplay').textContent = currentStage.journey_name;
-  if (avatarImg) document.getElementById('heroAvatarImg').src = avatarImg;
+  // Populate dynamic count targets (optimized with pre-computed fields)
+  elements.numRecruits.textContent = (currentTimeframe === 'all' && userProfile.recruit_count) ? userProfile.recruit_count : recruitsCount;
+  elements.numNations.textContent = foreignNationsCount;
 
-  // Progress Bar
-  if (nextStage) {
-    document.getElementById('nextRankName').textContent = 'Next: ' + nextStage.journey_name;
-    var prevReq = currentStage.mythic_trophies_required;
-    var range = nextStage.mythic_trophies_required - prevReq;
-    var progress = mythicCount - prevReq;
-    var pct = Math.max(0, Math.min(100, (progress / range) * 100));
-    document.getElementById('mythicProgressText').textContent = mythicCount + '/' + nextStage.mythic_trophies_required + ' Mythic';
-    document.getElementById('mythicProgressBar').style.width = pct + '%';
-  } else {
-    document.getElementById('nextRankName').textContent = 'Max Level Reached';
-    document.getElementById('mythicProgressText').textContent = mythicCount + ' Mythic';
-    document.getElementById('mythicProgressBar').style.width = '100%';
-  }
+  // 7. Platforms Dynamic Breakdowns
+  renderPlatformBreakdown(filteredShares);
 
-  // Trophy Tiers
-  document.getElementById('tierCommon').textContent = tierCounts[1] || 0;
-  document.getElementById('tierUncommon').textContent = tierCounts[2] || 0;
-  document.getElementById('tierRare').textContent = tierCounts[3] || 0;
-  document.getElementById('tierEpic').textContent = tierCounts[4] || 0;
-  document.getElementById('tierMythic').textContent = tierCounts[5] || 0;
+  // 8. Kingdom Investment Calculation (Dynamic Subs 30% calculation + Donations mapping fallback to $0.00)
+  await loadKingdomInvestment();
 
-  // Personal Impact
-  document.getElementById('statShares').textContent = totalShares;
-  document.getElementById('statRecruits').textContent = recruits;
-  document.getElementById('statNations').textContent = nations;
-  document.getElementById('statBadges').textContent = badges;
-  document.getElementById('statMissions').textContent = missions;
-  document.getElementById('statTrophies').textContent = totalTrophies;
+  // 9. Load Real-time Leaderboards
+  await loadLeaderboards();
 }
 
+function renderPlatformBreakdown(shares) {
+  if (shares.length === 0) {
+    elements.platformsContainer.innerHTML = '<p class="text-xs text-slate-400 py-2 text-center">No platform data for this period.</p>';
+    return;
+  }
+
+  const counts = {};
+  shares.forEach(s => {
+    let platformName = s.platform || 'Other';
+    // Clean platform display names
+    if (platformName === 'copy_link') platformName = 'Copy Link';
+    else platformName = platformName.charAt(0).toUpperCase() + platformName.slice(1);
+    counts[platformName] = (counts[platformName] || 0) + 1;
+  });
+
+  const sortedPlatforms = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const highestCount = sortedPlatforms[0][1];
+
+  let html = '';
+  sortedPlatforms.forEach(([platform, count]) => {
+    const pct = Math.round((count / highestCount) * 100);
+    // Dynamic color matching
+    let barColor = 'bg-slate-400';
+    if (platform.toLowerCase().includes('whatsapp')) barColor = 'bg-green-500';
+    else if (platform.toLowerCase().includes('instagram')) barColor = 'bg-pink-500';
+    else if (platform.toLowerCase().includes('facebook')) barColor = 'bg-blue-600';
+
+    html += `
+      <div>
+        <div class="flex justify-between text-xs font-bold mb-1">
+          <span class="text-slate-700">${platform}</span>
+          <span class="text-slate-500">${count} share${count > 1 ? 's' : ''}</span>
+        </div>
+        <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div class="h-full ${barColor} rounded-full" style="width: ${pct}%"></div>
+        </div>
+      </div>
+    `;
+  });
+  elements.platformsContainer.innerHTML = html;
+}
+
+async function loadKingdomInvestment() {
+  let subFee = 0;
+  if (userProfile.subscription_status === 'active' && userProfile.subscription_tiers) {
+    subFee = Number(userProfile.subscription_tiers.price || 0);
+  }
+  const recurringContribution = subFee * 0.30; // Dynamic 30% calculation
+
+  // Donations mapping - dynamically handles empty Stripe state by falling back gracefully to $0.00
+  const { data: donations } = await supabaseClient
+    .from('donations')
+    .select('amount')
+    .eq('user_id', currentUser.id)
+    .eq('status', 'completed');
+
+  const giftsContribution = (donations || []).reduce((sum, d) => sum + Number(d.amount || 0), 0);
+
+  const totalInv = recurringContribution + giftsContribution;
+  elements.totalContribution.textContent = `$${totalInv.toFixed(2)}`;
+  
+  elements.subsContribution.innerHTML = `<div class="w-2 h-2 rounded-full bg-primary"></div> Subs ($${recurringContribution.toFixed(2)})`;
+  elements.giftsContribution.innerHTML = `<div class="w-2 h-2 rounded-full bg-gold"></div> Gifts ($${giftsContribution.toFixed(2)})`;
+
+  if (totalInv > 0) {
+    const subPct = (recurringContribution / totalInv) * 100;
+    const giftPct = (giftsContribution / totalInv) * 100;
+    elements.splitSubs.style.width = `${subPct}%`;
+    elements.splitGifts.style.width = `${giftPct}%`;
+  } else {
+    elements.splitSubs.style.width = '0%';
+    elements.splitGifts.style.width = '0%';
+  }
+}
+
+async function loadLeaderboards() {
+  const weekStart = getSinceDate();
+
+  // Load live Top Sharers
+  const { data: sharesData } = await supabaseClient
+    .from('shares')
+    .select('user_id, profiles(nickname, full_name)')
+    .gte('created_at', weekStart);
+
+  const shareLeaderboard = {};
+  sharesData?.forEach(s => {
+    if (!s.user_id) return;
+    const name = s.profiles?.nickname || s.profiles?.full_name || 'Anonymous Warrior';
+    if (!shareLeaderboard[s.user_id]) {
+      shareLeaderboard[s.user_id] = { name, count: 0 };
+    }
+    shareLeaderboard[s.user_id].count++;
+  });
+
+  const sortedSharers = Object.entries(shareLeaderboard)
+    .map(([id, val]) => ({ id, ...val }))
+    .sort((a, b) => b.count - a.count);
+
+  const currentUserShareIndex = sortedSharers.findIndex(s => s.id === currentUser.id);
+  elements.userShareRank.textContent = currentUserShareIndex !== -1 ? `YOU: #${currentUserShareIndex + 1}` : 'YOU: --';
+
+  // Render Top 3 Sharers dynamically
+  let sharersHtml = '';
+  const top3Sharers = sortedSharers.slice(0, 3);
+  
+  if (top3Sharers.length === 0) {
+    sharersHtml = `<p class="text-xs text-slate-400 py-4 text-center">No shares recorded this week.</p>`;
+  } else {
+    top3Sharers.forEach((item, idx) => {
+      const initials = item.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      const isCurrentUser = item.id === currentUser.id;
+      const highlightClass = isCurrentUser ? 'bg-primary/5 -mx-2 px-2 py-2 rounded-lg' : '';
+      const textClass = isCurrentUser ? 'text-primary' : 'text-slate-900';
+      const rankColor = idx === 0 ? 'text-gold' : 'text-slate-400';
+
+      sharersHtml += `
+        <div class="flex items-center gap-3 ${highlightClass}">
+          <span class="font-headline font-black ${rankColor} text-lg w-6">${idx + 1}</span>
+          <div class="w-8 h-8 rounded-full ${isCurrentUser ? 'bg-primary text-white' : 'bg-slate-200 text-slate-700'} flex items-center justify-center font-bold text-xs">${initials}</div>
+          <div class="flex-1">
+            <p class="font-bold text-sm ${textClass}">${item.name} ${isCurrentUser ? '(You)' : ''}</p>
+            <p class="text-[10px] ${isCurrentUser ? 'text-primary/60' : 'text-slate-400'}">${item.count} shares</p>
+          </div>
+        </div>
+      `;
+    });
+  }
+  elements.topSharers.innerHTML = sharersHtml;
+
+  // Load live Top Recruiters
+  const { data: recruitsData } = await supabaseClient
+    .from('profiles')
+    .select('recruited_by, created_at')
+    .not('recruited_by', 'is', null)
+    .gte('created_at', weekStart);
+
+  const recruitsLeaderboard = {};
+  for (const profile of recruitsData) {
+    const parentId = profile.recruited_by;
+    if (!recruitsLeaderboard[parentId]) {
+      const { data: parentProfile } = await supabaseClient
+        .from('profiles')
+        .select('nickname, full_name')
+        .eq('id', parentId)
+        .single();
+      
+      const parentName = parentProfile?.nickname || parentProfile?.full_name || 'Anonymous Warrior';
+      recruitsLeaderboard[parentId] = { name: parentName, count: 0 };
+    }
+    recruitsLeaderboard[parentId].count++;
+  }
+
+  const sortedRecruiters = Object.entries(recruitsLeaderboard)
+    .map(([id, val]) => ({ id, ...val }))
+    .sort((a, b) => b.count - a.count);
+
+  // Render Top 3 Recruiters dynamically
+  let recruitersHtml = '';
+  const top3Recruiters = sortedRecruiters.slice(0, 3);
+
+  if (top3Recruiters.length === 0) {
+    recruitersHtml = `<p class="text-xs text-slate-400 py-4 text-center">No recruits recorded this week.</p>`;
+  } else {
+    top3Recruiters.forEach((item, idx) => {
+      const initials = item.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      const isCurrentUser = item.id === currentUser.id;
+      const highlightClass = isCurrentUser ? 'bg-primary/5 -mx-2 px-2 py-2 rounded-lg' : '';
+      const textClass = isCurrentUser ? 'text-primary' : 'text-slate-900';
+      const rankColor = idx === 0 ? 'text-gold' : 'text-slate-400';
+
+      recruitersHtml += `
+        <div class="flex items-center gap-3 ${highlightClass}">
+          <span class="font-headline font-black ${rankColor} text-lg w-6">${idx + 1}</span>
+          <div class="w-8 h-8 rounded-full ${isCurrentUser ? 'bg-primary text-white' : 'bg-slate-200 text-slate-700'} flex items-center justify-center font-bold text-xs">${initials}</div>
+          <div class="flex-1">
+            <p class="font-bold text-sm ${textClass}">${item.name} ${isCurrentUser ? '(You)' : ''}</p>
+            <p class="text-[10px] ${isCurrentUser ? 'text-primary/60' : 'text-slate-400'}">${item.count} warrior${item.count > 1 ? 's' : ''}</p>
+          </div>
+        </div>
+      `;
+    });
+  }
+  elements.topRecruiters.innerHTML = recruitersHtml;
+}
+
+async function loadGlobalStats() {
+  // Aggregate Global Counts in Parallel
+  const [globalSharesCount, globalProfiles, nationsData] = await Promise.all([
+    supabaseClient.from('shares').select('*', { count: 'exact', head: true }),
+    supabaseClient.from('profiles').select('*', { count: 'exact', head: true }),
+    supabaseClient.from('profiles').select('country').not('country', 'is', null)
+  ]);
+
+  elements.globalShares.textContent = formatCompact(globalSharesCount.count || 0);
+  elements.globalWarriors.textContent = formatCompact(globalProfiles.count || 0);
+
+  // Group countries to gather exact metrics & build lists
+  const countryMap = {};
+  nationsData.data?.forEach(p => {
+    countryMap[p.country] = (countryMap[p.country] || 0) + 1;
+  });
+
+  const distinctCountries = Object.keys(countryMap);
+  elements.globalNations.textContent = distinctCountries.length;
+
+  // Nation ISO flag mapper helper
+  const emojiFlag = (countryCode) => {
+    if (!countryCode || countryCode.length !== 2) return '🌐';
+    const codePoints = countryCode
+      .toUpperCase()
+      .split('')
+      .map(char =>  127397 + char.charCodeAt(0));
+    return String.fromCodePoint(...codePoints);
+  };
+
+  let flagHtml = '';
+  distinctCountries.slice(0, 10).forEach(cc => {
+    flagHtml += `<span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-3 py-1.5 rounded-full">${emojiFlag(cc)} ${cc.toUpperCase()}</span>`;
+  });
+  if (distinctCountries.length > 10) {
+    flagHtml += `<span class="bg-slate-100 text-slate-400 text-[10px] font-bold px-3 py-1.5 rounded-full">+ ${distinctCountries.length - 10} More</span>`;
+  }
+  elements.globalNationsFlags.innerHTML = flagHtml || '<span class="text-xs text-slate-400">Expanding Kingdom...</span>';
+}
+
+function formatCompact(number) {
+  if (number >= 1000000) return (number / 1000000).toFixed(1).replace(/\.0$/, '') + 'm';
+  if (number >= 1000) return (number / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+  return number;
+}
+
+// Kick off initialization
 init();
 </script>
+</body>
+</html>
