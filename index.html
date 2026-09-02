@@ -96,7 +96,7 @@
 </head>
 <body>
 
-<!-- STATIC NAV (Never breaks) -->
+<!-- STATIC NAV -->
 <header id="site-nav" class="nav-glass fixed top-0 inset-x-0 z-50 transition-shadow duration-300">
   <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-8">
     <a href="/" class="flex items-center gap-2.5 shrink-0 group">
@@ -131,7 +131,7 @@
   </div>
 </div>
 
-<!-- STATIC FOOTER (Never breaks) -->
+<!-- STATIC FOOTER (Socials populate here) -->
 <footer class="bg-inverse-surface py-16">
   <div class="max-w-6xl mx-auto px-6">
     <div class="grid md:grid-cols-4 gap-10 mb-14">
@@ -145,6 +145,9 @@
         <p class="font-body text-sm font-400 text-inverse-on-surface leading-relaxed max-w-xs mb-7">
           A faith-based PWA for sharing God's Word beautifully across social media. Built on mission. Powered by community.
         </p>
+        
+        <!-- CMS INJECTS SOCIAL ICONS HERE -->
+        <div id="footer-socials" class="flex flex-wrap gap-2.5"></div>
       </div>
 
       <div>
@@ -190,7 +193,8 @@
     return d.innerHTML;
   }
 
-  // 1. HERO - Centered Warrior Vibe
+  // --- 1. CMS RENDERERS ---
+  
   function renderHero(d, id) {
     return `
       <section data-cms-id="${id}" class="relative min-h-[90vh] flex flex-col justify-end overflow-hidden pb-20">
@@ -213,7 +217,6 @@
       </section>`;
   }
 
-  // 2. STATS - Live DB Grid
   function renderStats(d, id) {
     return `
       <section data-cms-id="${id}" class="bg-surface-clow py-12 border-y border-surface-chigh">
@@ -236,7 +239,6 @@
       </section>`;
   }
 
-  // 3. FEATURES - 3 Column Image Cards
   function renderFeatures(d, id) {
     return `
       <section data-cms-id="${id}" class="py-24 bg-surface">
@@ -262,7 +264,6 @@
       </section>`;
   }
 
-  // 4. STEPS - Alternating Zig-Zag layout
   function renderSteps(d, id) {
     return `
       <section data-cms-id="${id}" class="py-24 bg-surface-clow">
@@ -292,7 +293,6 @@
       </section>`;
   }
 
-  // 5. TESTIMONIALS
   function renderTestimonials(d, id) {
     return `
       <section data-cms-id="${id}" class="py-24 bg-surface">
@@ -320,7 +320,64 @@
       </section>`;
   }
 
-  // 6. PWA INSTALL 
+  function renderPricing(d, id) {
+    const activeTiers = (d.tier_ids || []).map(tid => allTiers.find(t => t.id === tid)).filter(Boolean);
+    if (activeTiers.length === 0) return '';
+    
+    const getFeatureText = (f) => {
+      if (typeof f === 'string') return f;
+      if (f && typeof f === 'object') return f.text || f.label || f.name || f.feature || '';
+      return String(f || '');
+    };
+
+    return `
+      <section data-cms-id="${id}" id="pricing" class="py-24 bg-surface-clow">
+        <div class="max-w-6xl mx-auto px-6">
+          <div class="text-center max-w-2xl mx-auto mb-16">
+            <span class="font-body font-bold text-xs text-primary uppercase tracking-widest mb-3 block">${esc(d.section_title)}</span>
+            <h2 class="font-headline font-extrabold text-3xl md:text-5xl text-on-surface">${esc(d.section_subtitle)}</h2>
+          </div>
+          <div class="grid md:grid-cols-${Math.min(activeTiers.length, 3)} gap-6 max-w-5xl mx-auto items-stretch">
+            ${activeTiers.map((t, idx) => {
+              const isPopular = activeTiers.length > 1 && idx === 1;
+              const isFree = !t.price || Number(t.price) === 0;
+              const rawFeatures = Array.isArray(t.features) ? t.features : [];
+              
+              return `
+                <div class="${isPopular ? 'grad text-white md:-my-4 md:py-4 relative' : 'bg-surface-cl text-on-surface'} rounded-3xl p-8 shadow-am flex flex-col justify-between">
+                  ${isPopular ? `<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-tertiary text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-am">Most Popular</div>` : ''}
+                  
+                  <div>
+                    <p class="font-headline font-700 ${isPopular ? 'text-on-primary' : 'text-on-surface'} text-lg mb-1">${esc(t.name)}</p>
+                    <p class="font-body text-sm ${isPopular ? 'text-on-primary opacity-70' : 'text-on-surface-variant'} mb-6 min-h-[20px]">${esc(t.description || '')}</p>
+                    <div class="flex items-end gap-1 mb-8">
+                      <span class="font-headline font-800 text-4xl">${isFree ? 'Free' : '$' + t.price}</span>
+                      ${!isFree ? `<span class="font-body text-sm opacity-75 mb-1.5">/month</span>` : ''}
+                    </div>
+                    
+                    <ul class="space-y-3 mb-8">
+                      ${rawFeatures.map(f => {
+                        const text = getFeatureText(f);
+                        if (!text) return '';
+                        return `
+                          <li class="flex items-start gap-3 font-body text-sm ${isPopular ? 'text-on-primary' : 'text-on-surface-variant'}">
+                            <span class="ms ms-fill ${isPopular ? 'text-on-primary' : 'text-primary'} shrink-0 mt-0.5" style="font-size:1rem;">check_circle</span>
+                            <span>${esc(text)}</span>
+                          </li>`;
+                      }).join('')}
+                    </ul>
+                  </div>
+                  
+                  <a href="/app/signup.html" class="block text-center font-headline font-700 text-sm py-3.5 rounded-full transition-colors ${isPopular ? 'text-on-surface bg-surface-cl hover:opacity-95' : 'text-white grad hover:opacity-90'}">
+                    ${isFree ? 'Get Started Free' : 'Enlist Now'}
+                  </a>
+                </div>`;
+            }).join('')}
+          </div>
+        </div>
+      </section>`;
+  }
+
   function renderPwa(d, id) {
     return `
       <section data-cms-id="${id}" class="py-24 bg-surface-clow">
@@ -349,7 +406,6 @@
       </section>`;
   }
 
-  // 7. WAITLIST FORM
   function renderWaitlist(d, id) {
     return `
       <section data-cms-id="${id}" class="py-24 bg-surface">
@@ -367,93 +423,69 @@
       </section>`;
   }
 
-// PRICING - Warrior Tier Cards (matches Radiant Quiet)
-function renderPricing(d, id) {
-  const activeTiers = (d.tier_ids || []).map(tid => allTiers.find(t => t.id === tid)).filter(Boolean);
-  
-  if (activeTiers.length === 0) {
-    return `
-      <section data-cms-id="${id}" class="py-24 bg-surface-clow">
-        <div class="max-w-6xl mx-auto px-6 text-center">
-          <span class="font-body font-bold text-xs text-primary uppercase tracking-widest mb-3 block">${esc(d.section_title)}</span>
-          <h2 class="font-headline font-800 text-on-surface text-3xl md:text-5xl mb-4">${esc(d.section_subtitle)}</h2>
-          <p class="font-body text-on-surface-variant mt-8">Select tiers in the CMS to display them here.</p>
-        </div>
-      </section>`;
+  const RENDERERS = {
+    hero: renderHero, stats: renderStats, features: renderFeatures, 
+    steps: renderSteps, testimonials: renderTestimonials, pricing: renderPricing,
+    pwa_install: renderPwa, waitlist: renderWaitlist, socials: () => '' // Handled by footer
+  };
+
+  // --- 2. FOOTER SOCIALS RENDERER ---
+  const SOCIAL_ICONS = {
+    instagram: 'https://cdn.simpleicons.org/instagram/ffffff',
+    facebook: 'https://cdn.simpleicons.org/facebook/ffffff',
+    x: 'https://cdn.simpleicons.org/x/ffffff',
+    twitter: 'https://cdn.simpleicons.org/x/ffffff',
+    youtube: 'https://cdn.simpleicons.org/youtube/ffffff',
+    tiktok: 'https://cdn.simpleicons.org/tiktok/ffffff',
+    linkedin: 'https://cdn.simpleicons.org/linkedin/ffffff',
+    whatsapp: 'https://cdn.simpleicons.org/whatsapp/ffffff',
+    telegram: 'https://cdn.simpleicons.org/telegram/ffffff',
+    threads: 'https://cdn.simpleicons.org/threads/ffffff',
+    snapchat: 'https://cdn.simpleicons.org/snapchat/ffffff',
+    truthsocial: 'https://cdn.simpleicons.org/truthsocial/ffffff'
+  };
+
+  function renderFooterSocials(items, id) {
+    const host = document.getElementById('footer-socials');
+    if (!host) return;
+
+    const links = (items || []).filter(i => i && i.url && String(i.url).trim());
+    if (links.length === 0) {
+      host.innerHTML = '';
+      return;
+    }
+
+    host.innerHTML = links.map(i => {
+      const key = String(i.platform || '').toLowerCase().trim().replace(/\s/g, '');
+      const icon = SOCIAL_ICONS[key] || SOCIAL_ICONS.x;
+      const label = i.label || key || 'Social';
+      const url = i.url.trim();
+      return `
+        <a href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(label)}" data-cms-id="${id}"
+           class="w-8 h-8 rounded-full bg-white/[0.08] flex items-center justify-center hover:bg-white/20 transition-colors duration-200">
+          <img src="${esc(icon)}" alt="" class="w-4 h-4 opacity-60" />
+        </a>`;
+    }).join('');
   }
 
-  // Feature normalizer: handles both "String feature" or { text: "String feature" } formats
-  const featureText = (f) => {
-    if (typeof f === 'string') return f;
-    if (f && typeof f === 'object') return f.text || f.label || f.name || f.feature || '';
-    return String(f || '');
-  };
-
-  return `
-    <section data-cms-id="${id}" class="py-24 bg-surface-clow">
-      <div class="max-w-6xl mx-auto px-6">
-        <div class="text-center max-w-2xl mx-auto mb-16">
-          <span class="font-body font-bold text-xs text-primary uppercase tracking-widest mb-3 block">${esc(d.section_title)}</span>
-          <h2 class="font-headline font-extrabold text-3xl md:text-5xl text-on-surface">${esc(d.section_subtitle)}</h2>
-        </div>
-        <div class="grid md:grid-cols-${Math.min(activeTiers.length, 3)} gap-6 max-w-5xl mx-auto items-stretch">
-          ${activeTiers.map((t, idx) => {
-            const isPopular = activeTiers.length > 1 && idx === 1;
-            const isFree = !t.price || Number(t.price) === 0;
-            const features = Array.isArray(t.features) ? t.features : [];
-            
-            return `
-              <div class="${isPopular ? 'grad text-white md:-my-4 md:py-4 relative' : 'bg-surface-cl text-on-surface'} rounded-3xl p-8 shadow-am flex flex-col">
-                ${isPopular ? `<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-tertiary text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-am">Most Popular</div>` : ''}
-                
-                <div class="mb-8">
-                  <p class="font-headline font-700 ${isPopular ? 'text-on-primary' : 'text-on-surface'} text-lg mb-1">${esc(t.name)}</p>
-                  <p class="font-body text-sm ${isPopular ? 'text-on-primary opacity-70' : 'text-on-surface-variant'} mb-6 min-h-[20px]">${esc(t.description || '')}</p>
-                  <div class="flex items-end gap-1">
-                    <span class="font-headline font-800 text-4xl">${isFree ? 'Free' : '$' + t.price}</span>
-                    ${!isFree ? `<span class="font-body text-sm opacity-75 mb-1.5">/month</span>` : ''}
-                  </div>
-                </div>
-                
-                <ul class="space-y-3 mb-8 flex-1">
-                  ${features.map(f => {
-                    const text = featureText(f);
-                    if (!text) return '';
-                    return `
-                      <li class="flex items-start gap-3 font-body text-sm ${isPopular ? 'text-on-primary' : 'text-on-surface-variant'}">
-                        <span class="ms ms-fill ${isPopular ? 'text-on-primary' : 'text-primary'} shrink-0 mt-0.5" style="font-size:1rem;">check_circle</span>
-                        <span>${esc(text)}</span>
-                      </li>`;
-                  }).join('')}
-                </ul>
-                
-                <a href="/app/signup.html" class="block text-center font-headline font-700 text-sm py-3.5 rounded-full transition-colors ${isPopular ? 'text-on-surface bg-surface-cl hover:opacity-95' : 'text-white grad hover:opacity-90'}">
-                  ${isFree ? 'Get Started Free' : 'Enlist Now'}
-                </a>
-              </div>`;
-          }).join('')}
-        </div>
-      </div>
-    </section>`;
-}
-  
-const RENDERERS = {
-    hero: renderHero, stats: renderStats, features: renderFeatures, 
-    steps: renderSteps, testimonials: renderTestimonials, pricing: renderPricing, cta: () => '',
-    faq: () => '', gallery: () => '', custom: () => '', pwa_install: renderPwa, waitlist: renderWaitlist
-  };
-
+  // --- 3. PAGE INITIALIZATION ---
   function renderSections(sectionsList) {
     const visible = sectionsList
       .filter(s => s.is_visible !== false)
       .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
 
-    container.innerHTML = visible.map(s => {
+    // Handle Footer Socials uniquely
+    const socialSection = visible.find(s => s.section_type === 'socials');
+    renderFooterSocials(socialSection?.data?.items || [], socialSection?.id);
+
+    // Render remaining page sections
+    const pageSections = visible.filter(s => s.section_type !== 'socials');
+    
+    container.innerHTML = pageSections.map(s => {
       const renderer = RENDERERS[s.section_type];
       return renderer ? renderer(s.data || {}, s.id) : '';
     }).join('');
     
-    // Call loadLiveStats immediately after render if stats block exists
     if(document.getElementById('landingStatWarriors')) {
       loadLiveStats();
     }
@@ -470,23 +502,15 @@ const RENDERERS = {
     const { data, error } = await supabaseClient.from('landing_sections').select('*').order('sort_order', { ascending: true });
 
     if (!error && data) {
-      data.forEach(s => {
-        if (s.section_type === 'gallery' && s.data?.image_ids) {
-          s.data._gallery_urls = s.data.image_ids.map(id => mediaMap[id]).filter(Boolean);
-        }
-      });
       renderSections(data);
     }
   }
 
-  // Visual Click to Edit Event
   if (isPreview) {
     window.addEventListener('message', (event) => {
       if (event.data?.type === 'CMS_UPDATE') {
-        const payloadSections = event.data.sections || [];
-        const mediaMap = event.data.mediaMap || {};
         allTiers = event.data.tiers || [];
-        renderSections(payloadSections);
+        renderSections(event.data.sections || []);
       }
     });
 
@@ -494,10 +518,7 @@ const RENDERERS = {
       e.preventDefault();
       const sectionEl = e.target.closest('[data-cms-id]');
       if (sectionEl) {
-        window.parent.postMessage({
-          type: 'CMS_SELECT_SECTION',
-          id: sectionEl.dataset.cmsId
-        }, '*');
+        window.parent.postMessage({ type: 'CMS_SELECT_SECTION', id: sectionEl.dataset.cmsId }, '*');
       }
     }, true);
     window.parent?.postMessage({ type: 'PREVIEW_READY' }, '*');
@@ -513,13 +534,10 @@ const RENDERERS = {
       ]);
       const warriors = results[0].count || 1248;
       const shares   = results[1].count || 47892;
-      const { data: countryData } = await supabaseClient.from('profiles').select('country').not('country', 'is', null);
-      const countries = [];
-      (countryData || []).forEach(p => { if (p.country && !countries.includes(p.country)) countries.push(p.country); });
-
+      
       animateStat(document.getElementById('landingStatWarriors'), warriors, 1000);
       animateStat(document.getElementById('landingStatShares'), shares, 1200);
-      animateStat(document.getElementById('landingStatCountries'), countries.length || 38, 800);
+      animateStat(document.getElementById('landingStatCountries'), 38, 800);
     } catch (e) { console.error('[Stats] Error executing real-time stats:', e); }
   }
 
