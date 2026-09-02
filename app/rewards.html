@@ -87,22 +87,32 @@
 
 <script>
 var supabaseClient = supabase.createClient('https://nhymadutuhpjgkiurify.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM');
-var currentUser = null, allTiers = [], allTrophies = [], allThresholds = [], userProgress = [];
+var currentUser = null, allTiers = [], allTrophies = [], allThresholds = [], userProgress = [], allBadges = [], userBadges = [];
 
 function switchTab(tab) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById('tab-' + tab).classList.add('active'); document.getElementById('section-trophies').classList.add('hidden'); document.getElementById('section-badges').classList.add('hidden'); document.getElementById('section-' + tab).classList.remove('hidden'); }
 
 async function init() {
   var s = await supabaseClient.auth.getSession(); if (!s.data.session) { window.location.href = 'login.html'; return; } currentUser = s.data.session.user;
-  var [tierRes, tRes, threshRes, progRes] = await Promise.all([
+  
+  // Fetch Trophies & Tiers
+  var [tierRes, tRes, threshRes, progRes, badgeRes, profileRes] = await Promise.all([
     supabaseClient.from('trophy_tiers').select('*').order('id'),
     supabaseClient.from('trophy_definitions').select('*'),
     supabaseClient.from('trophy_thresholds').select('*'),
-    supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id)
+    supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
+    supabaseClient.from('badge_definitions').select('*'),
+    supabaseClient.from('profiles').select('badges').eq('id', currentUser.id).single()
   ]);
+  
   allTiers = tierRes.data || []; allTrophies = tRes.data || []; allThresholds = threshRes.data || []; userProgress = progRes.data || [];
+  allBadges = badgeRes.data || []; 
+  userBadges = (profileRes.data && profileRes.data.badges) ? profileRes.data.badges : [];
+  
   renderTrophies();
+  renderBadges();
 }
 
+// --- TROPHY LOGIC ---
 function getTierColor(tierId) { var t = allTiers.find(x => x.id === tierId); return t ? t.color_hex : '#94a3b8'; }
 function getTierName(tierId) { var t = allTiers.find(x => x.id === tierId); return t ? t.name : 'Unknown'; }
 
@@ -111,51 +121,65 @@ function renderTrophies() {
   unlocked.innerHTML = ''; locked.innerHTML = '';
   
   allTrophies.forEach(t => {
-    // Get active thresholds for this trophy
     var activeThresholds = allThresholds.filter(th => th.trophy_id === t.id && th.is_active !== false).sort((a,b) => a.tier_id - b.tier_id);
     if (activeThresholds.length === 0) return;
 
     var userProg = userProgress.find(p => p.trophy_id === t.id);
     var currentProgress = userProg ? userProg.current_progress : 0;
-    var currentTierId = userProg ? userProg.current_tier_id : 0;
 
-    // Find highest unlocked tier
     var unlockedTier = null;
     for (var i = activeThresholds.length - 1; i >= 0; i--) {
-      if (currentProgress >= activeThresholds[i].threshold_value) {
-        unlockedTier = activeThresholds[i];
-        break;
-      }
+      if (currentProgress >= activeThresholds[i].threshold_value) { unlockedTier = activeThresholds[i]; break; }
     }
 
-    // Render Unlocked Block
     if (unlockedTier) {
       var color = getTierColor(unlockedTier.tier_id);
-      unlocked.innerHTML += `
-        <div class="bold-block text-white" style="background-color: ${color};" onclick="openModal('${t.id}', ${unlockedTier.tier_id}, false)">
-          ${t.image_url ? `<img src="${t.image_url}" class="w-16 h-16 object-contain mb-2 drop-shadow-md">` : '<span class="material-symbols-outlined text-4xl mb-2 filled">emoji_events</span>'}
-          <p class="font-headline font-bold text-sm leading-tight">${t.name}</p>
-          <p class="text-[9px] font-bold mt-1 opacity-80 uppercase tracking-wider">${getTierName(unlockedTier.tier_id)}</p>
-        </div>`;
+      unlocked.innerHTML += `<div class="bold-block text-white" style="background-color: ${color};" onclick="openModal('${t.id}', ${unlockedTier.tier_id}, false)">
+        ${t.image_url ? `<img src="${t.image_url}" class="w-16 h-16 object-contain mb-2 drop-shadow-md">` : '<span class="material-symbols-outlined text-4xl mb-2 filled">emoji_events</span>'}
+        <p class="font-headline font-bold text-sm leading-tight">${t.name}</p>
+        <p class="text-[9px] font-bold mt-1 opacity-80 uppercase tracking-wider">${getTierName(unlockedTier.tier_id)}</p>
+      </div>`;
     }
 
-    // Render Next Locked Block
     var nextTier = activeThresholds.find(th => currentProgress < th.threshold_value);
     if (nextTier) {
-      var nextColor = getTierColor(nextTier.tier_id);
-      locked.innerHTML += `
-        <div class="bold-block locked-block bg-slate-300 text-slate-600" onclick="openModal('${t.id}', ${nextTier.tier_id}, true)">
-          ${t.image_url ? `<img src="${t.image_url}" class="w-16 h-16 object-contain mb-2">` : '<span class="material-symbols-outlined text-4xl mb-2">lock</span>'}
-          <p class="font-headline font-bold text-sm leading-tight">${t.name}</p>
-          <p class="text-[9px] font-bold mt-1">${nextTier.threshold_value} ${t.stat_type || 'pts'}</p>
-        </div>`;
+      locked.innerHTML += `<div class="bold-block locked-block bg-slate-300 text-slate-600" onclick="openModal('${t.id}', ${nextTier.tier_id}, true)">
+        ${t.image_url ? `<img src="${t.image_url}" class="w-16 h-16 object-contain mb-2">` : '<span class="material-symbols-outlined text-4xl mb-2">lock</span>'}
+        <p class="font-headline font-bold text-sm leading-tight">${t.name}</p>
+        <p class="text-[9px] font-bold mt-1">${nextTier.threshold_value} ${t.stat_type || 'pts'}</p>
+      </div>`;
     }
   });
-
   if (unlocked.innerHTML === '') unlocked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">No trophies unlocked yet.</p>';
   if (locked.innerHTML === '') locked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">All caught up!</p>';
 }
 
+// --- BADGE LOGIC ---
+function renderBadges() {
+  var unlocked = document.getElementById('unlockedBadges'); var locked = document.getElementById('lockedBadges');
+  unlocked.innerHTML = ''; locked.innerHTML = '';
+
+  allBadges.forEach(b => {
+    // Check if user has this badge (assuming badges are stored as IDs or Names in the profile array)
+    var hasBadge = userBadges.includes(b.id) || userBadges.includes(b.name);
+    
+    if (hasBadge) {
+      unlocked.innerHTML += `<div class="bold-block bg-white border-2 border-primary text-slate-800" style="aspect-ratio: 1/1;">
+        ${b.image_url ? `<img src="${b.image_url}" class="w-16 h-16 object-contain mb-2 drop-shadow-md">` : '<span class="material-symbols-outlined text-4xl mb-2 text-primary">military_tech</span>'}
+        <p class="font-headline font-bold text-sm leading-tight">${b.name}</p>
+      </div>`;
+    } else {
+      locked.innerHTML += `<div class="bold-block locked-block bg-slate-200 text-slate-500" style="aspect-ratio: 1/1;">
+        ${b.image_url ? `<img src="${b.image_url}" class="w-16 h-16 object-contain mb-2 grayscale">` : '<span class="material-symbols-outlined text-4xl mb-2">lock</span>'}
+        <p class="font-headline font-bold text-sm leading-tight">${b.name}</p>
+      </div>`;
+    }
+  });
+  if (unlocked.innerHTML === '') unlocked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">No badges earned yet.</p>';
+  if (locked.innerHTML === '') locked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">No future missions available.</p>';
+}
+
+// --- MODAL ---
 function openModal(trophyId, tierId, isLocked) {
   var t = allTrophies.find(x => x.id === trophyId); if (!t) return;
   var color = getTierColor(tierId);
