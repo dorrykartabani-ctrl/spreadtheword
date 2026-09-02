@@ -12,7 +12,73 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <link rel="icon" type="image/x-icon" href="/images/favicon/favicon.ico">
   <script>
-    tailwind.config = {
+    tailwind.config = {async function loadMediaLibrary() {
+  try {
+    // Prefer landing page assets
+    let { data, error } = await supabaseClient
+      .from('media')
+      .select('*')
+      .eq('type', 'landing page')
+      .order('created_at', { ascending: false })
+      .limit(200);
+
+    // Fallback: old value 'landing' if rename not run yet
+    if ((!data || data.length === 0) && !error) {
+      const fallback = await supabaseClient
+        .from('media')
+        .select('*')
+        .eq('type', 'landing')
+        .order('created_at', { ascending: false })
+        .limit(200);
+      data = fallback.data;
+      error = fallback.error;
+    }
+
+    // Last resort: all image-like rows so picker never stays empty
+    if ((!data || data.length === 0) && !error) {
+      const all = await supabaseClient
+        .from('media')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
+      data = all.data;
+      error = all.error;
+    }
+
+    if (error) {
+      console.error('[Media] Load failed:', error);
+      mediaLibrary = [];
+      return;
+    }
+
+    mediaLibrary = (data || []).map(m => ({
+      ...m,
+      url:  m.url || m.thumbnail_url || '',
+      name: m.label || m.name || 'image',
+      type: m.type || ''
+    })).filter(m => {
+      const u = String(m.url || '');
+      const t = String(m.type || '').toLowerCase();
+      // keep real images; skip empty urls
+      return !!u && (
+        t === 'landing page' ||
+        t === 'landing' ||
+        t === 'background' ||
+        t === 'avatar' ||
+        t === 'mission' ||
+        t.startsWith('image') ||
+        /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i.test(u) ||
+        u.includes('unsplash') ||
+        u.includes('supabase')
+      );
+    });
+
+    console.log('[Media] Loaded', mediaLibrary.length, 'items', mediaLibrary[0] || null);
+  } catch (err) {
+    console.error('[Media] Unexpected error:', err);
+    mediaLibrary = [];
+  }
+}
       theme: {
         extend: {
           colors: {
@@ -581,28 +647,72 @@ async function loadSections() {
 }
 
 async function loadMediaLibrary() {
-  const { data, error } = await supabaseClient
-    .from('media')
-    .select('id, name, url, type, folder')
-    .eq('folder', 'landing page') // ← only shows landing page images
-    .order('created_at', { ascending: false })
-    .limit(200);
-  if (!error && data) {
-    mediaLibrary = data.filter(m => (m.type && m.type.startsWith('image')) || (m.url && m.url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)));
-  } else if (error) {
-    console.warn('[Media] Could not filter by folder, loading all:', error.message);
-    // Fallback: load all if folder column doesn't exist yet
-    const { data: allData } = await supabaseClient
+  try {
+    // Prefer landing page assets
+    let { data, error } = await supabaseClient
       .from('media')
-      .select('id, name, url, type')
+      .select('*')
+      .eq('type', 'landing page')
       .order('created_at', { ascending: false })
-      .limit(100);
-    if (allData) {
-      mediaLibrary = allData.filter(m => (m.type && m.type.startsWith('image')) || (m.url && m.url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)));
+      .limit(200);
+
+    // Fallback: old value 'landing' if rename not run yet
+    if ((!data || data.length === 0) && !error) {
+      const fallback = await supabaseClient
+        .from('media')
+        .select('*')
+        .eq('type', 'landing')
+        .order('created_at', { ascending: false })
+        .limit(200);
+      data = fallback.data;
+      error = fallback.error;
     }
+
+    // Last resort: all image-like rows so picker never stays empty
+    if ((!data || data.length === 0) && !error) {
+      const all = await supabaseClient
+        .from('media')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
+      data = all.data;
+      error = all.error;
+    }
+
+    if (error) {
+      console.error('[Media] Load failed:', error);
+      mediaLibrary = [];
+      return;
+    }
+
+    mediaLibrary = (data || []).map(m => ({
+      ...m,
+      url:  m.url || m.thumbnail_url || '',
+      name: m.label || m.name || 'image',
+      type: m.type || ''
+    })).filter(m => {
+      const u = String(m.url || '');
+      const t = String(m.type || '').toLowerCase();
+      // keep real images; skip empty urls
+      return !!u && (
+        t === 'landing page' ||
+        t === 'landing' ||
+        t === 'background' ||
+        t === 'avatar' ||
+        t === 'mission' ||
+        t.startsWith('image') ||
+        /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i.test(u) ||
+        u.includes('unsplash') ||
+        u.includes('supabase')
+      );
+    });
+
+    console.log('[Media] Loaded', mediaLibrary.length, 'items', mediaLibrary[0] || null);
+  } catch (err) {
+    console.error('[Media] Unexpected error:', err);
+    mediaLibrary = [];
   }
 }
-
 async function loadTiers() {
   const { data, error } = await supabaseClient
     .from('tiers')
