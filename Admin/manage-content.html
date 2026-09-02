@@ -169,28 +169,19 @@
     </div>
   </header>
 
-  <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
-    <div class="w-full lg:w-80 xl:w-96 border-b lg:border-b-0 lg:border-r border-surface-chigh bg-surface-clow/50 flex flex-col overflow-hidden">
-      <div class="flex items-center justify-between px-5 py-4 border-b border-surface-chigh">
-        <h3 class="font-headline font-bold text-on-surface" style="font-size:14px;">Sections</h3>
-        <button onclick="openAddSectionModal()" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-on-primary font-body font-semibold transition-all hover:shadow-ambient-sm active:scale-[0.97]" style="font-size:11px;">
-          <span class="material-symbols-outlined" style="font-size:14px;">add</span>Add
-        </button>
-      </div>
-      <div id="sectionList" class="flex-1 overflow-y-auto p-3 space-y-2">
-        <div class="p-8 text-center">
-          <span class="material-symbols-outlined text-primary spin" style="font-size:24px;">progress_activity</span>
-          <p class="font-body text-on-surface-variant mt-2" style="font-size:12px;">Loading sections...</p>
-        </div>
-      </div>
-    </div>
-    <div class="flex-1 overflow-y-auto bg-surface">
-      <div id="editorPanel">
-        <div class="empty-state h-full min-h-[400px]">
-          <span class="material-symbols-outlined text-outline-variant" style="font-size:48px;">web</span>
-          <p class="font-headline font-bold text-on-surface-variant mt-4" style="font-size:16px;">Select a section to edit</p>
-          <p class="font-body text-outline mt-1" style="font-size:13px;">Choose from the list on the left or add a new section</p>
-        </div>
+<div class="flex items-center gap-2">
+  <button onclick="togglePreview()" id="previewToggleBtn" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-cl border border-surface-chigh text-on-surface-variant hover:text-on-surface font-body font-semibold transition-all" style="font-size:12px;">
+    <span class="material-symbols-outlined" style="font-size:16px;">visibility</span>
+    <span id="previewToggleText">Show Preview</span>
+  </button>
+  <button onclick="previewPage()" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-cl border border-surface-chigh text-on-surface-variant hover:text-on-surface font-body font-semibold transition-all" style="font-size:12px;">
+    <span class="material-symbols-outlined" style="font-size:16px;">open_in_new</span>Open Live
+  </button>
+  <button onclick="saveAllSections()" id="saveBtn" class="flex items-center gap-1.5 px-4 py-2 rounded-lg signature-gradient text-on-primary font-headline font-semibold hover:shadow-ambient-sm transition-all active:scale-[0.97]" style="font-size:13px;">
+    <span class="material-symbols-outlined" style="font-size:16px;">save</span>
+    <span id="saveBtnText">Save Changes</span>
+  </button>
+       </div>
       </div>
     </div>
   </div>
@@ -209,6 +200,33 @@
       <p class="font-body text-on-surface-variant mb-4" style="font-size:13px;">Choose a section type to add to your landing page.</p>
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="sectionTypeGrid"></div>
     </div>
+    <!-- PREVIEW PANEL -->
+<div id="previewPanel" class="hidden lg:w-[45%] xl:w-[50%] border-l border-surface-chigh bg-surface-clow flex-col overflow-hidden">
+  <div class="flex items-center justify-between px-4 py-3 border-b border-surface-chigh bg-surface-cl">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary" style="font-size:18px;">devices</span>
+      <span class="font-headline font-bold text-on-surface" style="font-size:13px;">Live Preview</span>
+      <span class="chip chip-features" style="font-size:9px;">Unsaved changes shown</span>
+    </div>
+    <div class="flex items-center gap-1">
+      <button onclick="setPreviewSize('mobile')" id="previewMobile" class="w-8 h-8 rounded-md hover:bg-surface-c flex items-center justify-center text-outline transition-colors" title="Mobile">
+        <span class="material-symbols-outlined" style="font-size:16px;">smartphone</span>
+      </button>
+      <button onclick="setPreviewSize('tablet')" id="previewTablet" class="w-8 h-8 rounded-md hover:bg-surface-c flex items-center justify-center text-outline transition-colors" title="Tablet">
+        <span class="material-symbols-outlined" style="font-size:16px;">tablet</span>
+      </button>
+      <button onclick="setPreviewSize('desktop')" id="previewDesktop" class="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center text-primary transition-colors" title="Desktop">
+        <span class="material-symbols-outlined" style="font-size:16px;">desktop_windows</span>
+      </button>
+      <button onclick="refreshPreview()" class="w-8 h-8 rounded-md hover:bg-surface-c flex items-center justify-center text-outline transition-colors" title="Refresh">
+        <span class="material-symbols-outlined" style="font-size:16px;">refresh</span>
+      </button>
+    </div>
+  </div>
+  <div class="flex-1 overflow-auto bg-surface-c p-4 flex items-start justify-center">
+    <iframe id="previewFrame" src="/index.html?preview=1" class="bg-white shadow-float rounded-lg transition-all duration-300" style="width:100%;height:100%;min-height:600px;border:none;"></iframe>
+  </div>
+</div>
   </div>
 </div>
 
@@ -1159,6 +1177,78 @@ async function saveAllSections() {
     if (btn) btn.disabled = false;
   }
 }
+  // ─── PREVIEW PANEL ─────────────────────────────────────────
+let previewOpen = false;
+
+function togglePreview() {
+  previewOpen = !previewOpen;
+  const panel = document.getElementById('previewPanel');
+  const text = document.getElementById('previewToggleText');
+  if (previewOpen) {
+    panel.classList.remove('hidden');
+    panel.classList.add('flex');
+    text.textContent = 'Hide Preview';
+    setTimeout(() => pushPreviewUpdate(), 300);
+  } else {
+    panel.classList.add('hidden');
+    panel.classList.remove('flex');
+    text.textContent = 'Show Preview';
+  }
+}
+
+function setPreviewSize(size) {
+  const frame = document.getElementById('previewFrame');
+  ['previewMobile', 'previewTablet', 'previewDesktop'].forEach(id => {
+    const btn = document.getElementById(id);
+    btn.classList.remove('bg-primary/10', 'text-primary');
+    btn.classList.add('text-outline');
+  });
+  const active = document.getElementById('preview' + size.charAt(0).toUpperCase() + size.slice(1));
+  active.classList.add('bg-primary/10', 'text-primary');
+  active.classList.remove('text-outline');
+
+  if (size === 'mobile') { frame.style.width = '390px'; frame.style.maxWidth = '390px'; }
+  else if (size === 'tablet') { frame.style.width = '768px'; frame.style.maxWidth = '768px'; }
+  else { frame.style.width = '100%'; frame.style.maxWidth = 'none'; }
+}
+
+function refreshPreview() {
+  const frame = document.getElementById('previewFrame');
+  frame.src = frame.src;
+}
+function previewPage() {
+  window.open('/index.html', '_blank');
+}
+function pushPreviewUpdate() {
+  if (!previewOpen) return;
+  collectEditorData(); // sync latest form values into sections state
+  const frame = document.getElementById('previewFrame');
+  if (frame && frame.contentWindow) {
+    frame.contentWindow.postMessage({
+      type: 'CMS_UPDATE',
+      sections: sections
+    }, '*');
+  }
+}
+
+// Push preview updates on every change (debounced)
+let previewTimer = null;
+const origMarkDirty = markDirty;
+markDirty = function() {
+  origMarkDirty();
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(pushPreviewUpdate, 400);
+};
+
+// When iframe loads, push current state
+document.addEventListener('DOMContentLoaded', () => {
+  const frame = document.getElementById('previewFrame');
+  if (frame) {
+    frame.addEventListener('load', () => {
+      setTimeout(pushPreviewUpdate, 200);
+    });
+  }
+});
 </script>
 </body>
 </html>
