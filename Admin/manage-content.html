@@ -150,6 +150,8 @@
 
 <!-- MAIN -->
 <main class="flex-1 md:ml-64 min-h-screen flex flex-col">
+
+  <!-- HEADER -->
   <header class="sticky top-0 z-20 bg-surface/85 backdrop-blur-xl border-b border-surface-chigh">
     <div class="flex items-center gap-4 px-6 lg:px-8 py-4">
       <button onclick="toggleSidebar()" class="md:hidden text-on-surface"><span class="material-symbols-outlined">menu</span></button>
@@ -158,8 +160,12 @@
         <p class="font-body text-on-surface-variant" style="font-size:12px;">Manage your landing page sections</p>
       </div>
       <div class="flex items-center gap-2">
-        <button onclick="previewPage()" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-cl border border-surface-chigh text-on-surface-variant hover:text-on-surface font-body font-semibold transition-all" style="font-size:12px;">
-          <span class="material-symbols-outlined" style="font-size:16px;">visibility</span>Preview
+        <button onclick="togglePreview()" id="previewToggleBtn" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-cl border border-surface-chigh text-on-surface-variant hover:text-on-surface font-body font-semibold transition-all" style="font-size:12px;">
+          <span class="material-symbols-outlined" style="font-size:16px;">visibility</span>
+          <span id="previewToggleText">Show Preview</span>
+        </button>
+        <button onclick="openLivePage()" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-cl border border-surface-chigh text-on-surface-variant hover:text-on-surface font-body font-semibold transition-all" style="font-size:12px;">
+          <span class="material-symbols-outlined" style="font-size:16px;">open_in_new</span>Open Live
         </button>
         <button onclick="saveAllSections()" id="saveBtn" class="flex items-center gap-1.5 px-4 py-2 rounded-lg signature-gradient text-on-primary font-headline font-semibold hover:shadow-ambient-sm transition-all active:scale-[0.97]" style="font-size:13px;">
           <span class="material-symbols-outlined" style="font-size:16px;">save</span>
@@ -169,21 +175,63 @@
     </div>
   </header>
 
-<div class="flex items-center gap-2">
-  <button onclick="togglePreview()" id="previewToggleBtn" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-cl border border-surface-chigh text-on-surface-variant hover:text-on-surface font-body font-semibold transition-all" style="font-size:12px;">
-    <span class="material-symbols-outlined" style="font-size:16px;">visibility</span>
-    <span id="previewToggleText">Show Preview</span>
-  </button>
-  <button onclick="previewPage()" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-cl border border-surface-chigh text-on-surface-variant hover:text-on-surface font-body font-semibold transition-all" style="font-size:12px;">
-    <span class="material-symbols-outlined" style="font-size:16px;">open_in_new</span>Open Live
-  </button>
-  <button onclick="saveAllSections()" id="saveBtn" class="flex items-center gap-1.5 px-4 py-2 rounded-lg signature-gradient text-on-primary font-headline font-semibold hover:shadow-ambient-sm transition-all active:scale-[0.97]" style="font-size:13px;">
-    <span class="material-symbols-outlined" style="font-size:16px;">save</span>
-    <span id="saveBtnText">Save Changes</span>
-  </button>
-       </div>
+  <!-- CMS BODY -->
+  <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+
+    <!-- LEFT PANEL: Section List -->
+    <div class="w-full lg:w-80 xl:w-96 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-surface-chigh bg-surface-clow/50 flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-surface-chigh">
+        <h3 class="font-headline font-bold text-on-surface" style="font-size:14px;">Sections</h3>
+        <button onclick="openAddSectionModal()" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-on-primary font-body font-semibold transition-all hover:shadow-ambient-sm active:scale-[0.97]" style="font-size:11px;">
+          <span class="material-symbols-outlined" style="font-size:14px;">add</span>Add
+        </button>
+      </div>
+      <div id="sectionList" class="flex-1 overflow-y-auto p-3 space-y-2">
+        <div class="p-8 text-center">
+          <span class="material-symbols-outlined text-primary spin" style="font-size:24px;">progress_activity</span>
+          <p class="font-body text-on-surface-variant mt-2" style="font-size:12px;">Loading sections...</p>
+        </div>
       </div>
     </div>
+
+    <!-- MIDDLE PANEL: Section Editor -->
+    <div class="flex-1 min-w-0 overflow-y-auto bg-surface">
+      <div id="editorPanel">
+        <div class="empty-state h-full min-h-[400px]">
+          <span class="material-symbols-outlined text-outline-variant" style="font-size:48px;">web</span>
+          <p class="font-headline font-bold text-on-surface-variant mt-4" style="font-size:16px;">Select a section to edit</p>
+          <p class="font-body text-outline mt-1" style="font-size:13px;">Choose from the list on the left or add a new section</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: Live Preview -->
+    <div id="previewPanel" class="hidden lg:w-[45%] xl:w-[50%] flex-shrink-0 border-l border-surface-chigh bg-surface-clow flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-surface-chigh bg-surface-cl">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary" style="font-size:18px;">devices</span>
+          <span class="font-headline font-bold text-on-surface" style="font-size:13px;">Live Preview</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <button onclick="setPreviewSize('mobile')" id="previewMobile" class="w-8 h-8 rounded-md hover:bg-surface-c flex items-center justify-center text-outline transition-colors" title="Mobile">
+            <span class="material-symbols-outlined" style="font-size:16px;">smartphone</span>
+          </button>
+          <button onclick="setPreviewSize('tablet')" id="previewTablet" class="w-8 h-8 rounded-md hover:bg-surface-c flex items-center justify-center text-outline transition-colors" title="Tablet">
+            <span class="material-symbols-outlined" style="font-size:16px;">tablet</span>
+          </button>
+          <button onclick="setPreviewSize('desktop')" id="previewDesktop" class="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center text-primary transition-colors" title="Desktop">
+            <span class="material-symbols-outlined" style="font-size:16px;">desktop_windows</span>
+          </button>
+          <button onclick="refreshPreview()" class="w-8 h-8 rounded-md hover:bg-surface-c flex items-center justify-center text-outline transition-colors" title="Refresh">
+            <span class="material-symbols-outlined" style="font-size:16px;">refresh</span>
+          </button>
+        </div>
+      </div>
+      <div class="flex-1 overflow-auto bg-surface-c p-4 flex items-start justify-center">
+        <iframe id="previewFrame" src="about:blank" class="bg-white shadow-float rounded-lg transition-all duration-300" style="width:100%;height:100%;min-height:600px;border:none;"></iframe>
+      </div>
+    </div>
+
   </div>
 </main>
 
@@ -200,33 +248,6 @@
       <p class="font-body text-on-surface-variant mb-4" style="font-size:13px;">Choose a section type to add to your landing page.</p>
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="sectionTypeGrid"></div>
     </div>
-    <!-- PREVIEW PANEL -->
-<div id="previewPanel" class="hidden lg:w-[45%] xl:w-[50%] border-l border-surface-chigh bg-surface-clow flex-col overflow-hidden">
-  <div class="flex items-center justify-between px-4 py-3 border-b border-surface-chigh bg-surface-cl">
-    <div class="flex items-center gap-2">
-      <span class="material-symbols-outlined text-primary" style="font-size:18px;">devices</span>
-      <span class="font-headline font-bold text-on-surface" style="font-size:13px;">Live Preview</span>
-      <span class="chip chip-features" style="font-size:9px;">Unsaved changes shown</span>
-    </div>
-    <div class="flex items-center gap-1">
-      <button onclick="setPreviewSize('mobile')" id="previewMobile" class="w-8 h-8 rounded-md hover:bg-surface-c flex items-center justify-center text-outline transition-colors" title="Mobile">
-        <span class="material-symbols-outlined" style="font-size:16px;">smartphone</span>
-      </button>
-      <button onclick="setPreviewSize('tablet')" id="previewTablet" class="w-8 h-8 rounded-md hover:bg-surface-c flex items-center justify-center text-outline transition-colors" title="Tablet">
-        <span class="material-symbols-outlined" style="font-size:16px;">tablet</span>
-      </button>
-      <button onclick="setPreviewSize('desktop')" id="previewDesktop" class="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center text-primary transition-colors" title="Desktop">
-        <span class="material-symbols-outlined" style="font-size:16px;">desktop_windows</span>
-      </button>
-      <button onclick="refreshPreview()" class="w-8 h-8 rounded-md hover:bg-surface-c flex items-center justify-center text-outline transition-colors" title="Refresh">
-        <span class="material-symbols-outlined" style="font-size:16px;">refresh</span>
-      </button>
-    </div>
-  </div>
-  <div class="flex-1 overflow-auto bg-surface-c p-4 flex items-start justify-center">
-    <iframe id="previewFrame" src="/index.html?preview=1" class="bg-white shadow-float rounded-lg transition-all duration-300" style="width:100%;height:100%;min-height:600px;border:none;"></iframe>
-  </div>
-</div>
   </div>
 </div>
 
@@ -297,6 +318,16 @@ let tierPickerTarget = null;
 let selectedImageId = null;
 let selectedTierIds = [];
 let isDirty = false;
+let previewOpen = false;
+let previewLoaded = false;
+let previewTimer = null;
+
+// ─── SAFE DOM HELPER ───────────────────────────────────────
+function $(id) {
+  const el = document.getElementById(id);
+  if (!el) console.warn(`[CMS] Missing DOM element: #${id}`);
+  return el;
+}
 
 // ─── UTILITY FUNCTIONS ─────────────────────────────────────
 function escapeHtml(str) {
@@ -308,18 +339,21 @@ function escapeHtml(str) {
 
 function escapeAttr(str) {
   if (!str) return '';
-  return str.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 function markDirty() {
   isDirty = true;
-  const btnText = document.getElementById('saveBtnText');
+  const btnText = $('saveBtnText');
   if (btnText) btnText.textContent = 'Save Changes *';
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(pushPreviewUpdate, 400);
 }
 
 let toastTimer = null;
 function showToast(message, type = 'success') {
-  const toast = document.getElementById('toast');
+  const toast = $('toast');
+  if (!toast) return;
   toast.textContent = message;
   toast.className = 'toast toast-' + type + ' show';
   clearTimeout(toastTimer);
@@ -327,10 +361,10 @@ function showToast(message, type = 'success') {
 }
 
 function toggleSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('sidebarOverlay');
-  sidebar.classList.toggle('hidden');
-  overlay.classList.toggle('hidden');
+  const sidebar = $('sidebar');
+  const overlay = $('sidebarOverlay');
+  if (sidebar) sidebar.classList.toggle('hidden');
+  if (overlay) overlay.classList.toggle('hidden');
 }
 
 async function handleLogout() {
@@ -338,14 +372,84 @@ async function handleLogout() {
   window.location.href = '/login.html';
 }
 
-function previewPage() {
-  window.open('/', '_blank');
+function openLivePage() {
+  window.open('/index.html', '_blank');
+}
+
+// ─── PREVIEW PANEL ─────────────────────────────────────────
+function togglePreview() {
+  previewOpen = !previewOpen;
+  const panel = $('previewPanel');
+  const text  = $('previewToggleText');
+  if (!panel) return;
+
+  if (previewOpen) {
+    panel.classList.remove('hidden');
+    panel.classList.add('flex');
+    if (text) text.textContent = 'Hide Preview';
+
+    const frame = $('previewFrame');
+    if (frame && !previewLoaded) {
+      previewLoaded = true;
+      frame.addEventListener('load', () => setTimeout(pushPreviewUpdate, 200));
+      frame.src = '/index.html?preview=1';
+    } else {
+      setTimeout(pushPreviewUpdate, 150);
+    }
+  } else {
+    panel.classList.add('hidden');
+    panel.classList.remove('flex');
+    if (text) text.textContent = 'Show Preview';
+  }
+}
+
+function setPreviewSize(size) {
+  const frame = $('previewFrame');
+  if (!frame) return;
+  ['previewMobile', 'previewTablet', 'previewDesktop'].forEach(id => {
+    const btn = $(id);
+    if (!btn) return;
+    btn.classList.remove('bg-primary/10', 'text-primary');
+    btn.classList.add('text-outline');
+  });
+  const active = $('preview' + size.charAt(0).toUpperCase() + size.slice(1));
+  if (active) {
+    active.classList.add('bg-primary/10', 'text-primary');
+    active.classList.remove('text-outline');
+  }
+
+  if (size === 'mobile') { frame.style.width = '390px'; frame.style.maxWidth = '390px'; }
+  else if (size === 'tablet') { frame.style.width = '768px'; frame.style.maxWidth = '768px'; }
+  else { frame.style.width = '100%'; frame.style.maxWidth = 'none'; }
+}
+
+function refreshPreview() {
+  const frame = $('previewFrame');
+  if (!frame) return;
+  frame.src = '/index.html?preview=1&t=' + Date.now();
+}
+
+function pushPreviewUpdate() {
+  if (!previewOpen) return;
+  collectEditorData();
+  const frame = $('previewFrame');
+  if (frame && frame.contentWindow) {
+    // Include media map so gallery images render in preview
+    const mediaMap = {};
+    mediaLibrary.forEach(m => mediaMap[m.id] = m.url);
+    frame.contentWindow.postMessage({
+      type: 'CMS_UPDATE',
+      sections: JSON.parse(JSON.stringify(sections)),
+      mediaMap: mediaMap,
+      tiers: allTiers
+    }, '*');
+  }
 }
 
 // ─── SECTION TYPE DEFINITIONS ──────────────────────────────
 const SECTION_TYPES = {
   hero: {
-    label: 'Hero', icon: 'hero', chipClass: 'chip-hero',
+    label: 'Hero', icon: 'flag', chipClass: 'chip-hero',
     description: 'Main headline with CTA',
     defaultData: {
       headline: 'Your Headline Here',
@@ -436,7 +540,8 @@ async function loadSections() {
   if (error) {
     console.error('Error loading sections:', error);
     showToast('Failed to load sections', 'error');
-    document.getElementById('sectionList').innerHTML = `
+    const list = $('sectionList');
+    if (list) list.innerHTML = `
       <div class="empty-state">
         <span class="material-symbols-outlined text-tertiary" style="font-size:32px;">error</span>
         <p class="font-body text-on-surface-variant mt-2" style="font-size:12px;">Error loading sections</p>
@@ -457,7 +562,7 @@ async function loadMediaLibrary() {
     .order('created_at', { ascending: false })
     .limit(100);
   if (!error && data) {
-    mediaLibrary = data.filter(m => m.type?.startsWith('image') || m.url?.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i));
+    mediaLibrary = data.filter(m => (m.type && m.type.startsWith('image')) || (m.url && m.url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)));
   }
 }
 
@@ -471,7 +576,9 @@ async function loadTiers() {
 
 // ─── RENDER: SECTION LIST ──────────────────────────────────
 function renderSectionList() {
-  const container = document.getElementById('sectionList');
+  const container = $('sectionList');
+  if (!container) return;
+
   if (sections.length === 0) {
     container.innerHTML = `
       <div class="empty-state py-12">
@@ -527,12 +634,14 @@ function selectSection(id) {
 }
 
 function renderEditor() {
+  const panel = $('editorPanel');
+  if (!panel) return;
+
   const s = sections.find(x => x.id === activeSectionId);
   if (!s) { renderEmptyEditor(); return; }
 
   const type = SECTION_TYPES[s.section_type] || SECTION_TYPES.custom;
   const d = s.data || {};
-  const panel = document.getElementById('editorPanel');
 
   let fieldsHTML = '';
 
@@ -698,7 +807,9 @@ function renderEditor() {
 }
 
 function renderEmptyEditor() {
-  document.getElementById('editorPanel').innerHTML = `
+  const panel = $('editorPanel');
+  if (!panel) return;
+  panel.innerHTML = `
     <div class="empty-state h-full min-h-[400px]">
       <span class="material-symbols-outlined text-outline-variant" style="font-size:48px;">web</span>
       <p class="font-headline font-bold text-on-surface-variant mt-4" style="font-size:16px;">Select a section to edit</p>
@@ -861,7 +972,8 @@ function collectEditorData() {
 
 // ─── SECTION CRUD ──────────────────────────────────────────
 function openAddSectionModal() {
-  const grid = document.getElementById('sectionTypeGrid');
+  const grid = $('sectionTypeGrid');
+  if (!grid) return;
   grid.innerHTML = Object.entries(SECTION_TYPES).map(([key, t]) => `
     <button onclick="addSection('${key}')" class="flex flex-col items-center gap-2 p-4 rounded-xl border border-surface-chigh hover:border-primary hover:bg-primary/5 transition-all text-center">
       <span class="material-symbols-outlined text-primary" style="font-size:28px;">${t.icon}</span>
@@ -869,11 +981,12 @@ function openAddSectionModal() {
       <span class="font-body text-outline" style="font-size:10px;">${t.description}</span>
     </button>
   `).join('');
-  document.getElementById('addSectionModal').classList.add('open');
+  $('addSectionModal').classList.add('open');
 }
 
 function closeAddSectionModal() {
-  document.getElementById('addSectionModal').classList.remove('open');
+  const m = $('addSectionModal');
+  if (m) m.classList.remove('open');
 }
 
 async function addSection(type) {
@@ -962,7 +1075,8 @@ function onDragEnd(e) {
 function openImagePicker(field) {
   imagePickerTarget = { sectionId: activeSectionId, field };
   selectedImageId = null;
-  const grid = document.getElementById('imagePickerGrid');
+  const grid = $('imagePickerGrid');
+  if (!grid) return;
 
   if (mediaLibrary.length === 0) {
     grid.innerHTML = `<div class="col-span-full text-center py-8"><p class="font-body text-outline" style="font-size:13px;">No images in Media Library yet.</p><a href="manage-media.html" class="text-primary font-semibold hover:underline" style="font-size:12px;">Upload images →</a></div>`;
@@ -974,7 +1088,7 @@ function openImagePicker(field) {
       </div>
     `).join('');
   }
-  document.getElementById('imagePickerModal').classList.add('open');
+  $('imagePickerModal').classList.add('open');
 }
 
 function selectImage(id) {
@@ -1018,7 +1132,8 @@ function confirmImagePick() {
 }
 
 function closeImagePicker() {
-  document.getElementById('imagePickerModal').classList.remove('open');
+  const m = $('imagePickerModal');
+  if (m) m.classList.remove('open');
   imagePickerTarget = null;
 }
 
@@ -1026,9 +1141,11 @@ function closeImagePicker() {
 function openGalleryPicker() {
   imagePickerTarget = { sectionId: activeSectionId, field: '__gallery__' };
   selectedImageId = null;
-  const grid = document.getElementById('imagePickerGrid');
+  const grid = $('imagePickerGrid');
+  if (!grid) return;
+
   const s = sections.find(x => x.id === activeSectionId);
-  const currentIds = s?.data?.image_ids || [];
+  const currentIds = (s && s.data && s.data.image_ids) || [];
 
   if (mediaLibrary.length === 0) {
     grid.innerHTML = `<div class="col-span-full text-center py-8"><p class="font-body text-outline" style="font-size:13px;">No images in Media Library yet.</p></div>`;
@@ -1041,7 +1158,7 @@ function openGalleryPicker() {
         </div>`;
     }).join('');
   }
-  document.getElementById('imagePickerModal').classList.add('open');
+  $('imagePickerModal').classList.add('open');
 }
 
 function toggleGalleryImage(id) {
@@ -1061,8 +1178,9 @@ function removeGalleryImage(imgId) {
 function openTierPicker() {
   tierPickerTarget = activeSectionId;
   const s = sections.find(x => x.id === activeSectionId);
-  selectedTierIds = [...(s?.data?.tier_ids || [])];
-  const list = document.getElementById('tierPickerList');
+  selectedTierIds = [...((s && s.data && s.data.tier_ids) || [])];
+  const list = $('tierPickerList');
+  if (!list) return;
 
   if (allTiers.length === 0) {
     list.innerHTML = `<div class="text-center py-8"><p class="font-body text-outline" style="font-size:13px;">No tiers found.</p><a href="manage-tiers.html" class="text-primary font-semibold hover:underline" style="font-size:12px;">Create tiers →</a></div>`;
@@ -1079,7 +1197,7 @@ function openTierPicker() {
         </label>`;
     }).join('');
   }
-  document.getElementById('tierPickerModal').classList.add('open');
+  $('tierPickerModal').classList.add('open');
 }
 
 function toggleTierSelection(id) {
@@ -1102,7 +1220,8 @@ function confirmTierPick() {
 }
 
 function closeTierPicker() {
-  document.getElementById('tierPickerModal').classList.remove('open');
+  const m = $('tierPickerModal');
+  if (m) m.classList.remove('open');
   tierPickerTarget = null;
 }
 
@@ -1118,8 +1237,8 @@ function removeTierFromSection(tid) {
 async function saveAllSections() {
   collectEditorData();
 
-  const btn = document.getElementById('saveBtn');
-  const btnText = document.getElementById('saveBtnText');
+  const btn = $('saveBtn');
+  const btnText = $('saveBtnText');
   if (btn) btn.disabled = true;
   if (btnText) btnText.textContent = 'Saving...';
 
@@ -1177,78 +1296,6 @@ async function saveAllSections() {
     if (btn) btn.disabled = false;
   }
 }
-  // ─── PREVIEW PANEL ─────────────────────────────────────────
-let previewOpen = false;
-
-function togglePreview() {
-  previewOpen = !previewOpen;
-  const panel = document.getElementById('previewPanel');
-  const text = document.getElementById('previewToggleText');
-  if (previewOpen) {
-    panel.classList.remove('hidden');
-    panel.classList.add('flex');
-    text.textContent = 'Hide Preview';
-    setTimeout(() => pushPreviewUpdate(), 300);
-  } else {
-    panel.classList.add('hidden');
-    panel.classList.remove('flex');
-    text.textContent = 'Show Preview';
-  }
-}
-
-function setPreviewSize(size) {
-  const frame = document.getElementById('previewFrame');
-  ['previewMobile', 'previewTablet', 'previewDesktop'].forEach(id => {
-    const btn = document.getElementById(id);
-    btn.classList.remove('bg-primary/10', 'text-primary');
-    btn.classList.add('text-outline');
-  });
-  const active = document.getElementById('preview' + size.charAt(0).toUpperCase() + size.slice(1));
-  active.classList.add('bg-primary/10', 'text-primary');
-  active.classList.remove('text-outline');
-
-  if (size === 'mobile') { frame.style.width = '390px'; frame.style.maxWidth = '390px'; }
-  else if (size === 'tablet') { frame.style.width = '768px'; frame.style.maxWidth = '768px'; }
-  else { frame.style.width = '100%'; frame.style.maxWidth = 'none'; }
-}
-
-function refreshPreview() {
-  const frame = document.getElementById('previewFrame');
-  frame.src = frame.src;
-}
-function previewPage() {
-  window.open('/index.html', '_blank');
-}
-function pushPreviewUpdate() {
-  if (!previewOpen) return;
-  collectEditorData(); // sync latest form values into sections state
-  const frame = document.getElementById('previewFrame');
-  if (frame && frame.contentWindow) {
-    frame.contentWindow.postMessage({
-      type: 'CMS_UPDATE',
-      sections: sections
-    }, '*');
-  }
-}
-
-// Push preview updates on every change (debounced)
-let previewTimer = null;
-const origMarkDirty = markDirty;
-markDirty = function() {
-  origMarkDirty();
-  clearTimeout(previewTimer);
-  previewTimer = setTimeout(pushPreviewUpdate, 400);
-};
-
-// When iframe loads, push current state
-document.addEventListener('DOMContentLoaded', () => {
-  const frame = document.getElementById('previewFrame');
-  if (frame) {
-    frame.addEventListener('load', () => {
-      setTimeout(pushPreviewUpdate, 200);
-    });
-  }
-});
 </script>
 </body>
 </html>
