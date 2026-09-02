@@ -272,7 +272,7 @@ function switchTab(tab) {
   getEl('view-badgeRules').classList.toggle('hidden', tab !== 'badgeRules'); 
 }
 
-// --- TROPHIES ---
+// --- TROPHIES & AVATARS (Kept same as before) ---
 function populateDropdowns() { 
   var tImgSel = getEl('trophyImage'); if(tImgSel) { tImgSel.innerHTML = '<option value="">-- Select Image --</option>'; trophyImages.forEach(m => tImgSel.innerHTML += `<option value="${m.url}">${m.label}</option>`); }
   var aImgMaleSel = getEl('avatarImageMale'); var aImgFemaleSel = getEl('avatarImageFemale');
@@ -332,7 +332,6 @@ async function saveTrophy() {
   btn.disabled = false; btn.textContent = 'Save Trophy';
 }
 
-// --- AVATARS ---
 function renderAvatars() {
   var list = getEl('avatarList'); if(!list) return;
   if (allAvatars.length === 0) { list.innerHTML = '<div class="text-center py-10 text-slate-400">No avatar stages created yet.</div>'; return; }
@@ -352,15 +351,19 @@ async function saveAvatar() {
   btn.disabled = false; btn.textContent = 'Save Stage';
 }
 
-// --- BADGE RULES ---
+// --- BADGE RULES (UPDATED LOGIC) ---
 function renderBadgeRules() {
   var list = getEl('badgeRuleList'); if(!list) return;
   if (allBadgeRules.length === 0) { list.innerHTML = '<div class="text-center py-10 text-slate-400">No badge rules created yet.</div>'; return; }
   list.innerHTML = allBadgeRules.map(b => `<div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="editBadgeRule('${b.id}')"><div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">${b.image_url ? `<img src="${b.image_url}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300">emoji_events</span>'}</div><div class="flex-1"><h4 class="font-headline font-bold text-slate-800">${b.name}</h4><p class="text-[10px] font-bold text-primary uppercase">${b.rule_type} Rule</p></div><span class="material-symbols-outlined text-slate-300">edit</span></div>`).join('');
 }
 
+function renderRuleCampaignChecklist(selectedIds = []) {
+  getEl('ruleCampaignList').innerHTML = allCampaigns.map(c => `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer"><input type="checkbox" value="${c.id}" class="rule-campaign-cb" ${selectedIds.includes(c.id) ? 'checked' : ''}><span class="text-sm font-semibold text-slate-700">${c.name}</span></label>`).join('');
+}
+
 function openBadgeRuleModal() {
-  getEl('ruleBadgeId').value = ''; getEl('ruleType').value = 'campaign'; getEl('milestoneStat').value = 'shares'; getEl('milestoneTarget').value = ''; toggleRuleFields();
+  getEl('ruleBadgeId').value = ''; getEl('ruleType').value = 'campaign'; getEl('signupCondition').value = ''; toggleRuleFields();
   var sel = getEl('ruleBadgeSelect'); sel.innerHTML = '<option value="">-- Select Badge --</option>';
   supabaseClient.from('badge_definitions').select('*').then(res => { res.data.forEach(b => { sel.innerHTML += `<option value="${b.id}">${b.name}</option>`; }); });
   getEl('badgeRuleModal').classList.remove('hidden');
@@ -370,22 +373,25 @@ function editBadgeRule(id) {
   var b = allBadgeRules.find(x => x.id === id); if (!b) return;
   getEl('ruleBadgeId').value = b.id; getEl('ruleType').value = b.rule_type || 'campaign'; toggleRuleFields();
   var config = b.rule_config || {};
-  if (b.rule_type === 'milestone') { getEl('milestoneStat').value = config.stat || 'shares'; getEl('milestoneTarget').value = config.target || 0; }
+  if (b.rule_type === 'campaign') { renderRuleCampaignChecklist(config.campaign_ids || []); }
+  if (b.rule_type === 'signup') { getEl('signupCondition').value = config.condition || ''; }
   getEl('badgeRuleModal').classList.remove('hidden');
 }
 
 function toggleRuleFields() {
   var type = getEl('ruleType').value;
-  ['campaign', 'milestone', 'top10'].forEach(t => getEl(`field-${t}`).classList.add('hidden'));
+  ['campaign', 'signup', 'gift', 'top10'].forEach(t => getEl(`field-${t}`).classList.add('hidden'));
   getEl(`field-${type}`).classList.remove('hidden');
+  if (type === 'campaign') renderRuleCampaignChecklist();
 }
 
 function closeBadgeRuleModal() { getEl('badgeRuleModal').classList.add('hidden'); }
 
 async function saveBadgeRule() {
   var id = getEl('ruleBadgeId').value; var type = getEl('ruleType').value; var config = {};
-  if (type === 'milestone') { config = { stat: getEl('milestoneStat').value, target: parseInt(getEl('milestoneTarget').value) }; } 
-  else if (type === 'top10') { config = { category: getEl('top10Category').value }; }
+  if (type === 'campaign') { config.campaign_ids = Array.from(document.querySelectorAll('.rule-campaign-cb:checked')).map(cb => cb.value); } 
+  else if (type === 'signup') { config.condition = getEl('signupCondition').value; }
+  
   var data = { rule_type: type, rule_config: config };
   var btn = getEl('saveRuleBtn'); btn.disabled = true; btn.textContent = 'Saving...';
   try { var res = await supabaseClient.from('badge_definitions').update(data).eq('id', id); if (res.error) throw new Error(res.error.message); showToast('Badge rule saved!'); closeBadgeRuleModal(); await loadBadgeRules(); } catch(e) { showToast('Error: ' + e.message, true); }
