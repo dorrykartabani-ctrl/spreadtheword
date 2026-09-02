@@ -4,274 +4,382 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Rewards — Command Center</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Lora:ital@1&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+
   <script>
     tailwind.config = {
-      theme: { extend: { colors: { 'surface': '#f8fafc', 'primary': '#3d6285', 'gold': '#D4A24C' }, fontFamily: { 'headline': ['Plus Jakarta Sans', 'sans-serif'], 'body': ['Manrope', 'sans-serif'] } } }
+      theme: {
+        extend: {
+          colors: {
+            surface: '#f8fafc',
+            card: '#ffffff',
+            'text-main': '#0f172a',
+            'text-muted': '#64748b',
+            primary: '#3d6285',
+            gold: '#D4A24C',
+            common: '#94a3b8',
+            uncommon: '#16a34a',
+            rare: '#2563eb',
+            epic: '#9333ea',
+            mythic: '#d97706'
+          },
+          fontFamily: {
+            headline: ['Plus Jakarta Sans', 'sans-serif'],
+            body: ['Manrope', 'sans-serif'],
+            quote: ['Lora', 'serif']
+          }
+        }
+      }
     }
   </script>
+
   <style>
     body { font-family: 'Manrope', sans-serif; background: #f8fafc; color: #0f172a; }
     .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .tab-btn { flex: 1; padding: 12px; text-align: center; font-weight: 700; font-size: 14px; color: #64748b; border-bottom: 2px solid transparent; transition: all 0.2s; }
-    .tab-btn.active { color: #3d6285; border-bottom-color: #3d6285; background: rgba(61, 98, 133, 0.05); }
-    
-     /* Trophy Card - 4 per row */
-     .bold-block { 
-      aspect-ratio: 1 / 1; 
-      border-radius: 1rem; 
-      overflow: hidden; 
-      position: relative; 
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      justify-content: center; 
-      padding: 6px; 
-      text-align: center; 
-      color: white; 
-      transition: transform 0.2s ease;
-      cursor: pointer;
-    }
-    .bold-block:active { transform: scale(0.95); }
-    .bold-block img { max-height: 45px; width: auto; margin-bottom: 4px; object-fit: contain; }
-    .bold-block p { font-size: 10px; line-height: 1.1; } /* Smaller text */
-    
-    /* Locked State */
-    .locked-block { background-color: #cbd5e1 !important; color: #64748b; opacity: 0.8; }
-    .locked-block img { filter: grayscale(100%) opacity(0.5); }
-
-    /* Badge Card */
-    .badge-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.2s ease; padding: 10px; }
-    .badge-item:active { transform: scale(0.95); }
-    .badge-item img { width: 80px; height: 80px; object-fit: contain; margin-bottom: 8px; }
-    .badge-item.locked img { filter: grayscale(100%) opacity(0.3); }
-    .badge-item p { font-size: 11px; font-weight: 700; color: #475569; text-align: center; line-height: 1.2; }
+    .dash-card { background: white; border-radius: 24px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; }
+    .tab-btn { flex: 1; padding: 10px 12px; border-radius: 12px; font-size: 13px; font-weight: 700; color: #64748b; text-align: center; border: none; background: transparent; cursor: pointer; }
+    .tab-btn.active { background: white; color: #0f172a; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .reward-locked { filter: grayscale(1); opacity: 0.55; }
+    .material-symbols-outlined.filled { font-variation-settings: 'FILL' 1; }
   </style>
 </head>
 <body class="pb-32">
 
-<header class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 pt-[env(safe-area-inset-top)]">
+<!-- HEADER -->
+<header class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
   <div class="max-w-[430px] mx-auto px-6 py-4 flex justify-between items-center">
     <div class="flex items-center gap-3">
-      <img src="/images/icon/icon-light-512.png" alt="GSTW" class="w-8 h-8 rounded-lg object-contain">
+      <a href="impact.html" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
+        <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+      </a>
       <h1 class="font-headline font-extrabold text-lg text-slate-900">Rewards</h1>
     </div>
-    <a href="impact.html" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors">
-      <span class="material-symbols-outlined text-[20px]">bar_chart</span>
-    </a>
+    <div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+      <span class="material-symbols-outlined filled text-[20px]">workspace_premium</span>
+    </div>
   </div>
 </header>
 
-<main class="pt-24 px-5 max-w-[430px] mx-auto">
-  <div class="flex bg-white rounded-2xl p-1 shadow-sm border border-slate-100 mb-6">
-    <button onclick="switchTab('trophies')" id="tab-trophies" class="tab-btn active rounded-xl">Trophies</button>
-    <button onclick="switchTab('badges')" id="tab-badges" class="tab-btn rounded-xl">Badges</button>
-  </div>
+<main class="pt-24 px-5 max-w-[430px] mx-auto space-y-6">
 
-  <div id="section-trophies">
-    <div class="grid grid-cols-5 gap-2 mb-6">
-      <div class="flex flex-col items-center justify-center py-2 rounded-xl text-white" style="background-color: #94a3b8;"><span class="text-[8px] font-black uppercase">Common</span></div>
-      <div class="flex flex-col items-center justify-center py-2 rounded-xl text-white" style="background-color: #16a34a;"><span class="text-[8px] font-black uppercase">Uncommon</span></div>
-      <div class="flex flex-col items-center justify-center py-2 rounded-xl text-white" style="background-color: #2563eb;"><span class="text-[8px] font-black uppercase">Rare</span></div>
-      <div class="flex flex-col items-center justify-center py-2 rounded-xl text-white" style="background-color: #9333ea;"><span class="text-[8px] font-black uppercase">Epic</span></div>
-      <div class="flex flex-col items-center justify-center py-2 rounded-xl text-white" style="background-color: #d97706;"><span class="text-[8px] font-black uppercase">Mythic</span></div>
+  <!-- SUMMARY -->
+  <section class="dash-card relative overflow-hidden">
+    <div class="absolute top-0 right-0 w-32 h-32 bg-gold/10 rounded-full blur-3xl"></div>
+    <div class="relative z-10">
+      <p class="text-[10px] font-black text-gold uppercase tracking-widest">Your Collection</p>
+      <h2 class="font-headline font-black text-2xl text-slate-900 mt-1">Keep climbing</h2>
+      <div class="grid grid-cols-3 gap-3 mt-5">
+        <div class="rounded-2xl bg-slate-50 p-3 text-center">
+          <p id="summaryBadges" class="font-headline font-black text-xl text-slate-900">0</p>
+          <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Badges</p>
+        </div>
+        <div class="rounded-2xl bg-slate-50 p-3 text-center">
+          <p id="summaryTrophies" class="font-headline font-black text-xl text-slate-900">0</p>
+          <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Trophies</p>
+        </div>
+        <div class="rounded-2xl bg-slate-50 p-3 text-center">
+          <p id="summaryMythic" class="font-headline font-black text-xl text-gold">0</p>
+          <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Mythic</p>
+        </div>
+      </div>
     </div>
+  </section>
 
-    <h3 class="font-headline font-bold text-lg mb-4 px-1 text-slate-900">Your Collection</h3>
-    <div id="unlockedTrophies" class="grid grid-cols-4 gap-2 mb-8"></div>
-    <h3 class="font-headline font-bold text-lg mb-4 px-1 text-slate-900">Path to Glory</h3>
-    <div id="lockedTrophies" class="grid grid-cols-4 gap-2"></div>
-  </div>
+  <!-- TABS -->
+  <section>
+    <div class="flex bg-slate-100 rounded-2xl p-1.5 gap-1">
+      <button type="button" class="tab-btn active" data-tab="badges">Badges</button>
+      <button type="button" class="tab-btn" data-tab="trophies">Trophies</button>
+    </div>
+  </section>
 
-  <div id="section-badges" class="hidden">
-    <h3 class="font-headline font-bold text-lg mb-4 px-1 text-slate-900">Earned Badges</h3>
-    <div id="unlockedBadges" class="grid grid-cols-3 gap-2 mb-8"></div>
-    <h3 class="font-headline font-bold text-lg mb-4 px-1 text-slate-900">Future Missions</h3>
-    <div id="lockedBadges" class="grid grid-cols-3 gap-2"></div>
-  </div>
+  <!-- BADGES PANEL -->
+  <section id="panelBadges" class="space-y-4">
+    <div class="flex items-center justify-between px-1">
+      <h3 class="font-headline font-bold text-lg">Badge Cabinet</h3>
+      <span id="badgeProgressLabel" class="text-[11px] font-bold text-slate-400">0 / 0 earned</span>
+    </div>
+    <div id="badgesContainer" class="grid grid-cols-2 gap-3">
+      <div class="dash-card !p-4 text-center text-slate-400 text-xs">Loading badges...</div>
+    </div>
+  </section>
+
+  <!-- TROPHIES PANEL -->
+  <section id="panelTrophies" class="space-y-4 hidden">
+    <div class="flex items-center justify-between px-1">
+      <h3 class="font-headline font-bold text-lg">Trophy Path</h3>
+      <span id="trophyProgressLabel" class="text-[11px] font-bold text-slate-400">0 active</span>
+    </div>
+    <div id="trophiesContainer" class="space-y-3">
+      <div class="dash-card text-center text-slate-400 text-xs">Loading trophies...</div>
+    </div>
+  </section>
+
+  <!-- FOOTER NOTE -->
+  <section class="pt-2 pb-8">
+    <div class="bg-white border border-slate-100 rounded-[28px] p-6 text-center shadow-sm">
+      <p class="font-headline font-bold text-sm text-slate-800">Earn by serving</p>
+      <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+        Share quotes, recruit warriors, and complete missions to unlock badges and climb trophy tiers.
+      </p>
+    </div>
+  </section>
 </main>
 
-<div id="rewardModal" class="hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-end justify-center">
-  <div class="bg-white w-full max-w-[430px] rounded-t-3xl p-6 pb-10 relative">
-    <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-6"></div>
-    <button onclick="closeModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"><span class="material-symbols-outlined text-[20px]">close</span></button>
-    <div class="flex flex-col items-center text-center">
-      <!-- Darker Blue Background -->
-      <div id="modalIconContainer" class="w-32 h-32 flex items-center justify-center mb-4 rounded-2xl shadow-inner" style="background-color: #60a5fa;">
-      </div>
-      <h3 id="modalTitle" class="font-headline font-black text-2xl text-slate-900 mb-1">Trophy Name</h3>
-      <p id="modalTier" class="text-[10px] font-black uppercase tracking-widest mb-4">TIER</p>
-      
-      <div id="modalProgressBar" class="flex gap-1 w-full max-w-[200px] mb-4"></div>
-
-      <div id="modalDetails" class="w-full bg-slate-50 rounded-2xl p-5 text-left space-y-3 border border-slate-100"></div>
-    </div>
-  </div>
-</div>
-
+<!-- BOTTOM NAV -->
 <nav class="fixed bottom-0 inset-x-0 z-40 bg-white/80 backdrop-blur-[20px] border-t border-slate-100" style="padding-bottom: env(safe-area-inset-bottom);">
   <div class="max-w-lg mx-auto flex items-center justify-around h-16 px-2">
     <a href="index.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">home</span><span class="text-[10px] font-bold">Home</span></a>
     <a href="library.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">auto_stories</span><span class="text-[10px] font-bold">Library</span></a>
     <a href="cause.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">volunteer_activism</span><span class="text-[10px] font-bold">Missions</span></a>
-    <a href="impact.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">bar_chart</span><span class="text-[10px] font-bold">Impact</span></a>
+    <a href="impact.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-primary bg-primary/5 rounded-xl"><span class="material-symbols-outlined filled" style="font-size:1.35rem">bar_chart</span><span class="text-[10px] font-bold">Impact</span></a>
     <a href="profile.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">person</span><span class="text-[10px] font-bold">Profile</span></a>
   </div>
 </nav>
 
 <script>
-var supabaseClient = supabase.createClient('https://nhymadutuhpjgkiurify.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM');
-var currentUser = null, allTiers = [], allTrophies = [], allThresholds = [], userProgress = [], allBadges = [], userBadges = [];
+const supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+);
 
-window.switchTab = function(tab) { 
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); 
-  document.getElementById('tab-' + tab).classList.add('active'); 
-  document.getElementById('section-trophies').classList.add('hidden'); 
-  document.getElementById('section-badges').classList.add('hidden'); 
-  document.getElementById('section-' + tab).classList.remove('hidden'); 
+let currentUser = null;
+let userProfile = null;
+let userBadges = [];
+
+const els = {
+  summaryBadges: document.getElementById('summaryBadges'),
+  summaryTrophies: document.getElementById('summaryTrophies'),
+  summaryMythic: document.getElementById('summaryMythic'),
+  badgeProgressLabel: document.getElementById('badgeProgressLabel'),
+  trophyProgressLabel: document.getElementById('trophyProgressLabel'),
+  badgesContainer: document.getElementById('badgesContainer'),
+  trophiesContainer: document.getElementById('trophiesContainer'),
+  panelBadges: document.getElementById('panelBadges'),
+  panelTrophies: document.getElementById('panelTrophies')
 };
 
-async function init() {
-  var s = await supabaseClient.auth.getSession(); 
-  if (!s.data.session) { window.location.href = 'login.html'; return; } 
-  currentUser = s.data.session.user;
-  
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    els.panelBadges.classList.toggle('hidden', tab !== 'badges');
+    els.panelTrophies.classList.toggle('hidden', tab !== 'trophies');
+  });
+});
+
+function parseBadges(raw) {
   try {
-    var results = await Promise.all([
-      supabaseClient.from('trophy_tiers').select('*').order('id'),
-      supabaseClient.from('trophy_definitions').select('*'),
-      supabaseClient.from('trophy_thresholds').select('*'),
-      supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
-      supabaseClient.from('badge_definitions').select('*'),
-      supabaseClient.from('profiles').select('badges').eq('id', currentUser.id).single()
-    ]);
-
-    allTiers = results[0].data || []; 
-    allTrophies = results[1].data || []; 
-    allThresholds = results[2].data || []; 
-    userProgress = results[3].data || [];
-    allBadges = results[4].data || []; 
-    userBadges = (results[5].data && results[5].data.badges) ? results[5].data.badges : [];
-
-    renderTrophies();
-    renderBadges();
-  } catch (err) { console.error("Rewards Page Error:", err); }
-}
-
-function renderTrophies() {
-  var unlocked = document.getElementById('unlockedTrophies'); 
-  var locked = document.getElementById('lockedTrophies');
-  if(!unlocked || !locked) return;
-  unlocked.innerHTML = ''; locked.innerHTML = '';
-  
-  allTrophies.forEach(t => {
-    var activeThresholds = allThresholds.filter(th => th.trophy_id === t.id && th.is_active !== false).sort((a,b) => a.tier_id - b.tier_id);
-    if (activeThresholds.length === 0) return;
-
-    var userProg = userProgress.find(p => p.trophy_id === t.id);
-    var currentProgress = userProg ? userProg.current_progress : 0;
-
-    var unlockedTier = null;
-    for (var i = activeThresholds.length - 1; i >= 0; i--) {
-      if (currentProgress >= activeThresholds[i].threshold_value) { unlockedTier = activeThresholds[i]; break; }
-    }
-
-    if (unlockedTier) {
-      var color = getTierColor(unlockedTier.tier_id);
-      unlocked.innerHTML += `<div class="bold-block" style="background-color: ${color};" onclick="openModal('${t.id}', ${unlockedTier.tier_id}, false)">
-        ${t.image_url ? `<img src="${t.image_url}">` : '<span class="material-symbols-outlined text-4xl filled">emoji_events</span>'}
-        <p class="font-headline font-bold text-xs leading-tight w-full truncate px-1">${t.name}</p>
-      </div>`;
-    }
-
-    var nextTier = activeThresholds.find(th => currentProgress < th.threshold_value);
-    if (nextTier) {
-      locked.innerHTML += `<div class="bold-block locked-block" onclick="openModal('${t.id}', ${nextTier.tier_id}, true)">
-        ${t.image_url ? `<img src="${t.image_url}">` : '<span class="material-symbols-outlined text-4xl">lock</span>'}
-        <p class="font-headline font-bold text-xs leading-tight w-full truncate px-1">${t.name}</p>
-      </div>`;
-    }
-  });
-  if (unlocked.innerHTML === '') unlocked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">No trophies unlocked yet.</p>';
-  if (locked.innerHTML === '') locked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">All caught up!</p>';
-}
-
-function renderBadges() {
-  var unlocked = document.getElementById('unlockedBadges'); 
-  var locked = document.getElementById('lockedBadges');
-  if(!unlocked || !locked) return;
-  unlocked.innerHTML = ''; locked.innerHTML = '';
-  allBadges.forEach(b => {
-    var hasBadge = userBadges.includes(b.id) || userBadges.includes(b.name);
-    if (hasBadge) {
-      unlocked.innerHTML += `<div class="badge-item" onclick="openBadgeModal('${b.name}')">
-        ${b.image_url ? `<img src="${b.image_url}">` : '<span class="material-symbols-outlined text-4xl text-primary">military_tech</span>'}
-        <p>${b.name}</p>
-      </div>`;
-    } else {
-      locked.innerHTML += `<div class="badge-item locked">
-        ${b.image_url ? `<img src="${b.image_url}">` : '<span class="material-symbols-outlined text-4xl">lock</span>'}
-        <p>${b.name}</p>
-      </div>`;
-    }
-  });
-  if (unlocked.innerHTML === '') unlocked.innerHTML = '<p class="col-span-3 text-center text-slate-400 text-sm py-4">No badges earned yet.</p>';
-  if (locked.innerHTML === '') locked.innerHTML = '<p class="col-span-3 text-center text-slate-400 text-sm py-4">No future missions available.</p>';
-}
-
-function getTierColor(tierId) { var t = allTiers.find(x => x.id === tierId); return t ? t.color_hex : '#94a3b8'; }
-function getTierName(tierId) { var t = allTiers.find(x => x.id === tierId); return t ? t.name : 'Unknown'; }
-function getThreshold(trophyId, tierId) { var th = allThresholds.find(x => x.trophy_id === trophyId && x.tier_id === tierId); return th ? th.threshold_value : 0; }
-
-window.openModal = function(trophyId, tierId, isLocked) {
-  var t = allTrophies.find(x => x.id === trophyId); if (!t) return;
-  var color = getTierColor(tierId);
-  
-  document.getElementById('modalTitle').textContent = t.name;
-  document.getElementById('modalTier').textContent = isLocked ? 'Locked' : getTierName(tierId);
-  document.getElementById('modalTier').style.color = isLocked ? '#94a3b8' : color;
-  
-  var container = document.getElementById('modalIconContainer');
-  container.style.backgroundColor = '#60a5fa'; // Darker blue
-  container.innerHTML = t.image_url ? `<img src="${t.image_url}" class="w-20 h-20 object-contain ${isLocked ? 'opacity-50' : ''}">` : '<span class="material-symbols-outlined text-5xl text-primary">emoji_events</span>';
-
-  var currentLevel = isLocked ? 0 : tierId;
-  var barHTML = '';
-  for(var i=1; i<=5; i++) {
-     var isActive = i <= currentLevel;
-     barHTML += `<div class="h-2 flex-1 rounded-full ${isActive ? 'bg-primary' : 'bg-slate-200'}"></div>`;
+    if (typeof raw === 'string') return JSON.parse(raw) || [];
+    if (Array.isArray(raw)) return raw;
+    return [];
+  } catch (e) {
+    return [];
   }
-  document.getElementById('modalProgressBar').innerHTML = barHTML;
+}
 
-  // Use description if available, otherwise fallback
-  var descText = t.description || `Reach ${getThreshold(trophyId, tierId)} ${t.stat_type || 'points'} to unlock.`;
-  if (isLocked) {
-     descText = `<strong class="text-slate-900 block mb-1">Requirement</strong>${descText}`;
-  } else {
-     descText = `<strong class="text-slate-900 block mb-1">${getTierName(tierId)} Tier Unlocked</strong>${descText}`;
+function tierColor(nameOrId) {
+  const key = String(nameOrId || '').toLowerCase();
+  if (key.includes('mythic') || key === '5') return { bg: 'bg-amber-500', text: 'text-amber-600', bar: 'bg-amber-500', hex: '#d97706' };
+  if (key.includes('epic') || key === '4') return { bg: 'bg-purple-500', text: 'text-purple-600', bar: 'bg-purple-500', hex: '#9333ea' };
+  if (key.includes('rare') || key === '3') return { bg: 'bg-blue-500', text: 'text-blue-600', bar: 'bg-blue-500', hex: '#2563eb' };
+  if (key.includes('uncommon') || key === '2') return { bg: 'bg-green-500', text: 'text-green-600', bar: 'bg-green-500', hex: '#16a34a' };
+  return { bg: 'bg-slate-400', text: 'text-slate-500', bar: 'bg-slate-400', hex: '#94a3b8' };
+}
+
+async function init() {
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  if (!sessionData?.session) {
+    window.location.href = 'login.html';
+    return;
   }
-  document.getElementById('modalDetails').innerHTML = `<p class="text-sm text-slate-600">${descText}</p>`;
-  document.getElementById('rewardModal').classList.remove('hidden');
+  currentUser = sessionData.session.user;
+  await loadRewards();
 }
 
-window.openBadgeModal = function(badgeName) {
-  var b = allBadges.find(x => x.name === badgeName); if (!b) return;
-  document.getElementById('modalTitle').textContent = b.name;
-  document.getElementById('modalTier').textContent = 'Badge Earned';
-  document.getElementById('modalTier').style.color = '#3d6285';
-  var container = document.getElementById('modalIconContainer');
-  container.style.backgroundColor = '#60a5fa';
-  container.innerHTML = b.image_url ? `<img src="${b.image_url}" class="w-20 h-20 object-contain">` : '<span class="material-symbols-outlined text-5xl text-primary">military_tech</span>';
-  document.getElementById('modalProgressBar').innerHTML = '';
-  document.getElementById('modalDetails').innerHTML = `<p class="text-sm text-slate-600"><strong class="text-slate-900 block mb-1">Mission Complete</strong>You have successfully earned the ${b.name} badge!</p>`;
-  document.getElementById('rewardModal').classList.remove('hidden');
+async function loadRewards() {
+  // Profile
+  const { data: profile, error: profileErr } = await supabaseClient
+    .from('profiles')
+    .select('*')
+    .eq('id', currentUser.id)
+    .maybeSingle();
+
+  if (profileErr) console.error('profile error', profileErr);
+  userProfile = profile || {};
+  userBadges = parseBadges(userProfile.badges);
+
+  // Parallel fetches
+  const [badgesRes, trophiesRes, tiersRes, thresholdsRes, progressRes] = await Promise.all([
+    supabaseClient.from('badge_definitions').select('*').eq('is_active', true).order('sort_order', { ascending: true }),
+    supabaseClient.from('trophy_definitions').select('*').order('created_at', { ascending: true }),
+    supabaseClient.from('trophy_tiers').select('*').order('id', { ascending: true }),
+    supabaseClient.from('trophy_thresholds').select('*').eq('is_active', true),
+    supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id)
+  ]);
+
+  const badges = badgesRes.data || [];
+  const trophies = trophiesRes.data || [];
+  const tiers = tiersRes.data || [];
+  const thresholds = thresholdsRes.data || [];
+  const progressRows = progressRes.data || [];
+
+  renderBadges(badges);
+  renderTrophies(trophies, tiers, thresholds, progressRows);
 }
 
-window.closeModal = function() { document.getElementById('rewardModal').classList.add('hidden'); }
-document.getElementById('rewardModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+function renderBadges(badges) {
+  const earnedSet = new Set(userBadges.map(String));
+  const earnedCount = badges.filter(b => earnedSet.has(String(b.id)) || earnedSet.has(String(b.name))).length;
+
+  els.summaryBadges.textContent = earnedCount;
+  els.badgeProgressLabel.textContent = `${earnedCount} / ${badges.length} earned`;
+
+  if (!badges.length) {
+    els.badgesContainer.innerHTML = `<div class="dash-card !p-4 text-center text-slate-400 text-xs col-span-2">No badges configured yet.</div>`;
+    return;
+  }
+
+  // Earned first, then locked
+  const sorted = [...badges].sort((a, b) => {
+    const aEarned = earnedSet.has(String(a.id)) || earnedSet.has(String(a.name)) ? 0 : 1;
+    const bEarned = earnedSet.has(String(b.id)) || earnedSet.has(String(b.name)) ? 0 : 1;
+    return aEarned - bEarned || (a.sort_order || 0) - (b.sort_order || 0);
+  });
+
+  els.badgesContainer.innerHTML = sorted.map(badge => {
+    const earned = earnedSet.has(String(badge.id)) || earnedSet.has(String(badge.name));
+    const title = badge.title || badge.name || 'Badge';
+    const desc = badge.description || 'Keep going to unlock this reward.';
+    const icon = badge.icon || 'military_tech';
+    const img = badge.image_url;
+
+    return `
+      <div class="dash-card !p-4 ${earned ? '' : 'reward-locked'}">
+        <div class="flex flex-col items-center text-center gap-3">
+          <div class="w-16 h-16 rounded-2xl ${earned ? 'bg-gold/10' : 'bg-slate-100'} flex items-center justify-center overflow-hidden">
+            ${img
+              ? `<img src="${img}" alt="${title}" class="w-14 h-14 object-contain">`
+              : `<span class="material-symbols-outlined ${earned ? 'text-gold filled' : 'text-slate-300'} text-[30px]">${icon}</span>`
+            }
+          </div>
+          <div>
+            <p class="font-headline font-bold text-sm text-slate-900 leading-tight">${title}</p>
+            <p class="text-[10px] text-slate-400 mt-1 leading-snug">${desc}</p>
+          </div>
+          <span class="text-[9px] font-black uppercase tracking-widest ${earned ? 'text-gold' : 'text-slate-400'}">
+            ${earned ? 'Earned' : 'Locked'}
+          </span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderTrophies(trophies, tiers, thresholds, progressRows) {
+  const tierMap = {};
+  tiers.forEach(t => { tierMap[t.id] = t; });
+
+  const progressMap = {};
+  progressRows.forEach(p => { progressMap[p.trophy_id] = p; });
+
+  // thresholds grouped by trophy
+  const thresholdMap = {};
+  thresholds.forEach(th => {
+    if (!thresholdMap[th.trophy_id]) thresholdMap[th.trophy_id] = [];
+    thresholdMap[th.trophy_id].push(th);
+  });
+  Object.keys(thresholdMap).forEach(id => {
+    thresholdMap[id].sort((a, b) => (a.tier_id || 0) - (b.tier_id || 0));
+  });
+
+  let earnedTrophies = 0;
+  let mythicCount = 0;
+
+  if (!trophies.length) {
+    els.trophiesContainer.innerHTML = `<div class="dash-card text-center text-slate-400 text-xs">No trophies configured yet.</div>`;
+    els.summaryTrophies.textContent = '0';
+    els.summaryMythic.textContent = '0';
+    els.trophyProgressLabel.textContent = '0 active';
+    return;
+  }
+
+  const html = trophies.map(trophy => {
+    const progress = progressMap[trophy.id] || { current_tier_id: 0, current_progress: 0 };
+    const currentTierId = Number(progress.current_tier_id || 0);
+    const currentProgress = Number(progress.current_progress || 0);
+    const trophyThresholds = thresholdMap[trophy.id] || [];
+
+    if (currentTierId > 0) earnedTrophies++;
+    if (currentTierId === 5) mythicCount++;
+
+    const currentTier = tierMap[currentTierId];
+    const nextThreshold = trophyThresholds.find(th => Number(th.tier_id) > currentTierId) || null;
+    const nextTier = nextThreshold ? tierMap[nextThreshold.tier_id] : null;
+
+    const nextTarget = nextThreshold ? Number(nextThreshold.threshold_value || 0) : 0;
+    const pct = nextTarget > 0
+      ? Math.max(0, Math.min(100, (currentProgress / nextTarget) * 100))
+      : (currentTierId > 0 ? 100 : 0);
+
+    const colors = tierColor(currentTier?.name || currentTierId || 'common');
+    const statusLabel = currentTier
+      ? (currentTier.name || `Tier ${currentTierId}`)
+      : 'Not started';
+
+    return `
+      <div class="dash-card">
+        <div class="flex items-start gap-4">
+          <div class="w-14 h-14 rounded-2xl ${currentTierId > 0 ? colors.bg : 'bg-slate-100'} text-white flex items-center justify-center flex-shrink-0 overflow-hidden">
+            ${trophy.image_url
+              ? `<img src="${trophy.image_url}" alt="${trophy.name}" class="w-12 h-12 object-contain ${currentTierId > 0 ? '' : 'reward-locked'}">`
+              : `<span class="material-symbols-outlined ${currentTierId > 0 ? 'filled' : 'text-slate-300'} text-[28px]">emoji_events</span>`
+            }
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="font-headline font-bold text-sm text-slate-900">${trophy.name || 'Trophy'}</p>
+                <p class="text-[10px] text-slate-400 mt-1 leading-snug">${trophy.description || 'Progress through service and impact.'}</p>
+              </div>
+              <span class="text-[9px] font-black uppercase tracking-widest ${currentTierId > 0 ? colors.text : 'text-slate-400'} whitespace-nowrap">
+                ${statusLabel}
+              </span>
+            </div>
+
+            <div class="mt-3">
+              <div class="flex justify-between text-[10px] font-bold text-slate-400 mb-1">
+                <span>${currentProgress}${nextTarget ? ` / ${nextTarget}` : ''}</span>
+                <span>${nextTier ? `Next: ${nextTier.name}` : (currentTierId >= 5 ? 'Max tier' : 'In progress')}</span>
+              </div>
+              <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full ${colors.bar}" style="width:${pct}%"></div>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-1.5 mt-3">
+              ${(tiers || []).map(t => {
+                const reached = currentTierId >= t.id;
+                const c = tierColor(t.name || t.id);
+                return `<span class="text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-full ${reached ? c.bg + ' text-white' : 'bg-slate-100 text-slate-400'}">${t.name || t.id}</span>`;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  els.trophiesContainer.innerHTML = html;
+  els.summaryTrophies.textContent = earnedTrophies;
+  els.summaryMythic.textContent = mythicCount;
+  els.trophyProgressLabel.textContent = `${earnedTrophies} unlocked`;
+}
 
 init();
 </script>
