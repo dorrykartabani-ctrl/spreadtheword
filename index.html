@@ -56,6 +56,228 @@
     .scroll-mt { scroll-margin-top: 80px; }
   </style>
 </head>
+  <!-- CMS-driven sections -->
+<div id="cms-sections"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function() {
+  const supabaseClient = supabase.createClient(
+    'https://nhymadutuhpjgkiurify.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+  );
+
+  const isPreview = new URLSearchParams(location.search).get('preview') === '1';
+  const container = document.getElementById('cms-sections');
+  let allTiers = [];
+
+  // ─── RENDER HELPERS ─────────────────────────────────────
+  function esc(s) {
+    if (!s) return '';
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function renderHero(d) {
+    return `
+      <section class="relative py-24 px-6 text-center" style="${d.background_image ? `background:linear-gradient(rgba(0,0,0,.5),rgba(0,0,0,.5)),url('${d.background_image}') center/cover;color:#fff;` : 'background:#fbf9f4;'}">
+        <div class="max-w-4xl mx-auto">
+          <h1 style="font-size:clamp(2rem,5vw,3.5rem);font-weight:800;margin-bottom:1rem;font-family:'Plus Jakarta Sans',sans-serif;">${esc(d.headline)}</h1>
+          <p style="font-size:1.125rem;margin-bottom:2rem;opacity:.9;">${esc(d.subheadline)}</p>
+          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+            ${d.cta_text ? `<a href="${esc(d.cta_link || '#')}" style="display:inline-block;padding:14px 28px;background:linear-gradient(135deg,#3d6285,#6b9bc3);color:#fff;border-radius:10px;font-weight:700;text-decoration:none;">${esc(d.cta_text)}</a>` : ''}
+            ${d.secondary_cta_text ? `<a href="${esc(d.secondary_cta_link || '#')}" style="display:inline-block;padding:14px 28px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:${d.background_image ? '#fff' : '#31332e'};border-radius:10px;font-weight:700;text-decoration:none;">${esc(d.secondary_cta_text)}</a>` : ''}
+          </div>
+        </div>
+      </section>`;
+  }
+
+  function renderFeatures(d) {
+    return `
+      <section style="padding:80px 24px;background:#fff;">
+        <div style="max-width:1100px;margin:0 auto;text-align:center;">
+          ${d.section_title ? `<h2 style="font-size:2rem;font-weight:800;margin-bottom:8px;font-family:'Plus Jakarta Sans',sans-serif;">${esc(d.section_title)}</h2>` : ''}
+          ${d.section_subtitle ? `<p style="color:#5e6059;margin-bottom:48px;">${esc(d.section_subtitle)}</p>` : ''}
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;text-align:left;">
+            ${(d.items || []).map(item => `
+              <div style="padding:24px;background:#fbf9f4;border-radius:12px;">
+                <span class="material-symbols-outlined" style="font-size:32px;color:#3d6285;">${esc(item.icon)}</span>
+                <h3 style="font-weight:700;margin-top:12px;margin-bottom:6px;">${esc(item.title)}</h3>
+                <p style="color:#5e6059;font-size:14px;">${esc(item.description)}</p>
+              </div>`).join('')}
+          </div>
+        </div>
+      </section>`;
+  }
+
+  function renderAbout(d) {
+    return `
+      <section style="padding:80px 24px;background:#fbf9f4;">
+        <div style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:${d.image ? '1fr 1fr' : '1fr'};gap:48px;align-items:center;">
+          <div>
+            ${d.section_title ? `<h2 style="font-size:2rem;font-weight:800;margin-bottom:16px;font-family:'Plus Jakarta Sans',sans-serif;">${esc(d.section_title)}</h2>` : ''}
+            <p style="color:#5e6059;line-height:1.7;margin-bottom:24px;">${esc(d.body_text)}</p>
+            ${d.cta_text ? `<a href="${esc(d.cta_link || '#')}" style="display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#3d6285,#6b9bc3);color:#fff;border-radius:10px;font-weight:700;text-decoration:none;">${esc(d.cta_text)}</a>` : ''}
+          </div>
+          ${d.image ? `<img src="${esc(d.image)}" style="width:100%;border-radius:16px;">` : ''}
+        </div>
+      </section>`;
+  }
+
+  function renderTestimonials(d) {
+    return `
+      <section style="padding:80px 24px;background:#fff;">
+        <div style="max-width:1100px;margin:0 auto;text-align:center;">
+          ${d.section_title ? `<h2 style="font-size:2rem;font-weight:800;margin-bottom:8px;font-family:'Plus Jakarta Sans',sans-serif;">${esc(d.section_title)}</h2>` : ''}
+          ${d.section_subtitle ? `<p style="color:#5e6059;margin-bottom:48px;">${esc(d.section_subtitle)}</p>` : ''}
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;text-align:left;">
+            ${(d.items || []).map(item => `
+              <div style="padding:24px;background:#fbf9f4;border-radius:12px;">
+                <p style="font-style:italic;color:#31332e;margin-bottom:16px;">"${esc(item.quote)}"</p>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  ${item.avatar ? `<img src="${esc(item.avatar)}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">` : ''}
+                  <div>
+                    <p style="font-weight:700;">${esc(item.author)}</p>
+                    <p style="color:#7a7b75;font-size:12px;">${esc(item.role)}</p>
+                  </div>
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>
+      </section>`;
+  }
+
+  function renderPricing(d) {
+    const tiers = (d.tier_ids || []).map(tid => allTiers.find(t => t.id === tid)).filter(Boolean);
+    return `
+      <section style="padding:80px 24px;background:#fbf9f4;">
+        <div style="max-width:1100px;margin:0 auto;text-align:center;">
+          ${d.section_title ? `<h2 style="font-size:2rem;font-weight:800;margin-bottom:8px;font-family:'Plus Jakarta Sans',sans-serif;">${esc(d.section_title)}</h2>` : ''}
+          ${d.section_subtitle ? `<p style="color:#5e6059;margin-bottom:48px;">${esc(d.section_subtitle)}</p>` : ''}
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;">
+            ${tiers.map(t => `
+              <div style="padding:32px;background:#fff;border-radius:16px;border:1px solid #e9e8e1;text-align:left;">
+                <h3 style="font-weight:800;font-size:1.25rem;margin-bottom:8px;">${esc(t.name)}</h3>
+                <p style="font-size:2rem;font-weight:800;color:#3d6285;margin-bottom:16px;">${t.price ? '$' + t.price : 'Free'}</p>
+                <p style="color:#5e6059;font-size:14px;">${esc(t.description || '')}</p>
+              </div>`).join('')}
+          </div>
+        </div>
+      </section>`;
+  }
+
+  function renderCta(d) {
+    return `
+      <section style="padding:80px 24px;text-align:center;${d.background_image ? `background:linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.6)),url('${d.background_image}') center/cover;color:#fff;` : 'background:linear-gradient(135deg,#3d6285,#6b9bc3);color:#fff;'}">
+        <div style="max-width:720px;margin:0 auto;">
+          <h2 style="font-size:2rem;font-weight:800;margin-bottom:12px;font-family:'Plus Jakarta Sans',sans-serif;">${esc(d.headline)}</h2>
+          <p style="opacity:.9;margin-bottom:24px;">${esc(d.subheadline)}</p>
+          ${d.cta_text ? `<a href="${esc(d.cta_link || '#')}" style="display:inline-block;padding:14px 32px;background:#fff;color:#3d6285;border-radius:10px;font-weight:700;text-decoration:none;">${esc(d.cta_text)}</a>` : ''}
+        </div>
+      </section>`;
+  }
+
+  function renderFaq(d) {
+    return `
+      <section style="padding:80px 24px;background:#fff;">
+        <div style="max-width:720px;margin:0 auto;">
+          ${d.section_title ? `<h2 style="font-size:2rem;font-weight:800;margin-bottom:8px;text-align:center;font-family:'Plus Jakarta Sans',sans-serif;">${esc(d.section_title)}</h2>` : ''}
+          ${d.section_subtitle ? `<p style="color:#5e6059;margin-bottom:32px;text-align:center;">${esc(d.section_subtitle)}</p>` : ''}
+          ${(d.items || []).map(item => `
+            <details style="padding:16px;background:#fbf9f4;border-radius:10px;margin-bottom:10px;cursor:pointer;">
+              <summary style="font-weight:700;">${esc(item.question)}</summary>
+              <p style="margin-top:12px;color:#5e6059;">${esc(item.answer)}</p>
+            </details>`).join('')}
+        </div>
+      </section>`;
+  }
+
+  function renderGallery(d) {
+    // Gallery images stored as IDs — for public page you'd need to also fetch media.
+    // Simplified: assume image_ids are actually URLs OR fetch separately.
+    return `
+      <section style="padding:80px 24px;background:#fbf9f4;">
+        <div style="max-width:1100px;margin:0 auto;text-align:center;">
+          ${d.section_title ? `<h2 style="font-size:2rem;font-weight:800;margin-bottom:8px;font-family:'Plus Jakarta Sans',sans-serif;">${esc(d.section_title)}</h2>` : ''}
+          ${d.section_subtitle ? `<p style="color:#5e6059;margin-bottom:32px;">${esc(d.section_subtitle)}</p>` : ''}
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
+            ${(d._gallery_urls || []).map(url => `<img src="${esc(url)}" style="width:100%;height:200px;object-fit:cover;border-radius:10px;">`).join('')}
+          </div>
+        </div>
+      </section>`;
+  }
+
+  function renderCustom(d) {
+    return `<section style="padding:40px 24px;">${d.html_content || ''}</section>`;
+  }
+
+  const RENDERERS = {
+    hero: renderHero, features: renderFeatures, about: renderAbout,
+    testimonials: renderTestimonials, pricing: renderPricing, cta: renderCta,
+    faq: renderFaq, gallery: renderGallery, custom: renderCustom
+  };
+
+  function renderSections(sections) {
+    const visible = sections.filter(s => s.is_visible !== false)
+                            .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+    container.innerHTML = visible.map(s => {
+      const renderer = RENDERERS[s.section_type];
+      return renderer ? renderer(s.data || {}) : '';
+    }).join('');
+  }
+
+  // ─── LOAD FROM DB ────────────────────────────────────────
+  async function loadPage() {
+    // Load tiers (for pricing sections)
+    const { data: tiers } = await supabaseClient.from('tiers').select('*');
+    if (tiers) allTiers = tiers;
+
+    // Load media (for gallery URL resolution)
+    const { data: mediaRows } = await supabaseClient.from('media').select('id, url');
+    const mediaMap = {};
+    (mediaRows || []).forEach(m => mediaMap[m.id] = m.url);
+
+    // Load sections
+    const { data, error } = await supabaseClient
+      .from('landing_sections')
+      .select('*')
+      .eq('is_visible', true)
+      .order('sort_order', { ascending: true });
+
+    if (error) { console.error('CMS load error:', error); return; }
+
+    // Resolve gallery image IDs → URLs
+    (data || []).forEach(s => {
+      if (s.section_type === 'gallery' && s.data?.image_ids) {
+        s.data._gallery_urls = s.data.image_ids.map(id => mediaMap[id]).filter(Boolean);
+      }
+    });
+
+    renderSections(data || []);
+  }
+
+  // ─── PREVIEW MODE LISTENER ───────────────────────────────
+  if (isPreview) {
+    window.addEventListener('message', (event) => {
+      if (event.data?.type === 'CMS_UPDATE') {
+        const sections = event.data.sections || [];
+        // Resolve gallery URLs from what we already loaded
+        sections.forEach(s => {
+          if (s.section_type === 'gallery' && s.data?.image_ids) {
+            s.data._gallery_urls = s.data.image_ids; // In preview, IDs may already be URLs from editor
+          }
+        });
+        renderSections(sections);
+      }
+    });
+    // Signal ready
+    window.parent?.postMessage({ type: 'PREVIEW_READY' }, '*');
+  }
+
+  loadPage();
+})();
+</script>
 <body>
 
 <!-- STATIC HEADER -->
