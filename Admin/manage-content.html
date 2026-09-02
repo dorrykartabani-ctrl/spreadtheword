@@ -280,7 +280,7 @@ let selectedImageId = null;
 let selectedTierIds = [];
 let isDirty = false;
 
-// ─── UTILITY FUNCTIONS (were missing) ───────────────────── /* ADDED */
+// ─── UTILITY FUNCTIONS ─────────────────────────────────────
 function escapeHtml(str) {
   if (!str) return '';
   const div = document.createElement('div');
@@ -427,7 +427,6 @@ async function loadSections() {
     return;
   }
 
-  /* ADDED: normalize null data to {} */
   sections = (data || []).map(s => ({ ...s, data: s.data || {} }));
   renderSectionList();
   if (sections.length === 0) renderEmptyEditor();
@@ -789,7 +788,7 @@ function faqItemHTML(i, item = {}) {
 function addRepeaterItem(sectionType, arrayKey, builderFn) {
   const s = sections.find(x => x.id === activeSectionId);
   if (!s) return;
-  if (!s.data) s.data = {};          /* ADDED: guard */
+  if (!s.data) s.data = {};
   if (!s.data[arrayKey]) s.data[arrayKey] = [];
   const newIndex = s.data[arrayKey].length;
   s.data[arrayKey].push({});
@@ -810,7 +809,7 @@ function removeRepeaterItem(sectionType, arrayKey, index) {
 function collectEditorData() {
   const s = sections.find(x => x.id === activeSectionId);
   if (!s) return;
-  if (!s.data) s.data = {};          /* ADDED: guard */
+  if (!s.data) s.data = {};
 
   document.querySelectorAll('[data-field]').forEach(el => {
     const key = el.dataset.field;
@@ -967,7 +966,6 @@ function selectImage(id) {
   if (el) el.classList.add('selected');
 }
 
-/* ADDED: unified confirm handler — replaces the fragile override pattern */
 function confirmImagePick() {
   if (!imagePickerTarget) return;
 
@@ -1063,4 +1061,104 @@ function openTierPicker() {
         </label>`;
     }).join('');
   }
-  document.getElementById('tier
+  document.getElementById('tierPickerModal').classList.add('open');
+}
+
+function toggleTierSelection(id) {
+  if (selectedTierIds.includes(id)) {
+    selectedTierIds = selectedTierIds.filter(x => x !== id);
+  } else {
+    selectedTierIds.push(id);
+  }
+}
+
+function confirmTierPick() {
+  const s = sections.find(x => x.id === tierPickerTarget);
+  if (s) {
+    if (!s.data) s.data = {};
+    s.data.tier_ids = [...selectedTierIds];
+    renderEditor();
+    markDirty();
+  }
+  closeTierPicker();
+}
+
+function closeTierPicker() {
+  document.getElementById('tierPickerModal').classList.remove('open');
+  tierPickerTarget = null;
+}
+
+function removeTierFromSection(tid) {
+  const s = sections.find(x => x.id === activeSectionId);
+  if (!s || !s.data) return;
+  s.data.tier_ids = (s.data.tier_ids || []).filter(id => id !== tid);
+  renderEditor();
+  markDirty();
+}
+
+// ─── SAVE ──────────────────────────────────────────────────
+async function saveAllSections() {
+  collectEditorData();
+
+  const btn = document.getElementById('saveBtn');
+  const btnText = document.getElementById('saveBtnText');
+  if (btn) btn.disabled = true;
+  if (btnText) btnText.textContent = 'Saving...';
+
+  try {
+    for (let i = 0; i < sections.length; i++) {
+      const s = sections[i];
+      s.sort_order = i;
+
+      const payload = {
+        section_type: s.section_type,
+        title: s.title,
+        data: s.data,
+        sort_order: s.sort_order,
+        is_visible: s.is_visible,
+        updated_at: new Date().toISOString()
+      };
+
+      if (typeof s.id === 'string' && s.id.startsWith('temp-')) {
+        const { data, error } = await supabaseClient
+          .from('landing_sections')
+          .insert(payload)
+          .select()
+          .single();
+        if (error) throw error;
+        s.id = data.id;
+      } else {
+        const { error } = await supabaseClient
+          .from('landing_sections')
+          .update(payload)
+          .eq('id', s.id);
+        if (error) throw error;
+      }
+    }
+
+    const { data: dbSections, error: dbError } = await supabaseClient
+      .from('landing_sections')
+      .select('id');
+    if (!dbError && dbSections) {
+      const localIds = new Set(sections.map(s => s.id));
+      const toDelete = dbSections.filter(d => !localIds.has(d.id)).map(d => d.id);
+      if (toDelete.length > 0) {
+        await supabaseClient.from('landing_sections').delete().in('id', toDelete);
+      }
+    }
+
+    isDirty = false;
+    if (btnText) btnText.textContent = 'Save Changes';
+    renderSectionList();
+    showToast('All changes saved successfully', 'success');
+  } catch (err) {
+    console.error('Save error:', err);
+    showToast('Error saving: ' + err.message, 'error');
+    if (btnText) btnText.textContent = 'Save Changes *';
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
