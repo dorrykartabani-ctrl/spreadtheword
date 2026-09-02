@@ -597,6 +597,21 @@ const SECTION_TYPES = {
       android_text: 'Open Chrome. Tap the menu options at top-right. Select Install App.'
     }
   },
+  socials: {
+    label: 'Social Links',
+    icon: 'share',
+    chipClass: 'chip-cta',
+    description: 'Footer social platforms & URLs',
+    defaultData: {
+      items: [
+        { platform: 'instagram', label: 'Instagram', url: '' },
+        { platform: 'facebook',  label: 'Facebook',  url: '' },
+        { platform: 'x',         label: 'X / Twitter', url: '' },
+        { platform: 'youtube',   label: 'YouTube',   url: '' },
+        { platform: 'tiktok',    label: 'TikTok',    url: '' }
+      ]
+    }
+  },  
   waitlist: {
     label: 'Waitlist Form', icon: 'group_add', chipClass: 'chip-gallery',
     description: 'Email capture block',
@@ -907,6 +922,22 @@ function renderEditor() {
         </div>
       `;
       break;
+    case 'socials':
+      fieldsHTML = `
+        <p class="field-hint mb-4">These links appear in the site footer. Leave URL blank to hide a platform.</p>
+        <div class="field-group">
+          <label class="field-label">Platforms</label>
+          <div id="repeater-socials-items">
+            ${(d.items || []).map((item, i) => socialItemHTML(i, item)).join('')}
+          </div>
+          <button onclick="addRepeaterItem('socials','items',socialItemHTML)"
+            class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-c text-on-surface-variant font-body font-semibold hover:bg-surface-chigh transition-colors"
+            style="font-size:11px;">
+            <span class="material-symbols-outlined" style="font-size:14px;">add</span>Add Platform
+          </button>
+        </div>
+      `;
+      break;
   }
 
   panel.innerHTML = `
@@ -1007,6 +1038,51 @@ function cardItemHTML(type, i, item = {}) {
       </div>
     </div>`;
 }
+  function socialItemHTML(typeOrIndex, item = {}, maybeItem) {
+  // support both addRepeaterItem(sectionType, key, fn) calling styles
+  const i = typeof typeOrIndex === 'number' ? typeOrIndex : arguments[1];
+  const data = typeof typeOrIndex === 'number' ? item : (maybeItem || item || {});
+  const index = typeof typeOrIndex === 'number' ? typeOrIndex : (typeof item === 'number' ? item : 0);
+  const row = typeof typeOrIndex === 'number' ? (item || {}) : (maybeItem || {});
+  const idx = typeof typeOrIndex === 'number' ? typeOrIndex : (typeof item === 'number' ? item : 0);
+  const it = typeof typeOrIndex === 'number' ? (item || {}) : (arguments.length >= 3 ? arguments[2] : (item || {}));
+
+  // simpler reliable version:
+}
+
+function socialItemHTML(i, item = {}) {
+  if (typeof i !== 'number' && typeof item === 'number') {
+    // called as socialItemHTML('socials', index, item) from some add handlers
+    item = arguments[2] || {};
+    i = arguments[1];
+  }
+  return `
+    <div class="repeater-item" data-index="${i}">
+      <div class="remove-btn" onclick="removeRepeaterItem('socials','items',${i})">
+        <span class="material-symbols-outlined" style="font-size:14px;">close</span>
+      </div>
+      <div class="grid grid-cols-3 gap-3">
+        <div class="field-group mb-0">
+          <label class="field-label">Platform Key</label>
+          <select class="field-input" data-repeater="socials-items-${i}-platform" onchange="markDirty()">
+            ${['instagram','facebook','x','youtube','tiktok','linkedin','whatsapp','telegram','threads'].map(p =>
+              `<option value="${p}" ${(item.platform || '') === p ? 'selected' : ''}>${p}</option>`
+            ).join('')}
+          </select>
+        </div>
+        <div class="field-group mb-0">
+          <label class="field-label">Label</label>
+          <input type="text" class="field-input" data-repeater="socials-items-${i}-label"
+            value="${escapeAttr(item.label || '')}" placeholder="Instagram" oninput="markDirty()">
+        </div>
+        <div class="field-group mb-0">
+          <label class="field-label">URL</label>
+          <input type="url" class="field-input" data-repeater="socials-items-${i}-url"
+            value="${escapeAttr(item.url || '')}" placeholder="https://..." oninput="markDirty()">
+        </div>
+      </div>
+    </div>`;
+}
 
 function testimonialItemHTML(i, item = {}) {
   return `
@@ -1045,7 +1121,15 @@ function addRepeaterItem(sectionType, arrayKey, builderFn) {
   if (container) container.insertAdjacentHTML('beforeend', builderFn(sectionType, newIndex, {}));
   markDirty();
 }
-
+function addSocialItem() {
+  const s = sections.find(x => x.id === activeSectionId);
+  if (!s) return;
+  if (!s.data) s.data = {};
+  if (!s.data.items) s.data.items = [];
+  s.data.items.push({ platform: 'instagram', label: 'Instagram', url: '' });
+  renderEditor();
+  markDirty();
+}
 function removeRepeaterItem(sectionType, arrayKey, index) {
   const s = sections.find(x => x.id === activeSectionId);
   if (!s || !s.data || !s.data[arrayKey]) return;
