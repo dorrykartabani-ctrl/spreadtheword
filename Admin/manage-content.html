@@ -787,7 +787,21 @@ function renderSectionList() {
       </div>`;
   }).join('');
 }
-
+  socials: {
+    label: 'Social Links',
+    icon: 'share',
+    chipClass: 'chip-cta',
+    description: 'Footer social platforms & URLs',
+    defaultData: {
+      items: [
+        { platform: 'instagram', label: 'Instagram', url: '' },
+        { platform: 'facebook',  label: 'Facebook',  url: '' },
+        { platform: 'x',         label: 'X / Twitter', url: '' },
+        { platform: 'snapchat',    label: 'Snapchat',    url: '' },
+        { platform: 'truthsocial', label: 'Truth Social', url: '' }
+      ]
+    }
+  },
 // ─── RENDER: EDITOR ────────────────────────────────────────
 function selectSection(id) {
   activeSectionId = id;
@@ -922,7 +936,7 @@ function renderEditor() {
         </div>
       `;
       break;
-    case 'socials':
+        case 'socials':
       fieldsHTML = `
         <p class="field-hint mb-4">These links appear in the site footer. Leave URL blank to hide a platform.</p>
         <div class="field-group">
@@ -930,7 +944,7 @@ function renderEditor() {
           <div id="repeater-socials-items">
             ${(d.items || []).map((item, i) => socialItemHTML(i, item)).join('')}
           </div>
-          <button onclick="addRepeaterItem('socials','items',socialItemHTML)"
+          <button onclick="addSocialItem()"
             class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-c text-on-surface-variant font-body font-semibold hover:bg-surface-chigh transition-colors"
             style="font-size:11px;">
             <span class="material-symbols-outlined" style="font-size:14px;">add</span>Add Platform
@@ -1125,10 +1139,53 @@ function addSocialItem() {
   const s = sections.find(x => x.id === activeSectionId);
   if (!s) return;
   if (!s.data) s.data = {};
-  if (!s.data.items) s.data.items = [];
-  s.data.items.push({ platform: 'instagram', label: 'Instagram', url: '' });
+  if (!Array.isArray(s.data.items)) s.data.items = [];
+
+  s.data.items.push({
+    platform: 'instagram',
+    label: 'Instagram',
+    url: ''
+  });
+
   renderEditor();
   markDirty();
+}
+
+function socialItemHTML(i, item = {}) {
+  const platform = item.platform || 'instagram';
+  const platforms = ['instagram','facebook','x','youtube','tiktok','linkedin','whatsapp','telegram','threads','snapchat','truthsocial'];
+
+  return `
+    <div class="repeater-item" data-index="${i}">
+      <div class="remove-btn" onclick="removeRepeaterItem('socials','items',${i})">
+        <span class="material-symbols-outlined" style="font-size:14px;">close</span>
+      </div>
+      <div class="grid grid-cols-3 gap-3">
+        <div class="field-group mb-0">
+          <label class="field-label">Platform</label>
+          <select class="field-input" data-repeater="socials-items-${i}-platform" onchange="markDirty()">
+            ${platforms.map(p =>
+              `<option value="${p}" ${platform === p ? 'selected' : ''}>${p}</option>`
+            ).join('')}
+          </select>
+        </div>
+        <div class="field-group mb-0">
+          <label class="field-label">Label</label>
+          <input type="text" class="field-input"
+            data-repeater="socials-items-${i}-label"
+            value="${escapeAttr(item.label || '')}"
+            oninput="markDirty()">
+        </div>
+        <div class="field-group mb-0">
+          <label class="field-label">URL</label>
+          <input type="url" class="field-input"
+            data-repeater="socials-items-${i}-url"
+            value="${escapeAttr(item.url || '')}"
+            placeholder="https://..."
+            oninput="markDirty()">
+        </div>
+      </div>
+    </div>`;
 }
 function removeRepeaterItem(sectionType, arrayKey, index) {
   const s = sections.find(x => x.id === activeSectionId);
