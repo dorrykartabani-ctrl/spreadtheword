@@ -868,36 +868,36 @@ async function deleteUpdate(id) {
     showToast("Failed to delete: " + e.message, true);
   }
 }
+
+// This was the broken part. It needs to be wrapped in the function:
+function renderUpdates() {
+  var list = getEl('updatesList');
+  if (!list) return;
+  if(updates.length === 0) {
+    list.innerHTML = '<p class="text-xs text-slate-400 italic">No updates posted yet.</p>';
+    return;
+  }
   
   list.innerHTML = updates.map(u => `
     <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 flex gap-3 shadow-sm">
       <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-slate-500 text-sm">campaign</span></div>
-      <div>
+      <div class="flex-1 min-w-0">
         <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">${new Date(u.created_at).toLocaleDateString()} ${new Date(u.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</p>
-        <p class="text-sm font-medium text-slate-800 leading-snug">${escapeHtml(u.message)}</p>
+        <p class="text-sm font-medium text-slate-800 leading-snug break-words">${escapeHtml(u.message)}</p>
+      </div>
+      <div class="flex gap-1 shrink-0">
+        <button onclick="editUpdate('${u.id}', \`${escapeHtml(u.message).replace(/`/g, '\\`').replace(/\\/g, '\\\\')}\`)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-white rounded-lg transition-colors" title="Edit">
+          <span class="material-symbols-outlined text-[18px]">edit</span>
+        </button>
+        <button onclick="deleteUpdate('${u.id}')" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-white rounded-lg transition-colors" title="Delete">
+          <span class="material-symbols-outlined text-[18px]">delete</span>
+        </button>
       </div>
     </div>
   `).join('');
+}
   
 function openEditorMobile() {
-  if (getEl('listPane')) getEl('listPane').classList.add('hidden', 'lg:flex');
-  if (getEl('editorPane')) { getEl('editorPane').classList.remove('hidden'); getEl('editorPane').classList.add('flex'); }
-}
-function closeEditorMobile() {
-  if (getEl('listPane')) getEl('listPane').classList.remove('hidden');
-  if (getEl('editorPane')) { getEl('editorPane').classList.add('hidden', 'lg:flex'); getEl('editorPane').classList.remove('flex'); }
-}
-
-function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-var toastTimer;
-function showToast(msg, isErr=false) {
-  var t = getEl('toast');
-  if (!t) return;
-  if (getEl('toastMsg')) getEl('toastMsg').textContent = msg;
-  if (getEl('toastIcon')) {
-    getEl('toastIcon').textContent = isErr ? 'error' : 'check_circle';
-    getEl('toastIcon').className = 'material-symbols-outlined ' + (isErr ? 'text-red-400' : 'text-green-400');
-  }
   t.classList.remove('hidden'); t.classList.add('flex');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.classList.add('hidden'); t.classList.remove('flex'); }, 3000);
