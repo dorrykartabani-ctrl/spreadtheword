@@ -306,6 +306,8 @@ const supabaseClient = supabase.createClient(
 
 let currentUser = null;
 let userProfile = null;
+let userBadges = [];
+let totalShares = 0;
 let currentTimeframe = 'all';
 
 // DOM Selectors
@@ -319,7 +321,7 @@ const elements = {
   progressBar: document.getElementById('mythicProgressBar'),
   avatarImg: document.getElementById('heroAvatarImg'),
   avatarFallback: document.getElementById('avatarFallback'),
-  
+
   tierCommon: document.getElementById('tierCommon'),
   tierUncommon: document.getElementById('tierUncommon'),
   tierRare: document.getElementById('tierRare'),
@@ -352,13 +354,160 @@ const elements = {
 
 // Timeframe toggle
 document.querySelectorAll('.time-btn').forEach(btn => {
-  btn.addEventListener('click', function() {
+  btn.addEventListener('click', function () {
     document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
     this.classList.add('active');
     currentTimeframe = this.textContent.toLowerCase().includes('week') ? 'week' : 'all';
     loadImpactData();
   });
 });
+
+function get7DaysAgoISO() {
+  const d = new Date();
+  d.setDate(d.getDate() - 7);
+  return d.toISOString();
+}
+
+function getSinceDate() {
+  if (currentTimeframe !== 'week') return null;
+  return get7DaysAgoISO();
+}
+
+function showToast(message) {
+  let toast = document.getElementById('impactToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'impactToast';
+    toast.style.cssText = [
+      'position:fixed',
+      'bottom:90px',
+      'left:50%',
+      'transform:translateX(-50%)',
+      'background:#0f172a',
+      'color:#fff',
+      'padding:12px 18px',
+      'border-radius:999px',
+      'font-size:12px',
+      'font-weight:700',
+      'z-index:9999',
+      'box-shadow:0 8px 24px rgba(0,0,0,0.18)',
+      'opacity:0',
+      'transition:opacity 0.2s ease',
+      'max-width:90%',
+      'text-align:center'
+    ].join(';');
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.style.opacity = '1';
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(() => {
+    toast.style.opacity = '0';
+  }, 2800);
+}
+
+function parseBadges(raw) {
+  try {
+    if (typeof raw === 'string') return JSON.parse(raw) || [];
+    if (Array.isArray(raw)) return raw;
+    return [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function renderBadgeCount() {
+  if (elements.numBadges) {
+    elements.numBadges.textContent = userBadges.length;
+  }
+}
+
+async function checkAndAwardBadges() {
+  // 1. Fetch all badges that have rules
+  const { data: ruleBadges, error } = await supabaseClient
+    .from('badge_definitions')
+    .select('*')
+    .not('rule_type', 'is', null);
+
+  if (error) {
+    console.error('Error loading badge definitions:', error);
+    return;
+  }
+  if (!ruleBadges || ruleBadges.length === 0) return;
+
+  const newBadges = [];
+
+  // 2. Check milestone rules against live stats already loaded on this page
+  ruleBadges.forEach(b => {
+    if (b.rule_type === 'milestone') {
+      const config = b.rule_config || {};
+      const badgeKey = b.name || b.id;
+      if (!badgeKey) return;
+
+      if (config.stat === 'shares' && totalShares >= Number(config.target || 0)) {
+        if (!userBadges.includes(badgeKey)) newBadges.push(badgeKey);
+      }
+
+      if (config.stat === 'recruits') {
+        const recruits = Number(userProfile?.recruit_count || elements.numRecruits?.textContent || 0);
+        if (recruits >= Number(config.target || 0) && !userBadges.includes(badgeKey)) {
+          newBadges.push(badgeKey);
+        }
+      }
+
+      if (config.stat === 'trophies') {
+        const trophies = Number(elements.numTrophies?.textContent || 0);
+        if (trophies >= Number(config.target || 0) && !userBadges.includes(badgeKey)) {
+          newBadges.push(badgeKey);
+        }
+      }
+    }
+
+    // Signup / Genesis style badges
+    if (b.rule_type === 'signup' || b.rule_type === 'genesis') {
+      const badgeKey = b.name || b.id;
+      if (badgeKey && !userBadges.includes(badgeKey)) {
+        newBadges.push(badgeKey);
+      }
+    }
+  });
+
+  // 3. Award if new badges found
+  if (newBadges.length > 0) {
+    const updatedBadges = [...userBadges, ...newBadges];
+    const { error: updateErr } = await supabaseClient
+      .from('profiles')
+      .update({ badges: updatedBadges })
+      .eq('id', currentUser.id);
+
+    if (updateErr) {
+      console.error('Error awarding badges:', updateErr);
+      return;
+    }
+
+    userBadges = updatedBadges;
+    userProfile.badges = updatedBadges;
+    renderBadgeCount();
+    showToast(`You earned ${newBadges.length} new badge${newBadges.length > 1 ? 's' : ''}!`);
+
+    // Refresh missions count because missions can be tied to reward badges
+    await refreshMissionsCount();
+  }
+}
+
+async function refreshMissionsCount() {
+  const { data: campaigns } = await supabaseClient
+    .from('campaigns')
+    .select('id, reward_badge_id');
+
+  const completedMissionsCount = (campaigns || []).filter(camp =>
+    camp.reward_badge_id && userBadges.includes(camp.reward_badge_id)
+  ).length;
+
+  if (elements.numMissions) {
+    elements.numMissions.textContent = completedMissionsCount;
+  }
+}
 
 async function init() {
   const { data: sessionData, error: sessionErr } = await supabaseClient.auth.getSession();
@@ -368,26 +517,14 @@ async function init() {
   }
   currentUser = sessionData.session.user;
 
-  // Initial load
   await loadImpactData();
   await loadGlobalStats();
-}
-
-function get7DaysAgoISO() {
-  const d = new Date();
-  d.setDate(d.getDate() - 7);
-  return d.toISOString();
-}
-
-function getSinceDate() {
-  if (currentTimeframe !== 'week') return null; // Return null for All Time
-  return get7DaysAgoISO();
 }
 
 async function loadImpactData() {
   const sinceISO = getSinceDate();
 
-  // 1. Fetch User Profile (Flat query, no joins)
+  // 1. Fetch User Profile
   const { data: profile, error: profileErr } = await supabaseClient
     .from('profiles')
     .select('*')
@@ -396,31 +533,38 @@ async function loadImpactData() {
 
   if (profileErr) console.error('Error loading profile:', profileErr);
   userProfile = profile || {};
+  userBadges = parseBadges(userProfile.badges);
+  renderBadgeCount();
 
-  // 2. Fetch Personal Shares (Flat query)
+  // 2. Fetch Personal Shares (uses shared_at)
   let sharesQuery = supabaseClient
     .from('shares')
-    .select('platform, created_at')
+    .select('platform, shared_at')
     .eq('user_id', currentUser.id);
 
-  if (currentTimeframe === 'week') {
-    sharesQuery = sharesQuery.gte('created_at', sinceISO);
+  if (currentTimeframe === 'week' && sinceISO) {
+    sharesQuery = sharesQuery.gte('shared_at', sinceISO);
   }
 
   const { data: userShares, error: sharesErr } = await sharesQuery;
   if (sharesErr) console.error('Error loading shares:', sharesErr);
   const sharesList = userShares || [];
 
-  // Update Shares Number
-  elements.numShares.textContent = sharesList.length;
+  if (currentTimeframe === 'all') {
+    const profileTotal = Number(userProfile.total_shares || 0);
+    totalShares = Math.max(profileTotal, sharesList.length);
+  } else {
+    totalShares = sharesList.length;
+  }
+  elements.numShares.textContent = totalShares;
 
-  // 3. Fetch Recruits (Flat query)
+  // 3. Fetch Recruits
   let recruitsQuery = supabaseClient
     .from('profiles')
     .select('id, country, created_at')
     .eq('recruited_by', currentUser.id);
 
-  if (currentTimeframe === 'week') {
+  if (currentTimeframe === 'week' && sinceISO) {
     recruitsQuery = recruitsQuery.gte('created_at', sinceISO);
   }
 
@@ -428,9 +572,14 @@ async function loadImpactData() {
   if (recruitsErr) console.error('Error loading recruits:', recruitsErr);
   const recruitsList = recruitsData || [];
 
-  elements.numRecruits.textContent = recruitsList.length;
+  if (currentTimeframe === 'all') {
+    const recruitTotal = Number(userProfile.recruit_count || 0);
+    elements.numRecruits.textContent = Math.max(recruitTotal, recruitsList.length);
+  } else {
+    elements.numRecruits.textContent = recruitsList.length;
+  }
 
-  // Calculate Foreign Nations
+  // Foreign nations
   const foreignNationsSet = new Set(
     recruitsList
       .filter(r => r.country && r.country !== userProfile.country)
@@ -438,28 +587,10 @@ async function loadImpactData() {
   );
   elements.numNations.textContent = foreignNationsSet.size;
 
-  // 4. Badges & Missions
-  let badgesArray = [];
-  try {
-    badgesArray = typeof userProfile.badges === 'string' 
-      ? JSON.parse(userProfile.badges) 
-      : (Array.isArray(userProfile.badges) ? userProfile.badges : []);
-  } catch (e) {
-    badgesArray = [];
-  }
-  elements.numBadges.textContent = badgesArray.length;
+  // 4. Missions from badges
+  await refreshMissionsCount();
 
-  // Check completed campaigns
-  const { data: campaigns } = await supabaseClient
-    .from('campaigns')
-    .select('id, reward_badge_id');
-
-  const completedMissionsCount = (campaigns || []).filter(camp => 
-    camp.reward_badge_id && badgesArray.includes(camp.reward_badge_id)
-  ).length;
-  elements.numMissions.textContent = completedMissionsCount;
-
-  // 5. Trophies & Avatar Progression (Flat queries)
+  // 5. Trophies & Avatar Progression
   const [trophiesRes, tiersRes, stagesRes] = await Promise.all([
     supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
     supabaseClient.from('trophy_tiers').select('*'),
@@ -470,11 +601,8 @@ async function loadImpactData() {
   const allTiers = tiersRes.data || [];
   const allStages = stagesRes.data || [];
 
-  // Build a lookup map for tier_id -> tier_level
   const tierLevelMap = {};
-  allTiers.forEach(t => {
-    tierLevelMap[t.id] = t.tier_level;
-  });
+  allTiers.forEach(t => { tierLevelMap[t.id] = t.tier_level; });
 
   const tierCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   let totalTrophies = 0;
@@ -501,7 +629,7 @@ async function loadImpactData() {
   let nextStage = null;
 
   for (let i = allStages.length - 1; i >= 0; i--) {
-    if (mythicCount >= allStages[i].mythic_trophies_required) {
+    if (mythicCount >= (allStages[i].mythic_trophies_required || 0)) {
       currentStage = allStages[i];
       nextStage = allStages[i + 1] || null;
       break;
@@ -514,8 +642,8 @@ async function loadImpactData() {
   elements.avatarTitle.textContent = `Stage ${currentStage.stage_order || 1}`;
 
   const gender = userProfile.gender || 'male';
-  const avatarImgUrl = (gender === 'female' && currentStage.image_url_female) 
-    ? currentStage.image_url_female 
+  const avatarImgUrl = (gender === 'female' && currentStage.image_url_female)
+    ? currentStage.image_url_female
     : currentStage.image_url_male;
 
   if (avatarImgUrl) {
@@ -527,7 +655,6 @@ async function loadImpactData() {
     elements.avatarFallback.style.display = 'flex';
   }
 
-  // Update Progress Bar
   if (nextStage) {
     elements.nextRank.textContent = `Next: ${nextStage.journey_name}`;
     const prevReq = currentStage.mythic_trophies_required || 0;
@@ -547,7 +674,7 @@ async function loadImpactData() {
     elements.progressSubtext.textContent = 'You have reached the pinnacle of evolution.';
   }
 
-  // 6. Render Platform Breakdown
+  // 6. Platforms
   renderPlatformBreakdown(sharesList);
 
   // 7. Kingdom Investment
@@ -555,6 +682,9 @@ async function loadImpactData() {
 
   // 8. Leaderboards
   await loadLeaderboards();
+
+  // 9. Check + award any newly earned badges from live stats
+  await checkAndAwardBadges();
 }
 
 function renderPlatformBreakdown(shares) {
@@ -634,14 +764,13 @@ async function loadKingdomInvestment() {
 }
 
 async function loadLeaderboards() {
-  // "This Week's Leaders" ALWAYS checks the last 7 days
   const weekStart = get7DaysAgoISO();
 
-  // 1. Sharers Leaderboard
+  // Sharers
   const { data: sharesData, error: sharesErr } = await supabaseClient
     .from('shares')
     .select('user_id')
-    .gte('created_at', weekStart);
+    .gte('shared_at', weekStart);
 
   if (sharesErr) console.error('Error loading leaderboard shares:', sharesErr);
 
@@ -691,7 +820,7 @@ async function loadLeaderboards() {
     elements.topSharers.innerHTML = '<p class="text-xs text-slate-400 py-3 text-center">No shares recorded this week.</p>';
   }
 
-  // 2. Recruiters Leaderboard
+  // Recruiters
   const { data: recruitsData, error: recruitsErr } = await supabaseClient
     .from('profiles')
     .select('recruited_by')
@@ -744,6 +873,7 @@ async function loadLeaderboards() {
     elements.topRecruiters.innerHTML = '<p class="text-xs text-slate-400 py-3 text-center">No recruits recorded this week.</p>';
   }
 }
+
 async function loadGlobalStats() {
   const [globalSharesCount, globalProfiles, nationsData] = await Promise.all([
     supabaseClient.from('shares').select('id', { count: 'exact', head: true }),
@@ -759,7 +889,7 @@ async function loadGlobalStats() {
 
   const emojiFlag = (cc) => {
     if (!cc || cc.length !== 2) return '🌐';
-    const codePoints = cc.toUpperCase().split('').map(c => 127397 + c.charCodeAt(0));
+    const codePoints = cc.toUpperCase().split('').map(c => 127397 + c.charCodeAt());
     return String.fromCodePoint(...codePoints);
   };
 
@@ -776,10 +906,10 @@ async function loadGlobalStats() {
 function formatCompact(num) {
   if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'm';
   if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
-  return num.toString();
+  return String(num);
 }
 
-// Start execution
+// Start
 init();
 </script>
 </body>
