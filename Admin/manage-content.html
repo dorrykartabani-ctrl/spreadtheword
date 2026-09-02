@@ -583,11 +583,23 @@ async function loadSections() {
 async function loadMediaLibrary() {
   const { data, error } = await supabaseClient
     .from('media')
-    .select('id, name, url, type')
+    .select('id, name, url, type, folder')
+    .eq('folder', 'landing page') // ← only shows landing page images
     .order('created_at', { ascending: false })
-    .limit(100);
+    .limit(200);
   if (!error && data) {
     mediaLibrary = data.filter(m => (m.type && m.type.startsWith('image')) || (m.url && m.url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)));
+  } else if (error) {
+    console.warn('[Media] Could not filter by folder, loading all:', error.message);
+    // Fallback: load all if folder column doesn't exist yet
+    const { data: allData } = await supabaseClient
+      .from('media')
+      .select('id, name, url, type')
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (allData) {
+      mediaLibrary = allData.filter(m => (m.type && m.type.startsWith('image')) || (m.url && m.url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)));
+    }
   }
 }
 
