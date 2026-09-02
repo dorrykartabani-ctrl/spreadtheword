@@ -3,22 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Rewards & Progress</title>
+  <title>Rewards — Cabinet</title>
+
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="badges-config.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
-  <link rel="stylesheet" href="nav.css">
 
   <script>
     tailwind.config = {
       theme: {
         extend: {
-          colors: { 
-            'surface': '#f8fafc', 'card': '#ffffff', 'text-main': '#0f172a', 'text-muted': '#64748b', 
-            'primary': '#3d6285', 'gold': '#D4A24C',
-            'common': '#64748b', 'uncommon': '#16a34a', 'rare': '#2563eb', 'epic': '#9333ea', 'mythic': '#d97706' 
+          colors: {
+            surface: '#f8fafc',
+            card: '#ffffff',
+            primary: '#3d6285',
+            gold: '#D4A24C',
+            tierCommon: '#94a3b8',
+            tierUncommon: '#16a34a',
+            tierRare: '#2563eb',
+            tierEpic: '#9333ea',
+            tierMythic: '#d97706'
+          },
+          fontFamily: {
+            headline: ['Plus Jakarta Sans', 'sans-serif'],
+            body: ['Manrope', 'sans-serif']
           }
         }
       }
@@ -28,354 +40,524 @@
   <style>
     body { font-family: 'Manrope', sans-serif; background: #f8fafc; color: #0f172a; }
     .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .dash-card { background: white; border-radius: 24px; padding: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; }
     
-    /* Hide scrollbar for horizontal scroll */
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .tab-btn { flex: 1; padding: 10px 12px; border-radius: 12px; font-size: 13px; font-weight: 800; color: #64748b; text-align: center; border: none; background: transparent; cursor: pointer; transition: all 0.2s; }
+    .tab-btn.active { background: white; color: #0f172a; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
 
-    .fade-up { opacity: 0; transform: translateY(10px); transition: 0.5s ease-out; }
-    .fade-up.visible { opacity: 1; transform: translateY(0); }
+    .tile-locked { filter: grayscale(1); opacity: 0.55; }
+    .material-symbols-outlined.filled { font-variation-settings: 'FILL' 1; }
 
-    /* Badge Hover Effect */
-    .badge-item { transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; }
-    .badge-item:hover { transform: scale(1.08); filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15)); }
-    .badge-item.unclaimed { opacity: 0.3; filter: grayscale(1); }
-    .badge-item.unclaimed:hover { opacity: 0.6; filter: grayscale(0.5); transform: scale(1.05); }
-
-    /* Trophy Colored Pills */
-    .trophy-pill { transition: all 0.2s ease; cursor: pointer; }
-    .trophy-pill:active { transform: scale(0.95); }
-    .pill-common { background: #f1f5f9; border: 1px solid #e2e8f0; }
-    .pill-uncommon { background: #dcfce7; border: 1px solid #bbf7d0; }
-    .pill-rare { background: #dbeafe; border: 1px solid #bfdbfe; }
-    .pill-epic { background: #f3e8ff; border: 1px solid #e9d5ff; }
-    .pill-mythic { background: #fef3c7; border: 1px solid #fde68a; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.15); }
+    /* Bottom Sheet Modal Transitions */
+    .modal-backdrop { transition: opacity 0.25s ease; }
+    .modal-sheet { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
   </style>
 </head>
 <body class="pb-32">
 
-<!-- HEADER (Fixed with safe-area padding for mobile notches) -->
-<header class="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-slate-100" style="padding-top: env(safe-area-inset-top);">
-  <div class="max-w-[430px] mx-auto px-6 py-4 flex items-center justify-between">
-    <div>
-      <h1 class="font-headline font-extrabold text-xl text-slate-900">Rewards</h1>
-      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Your Journey & Progress</p>
+<!-- HEADER -->
+<header class="fixed top-0 w-full z-40 bg-white/80 backdrop-blur-md border-b border-slate-100">
+  <div class="max-w-[430px] mx-auto px-5 py-4 flex justify-between items-center">
+    <div class="flex items-center gap-3">
+      <a href="impact.html" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors">
+        <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+      </a>
+      <h1 class="font-headline font-extrabold text-lg text-slate-900">Rewards Cabinet</h1>
     </div>
-    <a href="impact.html" class="text-[11px] font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full">Back to Impact</a>
+    <div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+      <span class="material-symbols-outlined filled text-[20px]">workspace_premium</span>
+    </div>
   </div>
 </header>
 
-<main class="pt-28 px-5 max-w-[430px] mx-auto space-y-8">
+<main class="pt-24 px-5 max-w-[430px] mx-auto space-y-5">
 
-  <!-- 1. SUBSCRIPTION STATUS (Redesigned, Lighter) -->
-  <section class="fade-up">
-    <div id="covenantCard" class="rounded-[32px] p-6 bg-gradient-to-br from-slate-50 to-white border border-slate-100 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform" onclick="openCovenantModal()">
-      <div class="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full blur-3xl"></div>
-      <div class="relative z-10 flex flex-col items-center text-center">
-        <div id="covenantIconWrap" class="w-24 h-24 rounded-3xl bg-white flex items-center justify-center mb-4 shadow-sm border border-slate-50">
-          <img id="covenantImg" src="" class="w-16 h-16 object-contain">
-        </div>
-        <h2 id="covenantName" class="font-headline font-black text-2xl text-slate-900">Loading...</h2>
-        <p id="covenantTagline" class="text-[12px] text-slate-500 mt-1 font-medium">—</p>
-        <p class="text-[10px] font-bold text-gold uppercase tracking-widest mt-3">Current Status</p>
+  <!-- USER STATUS CARD -->
+  <section class="dash-card flex items-center justify-between relative overflow-hidden">
+    <div class="absolute top-0 right-0 w-32 h-32 bg-gold/10 rounded-full blur-3xl"></div>
+    <div class="relative z-10">
+      <h2 id="displayUserName" class="font-headline font-black text-2xl text-slate-900 leading-tight">Loading...</h2>
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Kingdom Member</p>
+    </div>
+    <div id="subTierPill" class="relative z-10 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-headline font-extrabold flex items-center gap-1.5">
+      <span class="material-symbols-outlined text-[16px] filled">verified</span>
+      <span id="displaySubTier">Free Tier</span>
+    </div>
+  </section>
+
+  <!-- TAB TOGGLE -->
+  <section>
+    <div class="flex bg-slate-200/60 rounded-2xl p-1 gap-1">
+      <button type="button" class="tab-btn active" data-tab="badges">Badges</button>
+      <button type="button" class="tab-btn" data-tab="trophies">Trophies</button>
+    </div>
+  </section>
+
+  <!-- BADGES PANEL -->
+  <section id="panelBadges" class="space-y-6">
+    <!-- Earned Sub-Section -->
+    <div class="space-y-2.5">
+      <h3 class="font-headline font-extrabold text-sm text-slate-900 px-1 flex justify-between items-center">
+        <span>Earned Badges</span>
+        <span id="countEarnedBadges" class="text-[11px] font-bold text-gold">0</span>
+      </h3>
+      <div id="gridEarnedBadges" class="grid grid-cols-4 gap-2.5">
+        <p class="text-xs text-slate-400 col-span-4 text-center py-4">Loading earned badges...</p>
+      </div>
+    </div>
+
+    <!-- Path To Glory Sub-Section -->
+    <div class="space-y-2.5 pt-2">
+      <h3 class="font-headline font-extrabold text-sm text-slate-900 px-1 flex justify-between items-center">
+        <span>Path to Glory</span>
+        <span id="countLockedBadges" class="text-[11px] font-bold text-slate-400">0</span>
+      </h3>
+      <div id="gridLockedBadges" class="grid grid-cols-4 gap-2.5">
+        <p class="text-xs text-slate-400 col-span-4 text-center py-4">Loading locked badges...</p>
       </div>
     </div>
   </section>
 
-  <!-- 2. BADGES (Standalone, No Pills) -->
-  <section class="fade-up">
-    <h3 class="font-headline font-bold text-lg mb-4 px-1">Your Badges</h3>
-    <div id="badgesContainer" class="flex flex-wrap justify-center gap-6 py-4">
-      <!-- Injected via JS -->
+  <!-- TROPHIES PANEL -->
+  <section id="panelTrophies" class="space-y-6 hidden">
+    <!-- Earned Sub-Section -->
+    <div class="space-y-2.5">
+      <h3 class="font-headline font-extrabold text-sm text-slate-900 px-1 flex justify-between items-center">
+        <span>Unlocked Trophies</span>
+        <span id="countEarnedTrophies" class="text-[11px] font-bold text-gold">0</span>
+      </h3>
+      <div id="gridEarnedTrophies" class="grid grid-cols-4 gap-2.5">
+        <p class="text-xs text-slate-400 col-span-4 text-center py-4">Loading trophies...</p>
+      </div>
     </div>
-  </section>
 
-  <!-- 3. TROPHIES (Colored Pills, Inline) -->
-  <section class="fade-up">
-    <h3 class="font-headline font-bold text-lg mb-4 px-1">Your Trophies</h3>
-    <div id="trophiesGrid" class="grid grid-cols-2 gap-4">
-      <!-- Injected via JS -->
-    </div>
-  </section>
-
-  <!-- 4. CURRENT CALLS (Campaigns) -->
-  <section class="fade-up">
-    <h3 class="font-headline font-bold text-lg mb-4 px-1">Current Calls</h3>
-    <div id="campaignsList" class="space-y-4">
-      <!-- Injected via JS -->
+    <!-- Path To Glory Sub-Section -->
+    <div class="space-y-2.5 pt-2">
+      <h3 class="font-headline font-extrabold text-sm text-slate-900 px-1 flex justify-between items-center">
+        <span>Path to Glory</span>
+        <span id="countLockedTrophies" class="text-[11px] font-bold text-slate-400">0</span>
+      </h3>
+      <div id="gridLockedTrophies" class="grid grid-cols-4 gap-2.5">
+        <p class="text-xs text-slate-400 col-span-4 text-center py-4">Loading locked trophies...</p>
+      </div>
     </div>
   </section>
 
 </main>
 
+<!-- BOTTOM SLIDE-UP MODAL SHEET -->
+<div id="rewardModal" class="fixed inset-0 z-50 pointer-events-none">
+  <!-- Dark Backdrop -->
+  <div id="modalBackdrop" class="modal-backdrop absolute inset-0 bg-slate-900/60 opacity-0 pointer-events-auto"></div>
+  
+  <!-- Slide-up Container -->
+  <div id="modalSheet" class="modal-sheet absolute bottom-0 inset-x-0 max-w-[430px] mx-auto bg-white rounded-t-[32px] p-6 shadow-2xl pointer-events-auto transform translate-y-full space-y-5">
+    
+    <!-- Modal Handle Bar -->
+    <div class="w-12 h-1 bg-slate-200 rounded-full mx-auto -mt-2 mb-2"></div>
+
+    <div class="flex items-start gap-4">
+      <!-- Dynamic Large Icon Card -->
+      <div id="modalIconCard" class="w-16 h-16 rounded-2xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 shadow-md">
+        <span id="modalIcon" class="material-symbols-outlined filled text-[36px]">emoji_events</span>
+        <img id="modalImg" src="" class="w-12 h-12 object-contain hidden" alt="Reward">
+      </div>
+      <div class="flex-1 min-w-0 pt-0.5">
+        <span id="modalStatusBadge" class="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">Locked</span>
+        <h3 id="modalTitle" class="font-headline font-black text-xl text-slate-900 mt-1.5 leading-tight">Reward Title</h3>
+      </div>
+      <button type="button" id="modalCloseBtn" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600">
+        <span class="material-symbols-outlined text-[18px]">close</span>
+      </button>
+    </div>
+
+    <!-- Description -->
+    <div>
+      <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Description</p>
+      <p id="modalDesc" class="text-sm text-slate-600 leading-relaxed">Reward description will display here.</p>
+    </div>
+
+    <!-- Progress / Requirement Area -->
+    <div id="modalProgressSection" class="bg-slate-50 p-4 rounded-2xl space-y-2 border border-slate-100">
+      <div class="flex justify-between items-center text-xs font-bold">
+        <span id="modalProgressLabel" class="text-slate-700">Requirement</span>
+        <span id="modalProgressValue" class="text-slate-500">0 / 0</span>
+      </div>
+      <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
+        <div id="modalProgressBar" class="h-full bg-gold rounded-full transition-all duration-500" style="width: 0%"></div>
+      </div>
+      <p id="modalProgressSubtext" class="text-[10px] font-bold text-slate-400">Keep going to unlock this level!</p>
+    </div>
+
+  </div>
+</div>
+
 <!-- BOTTOM NAV -->
-<nav class="fixed bottom-0 inset-x-0 z-40 bg-white/90 backdrop-blur-[20px] border-t border-slate-100" style="padding-bottom: env(safe-area-inset-bottom);">
+<nav class="fixed bottom-0 inset-x-0 z-30 bg-white/80 backdrop-blur-[20px] border-t border-slate-100" style="padding-bottom: env(safe-area-inset-bottom);">
   <div class="max-w-lg mx-auto flex items-center justify-around h-16 px-2">
     <a href="index.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">home</span><span class="text-[10px] font-bold">Home</span></a>
     <a href="library.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">auto_stories</span><span class="text-[10px] font-bold">Library</span></a>
     <a href="cause.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">volunteer_activism</span><span class="text-[10px] font-bold">Missions</span></a>
     <a href="impact.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">bar_chart</span><span class="text-[10px] font-bold">Impact</span></a>
-    <a href="profile.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-primary bg-primary/5"><span class="material-symbols-outlined filled" style="font-size:1.35rem">person</span><span class="text-[10px] font-bold">Profile</span></a>
+    <a href="profile.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-primary bg-primary/5 rounded-xl"><span class="material-symbols-outlined filled" style="font-size:1.35rem">person</span><span class="text-[10px] font-bold">Profile</span></a>
   </div>
 </nav>
 
-<!-- UNIVERSAL MODAL CONTAINER (Only used for Subscription details now) -->
-<div id="modalOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden" onclick="closeModal()">
-  <div id="modalSheet" class="absolute bottom-0 inset-x-0 bg-white rounded-t-[32px] p-8 max-w-lg mx-auto transform translate-y-full transition-transform duration-300 ease-out" onclick="event.stopPropagation()" style="max-height: 90vh; overflow-y: auto;">
-    <div class="w-12 h-1 bg-slate-200 mx-auto mb-8 rounded-full"></div>
-    <div id="modalContent"></div>
-    <button onclick="closeModal()" class="w-full mt-8 py-4 bg-slate-900 text-white font-headline font-bold rounded-2xl active:scale-95 transition-transform">Close</button>
-  </div>
-</div>
-
 <script>
-var supabaseClient = supabase.createClient(
+// --- SUPABASE CLIENT ---
+const supabaseClient = supabase.createClient(
   'https://nhymadutuhpjgkiurify.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
 );
 
-var currentUser, userProfile;
-var userStats = { shares: 0, recruits_paid: 0, countries_paid: 0 };
-var allTrophyDefs = [];
+let currentUser = null;
+let userProfile = null;
+let userBadgesSet = new Set();
 
+// --- DOM ELEMENTS ---
+const els = {
+  displayUserName: document.getElementById('displayUserName'),
+  displaySubTier: document.getElementById('displaySubTier'),
+  subTierPill: document.getElementById('subTierPill'),
+  
+  gridEarnedBadges: document.getElementById('gridEarnedBadges'),
+  gridLockedBadges: document.getElementById('gridLockedBadges'),
+  countEarnedBadges: document.getElementById('countEarnedBadges'),
+  countLockedBadges: document.getElementById('countLockedBadges'),
+
+  gridEarnedTrophies: document.getElementById('gridEarnedTrophies'),
+  gridLockedTrophies: document.getElementById('gridLockedTrophies'),
+  countEarnedTrophies: document.getElementById('countEarnedTrophies'),
+  countLockedTrophies: document.getElementById('countLockedTrophies'),
+
+  panelBadges: document.getElementById('panelBadges'),
+  panelTrophies: document.getElementById('panelTrophies'),
+
+  // Modal
+  modal: document.getElementById('rewardModal'),
+  modalBackdrop: document.getElementById('modalBackdrop'),
+  modalSheet: document.getElementById('modalSheet'),
+  modalIconCard: document.getElementById('modalIconCard'),
+  modalIcon: document.getElementById('modalIcon'),
+  modalImg: document.getElementById('modalImg'),
+  modalTitle: document.getElementById('modalTitle'),
+  modalStatusBadge: document.getElementById('modalStatusBadge'),
+  modalDesc: document.getElementById('modalDesc'),
+  modalProgressSection: document.getElementById('modalProgressSection'),
+  modalProgressLabel: document.getElementById('modalProgressLabel'),
+  modalProgressValue: document.getElementById('modalProgressValue'),
+  modalProgressBar: document.getElementById('modalProgressBar'),
+  modalProgressSubtext: document.getElementById('modalProgressSubtext'),
+  modalCloseBtn: document.getElementById('modalCloseBtn')
+};
+
+// --- TAB TOGGLES ---
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    els.panelBadges.classList.toggle('hidden', tab !== 'badges');
+    els.panelTrophies.classList.toggle('hidden', tab !== 'trophies');
+  });
+});
+
+// Tier Color Map (Hex + TailWind)
+const TIER_COLORS = {
+  0: { name: 'Locked', bg: 'bg-slate-200/80', text: 'text-slate-400', hex: '#e2e8f0', bar: 'bg-slate-400' },
+  1: { name: 'Common', bg: 'bg-slate-400', text: 'text-slate-500', hex: '#94a3b8', bar: 'bg-slate-400' },
+  2: { name: 'Uncommon', bg: 'bg-green-500', text: 'text-green-600', hex: '#16a34a', bar: 'bg-green-500' },
+  3: { name: 'Rare', bg: 'bg-blue-500', text: 'text-blue-600', hex: '#2563eb', bar: 'bg-blue-500' },
+  4: { name: 'Epic', bg: 'bg-purple-500', text: 'text-purple-600', hex: '#9333ea', bar: 'bg-purple-500' },
+  5: { name: 'Mythic', bg: 'bg-amber-500', text: 'text-amber-600', hex: '#d97706', bar: 'bg-amber-500' }
+};
+
+// --- INIT ---
 async function init() {
-  const s = await supabaseClient.auth.getSession();
-  if (!s.data.session) { window.location.href = 'login.html'; return; }
-  currentUser = s.data.session.user;
-  await loadData();
-  document.querySelectorAll('.fade-up').forEach(el => el.classList.add('visible'));
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  if (!sessionData?.session) {
+    window.location.href = 'login.html';
+    return;
+  }
+  currentUser = sessionData.session.user;
+  await loadRewardsCabinet();
 }
 
-async function loadData() {
-  const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+async function loadRewardsCabinet() {
+  // 1. Load User Profile
+  const { data: profile } = await supabaseClient
+    .from('profiles')
+    .select('*')
+    .eq('id', currentUser.id)
+    .maybeSingle();
+
   userProfile = profile || {};
+  
+  // Bind Header Identity
+  els.displayUserName.textContent = userProfile.nickname || userProfile.full_name || 'Warrior';
+  
+  if (userProfile.subscription_tier) {
+    const { data: tierData } = await supabaseClient
+      .from('subscription_tiers')
+      .select('name')
+      .eq('id', userProfile.subscription_tier)
+      .maybeSingle();
 
-  const inviteCode = userProfile.invite_code;
-  const recruitsQuery = inviteCode 
-    ? supabaseClient.from('profiles').select('country, subscription_tier').eq('referred_by', currentUser.id) 
-    : Promise.resolve({ data: [] }); 
+    if (tierData) els.displaySubTier.textContent = tierData.name;
+  }
 
-  const res = await Promise.allSettled([
-    supabaseClient.from('shares').select('shared_at', { count: 'exact' }).eq('user_id', currentUser.id),
-    recruitsQuery,
-    supabaseClient.from('trophy_definitions').select('*').eq('is_active', true),
-    // Attempt to fetch active campaigns. If table doesn't exist, it fails gracefully.
-    supabaseClient.from('campaigns').select('*').eq('is_active', true).order('created_at', {ascending: false})
+  // Parse User Badges
+  let parsedBadges = [];
+  try {
+    parsedBadges = typeof userProfile.badges === 'string' 
+      ? JSON.parse(userProfile.badges) 
+      : (Array.isArray(userProfile.badges) ? userProfile.badges : []);
+  } catch(e) { parsedBadges = []; }
+  userBadgesSet = new Set(parsedBadges.map(String));
+
+  // 2. Fetch Badges, Trophies & Progress in Parallel (Flat queries)
+  const [badgesRes, trophiesRes, tiersRes, thresholdsRes, progressRes] = await Promise.all([
+    supabaseClient.from('badge_definitions').select('*').eq('is_active', true).order('sort_order', { ascending: true }),
+    supabaseClient.from('trophy_definitions').select('*').order('created_at', { ascending: true }),
+    supabaseClient.from('trophy_tiers').select('*').order('id', { ascending: true }),
+    supabaseClient.from('trophy_thresholds').select('*').eq('is_active', true),
+    supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id)
   ]);
 
-  const sharesCount = res[0].status === 'fulfilled' ? (res[0].value.count || 0) : 0;
-  const recruits = res[1].status === 'fulfilled' ? (res[1].value.data || []) : [];
-  allTrophyDefs = res[2].status === 'fulfilled' ? (res[2].value.data || []) : [];
-  const campaigns = res[3].status === 'fulfilled' ? (res[3].value.data || []) : [];
-
-  const paidRecruits = recruits.filter(r => r.subscription_tier !== 'free');
-  userStats = { 
-    shares: sharesCount, 
-    recruits_paid: paidRecruits.length, 
-    countries_paid: new Set(paidRecruits.map(r => r.country).filter(c => c)).size 
-  };
-
-  renderCovenant();
-  renderBadges();
-  renderTrophies();
-  renderCampaigns(campaigns);
+  renderBadgesCabinet(badgesRes.data || []);
+  renderTrophiesCabinet(
+    trophiesRes.data || [], 
+    tiersRes.data || [], 
+    thresholdsRes.data || [], 
+    progressRes.data || []
+  );
 }
 
-// --- RENDER FUNCTIONS ---
+// --- RENDER BADGES CABINET ---
+function renderBadgesCabinet(allBadges) {
+  const earnedBadges = [];
+  const lockedBadges = [];
 
-function renderCovenant() {
-  const tier = (userProfile.subscription_tier || 'free').toLowerCase();
-  const badge = SUBSCRIPTION_ROADMAP.find(b => b.key === tier) || SUBSCRIPTION_ROADMAP[0];
+  allBadges.forEach(badge => {
+    const isEarned = userBadgesSet.has(String(badge.id)) || userBadgesSet.has(String(badge.name));
+    if (isEarned) earnedBadges.push(badge);
+    else lockedBadges.push(badge);
+  });
+
+  els.countEarnedBadges.textContent = earnedBadges.length;
+  els.countLockedBadges.textContent = lockedBadges.length;
+
+  // Render Earned Badges
+  if (earnedBadges.length === 0) {
+    els.gridEarnedBadges.innerHTML = `<p class="text-xs text-slate-400 col-span-4 text-center py-4 bg-slate-100/50 rounded-2xl">No badges earned yet.</p>`;
+  } else {
+    els.gridEarnedBadges.innerHTML = earnedBadges.map(b => createTileHTML(b, true, 'badge')).join('');
+  }
+
+  // Render Locked Badges
+  if (lockedBadges.length === 0) {
+    els.gridLockedBadges.innerHTML = `<p class="text-xs text-slate-400 col-span-4 text-center py-4 bg-slate-100/50 rounded-2xl">All badges unlocked!</p>`;
+  } else {
+    els.gridLockedBadges.innerHTML = lockedBadges.map(b => createTileHTML(b, false, 'badge')).join('');
+  }
+
+  // Attach Tile Click Event Listeners
+  attachTileClickEvents([...earnedBadges, ...lockedBadges], 'badge');
+}
+
+// --- RENDER TROPHIES CABINET ---
+function renderTrophiesCabinet(allTrophies, tiers, thresholds, userProgressList) {
+  const tierMap = {};
+  tiers.forEach(t => { tierMap[t.id] = t; });
+
+  const progressMap = {};
+  userProgressList.forEach(p => { progressMap[p.trophy_id] = p; });
+
+  const thresholdMap = {};
+  thresholds.forEach(th => {
+    if (!thresholdMap[th.trophy_id]) thresholdMap[th.trophy_id] = [];
+    thresholdMap[th.trophy_id].push(th);
+  });
+
+  const earnedTrophies = [];
+  const lockedTrophies = [];
+
+  allTrophies.forEach(trophy => {
+    const p = progressMap[trophy.id] || { current_tier_id: 0, current_progress: 0 };
+    const tierId = Number(p.current_tier_id || 0);
+    const trophyItem = { ...trophy, currentTierId: tierId, currentProgress: Number(p.current_progress || 0), thresholds: thresholdMap[trophy.id] || [] };
+
+    if (tierId > 0) earnedTrophies.push(trophyItem);
+    else lockedTrophies.push(trophyItem);
+  });
+
+  els.countEarnedTrophies.textContent = earnedTrophies.length;
+  els.countLockedTrophies.textContent = lockedTrophies.length;
+
+  // Render Earned Trophies
+  if (earnedTrophies.length === 0) {
+    els.gridEarnedTrophies.innerHTML = `<p class="text-xs text-slate-400 col-span-4 text-center py-4 bg-slate-100/50 rounded-2xl">No trophies unlocked yet.</p>`;
+  } else {
+    els.gridEarnedTrophies.innerHTML = earnedTrophies.map(t => createTileHTML(t, true, 'trophy')).join('');
+  }
+
+  // Render Locked Trophies
+  if (lockedTrophies.length === 0) {
+    els.gridLockedTrophies.innerHTML = `<p class="text-xs text-slate-400 col-span-4 text-center py-4 bg-slate-100/50 rounded-2xl">All trophies unlocked!</p>`;
+  } else {
+    els.gridLockedTrophies.innerHTML = lockedTrophies.map(t => createTileHTML(t, false, 'trophy')).join('');
+  }
+
+  // Attach Tile Click Event Listeners
+  attachTileClickEvents([...earnedTrophies, ...lockedTrophies], 'trophy');
+}
+
+// --- CREATE 4-COLUMN TILE HTML (Exact Design Reference) ---
+function createTileHTML(item, isEarned, type) {
+  const title = item.title || item.name || 'Reward';
+  const icon = item.icon || (type === 'badge' ? 'military_tech' : 'emoji_events');
+  const imgUrl = item.image_url;
+
+  let bgClass = 'bg-slate-200/80 text-slate-400 tile-locked';
   
-  document.getElementById('covenantImg').src = badge.image;
-  document.getElementById('covenantName').textContent = badge.name;
-  document.getElementById('covenantTagline').textContent = badge.tagline;
-}
-
-function renderBadges() {
-  const container = document.getElementById('badgesContainer');
-  container.innerHTML = '';
-
-  // Combine special badges (like Genesis) with any future badge logic
-  const allBadges = SPECIAL_BADGES || [];
-  const earnedBadgeIds = userProfile.badges || [];
-
-  if (allBadges.length === 0) {
-    container.innerHTML = `<p class="text-center text-slate-400 text-sm py-4 w-full">Join a campaign to earn your first badge.</p>`;
-    return;
+  if (isEarned) {
+    if (type === 'badge') {
+      bgClass = 'bg-amber-500 text-white shadow-md';
+    } else {
+      // Trophy Background Stipulates Tier Color directly!
+      const tierId = item.currentTierId || 1;
+      const colorObj = TIER_COLORS[tierId] || TIER_COLORS[1];
+      bgClass = `${colorObj.bg} text-white shadow-md`;
+    }
   }
 
-  allBadges.forEach(b => {
-    const isEarned = earnedBadgeIds.includes(b.id);
-    const div = document.createElement('div');
-    div.className = `badge-item flex flex-col items-center w-24 ${isEarned ? '' : 'unclaimed'}`;
-    div.onclick = () => openBadgeModal(b);
-    div.innerHTML = `
-      <img src="${b.image || '/images/badges/placeholder.svg'}" class="w-16 h-16 object-contain mb-2" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-      <div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-2 hidden">
-        <span class="material-symbols-outlined text-primary text-2xl">${b.icon}</span>
+  return `
+    <button type="button" 
+            data-id="${item.id}" 
+            data-type="${type}"
+            class="reward-tile aspect-square rounded-2xl p-2 flex flex-col items-center justify-between text-center transition-transform active:scale-95 cursor-pointer ${bgClass}">
+      <div class="flex-1 flex items-center justify-center pt-1">
+        ${imgUrl 
+          ? `<img src="${imgUrl}" class="w-10 h-10 object-contain ${isEarned ? '' : 'grayscale opacity-60'}" alt="${title}">`
+          : `<span class="material-symbols-outlined text-[28px] ${isEarned ? 'filled' : ''}">${icon}</span>`
+        }
       </div>
-      <p class="text-[10px] font-bold text-slate-700 leading-tight text-center">${b.name}</p>
-      ${!isEarned ? '<p class="text-[8px] text-slate-400 mt-1">Locked</p>' : ''}
-    `;
-    container.appendChild(div);
+      <p class="w-full text-[10px] font-headline font-extrabold truncate leading-tight pb-0.5 px-0.5 ${isEarned ? 'text-white' : 'text-slate-500'}">
+        ${title}
+      </p>
+    </button>
+  `;
+}
+
+// --- ATTACH MODAL CLICK EVENTS ---
+function attachTileClickEvents(itemsList, type) {
+  const itemMap = {};
+  itemsList.forEach(i => { itemMap[i.id] = i; });
+
+  document.querySelectorAll(`.reward-tile[data-type="${type}"]`).forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const item = itemMap[id];
+      if (item) openRewardModal(item, type);
+    });
   });
 }
 
-function renderTrophies() {
-  const container = document.getElementById('trophiesGrid');
-  container.innerHTML = '';
+// --- OPEN SLIDE-UP MODAL ---
+function openRewardModal(item, type) {
+  const isEarned = type === 'badge' 
+    ? (userBadgesSet.has(String(item.id)) || userBadgesSet.has(String(item.name)))
+    : (item.currentTierId > 0);
 
-  if (allTrophyDefs.length === 0) {
-    container.innerHTML = `<div class="col-span-2 text-center py-8 text-slate-400 text-sm">Trophies will appear here.</div>`;
-    return;
+  const title = item.title || item.name || 'Reward Details';
+  const icon = item.icon || (type === 'badge' ? 'military_tech' : 'emoji_events');
+  
+  els.modalTitle.textContent = title;
+  els.modalDesc.textContent = item.description || 'Complete missions and share quotes to unlock this reward.';
+
+  // Image or Icon
+  if (item.image_url) {
+    els.modalImg.src = item.image_url;
+    els.modalImg.classList.remove('hidden');
+    els.modalIcon.classList.add('hidden');
+  } else {
+    els.modalIcon.textContent = icon;
+    els.modalIcon.classList.remove('hidden');
+    els.modalImg.classList.add('hidden');
   }
 
-  allTrophyDefs.forEach(trophy => {
-    const state = getTrophyState(trophy, userStats);
-    const rarity = state.activeTier.rarity;
-    const isEarned = state.count > 0;
-    
-    const div = document.createElement('div');
-    div.className = `trophy-pill pill-${rarity} rounded-2xl p-4 text-center flex flex-col items-center justify-center h-32 ${!isEarned ? 'opacity-60' : ''}`;
-    div.onclick = () => openTrophyModal(trophy, state);
-    div.innerHTML = `
-      <div class="w-12 h-12 mb-2 flex items-center justify-center">
-        <!-- Placeholder for your rich 3D images. Replace src with actual image path later -->
-        <span class="material-symbols-outlined text-3xl text-slate-700">${trophy.icon}</span>
-      </div>
-      <p class="text-[11px] font-bold text-slate-800 leading-tight">${trophy.title}</p>
-      <p class="text-[9px] font-black uppercase tracking-widest mt-1 text-${rarity}">${rarity}</p>
-    `;
-    container.appendChild(div);
-  });
-}
+  // Card Theme & Status Badge
+  if (type === 'badge') {
+    if (isEarned) {
+      els.modalIconCard.className = 'w-16 h-16 rounded-2xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 shadow-md';
+      els.modalStatusBadge.className = 'text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-amber-100 text-amber-700';
+      els.modalStatusBadge.textContent = 'Earned Badge';
+      els.modalProgressSection.classList.add('hidden');
+    } else {
+      els.modalIconCard.className = 'w-16 h-16 rounded-2xl bg-slate-200 text-slate-400 flex items-center justify-center flex-shrink-0';
+      els.modalStatusBadge.className = 'text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-slate-100 text-slate-500';
+      els.modalStatusBadge.textContent = 'Locked Badge';
+      
+      // Rule config description if available
+      els.modalProgressSection.classList.remove('hidden');
+      els.modalProgressLabel.textContent = 'Unlock Requirement';
+      els.modalProgressValue.textContent = 'In Progress';
+      els.modalProgressBar.style.width = '0%';
+      els.modalProgressSubtext.textContent = item.rule_config?.stat 
+        ? `Perform ${item.rule_config.target} ${item.rule_config.stat} to earn.` 
+        : 'Earned by taking action in the app.';
+    }
+  } else {
+    // Trophy
+    const tierId = item.currentTierId || 0;
+    const tierObj = TIER_COLORS[tierId] || TIER_COLORS[0];
 
-function renderCampaigns(campaigns) {
-  const container = document.getElementById('campaignsList');
-  container.innerHTML = '';
+    els.modalIconCard.className = `w-16 h-16 rounded-2xl ${tierObj.bg} text-white flex items-center justify-center flex-shrink-0 shadow-md`;
+    els.modalStatusBadge.className = `text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${isEarned ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-500'}`;
+    els.modalStatusBadge.textContent = isEarned ? `${tierObj.name} Trophy` : 'Locked Trophy';
 
-  // If no campaigns table exists or it's empty
-  if (!campaigns || campaigns.length === 0) {
-    container.innerHTML = `
-      <div class="bg-white rounded-2xl p-6 text-center border border-slate-100">
-        <span class="material-symbols-outlined text-slate-300 text-3xl mb-2">notifications_off</span>
-        <p class="text-sm text-slate-500 font-medium">No active campaigns right now.</p>
-        <p class="text-[11px] text-slate-400 mt-1">New calls to action will appear here.</p>
-      </div>
-    `;
-    return;
+    // Trophy Progress
+    els.modalProgressSection.classList.remove('hidden');
+    const sortedThresh = (item.thresholds || []).sort((a,b) => a.tier_id - b.tier_id);
+    const nextThresh = sortedThresh.find(t => t.tier_id > tierId);
+
+    if (nextThresh) {
+      const target = Number(nextThresh.threshold_value || 1);
+      const curr = item.currentProgress || 0;
+      const pct = Math.max(0, Math.min(100, (curr / target) * 100));
+
+      els.modalProgressLabel.textContent = `Progress to Next Tier`;
+      els.modalProgressValue.textContent = `${curr} / ${target}`;
+      els.modalProgressBar.style.width = `${pct}%`;
+      els.modalProgressBar.className = `h-full ${tierObj.bar} rounded-full transition-all duration-500`;
+      els.modalProgressSubtext.textContent = `Reach ${target} in ${item.stat_type || 'stats'} to evolve to tier ${nextThresh.tier_id}.`;
+    } else {
+      els.modalProgressLabel.textContent = 'Max Tier Achieved';
+      els.modalProgressValue.textContent = '100%';
+      els.modalProgressBar.style.width = '100%';
+      els.modalProgressSubtext.textContent = 'You have mastered this trophy!';
+    }
   }
 
-  campaigns.forEach(c => {
-    const div = document.createElement('div');
-    div.className = 'bg-white rounded-2xl p-5 border border-slate-100 shadow-sm cursor-pointer active:scale-[0.98] transition-transform';
-    div.onclick = () => window.location.href = 'cause.html'; // Link to missions page
-    div.innerHTML = `
-      <div class="flex justify-between items-start mb-3">
-        <div class="flex-1">
-          <h4 class="font-headline font-bold text-slate-900 text-lg">${c.title}</h4>
-          <p class="text-[12px] text-slate-500 mt-1">${c.description}</p>
-        </div>
-        <span class="material-symbols-outlined text-primary ml-3">arrow_forward</span>
-      </div>
-      <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 mb-1.5">
-        <span>Progress</span>
-        <span>${c.current_progress || 0} / ${c.target_amount}</span>
-      </div>
-      <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden mb-3">
-        <div class="h-full bg-primary rounded-full transition-all duration-500" style="width: ${((c.current_progress || 0) / c.target_amount) * 100}%"></div>
-      </div>
-      <p class="text-[10px] text-gold font-bold">Reward: ${c.reward_description}</p>
-    `;
-    container.appendChild(div);
-  });
+  // Show Modal
+  els.modal.classList.remove('pointer-events-none');
+  els.modalBackdrop.classList.remove('opacity-0');
+  els.modalSheet.classList.remove('translate-y-full');
 }
 
-// --- MODAL LOGIC ---
-
-function openModal(html) {
-  document.getElementById('modalContent').innerHTML = html;
-  document.getElementById('modalOverlay').classList.remove('hidden');
-  // Small delay to allow display:block to apply before transition
-  setTimeout(() => {
-    document.getElementById('modalSheet').classList.remove('translate-y-full');
-  }, 10);
-}
-
+// --- CLOSE MODAL ---
 function closeModal() {
-  document.getElementById('modalSheet').classList.add('translate-y-full');
-  setTimeout(() => document.getElementById('modalOverlay').classList.add('hidden'), 300);
+  els.modalBackdrop.classList.add('opacity-0');
+  els.modalSheet.classList.add('translate-y-full');
+  setTimeout(() => {
+    els.modal.classList.add('pointer-events-none');
+  }, 300);
 }
 
-function openCovenantModal() {
-  const currentTier = (userProfile.subscription_tier || 'free').toLowerCase();
-  const html = `
-    <div class="text-center mb-6">
-      <h2 class="font-headline font-black text-2xl text-slate-900">The Covenant Path</h2>
-      <p class="text-sm text-slate-500 mt-2">Your commitment level determines your access and impact.</p>
-    </div>
-    <div class="space-y-3">
-      ${SUBSCRIPTION_ROADMAP.map(b => {
-        const isActive = b.key === currentTier;
-        return `
-        <div class="flex items-center gap-4 p-4 rounded-2xl border ${isActive ? 'border-primary bg-primary/5' : 'border-slate-100 bg-white'}">
-          <img src="${b.image}" class="w-12 h-12 object-contain">
-          <div class="flex-1 text-left">
-            <p class="font-headline font-bold text-sm ${isActive ? 'text-primary' : 'text-slate-700'}">${b.name}</p>
-            <p class="text-[11px] text-slate-400">${b.tagline}</p>
-          </div>
-          <p class="text-[11px] font-bold ${isActive ? 'text-primary' : 'text-slate-400'}">${b.price}</p>
-        </div>`;
-      }).join('')}
-    </div>
-  `;
-  openModal(html);
-}
+els.modalCloseBtn.addEventListener('click', closeModal);
+els.modalBackdrop.addEventListener('click', closeModal);
 
-function openTrophyModal(trophy, state) {
-  const html = `
-    <div class="text-center mb-6">
-      <div class="w-20 h-20 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center mb-4 shadow-inner">
-        <span class="material-symbols-outlined text-4xl text-slate-700">${trophy.icon}</span>
-      </div>
-      <h2 class="font-headline font-black text-2xl text-slate-900">${trophy.title}</h2>
-      <p class="text-sm text-slate-500 mt-2 px-4">${trophy.description}</p>
-    </div>
-    <div class="space-y-3">
-      <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center mb-2">Roadmap to Mastery</p>
-      ${trophy.tiers.map(tier => {
-        const isDone = state.count >= tier.req;
-        const isNext = !isDone && state.nextTier && state.nextTier.req === tier.req;
-        return `
-        <div class="flex items-center gap-3 p-3 rounded-xl ${isDone ? 'bg-slate-50 border border-slate-100' : isNext ? 'bg-primary/5 border border-primary/20' : 'opacity-40 bg-slate-50'}">
-          <div class="w-2.5 h-2.5 rounded-full bg-${tier.rarity}"></div>
-          <div class="flex-1">
-            <p class="text-xs font-bold text-slate-800">${tier.name}</p>
-            <p class="text-[10px] text-slate-400">${tier.desc || ''}</p>
-          </div>
-          <p class="text-[10px] font-black ${isDone ? 'text-primary' : 'text-slate-400'}">${tier.req} ${trophy.type.replace('_', ' ')}</p>
-          ${isDone ? '<span class="material-symbols-outlined text-green-500 text-lg filled">check_circle</span>' : ''}
-        </div>`;
-      }).join('')}
-    </div>
-  `;
-  openModal(html);
-}
-
-function openBadgeModal(badge) {
-  const isEarned = (userProfile.badges || []).includes(badge.id);
-  const html = `
-    <div class="text-center">
-      <img src="${badge.image || ''}" class="w-24 h-24 mx-auto mb-4 object-contain" onerror="this.style.display='none'">
-      <h2 class="font-headline font-black text-2xl text-slate-900">${badge.name}</h2>
-      <p class="text-sm text-slate-500 mt-3 px-6">${badge.description}</p>
-      ${isEarned ? '<p class="text-[10px] font-bold text-gold uppercase tracking-widest mt-6">Earned</p>' : '<p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-6">Locked</p>'}
-    </div>
-  `;
-  openModal(html);
-}
-
+// Start
 init();
 </script>
 </body>
