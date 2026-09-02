@@ -373,11 +373,15 @@ async function init() {
   await loadGlobalStats();
 }
 
-function getSinceDate() {
-  if (currentTimeframe !== 'week') return '1970-01-01T00:00:00.000Z';
+function get7DaysAgoISO() {
   const d = new Date();
   d.setDate(d.getDate() - 7);
   return d.toISOString();
+}
+
+function getSinceDate() {
+  if (currentTimeframe !== 'week') return null; // Return null for All Time
+  return get7DaysAgoISO();
 }
 
 async function loadImpactData() {
@@ -630,13 +634,16 @@ async function loadKingdomInvestment() {
 }
 
 async function loadLeaderboards() {
-  const weekStart = getSinceDate();
+  // "This Week's Leaders" ALWAYS checks the last 7 days
+  const weekStart = get7DaysAgoISO();
 
   // 1. Sharers Leaderboard
-  const { data: sharesData } = await supabaseClient
+  const { data: sharesData, error: sharesErr } = await supabaseClient
     .from('shares')
     .select('user_id')
     .gte('created_at', weekStart);
+
+  if (sharesErr) console.error('Error loading leaderboard shares:', sharesErr);
 
   const shareCounts = {};
   (sharesData || []).forEach(s => {
@@ -685,11 +692,13 @@ async function loadLeaderboards() {
   }
 
   // 2. Recruiters Leaderboard
-  const { data: recruitsData } = await supabaseClient
+  const { data: recruitsData, error: recruitsErr } = await supabaseClient
     .from('profiles')
     .select('recruited_by')
     .not('recruited_by', 'is', null)
     .gte('created_at', weekStart);
+
+  if (recruitsErr) console.error('Error loading leaderboard recruits:', recruitsErr);
 
   const recruitCounts = {};
   (recruitsData || []).forEach(r => {
@@ -735,7 +744,6 @@ async function loadLeaderboards() {
     elements.topRecruiters.innerHTML = '<p class="text-xs text-slate-400 py-3 text-center">No recruits recorded this week.</p>';
   }
 }
-
 async function loadGlobalStats() {
   const [globalSharesCount, globalProfiles, nationsData] = await Promise.all([
     supabaseClient.from('shares').select('id', { count: 'exact', head: true }),
