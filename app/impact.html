@@ -521,30 +521,82 @@ async function init() {
   await loadGlobalStats();
 }
 
-async function loadImpactData() {
-  const sinceISO = getSinceDate();
+async function loadUserImpactStats(userId) {
+  try {
+    // 1. Fetch user trophy progress, trophy tier definitions, and profile badges in parallel
+    const [progressRes, tiersRes, profileRes] = await Promise.all([
+      supabaseClient.from('user_trophy_progress').select('*').eq('user_id', userId),
+      supabaseClient.from('trophy_tiers').select('*'),
+      supabaseClient.from('profiles').select('badges, total_shares, recruit_count').eq('id', userId).single()
+    ]);
 
-  // 1. Fetch User Profile
-  const { data: profile, error: profileErr } = await supabaseClient
-    .from('profiles')
-    .select('*')
-    .eq('id', currentUser.id)
-    .maybeSingle();
+    const userProgress = progressRes.data || [];
+    const trophyTiers  = tiersRes.data || [];
+    const profile      = profileRes.data || {};
 
-  if (profileErr) console.error('Error loading profile:', profileErr);
-  userProfile = profile || {};
-  userBadges = parseBadges(userProfile.badges);
-  renderBadgeCount();
+    // 2. Map numerical tier IDs to tier names (e.g. 1 -> "common", 5 -> "mythic")
+    const tierMap = {};
+    trophyTiers.forEach(t => {
+      if (t.id && t.name) {
+        tierMap[t.id] = String(t.name).toLowerCase().trim();
+      }
+    });
 
-  // 2. Fetch Personal Shares (uses shared_at)
-  let sharesQuery = supabaseClient
-    .from('shares')
-    .select('platform, shared_at')
-    .eq('user_id', currentUser.id);
+    // Tier counter bucket
+    const tierCounts = { common: 0, uncommon: 0, rare: 0, epic: 0, mythic: 0 };
+    let totalTrophiesEarned = 0;
 
-  if (currentTimeframe === 'week' && sinceISO) {
-    sharesQuery = sharesQuery.gte('shared_at', sinceISO);
+    // 3. Count earned trophies by matching current_tier_id to trophy_tiers
+    userProgress.forEach(item => {
+      const tierId = item.current_tier_id;
+      if (tierId && tierMap[tierId]) {
+        const tierName = tierMap[tierId];
+        if (tierCounts.hasOwnProperty(tierName)) {
+          tierCounts[tierName]++;
+          totalTrophiesEarned++;
+        }
+      }
+    });
+
+    // 4. Update the 5 Trophy Tier Pills in the UI (Common, Uncommon, Rare, Epic, Mythic)
+    Object.keys(tierCounts).forEach(tier => {
+      // Find element by ID or data attribute
+      const el = document.getElementById(`tier-count-${tier}`) ||
+                 document.getElementById(`tier_${tier}`) ||
+                 document.querySelector(`[data-tier="${tier}"]`);
+
+      if (el) {
+        el.textContent = tierCounts[tier];
+      }
+    });
+
+    // 5. Parse user badges from profiles.badges (JSONB)
+    let badgeCount = 0;
+    if (profile.badges) {
+      if (Array.isArray(profile.badges)) {
+        badgeCount = profile.badges.length;
+      } else if (typeof profile.badges === 'object') {
+        badgeCount = Object.keys(profile.badges).length;
+      }
+    }
+
+    // 6. Update Personal Impact Cards
+    const badgesEl = document.getElementById('stat-badges') || document.querySelector('[data-stat="badges"]');
+    const trophiesEl = document.getElementById('stat-trophies') || document.querySelector('[data-stat="trophies"]');
+
+    if (badgesEl) badgesEl.textContent = badgeCount;
+    if (trophiesEl) trophiesEl.textContent = totalTrophiesEarned;
+
+    console.log('[Impact] Stats loaded successfully:', {
+      tierCounts,
+      badgeCount,
+      totalTrophiesEarned
+    });
+
+  } catch (err) {
+    console.error('[Impact] Error loading user impact stats:', err);
   }
+}
 
   const { data: userShares, error: sharesErr } = await sharesQuery;
   if (sharesErr) console.error('Error loading shares:', sharesErr);
