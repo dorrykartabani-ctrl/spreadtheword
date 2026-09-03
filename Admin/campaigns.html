@@ -4,567 +4,1023 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Campaigns — GSTW Admin</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
             'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
-            'surface-c':'#efeee7','on-surface':'#31332e','on-surface-variant':'#5e6059',
+            'surface-c':'#efeee7','surface-chigh':'#e9e8e1','surface-chighest':'#e3e3db',
+            'on-surface':'#31332e','on-surface-variant':'#5e6059',
+            'inverse-surface':'#0e0e0c','inverse-on-surface':'#9e9d99',
             'outline':'#7a7b75','outline-variant':'#b2b2ab',
-            'primary':'#3d6285','on-primary':'#f7f9ff','primary-container':'#b0d5fe',
-            'secondary':'#41637c','tertiary':'#ad332b','gold':'#D4A24C',
+            'primary':'#3d6285','on-primary':'#f7f9ff',
+            'primary-container':'#b0d5fe','on-primary-container':'#234a6c',
+            'secondary':'#41637c','on-secondary':'#f6f9ff',
+            'secondary-container':'#cae6ff',
+            'tertiary':'#ad332b','on-tertiary':'#fff7f6',
+            'primary-dim':'#305678','secondary-dim':'#355670','tertiary-dim':'#9d2621',
+            'sidebar-bg':'#0e0e0c','sidebar-hover':'#1a1a18',
           },
-          fontFamily:{ 'headline':['Plus Jakarta Sans','sans-serif'], 'body':['Manrope','sans-serif'] }
+          fontFamily:{
+            'headline':['Plus Jakarta Sans','sans-serif'],
+            'body':['Manrope','sans-serif'],
+          },
+          boxShadow:{
+            'ambient':'0 20px 40px rgba(49,51,46,0.05)',
+            'ambient-sm':'0 8px 24px rgba(49,51,46,0.04)',
+            'float':'0 20px 40px rgba(49,51,46,0.08)',
+          },
         },
       },
     }
   </script>
+
   <style>
-    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;overflow-x:hidden;}
-    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;}
+    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;letter-spacing:-0.005em}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
     .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
-    .filled{font-variation-settings:'FILL' 1}
+    .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
     .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
-    ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:3px}
+
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:3px}
     .no-scrollbar::-webkit-scrollbar{display:none}
-    
+    .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+
     /* Sidebar */
-    .sidebar{background:#0e0e0c;color:#f7f9ff; z-index: 50;}
-    .sidebar-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;color:rgba(247,249,255,0.6);font-size:13px;font-weight:600;transition:all 0.15s ease;text-decoration:none;}
-    .sidebar-item:hover{background:#1a1a18;color:#f7f9ff}.sidebar-item.active{background:#3d6285;color:#f7f9ff}
+    .sidebar{background:#0e0e0c;color:#f7f9ff}
+    .sidebar-item{
+      display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;
+      color:rgba(247,249,255,0.6);font-size:13px;font-weight:600;
+      transition:all 0.15s ease;text-decoration:none;
+    }
+    .sidebar-item:hover{background:#1a1a18;color:#f7f9ff}
+    .sidebar-item.active{background:#3d6285;color:#f7f9ff}
+    .sidebar-item .material-symbols-outlined{font-size:20px}
+    .sidebar-item .soon-tag{
+      margin-left:auto;font-size:9px;font-weight:700;
+      background:rgba(247,249,255,0.08);color:rgba(247,249,255,0.5);
+      padding:2px 6px;border-radius:99px;letter-spacing:0.05em;
+    }
 
-    /* Layout Transitions */
-    #listPane { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); width: 100%; }
-    #listPane.split { width: 35%; padding-right: 1rem; }
-    #editorPane { position: fixed; top: 0; right: -65%; bottom: 0; width: 65%; background: white; z-index: 40; border-left: 1px solid #efeee7; display: flex; flex-direction: column; transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: -10px 0 30px rgba(0,0,0,0.05); }
-    #editorPane.open { right: 0; }
-    
-    /* Campaign Card */
-    .campaign-card{background:#ffffff;border-radius:16px;transition:all 0.2s ease;cursor:pointer;overflow:hidden;border:1px solid #efeee7;}
-    .campaign-card:hover{box-shadow:0 10px 25px rgba(49,51,46,0.05); border-color: #b2b2ab;}
+    /* Campaign card */
+    .campaign-card{
+      background:#ffffff;border-radius:20px;
+      transition:all 0.2s ease;cursor:pointer;
+      overflow:hidden;
+    }
+    .campaign-card:hover{box-shadow:0 20px 40px rgba(49,51,46,0.05)}
 
+    /* Filter tabs */
+    .filter-tab{
+      padding:7px 14px;border-radius:99px;font-size:12px;font-weight:700;
+      color:#5e6059;background:#f5f4ed;transition:all 0.15s ease;
+      white-space:nowrap;flex-shrink:0;
+    }
+    .filter-tab.active{background:#3d6285;color:#f7f9ff}
+
+    /* Form inputs */
+    .form-input{
+      background:#ffffff;border:1px solid transparent;
+      transition:all 0.2s ease;
+    }
+    .form-input:focus{border-color:rgba(61,98,133,0.3);outline:none}
+    .form-input.error{border-color:#ad332b;animation:shake 0.3s ease}
+    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+
+    /* Icon picker */
     .icon-pick{
-    width:40px;height:40px;border-radius:10px;background:#f5f4ed;color:#5e6059;
-    display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s ease;
+      width:44px;height:44px;border-radius:12px;
+      background:#f5f4ed;color:#5e6059;
+      display:flex;align-items:center;justify-content:center;
+      cursor:pointer;transition:all 0.15s ease;
     }
     .icon-pick:hover{background:#efeee7}
     .icon-pick.selected{background:#3d6285;color:#f7f9ff;box-shadow:0 4px 12px rgba(61,98,133,0.25)}
-    
-    /* Form Elements */
-    .form-input{background:#f5f4ed;border:1px solid transparent;transition:all 0.2s ease;color:#31332e;}
-    .form-input:focus{background:#ffffff;border-color:rgba(61,98,133,0.3);outline:none}
-    .tab-btn { padding: 10px 16px; font-weight: 700; font-size: 13px; color: #5e6059; border-bottom: 2px solid transparent; transition: all 0.2s; }
-    .tab-btn.active { color: #3d6285; border-bottom-color: #3d6285; }
-    
-    .color-swatch{width:32px;height:32px;border-radius:50%;cursor:pointer;transition:all 0.15s ease;border:2px solid transparent;flex-shrink:0;}
-    .color-swatch.selected{border-color:#ffffff;box-shadow:0 0 0 2px #3d6285;transform:scale(1.1);}
-    
-    .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;}
+
+    /* Color swatch */
+    .color-swatch{
+      width:36px;height:36px;border-radius:50%;
+      cursor:pointer;transition:all 0.15s ease;
+      border:3px solid transparent;flex-shrink:0;
+    }
+    .color-swatch:active{transform:scale(0.9)}
+    .color-swatch.selected{border-color:#ffffff;box-shadow:0 0 0 2px #3d6285;transform:scale(1.1)}
+
+    /* Status badges */
+    .badge{
+      display:inline-flex;align-items:center;gap:4px;
+      padding:3px 8px;border-radius:99px;
+      font-size:10px;font-weight:700;letter-spacing:0.04em;
+      text-transform:uppercase;
+    }
     .badge-active{background:rgba(61,98,133,0.15);color:#3d6285}
     .badge-draft{background:rgba(122,123,117,0.2);color:#5e6059}
     .badge-ended{background:rgba(178,178,171,0.25);color:#7a7b75}
 
-    .status-card.active {background: #3d6285 !important;color: #f7f9ff !important;border-color: #3d6285 !important;
-}
-.status-card.active .material-symbols-outlined {
-  color: #f7f9ff !important;
-}
-
-    .skeleton{background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:12px;}
+    /* Skeleton */
+    .skeleton{
+      background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%);
+      background-size:200% 100%;
+      animation:shimmer 1.5s infinite;
+      border-radius:12px;
+    }
     @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spin{animation:spin 1s linear infinite;display:inline-block}
+
+    @keyframes fadeUp{
+      from{opacity:0;transform:translateY(8px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+    .fade-up{animation:fadeUp 0.3s ease-out both}
+
+    /* Toggle */
+    .toggle-pill{
+      width:44px;height:24px;background:#b2b2ab;border-radius:12px;
+      position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;
+    }
+    .toggle-pill.on{background:#3d6285}
+    .toggle-pill .toggle-dot{
+      width:18px;height:18px;background:white;border-radius:50%;
+      position:absolute;top:3px;left:3px;transition:left 0.2s;
+      box-shadow:0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle-pill.on .toggle-dot{left:23px}
   </style>
 </head>
+
 <body class="min-h-screen flex">
 
+<!-- ═══════════════════════════════════════════ -->
 <!-- SIDEBAR -->
-<aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 hidden md:flex">
+<!-- ═══════════════════════════════════════════ -->
+<aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 hidden md:flex">
   <div class="mb-6 px-2 pt-2">
     <div class="flex items-center gap-2.5">
-      <div class="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0"><img src="/images/icon/icon-light-512.png" alt="GSTW" class="w-full h-full object-contain"></div>
-      <div><h1 class="font-headline font-bold text-white" style="font-size:15px;">Command</h1><p class="text-white/40 font-body" style="font-size:9px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">Admin Panel</p></div>
+      <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center">
+        <span class="font-headline font-bold text-on-primary" style="font-size:10px;">GSTW</span>
+      </div>
+      <div>
+        <h1 class="font-headline font-bold text-white" style="font-size:15px;letter-spacing:-0.02em;">Command</h1>
+        <p class="text-white/40 font-body" style="font-size:9px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">Admin Panel</p>
+      </div>
     </div>
   </div>
+
   <nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
     <a href="index.html" class="sidebar-item"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
-    <a href="quotes.html" class="sidebar-item"><span class="material-symbols-outlined">add_circle</span>Create Quote</a>
-    <a href="manage-quotes.html" class="sidebar-item"><span class="material-symbols-outlined">format_quote</span>Manage Quotes</a>
+    <a href="manage-quotes.html" class="sidebar-item"><span class="material-symbols-outlined">format_quote</span>Quotes</a>
     <a href="schedule.html" class="sidebar-item"><span class="material-symbols-outlined">calendar_today</span>Schedule</a>
     <a href="campaigns.html" class="sidebar-item active"><span class="material-symbols-outlined">campaign</span>Campaigns</a>
+    <a href="manage-backgrounds.html" class="sidebar-item"><span class="material-symbols-outlined">wallpaper</span>Backgrounds<span class="soon-tag">SOON</span></a>
     <a href="projects.html" class="sidebar-item"><span class="material-symbols-outlined">volunteer_activism</span>Missions</a>
-    <a href="manage-media.html" class="sidebar-item"><span class="material-symbols-outlined">perm_media</span>Media Library</a>
     <a href="warriors.html" class="sidebar-item"><span class="material-symbols-outlined">group</span>Users</a>
-    <a href="manage-tiers.html" class="sidebar-item"><span class="material-symbols-outlined">workspace_premium</span>Tiers</a>
-    <a href="manage-rewards.html" class="sidebar-item"><span class="material-symbols-outlined">emoji_events</span>Rewards</a>
-    <a href="manage-progression.html" class="sidebar-item"><span class="material-symbols-outlined">psychology</span>Progression</a>
-    <a href="notifications.html" class="sidebar-item"><span class="material-symbols-outlined">notifications</span>Broadcasts</a>
-    <a href="manage-content.html" class="sidebar-item"><span class="material-symbols-outlined">web</span>Page Builder</a>
+    <a href="notifications.html" class="sidebar-item"><span class="material-symbols-outlined">notifications</span>Notifications</a>
+    <a href="ai-generator.html" class="sidebar-item"><span class="material-symbols-outlined">auto_awesome</span>AI Generator</a>
     <a href="analytics.html" class="sidebar-item"><span class="material-symbols-outlined">analytics</span>Analytics</a>
   </nav>
+
   <div class="mt-4 pt-4 border-t border-white/10 space-y-2">
     <a href="settings.html" class="sidebar-item"><span class="material-symbols-outlined">settings</span>Settings</a>
     <div class="flex items-center gap-3 px-2 py-2">
       <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center text-on-primary font-headline font-bold flex-shrink-0 admin-initials" style="font-size:13px;">AD</div>
-      <div class="flex-1 min-w-0"><p class="font-body font-semibold text-white truncate admin-name" style="font-size:12px;">Admin</p><p class="text-white/40 font-body" style="font-size:10px;">Super Admin</p></div>
-      <button onclick="handleLogout()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-all flex-shrink-0"><span class="material-symbols-outlined" style="font-size:16px;">logout</span></button>
+      <div class="flex-1 min-w-0">
+        <p class="font-body font-semibold text-white truncate admin-name" style="font-size:12px;">Admin</p>
+        <p class="text-white/40 font-body" style="font-size:10px;">Super Admin</p>
+      </div>
+      <button onclick="handleLogout()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-all flex-shrink-0" title="Log out">
+        <span class="material-symbols-outlined" style="font-size:16px;">logout</span>
+      </button>
     </div>
   </div>
 </aside>
 
 <div id="sidebarOverlay" class="fixed inset-0 bg-inverse-surface/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
 
-<!-- MAIN WRAPPER -->
-<div class="flex-1 md:ml-64 flex flex-col h-screen overflow-hidden bg-surface">
-  
+<!-- ═══════════════════════════════════════════ -->
+<!-- MAIN -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="flex-1 md:ml-64 flex flex-col min-h-screen">
+
   <!-- HEADER -->
-  <header class="h-[72px] bg-white border-b border-surface-c flex items-center justify-between px-4 lg:px-6 shrink-0 z-20">
-    <h2 class="font-headline font-bold text-on-surface text-xl">Campaigns</h2>
-    <button onclick="openEditor()" class="signature-gradient text-white font-headline font-semibold rounded-xl px-4 py-2 flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform">
-      <span class="material-symbols-outlined text-lg">add</span> New Campaign
-    </button>
+  <header class="sticky top-0 z-20 bg-surface/85 backdrop-blur-xl">
+    <div class="flex items-center justify-between gap-4 px-6 lg:px-8 py-4">
+      <div class="flex items-center gap-4">
+        <button onclick="toggleSidebar()" class="md:hidden text-on-surface">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+        <h2 class="font-headline font-bold text-on-surface" style="font-size:22px;line-height:28px;">Campaigns</h2>
+      </div>
+      <button onclick="openCreate()"
+        class="signature-gradient text-on-primary font-headline font-semibold rounded-xl px-4 py-2.5 flex items-center gap-2 active:scale-[0.98] transition-transform"
+        style="font-size:13px;">
+        <span class="material-symbols-outlined" style="font-size:18px;">add</span>
+        <span class="hidden sm:inline">Create Campaign</span>
+      </button>
+    </div>
   </header>
 
-  <!-- FLEX CONTAINER FOR SPLIT PANE -->
-  <div class="flex flex-1 overflow-hidden relative">
-    
-    <!-- LEFT PANE: LIST VIEW -->
-    <div id="listPane" class="flex-1 overflow-y-auto p-6 lg:p-8">
-      <div class="max-w-6xl mx-auto space-y-6">
-        
-        <!-- Stats -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div class="bg-surface-cl p-4 rounded-2xl border border-surface-c"><p class="font-body text-on-surface-variant mb-1" style="font-size:11px;font-weight:600;text-transform:uppercase;">Total</p><h3 id="statTotal" class="font-headline font-bold text-on-surface text-2xl">—</h3></div>
-          <div class="bg-surface-cl p-4 rounded-2xl border border-surface-c"><p class="font-body text-on-surface-variant mb-1" style="font-size:11px;font-weight:600;text-transform:uppercase;">Active</p><h3 id="statActive" class="font-headline font-bold text-on-surface text-2xl">—</h3></div>
-          <div class="bg-surface-cl p-4 rounded-2xl border border-surface-c"><p class="font-body text-on-surface-variant mb-1" style="font-size:11px;font-weight:600;text-transform:uppercase;">Draft</p><h3 id="statDraft" class="font-headline font-bold text-on-surface text-2xl">—</h3></div>
-          <div class="bg-surface-cl p-4 rounded-2xl border border-surface-c"><p class="font-body text-on-surface-variant mb-1" style="font-size:11px;font-weight:600;text-transform:uppercase;">Ended</p><h3 id="statEnded" class="font-headline font-bold text-on-surface text-2xl">—</h3></div>
-        </div>
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- LIST VIEW -->
+  <!-- ═══════════════════════════════════════════ -->
+  <main id="listView" class="p-6 lg:p-8 flex-1">
+    <div class="max-w-6xl mx-auto space-y-6">
 
-        <!-- Filters -->
-        <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-          <button onclick="filterCampaigns('all',this)" class="filter-tab active px-4 py-1.5 rounded-full text-xs font-bold bg-surface-c text-slate-500">All</button>
-          <button onclick="filterCampaigns('active',this)" class="filter-tab px-4 py-1.5 rounded-full text-xs font-bold bg-surface-c text-slate-500">Active</button>
-          <button onclick="filterCampaigns('draft',this)" class="filter-tab px-4 py-1.5 rounded-full text-xs font-bold bg-surface-c text-slate-500">Draft</button>
-          <button onclick="filterCampaigns('ended',this)" class="filter-tab px-4 py-1.5 rounded-full text-xs font-bold bg-surface-c text-slate-500">Ended</button>
+      <!-- Intro -->
+      <div class="bg-surface-cl rounded-xl p-4 flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-primary-container/20 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-primary" style="font-size:20px;">info</span>
         </div>
-
-        <!-- Grid -->
-        <div id="campaignGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          <div class="skeleton h-56"></div><div class="skeleton h-56"></div><div class="skeleton h-56"></div>
+        <div>
+          <p class="font-body font-semibold text-on-surface" style="font-size:13px;">What are campaigns?</p>
+          <p class="font-body text-on-surface-variant mt-1" style="font-size:12px;line-height:18px;">Group quotes into themed series (like Christmas, Recovery, New Believer). Campaigns are admin-only — users see the quotes but not the campaign name. Assign quotes to a campaign when creating or editing them.</p>
         </div>
       </div>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-surface-cl p-5 rounded-2xl">
+          <p class="font-body text-on-surface-variant mb-1" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Total</p>
+          <h3 id="statTotal" class="font-headline font-bold text-on-surface" style="font-size:24px;">—</h3>
+        </div>
+        <div class="bg-surface-cl p-5 rounded-2xl">
+          <p class="font-body text-on-surface-variant mb-1" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Active</p>
+          <h3 id="statActive" class="font-headline font-bold text-on-surface" style="font-size:24px;">—</h3>
+        </div>
+        <div class="bg-surface-cl p-5 rounded-2xl">
+          <p class="font-body text-on-surface-variant mb-1" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Draft</p>
+          <h3 id="statDraft" class="font-headline font-bold text-on-surface" style="font-size:24px;">—</h3>
+        </div>
+        <div class="bg-surface-cl p-5 rounded-2xl">
+          <p class="font-body text-on-surface-variant mb-1" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Ended</p>
+          <h3 id="statEnded" class="font-headline font-bold text-on-surface" style="font-size:24px;">—</h3>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+        <button onclick="filterCampaigns('all',this)" class="filter-tab active">All <span id="countAll" class="opacity-60 ml-0.5"></span></button>
+        <button onclick="filterCampaigns('active',this)" class="filter-tab">Active</button>
+        <button onclick="filterCampaigns('draft',this)" class="filter-tab">Draft</button>
+        <button onclick="filterCampaigns('ended',this)" class="filter-tab">Ended</button>
+      </div>
+
+      <!-- Grid -->
+      <div id="campaignGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div class="skeleton h-56"></div>
+        <div class="skeleton h-56"></div>
+        <div class="skeleton h-56"></div>
+      </div>
+
+      <!-- Empty state -->
+      <div id="emptyState" class="hidden text-center py-16">
+        <div class="w-16 h-16 rounded-2xl bg-surface-clow flex items-center justify-center mx-auto mb-4">
+          <span class="material-symbols-outlined text-outline" style="font-size:32px;">campaign</span>
+        </div>
+        <h3 class="font-headline font-bold text-on-surface mb-2" style="font-size:18px;">No campaigns yet</h3>
+        <p class="font-body text-on-surface-variant mb-4" style="font-size:14px;">Create a campaign to group and organise your quotes.</p>
+        <button onclick="openCreate()" class="signature-gradient text-on-primary font-headline font-semibold px-5 py-2.5 rounded-xl inline-flex items-center gap-2" style="font-size:13px;">
+          <span class="material-symbols-outlined" style="font-size:16px;">add</span>Create your first campaign
+        </button>
+      </div>
+
     </div>
+  </main>
 
-    <!-- RIGHT PANE: EDITOR VIEW -->
-    <div id="editorPane">
-      <!-- Editor Header -->
-      <div class="h-[72px] border-b border-surface-c flex items-center justify-between px-6 shrink-0 bg-white">
-        <div class="flex border-b border-surface-c h-full">
-          <button onclick="switchTab('details')" id="tab-details" class="tab-btn active">Details</button>
-          <button onclick="switchTab('quotes')" id="tab-quotes" class="tab-btn">Quotes</button>
-          <button onclick="switchTab('completions')" id="tab-completions" class="tab-btn">Completions</button>
-        </div>
-        <button onclick="closeEditor()" class="w-8 h-8 rounded-lg hover:bg-surface-c flex items-center justify-center text-slate-500"><span class="material-symbols-outlined">close</span></button>
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- FORM VIEW (Create + Edit) -->
+  <!-- ═══════════════════════════════════════════ -->
+  <main id="formView" class="hidden p-6 lg:p-8 flex-1">
+    <div class="max-w-3xl mx-auto space-y-6">
+
+      <!-- Breadcrumb -->
+      <nav class="flex items-center gap-2 font-body" style="font-size:13px;">
+        <button onclick="showList()" class="text-on-surface-variant hover:text-primary transition-colors">Campaigns</button>
+        <span class="material-symbols-outlined text-outline" style="font-size:14px;">chevron_right</span>
+        <span id="formCrumb" class="text-primary font-semibold">Create Campaign</span>
+      </nav>
+
+      <!-- Title -->
+      <div>
+        <h2 id="formTitle" class="font-headline font-bold text-on-surface" style="font-size:28px;line-height:36px;">Create New Campaign</h2>
+        <p class="font-body text-on-surface-variant mt-1" style="font-size:14px;">Group quotes into a themed series or campaign</p>
       </div>
 
-      <!-- Editor Body (Scrollable) -->
-      <div class="flex-1 overflow-y-auto p-6 lg:p-8 bg-surface-clow/30">
-        <div class="max-w-3xl mx-auto space-y-6">
-          
+      <form id="campaignForm" onsubmit="handleSubmit(event)" class="space-y-5">
+
+        <!-- Name -->
+        <div class="bg-surface-cl rounded-2xl p-5 space-y-2">
+          <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Campaign Name <span class="text-tertiary">*</span></label>
+          <input id="campaignName" type="text" placeholder="e.g. Christmas Series 2024" class="form-input w-full rounded-xl px-4 py-3 font-body text-on-surface placeholder:text-outline-variant" style="font-size:14px;">
+        </div>
+
+        <!-- Description -->
+        <div class="bg-surface-cl rounded-2xl p-5 space-y-2">
+          <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Description <span class="text-outline font-normal normal-case ml-1" style="letter-spacing:0;">(optional)</span></label>
+          <textarea id="campaignDesc" rows="3" placeholder="Notes for admin — what this campaign is about..." class="form-input w-full rounded-xl px-4 py-3 font-body text-on-surface placeholder:text-outline-variant resize-none" style="font-size:14px;"></textarea>
+        </div>
+
+        <!-- Visual Identity -->
+        <div class="bg-surface-cl rounded-2xl p-5 space-y-4">
           <div>
-            <h2 id="editorTitle" class="font-headline font-bold text-on-surface text-2xl">New Campaign</h2>
-            <p class="font-body text-on-surface-variant mt-1 text-sm">Configure campaign details and rewards.</p>
+            <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Visual Identity</label>
+            <p class="font-body text-outline mt-1" style="font-size:11px;">Icon and color help identify this campaign at a glance</p>
           </div>
 
-          <!-- TAB 1: DETAILS -->
-          <div id="view-details" class="space-y-5">
-            <div class="bg-white rounded-2xl p-5 space-y-4 shadow-sm border border-surface-c">
-              <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Campaign Name *</label><input id="campName" type="text" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. Christmas Series 2024"></div>
-              <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Description</label><textarea id="campDesc" rows="3" class="form-input w-full rounded-xl px-4 py-3 text-sm resize-none" placeholder="Admin notes..."></textarea></div>
+          <!-- Icon picker -->
+          <div>
+            <label class="font-body text-on-surface-variant block mb-2" style="font-size:11px;font-weight:500;">Icon</label>
+            <div class="flex gap-2 flex-wrap">
+              <div class="icon-pick" onclick="selectIcon('campaign',this)" data-icon="campaign" title="Campaign">
+                <span class="material-symbols-outlined" style="font-size:20px;">campaign</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('celebration',this)" data-icon="celebration" title="Celebration">
+                <span class="material-symbols-outlined" style="font-size:20px;">celebration</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('auto_awesome',this)" data-icon="auto_awesome" title="Sparkle">
+                <span class="material-symbols-outlined" style="font-size:20px;">auto_awesome</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('healing',this)" data-icon="healing" title="Healing">
+                <span class="material-symbols-outlined" style="font-size:20px;">healing</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('favorite',this)" data-icon="favorite" title="Heart">
+                <span class="material-symbols-outlined" style="font-size:20px;">favorite</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('menu_book',this)" data-icon="menu_book" title="Book">
+                <span class="material-symbols-outlined" style="font-size:20px;">menu_book</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('groups',this)" data-icon="groups" title="Groups">
+                <span class="material-symbols-outlined" style="font-size:20px;">groups</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('lightbulb',this)" data-icon="lightbulb" title="Idea">
+                <span class="material-symbols-outlined" style="font-size:20px;">lightbulb</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('bolt',this)" data-icon="bolt" title="Energy">
+                <span class="material-symbols-outlined" style="font-size:20px;">bolt</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('church',this)" data-icon="church" title="Church">
+                <span class="material-symbols-outlined" style="font-size:20px;">church</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('local_florist',this)" data-icon="local_florist" title="Flower">
+                <span class="material-symbols-outlined" style="font-size:20px;">local_florist</span>
+              </div>
+              <div class="icon-pick" onclick="selectIcon('wb_sunny',this)" data-icon="wb_sunny" title="Sun">
+                <span class="material-symbols-outlined" style="font-size:20px;">wb_sunny</span>
+              </div>
             </div>
+          </div>
 
-           <div class="bg-white rounded-2xl p-5 space-y-4 shadow-sm border border-surface-c">
-  <label class="text-[11px] font-bold text-slate-500 uppercase block">Visual Identity</label>
-  
-  <!-- System Icons Grid -->
-  <div>
-    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">System Icons</label>
-    <div class="flex gap-2 flex-wrap" id="systemIconGrid">
-      <div class="icon-pick" onclick="selectIcon('campaign',this)" data-icon="campaign"><span class="material-symbols-outlined">campaign</span></div>
-      <div class="icon-pick" onclick="selectIcon('celebration',this)" data-icon="celebration"><span class="material-symbols-outlined">celebration</span></div>
-      <div class="icon-pick" onclick="selectIcon('auto_awesome',this)" data-icon="auto_awesome"><span class="material-symbols-outlined">auto_awesome</span></div>
-      <div class="icon-pick" onclick="selectIcon('healing',this)" data-icon="healing"><span class="material-symbols-outlined">healing</span></div>
-      <div class="icon-pick" onclick="selectIcon('favorite',this)" data-icon="favorite"><span class="material-symbols-outlined">favorite</span></div>
-      <div class="icon-pick" onclick="selectIcon('menu_book',this)" data-icon="menu_book"><span class="material-symbols-outlined">menu_book</span></div>
-      <div class="icon-pick" onclick="selectIcon('groups',this)" data-icon="groups"><span class="material-symbols-outlined">groups</span></div>
-      <div class="icon-pick" onclick="selectIcon('bolt',this)" data-icon="bolt"><span class="material-symbols-outlined">bolt</span></div>
-    </div>
-  </div>
+          <!-- Color picker -->
+          <div>
+            <label class="font-body text-on-surface-variant block mb-2" style="font-size:11px;font-weight:500;">Color</label>
+            <div class="flex items-center gap-2">
+              <div class="flex gap-2 flex-wrap flex-1">
+                <div class="color-swatch selected" onclick="selectColor('#3d6285',this)" data-color="#3d6285" style="background:#3d6285;"></div>
+                <div class="color-swatch" onclick="selectColor('#41637c',this)" data-color="#41637c" style="background:#41637c;"></div>
+                <div class="color-swatch" onclick="selectColor('#6b9bc3',this)" data-color="#6b9bc3" style="background:#6b9bc3;"></div>
+                <div class="color-swatch" onclick="selectColor('#ad332b',this)" data-color="#ad332b" style="background:#ad332b;"></div>
+                <div class="color-swatch" onclick="selectColor('#7a7b75',this)" data-color="#7a7b75" style="background:#7a7b75;"></div>
+                <div class="color-swatch" onclick="selectColor('#31332e',this)" data-color="#31332e" style="background:#31332e;"></div>
+              </div>
+              <input type="color" id="colorPicker" value="#3d6285" oninput="selectColor(this.value,null)" class="w-9 h-9 rounded-lg cursor-pointer border-0 bg-transparent" style="padding:0;">
+            </div>
+          </div>
 
-  <div class="flex items-center gap-3 py-1">
-    <div class="h-px bg-surface-c flex-1"></div>
-    <span class="text-[10px] font-bold text-slate-400 uppercase">Or Custom Image</span>
-    <div class="h-px bg-surface-c flex-1"></div>
-  </div>
-
-  <!-- Media Manager Button & URL Input -->
-  <div>
-    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">From Media Library</label>
-    <button type="button" onclick="window.open('manage-media.html', '_blank')" class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-surface-clow text-primary font-bold rounded-xl hover:bg-surface-c transition-colors text-sm">
-      <span class="material-symbols-outlined text-[18px]">open_in_new</span> Open Media Manager
-    </button>
-    <input type="text" id="campCustomIconUrl" placeholder="Paste image URL here after uploading..." class="form-input w-full rounded-xl px-4 py-3 text-sm mt-2" oninput="currentImage = this.value; document.querySelectorAll('.icon-pick').forEach(b=>b.classList.remove('selected'));">
-  </div>
-
-  <!-- Restored Color Selector -->
-  <div>
-    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Campaign Color</label>
-    <div class="flex items-center gap-2">
-      <div class="flex gap-2 flex-1" id="colorSwatches">
-        <div class="color-swatch" onclick="selectColor('#3d6285',this)" data-color="#3d6285" style="background:#3d6285;"></div>
-        <div class="color-swatch" onclick="selectColor('#ad332b',this)" data-color="#ad332b" style="background:#ad332b;"></div>
-        <div class="color-swatch" onclick="selectColor('#16a34a',this)" data-color="#16a34a" style="background:#16a34a;"></div>
-        <div class="color-swatch" onclick="selectColor('#d97706',this)" data-color="#d97706" style="background:#d97706;"></div>
-        <div class="color-swatch" onclick="selectColor('#6b7280',this)" data-color="#6b7280" style="background:#6b7280;"></div>
-      </div>
-      <input type="color" id="colorPicker" value="#3d6285" oninput="selectColor(this.value,null)" class="w-8 h-8 rounded cursor-pointer border-0 bg-transparent p-0">
-    </div>
-  </div>
-</div>
-
+          <!-- Preview -->
+          <div class="bg-surface-clow rounded-xl p-4 flex items-center gap-3">
+            <span class="font-body text-outline" style="font-size:10px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Preview:</span>
+            <span id="chipPreview" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-body font-semibold text-white" style="font-size:12px;background:#3d6285;">
+              <span class="material-symbols-outlined filled" style="font-size:14px;">campaign</span>
+              <span id="chipName">Campaign Name</span>
+            </span>
+          </div>
         </div>
-      </div>
 
-      <!-- Editor Footer (Sticky) -->
-      <div class="h-[72px] border-t border-surface-c bg-white flex items-center justify-end px-6 gap-3 shrink-0">
-        <button onclick="closeEditor()" class="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-surface-c transition-colors">Cancel</button>
-        <button onclick="saveCampaign()" id="saveBtn" class="signature-gradient text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform">Save Campaign</button>
-      </div>
+        <!-- Dates -->
+        <div class="grid grid-cols-2 gap-5">
+          <div class="bg-surface-cl rounded-2xl p-5 space-y-2">
+            <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Start Date <span class="text-outline font-normal normal-case ml-1" style="letter-spacing:0;">(optional)</span></label>
+            <input id="campaignStartDate" type="date" class="form-input w-full rounded-xl px-4 py-3 font-body text-on-surface" style="font-size:14px;">
+          </div>
+          <div class="bg-surface-cl rounded-2xl p-5 space-y-2">
+            <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">End Date <span class="text-outline font-normal normal-case ml-1" style="letter-spacing:0;">(optional)</span></label>
+            <input id="campaignEndDate" type="date" class="form-input w-full rounded-xl px-4 py-3 font-body text-on-surface" style="font-size:14px;">
+            <p class="font-body text-outline" style="font-size:11px;">Campaign auto-ends when this date passes</p>
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div class="bg-surface-cl rounded-2xl p-5 space-y-2">
+          <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Status</label>
+          <div class="grid grid-cols-3 gap-3 mt-2">
+            <label class="cursor-pointer">
+              <input type="radio" name="campaign_status" value="draft" class="hidden status-radio">
+              <div class="status-card bg-surface-clow rounded-xl p-3 text-center transition-all" data-status="draft">
+                <span class="material-symbols-outlined block mx-auto mb-1" style="font-size:20px;">drafts</span>
+                <span class="font-body font-semibold" style="font-size:12px;">Draft</span>
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="campaign_status" value="active" class="hidden status-radio" checked>
+              <div class="status-card bg-surface-clow rounded-xl p-3 text-center transition-all active" data-status="active">
+                <span class="material-symbols-outlined block mx-auto mb-1" style="font-size:20px;">bolt</span>
+                <span class="font-body font-semibold" style="font-size:12px;">Active</span>
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="campaign_status" value="ended" class="hidden status-radio">
+              <div class="status-card bg-surface-clow rounded-xl p-3 text-center transition-all" data-status="ended">
+                <span class="material-symbols-outlined block mx-auto mb-1" style="font-size:20px;">event_busy</span>
+                <span class="font-body font-semibold" style="font-size:12px;">Ended</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Error -->
+        <div id="formError" class="hidden bg-tertiary/10 rounded-xl p-3 flex items-center gap-2">
+          <span class="material-symbols-outlined text-tertiary" style="font-size:18px;">error</span>
+          <p id="formErrorMsg" class="font-body font-semibold text-tertiary" style="font-size:12px;"></p>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-3 pt-2">
+          <button type="submit" id="submitBtn"
+            class="flex-1 signature-gradient text-on-primary font-headline font-bold py-4 rounded-xl active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+            style="font-size:15px;">
+            <span id="submitIcon" class="material-symbols-outlined" style="font-size:20px;">save</span>
+            <span id="submitLabel">Create Campaign</span>
+          </button>
+          <button type="button" onclick="showList()"
+            class="w-12 h-12 flex items-center justify-center text-on-surface-variant hover:text-on-surface bg-surface-cl rounded-xl active:scale-95 transition-all flex-shrink-0">
+            <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+          </button>
+        </div>
+      </form>
+
     </div>
-
-  </div>
+  </main>
 </div>
 
-<!-- QUOTE PICKER MODAL -->
-<div id="quotePickerModal" class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
-    <div class="p-6 border-b border-slate-100 flex justify-between items-center"><h3 class="font-headline font-bold text-xl">Select Quotes</h3><button onclick="closeQuotePicker()" class="text-slate-400"><span class="material-symbols-outlined">close</span></button></div>
-    <div class="p-6 overflow-y-auto flex-1">
-      <div id="quotePickerList" class="space-y-2"></div>
+<!-- ═══════════════════════════════════════════ -->
+<!-- DELETE CONFIRM MODAL -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="confirmModal" class="hidden fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm z-[100] flex items-center justify-center px-5" onclick="if(event.target===this)closeConfirm()">
+  <div class="bg-surface-cl rounded-2xl p-6 w-full max-w-sm shadow-float">
+    <div class="text-center">
+      <div class="w-14 h-14 rounded-full bg-tertiary/15 flex items-center justify-center mx-auto mb-4">
+        <span class="material-symbols-outlined text-tertiary" style="font-size:28px;">warning</span>
+      </div>
+      <h3 class="font-headline font-bold text-on-surface mb-2" style="font-size:18px;">Delete this campaign?</h3>
+      <p id="confirmMsg" class="font-body text-on-surface-variant mb-5 leading-relaxed" style="font-size:14px;">This campaign will be deleted.</p>
+      <div class="flex gap-3">
+        <button onclick="closeConfirm()" class="flex-1 py-3 bg-surface-clow text-on-surface-variant font-body font-semibold rounded-xl active:scale-95 transition-transform" style="font-size:14px;">Cancel</button>
+        <button onclick="executeConfirm()" class="flex-1 py-3 bg-tertiary text-on-tertiary font-headline font-bold rounded-xl active:scale-[0.98] transition-transform" style="font-size:14px;">Delete</button>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- TOAST -->
-<div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-slate-900/90 backdrop-blur-md text-white font-body font-bold px-5 py-3 rounded-full shadow-2xl items-center gap-2 text-sm"><span id="toastIcon" class="material-symbols-outlined text-green-400">check_circle</span><span id="toastMsg"></span></div>
+<div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-3 rounded-full shadow-float items-center gap-2" style="font-size:13px;">
+  <span class="material-symbols-outlined text-primary-container" style="font-size:16px;">check_circle</span>
+  <span id="toastMsg"></span>
+</div>
+
+<style>
+  .status-card{color:#5e6059;border:1px solid transparent}
+  .status-card.active{background:#3d6285!important;color:#f7f9ff!important}
+</style>
 
 <script>
-var supabaseClient = supabase.createClient('https://nhymadutuhpjgkiurify.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM');
-var currentUser = null, allCampaigns = [], allQuotes = [], allBadges = [], mediaIcons = [];
-var isEditing = false, editId = null, currentColor = '#3d6285', currentFilter = 'all', currentIcon = 'campaign', currentImage = '';
+var supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+)
 
-function getEl(id){ return document.getElementById(id); }
-function toggleSidebar(){ getEl('sidebar').classList.toggle('hidden'); getEl('sidebar').classList.toggle('flex'); getEl('sidebarOverlay').classList.toggle('hidden'); }
-async function handleLogout(){ await supabaseClient.auth.signOut(); window.location.href='login.html'; }
-var toastTimer;
-function showToast(msg, isErr=false){
-  var t=getEl('toast'); if(!t) return;
-  getEl('toastMsg').textContent=msg;
-  var icon=getEl('toastIcon'); icon.textContent=isErr?'error':'check_circle';
-  icon.className='material-symbols-outlined '+(isErr?'text-red-400':'text-green-400');
-  t.classList.remove('hidden'); t.classList.add('flex');
-  clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ t.classList.add('hidden'); t.classList.remove('flex'); }, 3000);
+var currentUser = null
+var allCampaigns = []
+var quoteCounts = {}  // { campaign_id: { total, live, scheduled, archived } }
+var currentIcon = 'campaign'
+var currentColor = '#3d6285'
+var isEditMode = false
+var editCampaignId = null
+var confirmAction = null
+
+// ════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════
+async function checkAdminAuth() {
+  try {
+    var result = null
+    for (var attempt = 0; attempt < 3; attempt++) {
+      result = await supabaseClient.auth.getSession()
+      if (result.data && result.data.session) break
+      await new Promise(function(r) { setTimeout(r, 300) })
+    }
+    if (!result.data || !result.data.session) {
+      try {
+        var refreshed = await supabaseClient.auth.refreshSession()
+        if (refreshed.data && refreshed.data.session) result = refreshed
+      } catch(e) {}
+    }
+    if (!result.data || !result.data.session) { window.location.href = 'login.html'; return false }
+
+    currentUser = result.data.session.user
+    var p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single()
+    if (p.error) { showToast('Connection error'); setTimeout(function() { window.location.reload() }, 1500); return false }
+    if (!p.data) { window.location.href = 'login.html'; return false }
+    if (p.data.role !== 'admin') { window.location.href = '../app/index.html'; return false }
+
+    var email = currentUser.email || ''
+    var initials = '?'
+    if (p.data.full_name) {
+      var parts = p.data.full_name.trim().split(' ')
+      initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : parts[0].substring(0,2).toUpperCase()
+    } else if (email) { initials = email.substring(0,2).toUpperCase() }
+    document.querySelectorAll('.admin-initials').forEach(function(el) { el.textContent = initials })
+    document.querySelectorAll('.admin-name').forEach(function(el) { el.textContent = p.data.full_name || email })
+    return true
+  } catch(e) { console.error(e); showToast('Error'); setTimeout(function() { window.location.reload() }, 1500); return false }
 }
 
-async function init() {
-  var s = await supabaseClient.auth.getSession(); if(!s.data.session) return window.location.href='login.html'; currentUser=s.data.session.user;
-  var p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single(); 
-  if(!p.data || p.data.role!=='admin') return window.location.href='../app/index.html';
-  document.querySelectorAll('.admin-name').forEach(el=>el.textContent=p.data.full_name||currentUser.email); 
-  document.querySelectorAll('.admin-initials').forEach(el=>el.textContent=(p.data.full_name||'AD').substring(0,2).toUpperCase());
-  await loadData();
+function toggleSidebar() {
+  var s = document.getElementById('sidebar'), o = document.getElementById('sidebarOverlay')
+  s.classList.toggle('hidden'); s.classList.toggle('flex'); o.classList.toggle('hidden')
 }
 
-async function loadData() {
-  var nowIso = new Date().toISOString().split('T')[0];
-  try { await supabaseClient.from('campaigns').update({status:'ended'}).eq('status','active').lt('end_date', nowIso); } catch(e){}
+async function handleLogout() {
+  try { await supabaseClient.auth.signOut() } catch(e) {}
+  window.location.href = 'login.html'
+}
 
-  var [cRes, qRes, bRes] = await Promise.all([
-    supabaseClient.from('campaigns').select('*').order('created_at',{ascending:false}),
-    supabaseClient.from('quotes').select('id, text, source, campaign_id, status'),
-    supabaseClient.from('badge_definitions').select('id, name').eq('is_active',true)
-  ]);
+// ════════════════════════════════════════════
+// AUTO-END EXPIRED CAMPAIGNS
+// ════════════════════════════════════════════
+async function autoEndExpiredCampaigns() {
+  var nowIso = new Date().toISOString().split('T')[0]
+  try {
+    await supabaseClient
+      .from('campaigns')
+      .update({ status: 'ended' })
+      .eq('status', 'active')
+      .lt('end_date', nowIso)
+  } catch(e) { console.warn('Auto-end failed:', e) }
+}
 
-  allCampaigns = cRes.data || [];
-  allQuotes = qRes.data || [];
-  allBadges = bRes.data || [];
+// ════════════════════════════════════════════
+// LOAD CAMPAIGNS + QUOTE COUNTS
+// ════════════════════════════════════════════
+async function loadCampaigns() {
+  await autoEndExpiredCampaigns()
 
-  var bSel = getEl('campBadge'); 
-  if(bSel) {
-    bSel.innerHTML = '<option value="">-- No Reward --</option>';
-    allBadges.forEach(b => bSel.innerHTML += `<option value="${b.id}">${b.name}</option>`);
-  }
+  var result = await supabaseClient.from('campaigns').select('*').order('created_at', { ascending: false })
+  if (result.error) { showToast('Failed to load campaigns'); return }
+  allCampaigns = result.data || []
 
-  renderStats();
-  renderList();
+  // Load quote counts per campaign
+  await loadQuoteCounts()
+
+  renderStats()
+  renderCampaigns(allCampaigns)
+}
+
+async function loadQuoteCounts() {
+  quoteCounts = {}
+
+  if (allCampaigns.length === 0) return
+
+  var campaignIds = allCampaigns.map(function(c) { return c.id })
+  var result = await supabaseClient
+    .from('quotes')
+    .select('campaign_id, status')
+    .in('campaign_id', campaignIds)
+
+  if (result.error) return
+
+  var quotes = result.data || []
+  quotes.forEach(function(q) {
+    if (!q.campaign_id) return
+    if (!quoteCounts[q.campaign_id]) {
+      quoteCounts[q.campaign_id] = { total: 0, live: 0, scheduled: 0, archived: 0 }
+    }
+    quoteCounts[q.campaign_id].total++
+    if (q.status === 'live') quoteCounts[q.campaign_id].live++
+    else if (q.status === 'scheduled') quoteCounts[q.campaign_id].scheduled++
+    else if (q.status === 'archived') quoteCounts[q.campaign_id].archived++
+  })
 }
 
 function renderStats() {
-  getEl('statTotal').textContent = allCampaigns.length;
-  getEl('statActive').textContent = allCampaigns.filter(c=>c.status==='active').length;
-  getEl('statDraft').textContent = allCampaigns.filter(c=>c.status==='draft').length;
-  getEl('statEnded').textContent = allCampaigns.filter(c=>c.status==='ended').length;
+  var active = allCampaigns.filter(function(c) { return c.status === 'active' })
+  var draft = allCampaigns.filter(function(c) { return c.status === 'draft' })
+  var ended = allCampaigns.filter(function(c) { return c.status === 'ended' })
+
+  document.getElementById('statTotal').textContent = allCampaigns.length
+  document.getElementById('statActive').textContent = active.length
+  document.getElementById('statDraft').textContent = draft.length
+  document.getElementById('statEnded').textContent = ended.length
+  document.getElementById('countAll').textContent = '(' + allCampaigns.length + ')'
 }
 
-function renderList() {
-  var grid = getEl('campaignGrid'); if(!grid) return; grid.innerHTML = '';
-  var filtered = currentFilter === 'all' ? allCampaigns : allCampaigns.filter(c=>c.status===currentFilter);
-  
-  if(filtered.length === 0) { grid.innerHTML = '<div class="col-span-3 text-center py-10 text-slate-400">No campaigns found.</div>'; return; }
+function renderCampaigns(campaigns) {
+  var grid = document.getElementById('campaignGrid')
+  var empty = document.getElementById('emptyState')
 
-  filtered.forEach(c => {
-    var counts = { total:0, live:0, sched:0, arch:0 };
-    allQuotes.filter(q=>q.campaign_id===c.id).forEach(q => { counts.total++; if(q.status==='live')counts.live++; else if(q.status==='scheduled')counts.sched++; else counts.arch++; });
-    
-    var statusClass = c.status==='active'?'badge-active':c.status==='draft'?'badge-draft':'badge-ended';
-    var rewardHtml = c.reward_badge_id ? `<span class="inline-flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full text-[9px] font-bold border border-amber-200 mt-2"><span class="material-symbols-outlined text-[12px]">emoji_events</span> Reward</span>` : '';
-    
-    // Safe Icon Rendering
-    var iconHtml = '<span class="material-symbols-outlined text-white text-[20px]">campaign</span>';
-    if(c.icon) {
-      if(c.icon.startsWith('http') || c.icon.startsWith('/')) {
-        iconHtml = `<img src="${c.icon}" class="w-6 h-6 object-contain">`;
-      } else {
-        iconHtml = `<span class="material-symbols-outlined text-white text-[20px] filled">${c.icon}</span>`;
-      }
-    }
+  if (!campaigns.length) {
+    grid.innerHTML = ''
+    empty.classList.remove('hidden')
+    return
+  }
+  empty.classList.add('hidden')
+  grid.innerHTML = ''
 
-    var card = document.createElement('div');
-    card.className = 'campaign-card flex flex-col';
-    card.innerHTML = `
-      <div class="p-5 flex-1">
-        <div class="flex items-start justify-between mb-2">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background:${c.color||'#3d6285'};">
-              ${iconHtml}
-            </div>
-            <h4 class="font-headline font-bold text-slate-900 text-sm leading-tight line-clamp-1">${c.name}</h4>
-          </div>
-          <span class="badge ${statusClass}">${c.status}</span>
-        </div>
-        ${c.description ? `<p class="font-body text-slate-500 text-xs line-clamp-2 mb-2">${c.description}</p>` : ''}
-        ${rewardHtml}
-      </div>
-      <div class="px-5 pb-4">
-        <div class="grid grid-cols-4 gap-2 bg-slate-50 rounded-xl p-2 mb-3 border border-slate-100">
-          <div class="text-center"><p class="font-headline font-bold text-slate-900 text-sm">${counts.total}</p><p class="text-[9px] font-bold text-slate-400 uppercase">Tot</p></div>
-          <div class="text-center"><p class="font-headline font-bold text-green-600 text-sm">${counts.live}</p><p class="text-[9px] font-bold text-slate-400 uppercase">Live</p></div>
-          <div class="text-center"><p class="font-headline font-bold text-blue-600 text-sm">${counts.sched}</p><p class="text-[9px] font-bold text-slate-400 uppercase">Sch</p></div>
-          <div class="text-center"><p class="font-headline font-bold text-slate-400 text-sm">${counts.arch}</p><p class="text-[9px] font-bold text-slate-400 uppercase">Arc</p></div>
-        </div>
-        <div class="flex gap-2">
-          <a href="manage-quotes.html?campaign_id=${c.id}" class="flex-1 text-center py-1.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-lg text-[11px] hover:border-primary hover:text-primary">View Quotes</a>
-          <button onclick="openEditor('${c.id}')" class="flex-1 py-1.5 text-primary font-bold rounded-lg text-[11px] border border-primary/20 hover:bg-primary/5">Edit</button>
-          <button onclick="deleteCampaign('${c.id}')" class="w-8 flex items-center justify-center text-red-500 rounded-lg border border-red-200 hover:bg-red-50"><span class="material-symbols-outlined text-[16px]">delete</span></button>
-        </div>
-      </div>
-    `;
-    grid.appendChild(card);
-  });
+  campaigns.forEach(function(c) {
+    grid.appendChild(buildCampaignCard(c))
+  })
+}
+
+function buildCampaignCard(c) {
+  var counts = quoteCounts[c.id] || { total: 0, live: 0, scheduled: 0, archived: 0 }
+  var color = c.color || '#3d6285'
+  var icon = c.icon || 'campaign'
+
+  var statusBadge = ''
+  if (c.status === 'active') {
+    statusBadge = '<span class="badge badge-active"><span class="material-symbols-outlined filled" style="font-size:10px;">radio_button_checked</span>Active</span>'
+  } else if (c.status === 'draft') {
+    statusBadge = '<span class="badge badge-draft"><span class="material-symbols-outlined" style="font-size:10px;">drafts</span>Draft</span>'
+  } else {
+    statusBadge = '<span class="badge badge-ended"><span class="material-symbols-outlined" style="font-size:10px;">event_busy</span>Ended</span>'
+  }
+
+  var dateRange = ''
+  if (c.start_date && c.end_date) {
+    var s = new Date(c.start_date).toLocaleDateString('en-AU', { month: 'short', day: 'numeric' })
+    var e = new Date(c.end_date).toLocaleDateString('en-AU', { month: 'short', day: 'numeric', year: 'numeric' })
+    dateRange = s + ' → ' + e
+  } else if (c.end_date) {
+    dateRange = 'Ends ' + new Date(c.end_date).toLocaleDateString('en-AU', { month: 'short', day: 'numeric', year: 'numeric' })
+  } else if (c.start_date) {
+    dateRange = 'From ' + new Date(c.start_date).toLocaleDateString('en-AU', { month: 'short', day: 'numeric', year: 'numeric' })
+  } else {
+    dateRange = 'No date range'
+  }
+
+  var card = document.createElement('article')
+  card.className = 'campaign-card'
+
+  card.innerHTML =
+    '<div class="p-5 flex items-start gap-4">'
+      + '<div class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0" style="background:' + color + ';">'
+        + '<span class="material-symbols-outlined text-white filled" style="font-size:26px;">' + icon + '</span>'
+      + '</div>'
+      + '<div class="flex-1 min-w-0">'
+        + '<div class="flex items-start justify-between gap-2 mb-1">'
+          + '<h4 class="font-headline font-bold text-on-surface" style="font-size:16px;line-height:22px;">' + escapeHtml(c.name || 'Untitled') + '</h4>'
+          + statusBadge
+        + '</div>'
+        + (c.description ? '<p class="font-body text-on-surface-variant" style="font-size:12px;line-height:18px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">' + escapeHtml(c.description) + '</p>' : '')
+      + '</div>'
+    + '</div>'
+
+    + '<div class="px-5 pb-4">'
+      + '<div class="grid grid-cols-4 gap-2 bg-surface-clow rounded-xl p-3 mb-3">'
+        + '<div class="text-center">'
+          + '<p class="font-headline font-bold text-on-surface" style="font-size:16px;">' + counts.total + '</p>'
+          + '<p class="font-body text-outline" style="font-size:9px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">Total</p>'
+        + '</div>'
+        + '<div class="text-center">'
+          + '<p class="font-headline font-bold text-primary" style="font-size:16px;">' + counts.live + '</p>'
+          + '<p class="font-body text-outline" style="font-size:9px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">Live</p>'
+        + '</div>'
+        + '<div class="text-center">'
+          + '<p class="font-headline font-bold text-secondary" style="font-size:16px;">' + counts.scheduled + '</p>'
+          + '<p class="font-body text-outline" style="font-size:9px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">Scheduled</p>'
+        + '</div>'
+        + '<div class="text-center">'
+          + '<p class="font-headline font-bold text-outline" style="font-size:16px;">' + counts.archived + '</p>'
+          + '<p class="font-body text-outline" style="font-size:9px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">Archived</p>'
+        + '</div>'
+      + '</div>'
+      + '<p class="font-body text-outline" style="font-size:11px;font-weight:500;">' + dateRange + '</p>'
+    + '</div>'
+
+    + '<div class="px-5 py-3 border-t border-surface-clow flex items-center gap-2">'
+      + '<a href="manage-quotes.html?campaign=' + c.id + '" class="flex-1 text-center py-2 bg-surface-clow text-on-surface font-body font-semibold rounded-lg hover:bg-surface-chigh transition-colors" style="font-size:12px;">View Quotes (' + counts.total + ')</a>'
+      + '<button onclick="openEdit(\'' + c.id + '\')" class="px-3 py-2 text-primary font-body font-semibold hover:bg-surface-clow rounded-lg transition-colors" style="font-size:12px;">Edit</button>'
+      + '<button onclick="confirmDelete(\'' + c.id + '\')" class="px-3 py-2 text-tertiary font-body font-semibold hover:bg-tertiary/5 rounded-lg transition-colors" style="font-size:12px;">Delete</button>'
+    + '</div>'
+
+  return card
 }
 
 function filterCampaigns(status, btn) {
-  currentFilter = status;
-  document.querySelectorAll('.filter-tab').forEach(t=>{t.classList.remove('active','bg-primary','text-white');t.classList.add('bg-surface-c','text-slate-500');});
-  btn.classList.add('active','bg-primary','text-white'); btn.classList.remove('bg-surface-c','text-slate-500');
-  renderList();
+  document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active') })
+  if (btn) btn.classList.add('active')
+  renderCampaigns(status === 'all' ? allCampaigns : allCampaigns.filter(function(c) { return c.status === status }))
 }
 
-// --- EDITOR LOGIC ---
-function openEditor(id = null) {
-  isEditing = !!id; editId = id;
-  getEl('listPane').classList.add('split');
-  getEl('editorPane').classList.add('open');
-  getEl('editorTitle').textContent = id ? 'Edit Campaign' : 'New Campaign';
-  
-  if(id) {
-    var c = allCampaigns.find(x=>x.id===id);
-    getEl('campName').value = c.name||''; 
-    getEl('campDesc').value = c.description||'';
-    getEl('campStart').value = c.start_date||''; 
-    getEl('campEnd').value = c.end_date||'';
-    getEl('campBadge').value = c.reward_badge_id||'';
-    
-    // Custom Icon URL input
-    var customUrlInput = getEl('campCustomIconUrl');
-    if(customUrlInput) customUrlInput.value = '';
+// ════════════════════════════════════════════
+// FORM MODE
+// ════════════════════════════════════════════
+function openCreate() {
+  isEditMode = false
+  editCampaignId = null
+  showForm()
+  resetForm()
+  document.getElementById('formTitle').textContent = 'Create New Campaign'
+  document.getElementById('formCrumb').textContent = 'Create Campaign'
+  document.getElementById('submitLabel').textContent = 'Create Campaign'
+  document.getElementById('submitIcon').textContent = 'save'
+}
 
-    // Handle Icon vs Image logic safely
-    var existingIcon = c.icon || '';
-    if (existingIcon.startsWith('http') || existingIcon.startsWith('/')) {
-      currentImage = existingIcon;
-      currentIcon = '';
-      if(customUrlInput) customUrlInput.value = existingIcon;
-      document.querySelectorAll('.icon-pick').forEach(b => b.classList.remove('selected'));
-    } else {
-      currentIcon = existingIcon || 'campaign';
-      currentImage = '';
-      if(customUrlInput) customUrlInput.value = '';
-      document.querySelectorAll('.icon-pick').forEach(b => b.classList.remove('selected'));
-      var iconBtn = document.querySelector(`[data-icon="${currentIcon}"]`);
-      if (iconBtn) iconBtn.classList.add('selected');
-    }
+async function openEdit(id) {
+  isEditMode = true
+  editCampaignId = id
+  showForm()
+  resetForm()
 
-    // Handle Color Logic safely
-    selectColor(c.color||'#3d6285', document.querySelector(`[data-color="${c.color}"]`));
-    
-    // Handle Status Logic safely
-    var rad = document.querySelector(`input[value="${c.status}"]`); 
-    if(rad){ rad.checked=true; updateStatusCards(); }
-    
-    renderEditorQuotes();
-    renderCompletions();
-  } else {
-    getEl('campName').value=''; getEl('campDesc').value=''; getEl('campStart').value=''; getEl('campEnd').value='';
-    getEl('campBadge').value='';
-    var customUrlInput = getEl('campCustomIconUrl'); if(customUrlInput) customUrlInput.value='';
-    currentImage = '';
-    selectColor('#3d6285', document.querySelector('[data-color="#3d6285"]'));
-    document.querySelector('input[value="active"]').checked=true; updateStatusCards();
-    document.querySelectorAll('.icon-pick').forEach(b=>b.classList.remove('selected'));
-    var defaultIcon = document.querySelector('[data-icon="campaign"]'); if(defaultIcon) defaultIcon.classList.add('selected');
-    getEl('editorQuoteList').innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No quotes added yet.</p>';
+  document.getElementById('formTitle').textContent = 'Edit Campaign'
+  document.getElementById('formCrumb').textContent = 'Edit Campaign'
+  document.getElementById('submitLabel').textContent = 'Save Changes'
+  document.getElementById('submitIcon').textContent = 'save'
+
+  var result = await supabaseClient.from('campaigns').select('*').eq('id', id).single()
+  if (result.error || !result.data) { showToast('Error loading campaign'); showList(); return }
+
+  var c = result.data
+  document.getElementById('campaignName').value = c.name || ''
+  document.getElementById('campaignDesc').value = c.description || ''
+  document.getElementById('campaignStartDate').value = c.start_date || ''
+  document.getElementById('campaignEndDate').value = c.end_date || ''
+
+  // Icon
+  var iconEl = document.querySelector('[data-icon="' + (c.icon || 'campaign') + '"]')
+  if (iconEl) selectIcon(c.icon || 'campaign', iconEl)
+  else selectIcon('campaign', document.querySelector('[data-icon="campaign"]'))
+
+  // Color
+  var colorEl = document.querySelector('[data-color="' + c.color + '"]')
+  if (colorEl) selectColor(c.color, colorEl)
+  else selectColor(c.color || '#3d6285', null)
+
+  // Status
+  var statusRadio = document.querySelector('input[value="' + (c.status || 'draft') + '"]')
+  if (statusRadio) {
+    statusRadio.checked = true
+    updateStatusCards()
   }
-  switchTab('details');
+
+  updateChipPreview()
 }
 
-function closeEditor() { getEl('listPane').classList.remove('split'); getEl('editorPane').classList.remove('open'); }
-
-function switchTab(tab) {
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  getEl('tab-'+tab).classList.add('active');
-  ['details','quotes','completions'].forEach(t=>getEl('view-'+t).classList.add('hidden'));
-  getEl('view-'+tab).classList.remove('hidden');
-  if(tab==='completions') renderCompletions();
+function showList() {
+  document.getElementById('listView').classList.remove('hidden')
+  document.getElementById('formView').classList.add('hidden')
+  isEditMode = false
+  editCampaignId = null
 }
 
-function selectIcon(iconName, btn) {
-  currentIcon = iconName;
-  currentImage = ''; 
-  var customUrlInput = getEl('campCustomIconUrl'); if(customUrlInput) customUrlInput.value = '';
-  document.querySelectorAll('.icon-pick').forEach(b => b.classList.remove('selected'));
-  if (btn) btn.classList.add('selected');
+function showForm() {
+  document.getElementById('listView').classList.add('hidden')
+  document.getElementById('formView').classList.remove('hidden')
+  window.scrollTo({ top: 0 })
+}
+
+function resetForm() {
+  document.getElementById('campaignName').value = ''
+  document.getElementById('campaignDesc').value = ''
+  document.getElementById('campaignStartDate').value = ''
+  document.getElementById('campaignEndDate').value = ''
+  document.getElementById('formError').classList.add('hidden')
+  document.querySelectorAll('.form-input').forEach(function(f) { f.classList.remove('error') })
+
+  currentIcon = 'campaign'
+  currentColor = '#3d6285'
+
+  selectIcon('campaign', document.querySelector('[data-icon="campaign"]'))
+  selectColor('#3d6285', document.querySelector('[data-color="#3d6285"]'))
+
+  var activeRadio = document.querySelector('input[value="active"]')
+  if (activeRadio) { activeRadio.checked = true; updateStatusCards() }
+
+  updateChipPreview()
+}
+
+function selectIcon(icon, btn) {
+  currentIcon = icon
+  document.querySelectorAll('.icon-pick').forEach(function(b) { b.classList.remove('selected') })
+  if (btn) btn.classList.add('selected')
+  updateChipPreview()
 }
 
 function selectColor(color, swatch) {
-  currentColor = color;
-  document.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('selected'));
-  if(swatch) swatch.classList.add('selected');
-  var picker = getEl('colorPicker'); if(picker) picker.value = color;
+  currentColor = color
+  document.querySelectorAll('.color-swatch').forEach(function(s) { s.classList.remove('selected') })
+  if (swatch) swatch.classList.add('selected')
+  var picker = document.getElementById('colorPicker')
+  if (picker) picker.value = color
+  updateChipPreview()
 }
 
-document.addEventListener('change', function(e){ if(e.target.classList.contains('status-radio')) updateStatusCards(); });
-function updateStatusCards() { 
-  var val = document.querySelector('.status-radio:checked').value; 
-  document.querySelectorAll('.status-card').forEach(c=>c.classList.toggle('active', c.dataset.status===val)); 
+function updateChipPreview() {
+  var chip = document.getElementById('chipPreview')
+  var name = document.getElementById('chipName')
+  var currentName = document.getElementById('campaignName').value.trim() || 'Campaign Name'
+  if (chip) chip.style.background = currentColor
+  if (chip) {
+    var iconSpan = chip.querySelector('.material-symbols-outlined')
+    if (iconSpan) iconSpan.textContent = currentIcon
+  }
+  if (name) name.textContent = currentName
 }
 
-async function saveCampaign() {
-  var name = getEl('campName').value.trim(); if(!name) return showToast('Name required',true);
-  var btn = getEl('saveBtn'); btn.disabled=true; btn.textContent='Saving...';
-  
+// Live update chip on name typing
+document.addEventListener('input', function(e) {
+  if (e.target.id === 'campaignName') updateChipPreview()
+})
+
+// Status radio handling
+document.addEventListener('change', function(e) {
+  if (e.target.classList.contains('status-radio')) updateStatusCards()
+})
+
+function updateStatusCards() {
+  var checkedValue = document.querySelector('.status-radio:checked')
+  var value = checkedValue ? checkedValue.value : 'active'
+  document.querySelectorAll('.status-card').forEach(function(card) {
+    card.classList.toggle('active', card.dataset.status === value)
+  })
+}
+
+// ════════════════════════════════════════════
+// SUBMIT
+// ════════════════════════════════════════════
+async function handleSubmit(e) {
+  e.preventDefault()
+
+  var name = document.getElementById('campaignName').value.trim()
+  var desc = document.getElementById('campaignDesc').value.trim()
+  var startDate = document.getElementById('campaignStartDate').value
+  var endDate = document.getElementById('campaignEndDate').value
+  var status = document.querySelector('.status-radio:checked').value
+  var errorEl = document.getElementById('formError')
+  var errorMsg = document.getElementById('formErrorMsg')
+
+  errorEl.classList.add('hidden')
+  document.querySelectorAll('.form-input').forEach(function(f) { f.classList.remove('error') })
+
+  if (!name) {
+    document.getElementById('campaignName').classList.add('error')
+    errorMsg.textContent = 'Campaign name is required'
+    errorEl.classList.remove('hidden')
+    return
+  }
+
+  var btn = document.getElementById('submitBtn')
+  var icon = document.getElementById('submitIcon')
+  var label = document.getElementById('submitLabel')
+
+  icon.textContent = 'progress_activity'
+  icon.classList.add('spin')
+  label.textContent = isEditMode ? 'Saving...' : 'Creating...'
+  btn.disabled = true
+
   var data = {
-    name: name, description: getEl('campDesc').value.trim()||null,
-    icon: currentImage || currentIcon, 
+    name: name,
+    description: desc || null,
+    icon: currentIcon,
     color: currentColor,
-    status: document.querySelector('.status-radio:checked').value,
-    start_date: getEl('campStart').value||null, end_date: getEl('campEnd').value||null,
-    reward_badge_id: getEl('campBadge').value||null, updated_at: new Date().toISOString()
-  };
+    status: status,
+    start_date: startDate || null,
+    end_date: endDate || null,
+    updated_at: new Date().toISOString()
+  }
 
-  var res = isEditing ? await supabaseClient.from('campaigns').update(data).eq('id',editId) : await supabaseClient.from('campaigns').insert(data);
-  btn.disabled=false; btn.textContent='Save Campaign';
-  if(res.error) return showToast('Error: '+res.error.message, true);
-  showToast('Campaign saved!'); closeEditor(); await loadData();
+  var result = isEditMode
+    ? await supabaseClient.from('campaigns').update(data).eq('id', editCampaignId).select().single()
+    : await supabaseClient.from('campaigns').insert(data).select().single()
+
+  icon.classList.remove('spin')
+  btn.disabled = false
+
+  if (result.error) {
+    icon.textContent = 'save'
+    label.textContent = isEditMode ? 'Save Changes' : 'Create Campaign'
+    errorMsg.textContent = 'Error: ' + result.error.message
+    errorEl.classList.remove('hidden')
+    return
+  }
+
+  showToast(isEditMode ? 'Campaign updated' : 'Campaign created')
+  await loadCampaigns()
+  showList()
 }
 
-async function deleteCampaign(id) {
-  if(!confirm('Delete this campaign? Quotes will be unassigned.')) return;
-  await supabaseClient.from('quotes').update({campaign_id:null}).eq('campaign_id',id);
-  await supabaseClient.from('campaigns').delete().eq('id',id);
-  showToast('Deleted'); await loadData();
+// ════════════════════════════════════════════
+// DELETE
+// ════════════════════════════════════════════
+function confirmDelete(id) {
+  var c = allCampaigns.find(function(x) { return x.id === id })
+  if (!c) return
+  var counts = quoteCounts[id] || { total: 0 }
+
+  confirmAction = { type: 'delete', id: id, quoteCount: counts.total }
+
+  var msg = document.getElementById('confirmMsg')
+  if (counts.total > 0) {
+    msg.textContent = 'This campaign has ' + counts.total + ' quote' + (counts.total !== 1 ? 's' : '') + ' assigned. The campaign will be deleted and quotes will be unassigned (not deleted).'
+  } else {
+    msg.textContent = 'This campaign will be permanently deleted. This cannot be undone.'
+  }
+
+  document.getElementById('confirmModal').classList.remove('hidden')
+  document.body.style.overflow = 'hidden'
 }
 
-// --- QUOTE MANAGEMENT ---
-function renderEditorQuotes() {
-  var list = getEl('editorQuoteList'); if(!list) return; list.innerHTML = '';
-  var campQuotes = allQuotes.filter(q=>q.campaign_id===editId);
-  if(campQuotes.length===0) { list.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No quotes added yet.</p>'; return; }
-  campQuotes.forEach(q => {
-    list.innerHTML += `<div class="flex items-center justify-between p-3 bg-surface-clow rounded-xl border border-surface-c">
-      <div class="flex-1 min-w-0"><p class="font-body text-sm text-slate-800 truncate">"${q.text}"</p><p class="text-[10px] text-slate-400 font-bold">${q.source}</p></div>
-      <button onclick="removeQuote('${q.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg"><span class="material-symbols-outlined text-[18px]">remove</span></button>
-    </div>`;
-  });
+function closeConfirm() {
+  document.getElementById('confirmModal').classList.add('hidden')
+  document.body.style.overflow = ''
 }
 
-function openQuotePicker() {
-  var list = getEl('quotePickerList'); if(!list) return; list.innerHTML = '';
-  var available = allQuotes.filter(q=>!q.campaign_id);
-  if(available.length===0) { list.innerHTML = '<p class="text-center text-slate-400 py-4">No unassigned quotes available.</p>'; }
-  available.forEach(q => {
-    list.innerHTML += `<div class="flex items-center justify-between p-3 hover:bg-surface-clow rounded-xl cursor-pointer border border-transparent hover:border-surface-c" onclick="addQuoteToCampaign('${q.id}')">
-      <div class="flex-1 min-w-0"><p class="font-body text-sm text-slate-800 truncate">"${q.text}"</p><p class="text-[10px] text-slate-400 font-bold">${q.source}</p></div>
-      <span class="material-symbols-outlined text-primary">add_circle</span>
-    </div>`;
-  });
-  getEl('quotePickerModal').classList.remove('hidden');
-}
-function closeQuotePicker() { getEl('quotePickerModal').classList.add('hidden'); }
+async function executeConfirm() {
+  if (!confirmAction) return
+  closeConfirm()
 
-async function addQuoteToCampaign(qid) {
-  await supabaseClient.from('quotes').update({campaign_id:editId}).eq('id',qid);
-  closeQuotePicker(); await loadData(); renderEditorQuotes();
-}
-async function removeQuote(qid) {
-  await supabaseClient.from('quotes').update({campaign_id:null}).eq('id',qid);
-  await loadData(); renderEditorQuotes();
-}
+  if (confirmAction.type === 'delete') {
+    // First, unassign quotes (set campaign_id to null)
+    if (confirmAction.quoteCount > 0) {
+      var unassignResult = await supabaseClient
+        .from('quotes')
+        .update({ campaign_id: null })
+        .eq('campaign_id', confirmAction.id)
 
-// --- COMPLETIONS LOGIC ---
-async function renderCompletions() {
-  var list = getEl('completionList'); if(!list) return;
-  if(!editId) { list.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">Save campaign first.</p>'; return; }
-  
-  var campQuotes = allQuotes.filter(q=>q.campaign_id===editId && q.status==='live');
-  if(campQuotes.length === 0) { list.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No live quotes in this campaign yet.</p>'; return; }
-  
-  list.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">Checking user shares...</p>';
-  
-  var quoteIds = campQuotes.map(q=>q.id);
-  var { data: shares } = await supabaseClient.from('shares').select('user_id, quote_id').in('quote_id', quoteIds);
-  if(!shares) { list.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No shares found.</p>'; return; }
+      if (unassignResult.error) {
+        showToast('Error unassigning quotes: ' + unassignResult.error.message)
+        return
+      }
+    }
 
-  var userCounts = {};
-  shares.forEach(s => { if(!userCounts[s.user_id]) userCounts[s.user_id] = new Set(); userCounts[s.user_id].add(s.quote_id); });
-  var completers = Object.keys(userCounts).filter(uid => userCounts[uid].size >= campQuotes.length);
-  
-  if(completers.length === 0) { list.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No users have completed this campaign yet.</p>'; return; }
+    // Then delete the campaign
+    var deleteResult = await supabaseClient.from('campaigns').delete().eq('id', confirmAction.id)
+    if (deleteResult.error) { showToast('Error: ' + deleteResult.error.message); return }
 
-  var { data: profiles } = await supabaseClient.from('profiles').select('id, full_name, nickname').in('id', completers);
-  list.innerHTML = '';
-  (profiles||[]).forEach(p => {
-    list.innerHTML += `<div class="flex items-center gap-3 p-3 bg-green-50 rounded-xl border border-green-100">
-      <div class="w-8 h-8 rounded-full bg-green-200 flex items-center justify-center font-bold text-green-800 text-xs">${(p.full_name||p.nickname||'U').substring(0,2).toUpperCase()}</div>
-      <div><p class="font-bold text-sm text-slate-800">${p.full_name||p.nickname}</p><p class="text-[10px] text-green-700 font-bold">COMPLETED CAMPAIGN</p></div>
-    </div>`;
-  });
+    showToast('Campaign deleted' + (confirmAction.quoteCount > 0 ? ' (' + confirmAction.quoteCount + ' quotes unassigned)' : ''))
+    await loadCampaigns()
+  }
+  confirmAction = null
 }
 
-init();
+// ════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════
+function escapeHtml(str) {
+  if (!str) return ''
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')
+}
+
+var toastTimer
+function showToast(msg) {
+  var toast = document.getElementById('toast')
+  var toastMsg = document.getElementById('toastMsg')
+  if (!toast || !toastMsg) return
+  toastMsg.textContent = msg
+  toast.classList.remove('hidden')
+  toast.classList.add('flex')
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(function() {
+    toast.classList.add('hidden')
+    toast.classList.remove('flex')
+  }, 2500)
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+async function init() {
+  var isAdmin = await checkAdminAuth()
+  if (!isAdmin) return
+  await loadCampaigns()
+
+  // Check for URL param to open edit directly
+  var editId = new URLSearchParams(window.location.search).get('edit')
+  if (editId) openEdit(editId)
+}
+
+init()
 </script>
 </body>
 </html>
