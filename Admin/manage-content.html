@@ -115,10 +115,13 @@
   </nav>
 </aside>
 
+<div id="sidebarOverlay" class="fixed inset-0 bg-inverse-surface/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
 <!-- MAIN -->
 <main class="flex-1 md:ml-64 min-h-screen flex flex-col">
   <header class="sticky top-0 z-20 bg-surface/85 backdrop-blur-xl border-b border-surface-chigh">
     <div class="flex items-center gap-4 px-6 lg:px-8 py-4">
+      <button onclick="toggleSidebar()" class="md:hidden text-on-surface"><span class="material-symbols-outlined">menu</span></button>
       <div class="flex-1 min-w-0">
         <h2 class="font-headline font-bold text-on-surface" style="font-size:22px;">Page Builder</h2>
         <p class="font-body text-on-surface-variant" style="font-size:12px;">Manage landing page sections & styles</p>
@@ -236,6 +239,104 @@ function escapeHtml(s) { const d = document.createElement('div'); d.textContent 
 function escapeAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function markDirty() { const b = $('saveBtnText'); if(b) b.textContent = 'Save Changes *'; clearTimeout(previewTimer); previewTimer = setTimeout(pushPreviewUpdate, 400); }
 let toastTimer=null; function showToast(m,t='success'){const x=$('toast');if(!x)return;x.textContent=m;x.className='toast toast-'+t+' show';clearTimeout(toastTimer);toastTimer=setTimeout(()=>x.classList.remove('show'),3500);}
+
+// ─── NAVIGATION & PREVIEW HANDLERS ─────────────────────────
+function toggleSidebar() {
+  const sidebar = $('sidebar');
+  const overlay = $('sidebarOverlay');
+  if (sidebar) sidebar.classList.toggle('hidden');
+  if (overlay) overlay.classList.toggle('hidden');
+}
+
+function handleLogout() {
+  supabaseClient.auth.signOut().then(() => {
+    window.location.href = '/login.html';
+  });
+}
+
+function openLivePage() {
+  window.open('/index.html', '_blank');
+}
+
+function togglePreview() {
+  previewOpen = !previewOpen;
+  const panel = $('previewPanel');
+  const text  = $('previewToggleText');
+  if (!panel) return;
+
+  if (previewOpen) {
+    panel.classList.remove('hidden');
+    panel.classList.add('flex');
+    if (text) text.textContent = 'Hide Preview';
+
+    const frame = $('previewFrame');
+    if (frame && !previewLoaded) {
+      previewLoaded = true;
+      frame.addEventListener('load', () => setTimeout(pushPreviewUpdate, 200));
+      frame.src = '/index.html?preview=1';
+    } else {
+      setTimeout(pushPreviewUpdate, 150);
+    }
+  } else {
+    panel.classList.add('hidden');
+    panel.classList.remove('flex');
+    if (text) text.textContent = 'Show Preview';
+  }
+}
+
+function setPreviewSize(size) {
+  const frame = $('previewFrame');
+  if (!frame) return;
+  ['previewMobile', 'previewDesktop'].forEach(id => {
+    const btn = $(id);
+    if (!btn) return;
+    btn.classList.remove('bg-primary/10', 'text-primary');
+    btn.classList.add('text-outline');
+  });
+  const active = $('preview' + size.charAt(0).toUpperCase() + size.slice(1));
+  if (active) {
+    active.classList.add('bg-primary/10', 'text-primary');
+    active.classList.remove('text-outline');
+  }
+
+  if (size === 'mobile') { frame.style.width = '390px'; frame.style.maxWidth = '390px'; }
+  else { frame.style.width = '100%'; frame.style.maxWidth = 'none'; }
+}
+
+function refreshPreview() {
+  const frame = $('previewFrame');
+  if (!frame) return;
+  frame.src = '/index.html?preview=1&t=' + Date.now();
+}
+
+function pushPreviewUpdate() {
+  if (!previewOpen) return;
+  collectEditorData();
+  const frame = $('previewFrame');
+  if (frame && frame.contentWindow) {
+    const mediaMap = {};
+    mediaLibrary.forEach(m => mediaMap[m.id] = m.url);
+    frame.contentWindow.postMessage({
+      type: 'CMS_UPDATE',
+      sections: JSON.parse(JSON.stringify(sections)),
+      mediaMap: mediaMap,
+      tiers: allTiers
+    }, '*');
+  }
+}
+
+window.addEventListener('message', (event) => {
+  if (event.data?.type === 'CMS_SELECT_SECTION') {
+    const id = event.data.id;
+    if (id) {
+      selectSection(id);
+      const card = document.querySelector(`.section-card[onclick*="${id}"]`);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }
+});
 
 // ─── DYNAMIC STYLE ENGINE UI ────────────────────────────────
 function fieldStyleHTML(d, prefix, type = 'text') {
