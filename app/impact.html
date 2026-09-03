@@ -580,37 +580,34 @@ async function loadUserImpactStats(userId) {
       }
     }
 
-         // 6. Update Personal Impact Cards
-    const badgesEl = document.getElementById('stat-badges') || document.querySelector('[data-stat="badges"]');
-    const trophiesEl = document.getElementById('stat-trophies') || document.querySelector('[data-stat="trophies"]');
+           // 6. Update Personal Impact Cards
+    var badgesEl = document.getElementById('stat-badges') || document.querySelector('[data-stat="badges"]');
+    var trophiesEl = document.getElementById('stat-trophies') || document.querySelector('[data-stat="trophies"]');
 
-    // Parse Badges from user profile (jsonb) - using existing badgeCount variable
-    badgeCount = 0;
-    if (userProfile.badges) {
+    // Update Badge Count from Profile
+    badgeCount = 0; 
+    if (userProfile && userProfile.badges) {
       if (Array.isArray(userProfile.badges)) {
         badgeCount = userProfile.badges.length;
       } else if (typeof userProfile.badges === 'object') {
         badgeCount = Object.keys(userProfile.badges).length;
       }
     }
-
     if (badgesEl) badgesEl.textContent = badgeCount;
 
     // 7. Fetch Shares
-    const { data: userShares, error: sharesErr } = await sharesQuery;
-    if (sharesErr) console.error('Error loading shares:', sharesErr);
-    const sharesList = userShares || [];
+    var sharesRes = await sharesQuery;
+    var sharesList = sharesRes.data || [];
 
     if (currentTimeframe === 'all') {
-      const profileTotal = Number(userProfile.total_shares || 0);
-      totalShares = Math.max(profileTotal, sharesList.length);
+      totalShares = Math.max(Number(userProfile.total_shares || 0), sharesList.length);
     } else {
       totalShares = sharesList.length;
     }
     if (elements.numShares) elements.numShares.textContent = totalShares;
 
     // 8. Fetch Recruits
-    let recruitsQuery = supabaseClient
+    var recruitsQuery = supabaseClient
       .from('profiles')
       .select('id, country, created_at')
       .eq('recruited_by', currentUser.id);
@@ -619,96 +616,78 @@ async function loadUserImpactStats(userId) {
       recruitsQuery = recruitsQuery.gte('created_at', sinceISO);
     }
 
-    const { data: recruitsData, error: recruitsErr } = await recruitsQuery;
-    if (recruitsErr) console.error('Error loading recruits:', recruitsErr);
-    const recruitsList = recruitsData || [];
+    var recruitsRes = await recruitsQuery;
+    var recruitsList = recruitsRes.data || [];
 
     if (currentTimeframe === 'all') {
-      const recruitTotal = Number(userProfile.recruit_count || 0);
-      if (elements.numRecruits) elements.numRecruits.textContent = Math.max(recruitTotal, recruitsList.length);
+      if (elements.numRecruits) elements.numRecruits.textContent = Math.max(Number(userProfile.recruit_count || 0), recruitsList.length);
     } else {
       if (elements.numRecruits) elements.numRecruits.textContent = recruitsList.length;
     }
 
-    // Foreign nations
-    const foreignNationsSet = new Set(
+    // Nations
+    var foreignNationsSet = new Set(
       recruitsList
         .filter(r => r.country && r.country !== userProfile.country)
         .map(r => r.country)
     );
     if (elements.numNations) elements.numNations.textContent = foreignNationsSet.size;
 
-    // 9. Missions count
+    // 9. Missions
     if (typeof refreshMissionsCount === 'function') {
       await refreshMissionsCount();
     }
 
-    // 10. Fetch Trophies, Tiers & Progression
-    const [trophiesRes, tiersRes, stagesRes] = await Promise.all([
-      supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
-      supabaseClient.from('trophy_tiers').select('*'),
-      supabaseClient.from('avatar_stages').select('*').order('stage_order', { ascending: true })
-    ]);
+    // 10. Unified Trophy & Avatar Logic
+    // We use a block here to prevent variable name collisions
+    {
+      const [tRes, trRes, stRes] = await Promise.all([
+        supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
+        supabaseClient.from('trophy_tiers').select('*'),
+        supabaseClient.from('avatar_stages').select('*').order('stage_order', { ascending: true })
+      ]);
 
-    const userProgress = trophiesRes.data || [];
-    const allTiers = tiersRes.data || [];
-    const allStages = stagesRes.data || [];
+      const uProgress = tRes.data || [];
+      const uTiers = trRes.data || [];
+      const uStages = stRes.data || [];
 
-    // Map tier ID or level to name/tier
-    const tierLevelMap = {};
-    const tierNameMap = {};
-    allTiers.forEach(t => {
-      tierLevelMap[t.id] = t.id;
-      if (t.name) tierNameMap[t.id] = String(t.name).toLowerCase().trim();
-    });
+      const tCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      let tTotal = 0;
+      let mCount = 0;
 
-    const tierCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    let totalTrophies = 0;
-    let mythicCount = 0;
-
-    userProgress.forEach(p => {
-      const tierId = p.current_tier_id || p.current_tier_level || 0;
-      
-      if (tierId >= 1 && tierId <= 5) {
-        tierCounts[tierId]++;
-        totalTrophies++;
-        if (tierId === 5) mythicCount++;
-      } else if (tierLevelMap[tierId]) {
-        const lvl = tierLevelMap[tierId];
+      uProgress.forEach(p => {
+        const lvl = p.current_tier_id || p.current_tier_level || 0;
         if (lvl >= 1 && lvl <= 5) {
-          tierCounts[lvl]++;
-          totalTrophies++;
-          if (lvl === 5) mythicCount++;
+          tCounts[lvl]++;
+          tTotal++;
+          if (lvl === 5) mCount++;
+        }
+      });
+
+      // Update UI Pills
+      if (elements.tierCommon) elements.tierCommon.textContent = tCounts[1];
+      if (elements.tierUncommon) elements.tierUncommon.textContent = tCounts[2];
+      if (elements.tierRare) elements.tierRare.textContent = tCounts[3];
+      if (elements.tierEpic) elements.tierEpic.textContent = tCounts[4];
+      if (elements.tierMythic) elements.tierMythic.textContent = tCounts[5];
+
+      // Update Trophies Card
+      if (trophiesEl) trophiesEl.textContent = tTotal;
+      if (elements.numTrophies) elements.numTrophies.textContent = tTotal;
+
+      // Avatar Stage Logic
+      let cStage = uStages[0] || { journey_name: 'The Seeker', stage_order: 1, mythic_trophies_required: 0 };
+      for (let i = uStages.length - 1; i >= 0; i--) {
+        if (mCount >= (uStages[i].mythic_trophies_required || 0)) {
+          cStage = uStages[i];
+          break;
         }
       }
-    });
-
-    // Update Tier Pills (Common=1, Uncommon=2, Rare=3, Epic=4, Mythic=5)
-    if (elements.tierCommon) elements.tierCommon.textContent = tierCounts[1];
-    if (elements.tierUncommon) elements.tierUncommon.textContent = tierCounts[2];
-    if (elements.tierRare) elements.tierRare.textContent = tierCounts[3];
-    if (elements.tierEpic) elements.tierEpic.textContent = tierCounts[4];
-    if (elements.tierMythic) elements.tierMythic.textContent = tierCounts[5];
-
-    if (trophiesEl) trophiesEl.textContent = totalTrophies;
-    if (elements.numTrophies) elements.numTrophies.textContent = totalTrophies;
-
-    // Match Avatar Stage
-    let currentStage = allStages[0] || { journey_name: 'The Seeker', stage_order: 1, mythic_trophies_required: 0 };
-    let nextStage = null;
-
-    for (let i = allStages.length - 1; i >= 0; i--) {
-      if (mythicCount >= (allStages[i].mythic_trophies_required || 0)) {
-        currentStage = allStages[i];
-        nextStage = allStages[i + 1] || null;
-        break;
-      }
+      console.log('[Impact] Successfully Mapped:', { tTotal, mCount, badgeCount });
     }
 
-    console.log('[Impact] Stats loaded:', { totalShares, totalTrophies, mythicCount, badgeCount });
-
   } catch (err) {
-    console.error('[Impact] Error loading impact page:', err);
+    console.error('[Impact] Final Error:', err);
   }
 }
 </script>
