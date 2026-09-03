@@ -773,29 +773,64 @@ async function openEdit(id) {
   document.getElementById('formCrumb').textContent = 'Edit Campaign'
   document.getElementById('submitLabel').textContent = 'Save Changes'
   document.getElementById('submitIcon').textContent = 'save'
-  document.getElementById('campaignRewardBadge').value = c.reward_badge_id || '';
 
+  // Fetch the fresh data from the database to ensure we have all columns
   var result = await supabaseClient.from('campaigns').select('*').eq('id', id).single()
-  if (result.error || !result.data) { showToast('Error loading campaign'); showList(); return }
+  
+  if (result.error || !result.data) { 
+    showToast('Error loading campaign data', true)
+    showList()
+    return 
+  }
 
   var c = result.data
-  document.getElementById('campaignName').value = c.name || ''
-  document.getElementById('campaignDesc').value = c.description || ''
-  document.getElementById('campaignStartDate').value = c.start_date || ''
-  document.getElementById('campaignEndDate').value = c.end_date || ''
 
-  // Icon
-  var iconEl = document.querySelector('[data-icon="' + (c.icon || 'campaign') + '"]')
-  if (iconEl) selectIcon(c.icon || 'campaign', iconEl)
-  else selectIcon('campaign', document.querySelector('[data-icon="campaign"]'))
+  // Safely populate form fields
+  var campName = document.getElementById('campaignName')
+  if(campName) campName.value = c.name || ''
 
-  // Color
-  var colorEl = document.querySelector('[data-color="' + c.color + '"]')
-  if (colorEl) selectColor(c.color, colorEl)
-  else selectColor(c.color || '#3d6285', null)
+  var campDesc = document.getElementById('campaignDesc')
+  if(campDesc) campDesc.value = c.description || ''
 
-  // Status
-  var statusRadio = document.querySelector('input[value="' + (c.status || 'draft') + '"]')
+  var campStart = document.getElementById('campaignStartDate')
+  if(campStart) campStart.value = c.start_date || ''
+
+  var campEnd = document.getElementById('campaignEndDate')
+  if(campEnd) campEnd.value = c.end_date || ''
+
+  // Fix for the specific error: safely check if the dropdown exists before setting it
+  var badgeSelect = document.getElementById('campaignRewardBadge')
+  if(badgeSelect) badgeSelect.value = c.reward_badge_id || ''
+
+  // Safely handle custom images vs system icons
+  var customUrlInput = document.getElementById('campCustomIconUrl')
+  if (customUrlInput) customUrlInput.value = ''
+
+  var existingIcon = c.icon || ''
+  if (existingIcon.startsWith('http') || existingIcon.startsWith('/')) {
+    currentImage = existingIcon
+    currentIcon = ''
+    if (customUrlInput) customUrlInput.value = existingIcon
+    document.querySelectorAll('.icon-pick').forEach(b => b.classList.remove('selected'))
+  } else {
+    currentIcon = existingIcon || 'campaign'
+    currentImage = ''
+    if (customUrlInput) customUrlInput.value = ''
+    document.querySelectorAll('.icon-pick').forEach(b => b.classList.remove('selected'))
+    var iconBtn = document.querySelector(`[data-icon="${currentIcon}"]`)
+    if (iconBtn) iconBtn.classList.add('selected')
+  }
+
+  // Handle color
+  var colorEl = document.querySelector(`[data-color="${c.color}"]`)
+  if (colorEl) {
+    selectColor(c.color, colorEl)
+  } else {
+    selectColor(c.color || '#3d6285', null)
+  }
+
+  // Handle status
+  var statusRadio = document.querySelector(`input[value="${c.status || 'draft'}"]`)
   if (statusRadio) {
     statusRadio.checked = true
     updateStatusCards()
