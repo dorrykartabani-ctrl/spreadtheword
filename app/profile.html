@@ -10,7 +10,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="nav.js"></script>
-  <script src="badges-config.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -39,6 +38,7 @@
             'tertiary-container':'#fe6d60',
             'primary-dim':'#305678','secondary-dim':'#355670','tertiary-dim':'#9d2621',
             'background':'#fbf9f4','on-background':'#31332e','surface-variant':'#e3e3db',
+            'gold': '#D4A24C', 'gold-dim': '#b58428'
           },
           fontFamily:{
             'headline':['Plus Jakarta Sans','sans-serif'],
@@ -88,7 +88,7 @@
     .hero-card{background:#ffffff;border-radius:20px;overflow:hidden;padding:24px}
 
     /* Avatar */
-    .avatar-box{width:64px;height:64px;border-radius:16px;overflow:hidden;background:linear-gradient(135deg,#3d6285,#6b9bc3);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .avatar-box{width:64px;height:64px;border-radius:16px;overflow:hidden;background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .avatar-box img{width:100%;height:100%;object-fit:cover}
 
     /* Progress */
@@ -132,10 +132,13 @@
   <section class="hero-card fade-up" id="heroSection">
     <div class="flex items-center gap-4">
       <div id="heroAvatar" class="avatar-box">
-        <span class="font-headline font-extrabold text-on-primary" style="font-size:22px;">?</span>
+        <img id="profileAvatarImg" src="" class="w-full h-full object-contain" style="display:none; border-radius: 16px;">
+        <div id="profileAvatarFallback" class="w-full h-full flex items-center justify-center bg-primary/10 rounded-2xl">
+           <span class="material-symbols-outlined text-primary text-[32px]">person</span>
+        </div>
       </div>
       <div class="min-w-0 flex-1">
-        <h2 id="profileNickname" class="font-headline font-bold text-on-surface leading-tight" style="font-size:20px;">Loading...</h2>
+        <h2 id="profileNickname" class="font-headline font-bold text-on-surface leading-tight flex items-center gap-2" style="font-size:20px;">Loading...</h2>
         <p id="profileName" class="font-body text-on-surface-variant" style="font-size:13px;"></p>
         <p id="profileEmail" class="font-body text-on-surface-variant truncate" style="font-size:12px;"></p>
         <div class="mt-1.5 flex items-center gap-1.5">
@@ -169,8 +172,8 @@
     <p class="font-body text-on-surface-variant mb-1" style="font-size:12px;font-weight:500;">Manage</p>
 
 	<a href="rewards.html" class="nav-card">
-      <div class="w-10 h-10 rounded-xl bg-gold/15 flex items-center justify-center flex-shrink-0">
-        <span class="material-symbols-outlined text-gold-dim text-[20px] filled">emoji_events</span>
+      <div class="w-10 h-10 rounded-xl bg-primary-container/20 flex items-center justify-center flex-shrink-0">
+        <span class="material-symbols-outlined text-primary text-[20px] filled">emoji_events</span>
       </div>
       <div class="flex-1 min-w-0">
         <p class="font-headline font-semibold text-on-surface" style="font-size:14px;">Trophies & Badges</p>
@@ -196,7 +199,7 @@
       </div>
       <div class="flex-1 min-w-0">
         <p class="font-headline font-semibold text-on-surface" style="font-size:14px;">Subscription & Billing</p>
-        <p id="subStatusHint" class="font-body text-on-surface-variant" style="font-size:11px;">Loading...</p>
+        <p class="font-body text-on-surface-variant" style="font-size:11px;">Manage your plan and billing details</p>
       </div>
       <span class="material-symbols-outlined text-outline text-[18px]">chevron_right</span>
     </a>
@@ -335,6 +338,7 @@
 
   </div>
 </nav>
+
 <!-- CONFIRM MODAL -->
 <div id="confirmModal" class="hidden fixed inset-0 bg-inverse-surface/60 backdrop-blur-sm z-[100] flex items-center justify-center px-5" onclick="if(event.target===this)closeModal()">
   <div class="bg-surface-cl rounded-2xl p-7 w-full max-w-sm shadow-float text-center">
@@ -349,46 +353,44 @@
     </div>
   </div>
 </div>
+
 <script>
 var supabaseClient = supabase.createClient(
   'https://nhymadutuhpjgkiurify.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
-)
+);
 
-var currentUser = null
-var userProfile = null
-var allShares = []
-var pendingAction = null
-
-var warriorLevels = [
-  {level:1,title:'Private',min:0,max:9},
-  {level:2,title:'Soldier',min:10,max:49},
-  {level:3,title:'Sergeant',min:50,max:99},
-  {level:4,title:'Commander',min:100,max:199},
-  {level:5,title:'General',min:200,max:99999}
-]
+var currentUser = null;
+var userProfile = null;
+var allShares = [];
+var pendingAction = null;
 
 // Country to flag emoji
 var countryFlags = {
-  'Australia':'🇦🇺','United States':'🇺🇸','USA':'🇺🇸','United Kingdom':'🇬🇧','UK':'🇬🇧',
-  'Canada':'🇨🇦','New Zealand':'🇳🇿','South Africa':'🇿🇦','Nigeria':'🇳🇬','Kenya':'🇰🇪',
+  'Australia':'🇦🇺','United States':'🇺🇸','USA':'🇺🇸','United Kingdom':'🇧','UK':'🇬',
+  'Canada':'🇨🇦','New Zealand':'🇳','South Africa':'🇿🇦','Nigeria':'🇳🇬','Kenya':'🇰🇪',
   'Ghana':'🇬🇭','India':'🇮🇳','Philippines':'🇵🇭','Singapore':'🇸🇬','Malaysia':'🇲🇾',
-  'Indonesia':'🇮🇩','Brazil':'🇧🇷','Mexico':'🇲🇽','Germany':'🇩🇪','France':'🇫🇷',
+  'Indonesia':'🇮🇩','Brazil':'🇧🇷','Mexico':'🇲🇽','Germany':'🇩🇪','France':'🇫',
   'Spain':'🇪🇸','Italy':'🇮🇹','Netherlands':'🇳🇱','Sweden':'🇸🇪','Norway':'🇳🇴',
-  'Japan':'🇯🇵','South Korea':'🇰🇷','China':'🇨🇳','UAE':'🇦🇪','Saudi Arabia':'🇸🇦',
+  'Japan':'🇯🇵','South Korea':'🇷','China':'🇨🇳','UAE':'🇦','Saudi Arabia':'🇸🇦',
   'Egypt':'🇪🇬','Ethiopia':'🇪🇹','Tanzania':'🇹🇿','Uganda':'🇺🇬','Jamaica':'🇯🇲',
-  'Trinidad and Tobago':'🇹🇹','Ireland':'🇮🇪','Pakistan':'🇵🇰','Bangladesh':'🇧🇩',
+  'Trinidad and Tobago':'🇹🇹','Ireland':'🇮','Pakistan':'🇵🇰','Bangladesh':'🇧🇩',
   'Colombia':'🇨🇴','Argentina':'🇦🇷','Chile':'🇨🇱','Peru':'🇵🇪','Israel':'🇮🇱',
-  'Turkey':'🇹🇷','Russia':'🇷🇺','Ukraine':'🇺🇦','Poland':'🇵🇱','Romania':'🇷🇴',
-  'Greece':'🇬🇷','Portugal':'🇵🇹','Belgium':'🇧🇪','Switzerland':'🇨🇭','Austria':'🇦🇹',
-  'Denmark':'🇩🇰','Finland':'🇫🇮','Costa Rica':'🇨🇷','Guatemala':'🇬🇹','Honduras':'🇭🇳',
-  'Cuba':'🇨🇺','Dominican Republic':'🇩🇴','Haiti':'🇭🇹','Barbados':'🇧🇧','Venezuela':'🇻🇪',
+  'Turkey':'🇹🇷','Russia':'🇷🇺','Ukraine':'🇦','Poland':'🇵','Romania':'🇷🇴',
+  'Greece':'🇬','Portugal':'🇵🇹','Belgium':'🇧🇪','Switzerland':'🇨🇭','Austria':'🇦🇹',
+  'Denmark':'🇩🇰','Finland':'🇮','Costa Rica':'🇷','Guatemala':'🇹','Honduras':'🇭🇳',
+  'Cuba':'🇨🇺','Dominican Republic':'🇩🇴','Haiti':'🇹','Barbados':'🇧🇧','Venezuela':'🇻🇪',
   'Ecuador':'🇪🇨'
 }
 
 function getFlag(country){
   if(!country) return ''
   return countryFlags[country] || '🌍'
+}
+
+function safeSetText(id, text) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = text;
 }
 
 var observer = new IntersectionObserver(function(entries){
@@ -407,16 +409,21 @@ async function init(){
     var results = await Promise.allSettled([
       supabaseClient.from('profiles').select('*').eq('id',currentUser.id).single(),
       supabaseClient.from('shares').select('platform,shared_at').eq('user_id',currentUser.id).order('shared_at',{ascending:false}),
-      supabaseClient.from('notifications').select('id,type,target_user_id').order('created_at',{ascending:false}).limit(20)
+      supabaseClient.from('notifications').select('id,type,target_user_id').order('created_at',{ascending:false}).limit(20),
+      // New: Fetch Trophy Progress and Avatar Stages (Same logic as Impact page)
+      supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
+      supabaseClient.from('avatar_stages').select('*').order('stage_order', { ascending: true })
     ])
 
     userProfile = (results[0].status==='fulfilled' && results[0].value.data) ? results[0].value.data : {}
     allShares = (results[1].status==='fulfilled' && results[1].value.data) ? results[1].value.data : []
     var notifications = (results[2].status==='fulfilled' && results[2].value.data) ? results[2].value.data : []
+    var trophyProgress = (results[3].status==='fulfilled' && results[3].value.data) ? results[3].value.data : []
+    var avatarStages = (results[4].status==='fulfilled' && results[4].value.data) ? results[4].value.data : []
 
-    safeRender('hero',renderHero)
-    safeRender('rank',renderRank)
-    safeRender('navHints',function(){renderNavHints(notifications)})
+    safeRender('hero', function(){ renderHero() })
+    safeRender('rank', function(){ renderRank(trophyProgress, avatarStages) })
+    safeRender('navHints', function(){ renderNavHints(notifications) })
 
     setTimeout(function(){
       document.querySelectorAll('.fade-up').forEach(function(el){observer.observe(el)})
@@ -442,52 +449,24 @@ function renderHero(){
   var country = userProfile.country || ''
   var avatarUrl = userProfile.avatar_url
 
-  // Initials fallback
-  var initials = '?'
-  if(fullName && fullName.trim().length > 0){
-    var parts = fullName.trim().split(' ')
-    initials = parts.length >= 2
-      ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
-      : parts[0].substring(0,2).toUpperCase()
-  } else if(email){
-    initials = email.substring(0,2).toUpperCase()
+  // Avatar Logic (Matches Impact Page)
+  var imgEl = document.getElementById('profileAvatarImg');
+  var fallbackEl = document.getElementById('profileAvatarFallback');
+  
+  // Note: For now, we use the profile avatar_url. Later we can wire this to the Avatar Stage image if desired.
+  if (avatarUrl && avatarUrl.length > 5) {
+    if(imgEl) { imgEl.src = avatarUrl; imgEl.style.display = 'block'; }
+    if(fallbackEl) fallbackEl.style.display = 'none';
+  } else {
+    if(imgEl) imgEl.style.display = 'none';
+    if(fallbackEl) fallbackEl.style.display = 'flex';
   }
 
-  // Avatar
-  var avatarEl = document.getElementById('heroAvatar')
-  if(avatarEl){
-    if(avatarUrl){
-      avatarEl.innerHTML = '<img src="'+avatarUrl+'?t='+Date.now()+'" alt="Avatar">'
-    } else {
-      avatarEl.innerHTML = '<span class="font-headline font-extrabold text-on-primary" style="font-size:22px;">'+initials+'</span>'
-    }
-  }
-
-  // Nickname (primary)
+  // Nickname (primary) - No badge injection
   var nicknameEl = document.getElementById('profileNickname')
   if(nicknameEl) nicknameEl.textContent = displayName
 
- // Show subscription badge next to nickname
-var subBadge = getUserSubscriptionBadge(userProfile)
-if (subBadge && nicknameEl) {
-  var wrap = document.createElement('div')
-  wrap.style.cssText = 'display:flex;align-items:center;gap:8px;'
-  var img = document.createElement('img')
-  img.src = subBadge.image
-  img.alt = subBadge.name
-  img.width = 26
-  img.height = 26
-  img.style.cssText = 'display:block;border-radius:50%;flex-shrink:0;'
-  img.title = subBadge.name
-  wrap.appendChild(img)
-  var textSpan = document.createElement('span')
-  textSpan.textContent = displayName
-  wrap.appendChild(textSpan)
-  nicknameEl.innerHTML = ''
-  nicknameEl.appendChild(wrap)
-}
-
-  // Full name (secondary — only show if nickname is set and different from full name)
+  // Full name (secondary)
   var nameEl = document.getElementById('profileName')
   if(nameEl){
     if(nickname && fullName && nickname !== fullName){
@@ -519,65 +498,59 @@ if (subBadge && nicknameEl) {
 }
 
 // ════════════════════════════════════════════
-// RANK
+// RANK (New System - Matches Impact Page)
 // ════════════════════════════════════════════
-function renderRank(){
-  var total = userProfile.total_shares || allShares.length || 0
-  var level = getWarriorLevel(total)
-  var next = getNextLevel(total)
+function renderRank(trophyProgress, avatarStages){
+  // Count Mythic Trophies
+  var mythicCount = 0;
+  trophyProgress.forEach(p => {
+    var level = parseInt(p.current_tier_level || p.current_tier_id || 0);
+    if (level === 5) mythicCount++;
+  });
 
-  var titleEl = document.getElementById('rankTitle')
-  var levelEl = document.getElementById('rankLevel')
-  var nextEl = document.getElementById('rankNext')
-  var progressEl = document.getElementById('rankProgress')
-  var barEl = document.getElementById('rankBar')
+  // Determine Stage
+  var currentStage = avatarStages[0] || { journey_name: 'The Seeker', stage_order: 0, mythic_trophies_required: 0 };
+  var nextStage = null;
 
-  if(titleEl) titleEl.textContent = level.title
-  if(levelEl) levelEl.textContent = 'Level ' + level.level
+  for (var i = avatarStages.length - 1; i >= 0; i--) {
+    if (mythicCount >= (avatarStages[i].mythic_trophies_required || 0)) {
+      currentStage = avatarStages[i];
+      nextStage = avatarStages[i + 1] || null;
+      break;
+    }
+  }
 
-  if(next){
-    var progress = level.min === next.min ? 100 : ((total - level.min) / (next.min - level.min)) * 100
-    if(nextEl) nextEl.textContent = 'Next: ' + next.title
-    if(progressEl) progressEl.textContent = (next.min - total) + ' more shares to level up'
-    if(barEl) setTimeout(function(){barEl.style.width = Math.min(Math.max(progress,0),100)+'%'},300)
+  // Update DOM
+  safeSetText('rankTitle', currentStage.journey_name || 'The Seeker');
+  safeSetText('rankLevel', 'Stage ' + (currentStage.stage_order || 0));
+
+  var barEl = document.getElementById('rankBar');
+  var progressEl = document.getElementById('rankProgress');
+  var nextEl = document.getElementById('rankNext');
+
+  if (nextStage) {
+    var prevReq = currentStage.mythic_trophies_required || 0;
+    var range = nextStage.mythic_trophies_required - prevReq;
+    var progress = mythicCount - prevReq;
+    var pct = Math.max(0, Math.min(100, (progress / range) * 100));
+    
+    safeSetText('rankProgress', mythicCount + '/' + nextStage.mythic_trophies_required + ' Mythic');
+    safeSetText('rankNext', 'Next: ' + nextStage.journey_name);
+    if(barEl) setTimeout(function(){barEl.style.width = pct+'%'},300);
   } else {
-    if(nextEl) nextEl.textContent = 'Max Rank!'
-    if(progressEl) progressEl.textContent = 'Highest rank achieved'
-    if(barEl) setTimeout(function(){barEl.style.width = '100%'},300)
+    safeSetText('rankProgress', mythicCount + ' Mythic');
+    safeSetText('rankNext', 'Max Level');
+    if(barEl) setTimeout(function(){barEl.style.width = '100%'},300);
   }
-}
-
-function getWarriorLevel(s){
-  for(var i=warriorLevels.length-1;i>=0;i--){if(s>=warriorLevels[i].min)return warriorLevels[i]}
-  return warriorLevels[0]
-}
-
-function getNextLevel(s){
-  for(var i=0;i<warriorLevels.length;i++){
-    if(s<=warriorLevels[i].max) return i<warriorLevels.length-1?warriorLevels[i+1]:null
-  }
-  return null
 }
 
 // ════════════════════════════════════════════
 // NAV HINTS
 // ════════════════════════════════════════════
 function renderNavHints(notifications){
- var subHint = document.getElementById('subStatusHint')
-if(subHint){
-  var tier = userProfile.subscription_tier || 'free'
-  var status = userProfile.subscription_status || 'inactive'
-  var badge = getUserSubscriptionBadge(userProfile)
-  var tierLabel = ''
-  if(status === 'suspended') tierLabel = 'Payment required'
-  else if(tier === 'warrior') tierLabel = 'Warrior Plan · $3.99/month'
-  else if(tier === 'commander') tierLabel = 'Commander Plan · $5.99/month'
-  else if(tier === 'legacy') tierLabel = 'Legacy · Full access'
-  else tierLabel = 'Free Plan · Upgrade for full access'
-  subHint.innerHTML = badge
-    ? '<span style="display:inline-flex;align-items:center;gap:6px;"><img src="' + badge.image + '" width="16" height="16" style="border-radius:50%;">' + tierLabel + '</span>'
-    : tierLabel
-}
+  // Subscription hint (No badge/icon)
+  var subHint = document.getElementById('subStatusHint') // Note: This ID was removed from HTML, but keeping logic safe
+  // If you add the ID back to the HTML, it will just show text.
 
   var recruitCount = userProfile.recruit_count || 0
   var recruitHint = document.getElementById('recruitHint')
@@ -597,16 +570,13 @@ if(subHint){
 
   var notifHint = document.getElementById('notifHint')
   var notifDot = document.getElementById('notifDot')
-  var navDot = document.getElementById('navNotifDot')
 
   if(unread > 0){
     if(notifHint) notifHint.textContent = unread + ' unread notification' + (unread !== 1 ? 's' : '')
     if(notifDot) notifDot.classList.remove('hidden')
-    if(navDot) navDot.classList.remove('hidden')
   } else {
     if(notifHint) notifHint.textContent = 'All caught up'
     if(notifDot) notifDot.classList.add('hidden')
-    if(navDot) navDot.classList.add('hidden')
   }
 }
 
