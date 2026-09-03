@@ -580,12 +580,45 @@ async function loadUserImpactStats(userId) {
       }
     }
 
-           // 6. Update Personal Impact Cards
-    var badgesEl = document.getElementById('stat-badges') || document.querySelector('[data-stat="badges"]');
-    var trophiesEl = document.getElementById('stat-trophies') || document.querySelector('[data-stat="trophies"]');
+              // --- Safe Helper for Setting Text Content ---
+    function updateDOMText(candidates, value) {
+      if (typeof candidates === 'string') candidates = [candidates];
+      for (const id of candidates) {
+        if (!id) continue;
+        let el = null;
+        if (typeof elements === 'object' && elements && elements[id]) el = elements[id];
+        if (!el) {
+          el = document.getElementById(id) ||
+               document.getElementById(id.replace(/([A-Z])/g, '-$1').toLowerCase()) ||
+               document.querySelector(`[data-stat="${id}"]`) ||
+               document.querySelector(`[data-tier="${id}"]`);
+        }
+        if (el) { el.textContent = value; return true; }
+      }
+      return false;
+    }
 
-    // Update Badge Count from Profile
-    badgeCount = 0; 
+    // --- Safe Helper for Setting Avatar Image ---
+    function updateDOMSrc(candidates, srcUrl) {
+      if (!srcUrl) return;
+      if (typeof candidates === 'string') candidates = [candidates];
+      for (const id of candidates) {
+        if (!id) continue;
+        let el = null;
+        if (typeof elements === 'object' && elements && elements[id]) el = elements[id];
+        if (!el) {
+          el = document.getElementById(id) ||
+               document.getElementById(id.replace(/([A-Z])/g, '-$1').toLowerCase()) ||
+               document.querySelector(`img[data-avatar]`) ||
+               document.querySelector('.user-avatar-img');
+        }
+        if (el && el.tagName === 'IMG') { el.src = srcUrl; return true; }
+      }
+      return false;
+    }
+
+    // 6. Badges Calculation & DOM Update
+    var badgeCount = 0;
     if (userProfile && userProfile.badges) {
       if (Array.isArray(userProfile.badges)) {
         badgeCount = userProfile.badges.length;
@@ -593,101 +626,146 @@ async function loadUserImpactStats(userId) {
         badgeCount = Object.keys(userProfile.badges).length;
       }
     }
-    if (badgesEl) badgesEl.textContent = badgeCount;
+    updateDOMText(['statBadges', 'stat-badges', 'numBadges', 'num-badges', 'badges'], badgeCount);
 
-    // 7. Fetch Shares
-    var sharesRes = await sharesQuery;
-    var sharesList = sharesRes.data || [];
+    // 7. Shares Calculation & DOM Update
+    var totalShares = 0;
+    try {
+      var sharesRes = await sharesQuery;
+      var sharesList = sharesRes.data || [];
+      if (currentTimeframe === 'all') {
+        totalShares = Math.max(Number(userProfile.total_shares || 0), sharesList.length);
+      } else {
+        totalShares = sharesList.length;
+      }
+    } catch (e) {
+      totalShares = Number(userProfile.total_shares || 0);
+    }
+    updateDOMText(['numShares', 'num-shares', 'stat-shares', 'shares'], totalShares);
 
+    // 8. Recruits & Foreign Nations DOM Update
+    var recruitsList = [];
+    try {
+      var recruitsQuery = supabaseClient
+        .from('profiles')
+        .select('id, country, created_at')
+        .eq('recruited_by', currentUser.id);
+
+      if (currentTimeframe === 'week' && sinceISO) {
+        recruitsQuery = recruitsQuery.gte('created_at', sinceISO);
+      }
+      var recruitsRes = await recruitsQuery;
+      recruitsList = recruitsRes.data || [];
+    } catch(e) {}
+
+    var totalRecruits = 0;
     if (currentTimeframe === 'all') {
-      totalShares = Math.max(Number(userProfile.total_shares || 0), sharesList.length);
+      totalRecruits = Math.max(Number(userProfile.recruit_count || 0), recruitsList.length);
     } else {
-      totalShares = sharesList.length;
+      totalRecruits = recruitsList.length;
     }
-    if (elements.numShares) elements.numShares.textContent = totalShares;
+    updateDOMText(['numRecruits', 'num-recruits', 'stat-recruits', 'recruits'], totalRecruits);
 
-    // 8. Fetch Recruits
-    var recruitsQuery = supabaseClient
-      .from('profiles')
-      .select('id, country, created_at')
-      .eq('recruited_by', currentUser.id);
-
-    if (currentTimeframe === 'week' && sinceISO) {
-      recruitsQuery = recruitsQuery.gte('created_at', sinceISO);
-    }
-
-    var recruitsRes = await recruitsQuery;
-    var recruitsList = recruitsRes.data || [];
-
-    if (currentTimeframe === 'all') {
-      if (elements.numRecruits) elements.numRecruits.textContent = Math.max(Number(userProfile.recruit_count || 0), recruitsList.length);
-    } else {
-      if (elements.numRecruits) elements.numRecruits.textContent = recruitsList.length;
-    }
-
-    // Nations
     var foreignNationsSet = new Set(
       recruitsList
         .filter(r => r.country && r.country !== userProfile.country)
         .map(r => r.country)
     );
-    if (elements.numNations) elements.numNations.textContent = foreignNationsSet.size;
+    updateDOMText(['numNations', 'num-nations', 'stat-nations', 'nations'], foreignNationsSet.size);
 
-    // 9. Missions
+    // 9. Missions Count
     if (typeof refreshMissionsCount === 'function') {
-      await refreshMissionsCount();
+      try { await refreshMissionsCount(); } catch(e) {}
     }
 
-    // 10. Unified Trophy & Avatar Logic
-    // We use a block here to prevent variable name collisions
-    {
-      const [tRes, trRes, stRes] = await Promise.all([
+    // 10. Trophies, Tiers & Avatar Stage Rendering
+    try {
+      var [trophiesRes, tiersRes, stagesRes] = await Promise.all([
         supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
         supabaseClient.from('trophy_tiers').select('*'),
         supabaseClient.from('avatar_stages').select('*').order('stage_order', { ascending: true })
       ]);
 
-      const uProgress = tRes.data || [];
-      const uTiers = trRes.data || [];
-      const uStages = stRes.data || [];
+      var userProgress = trophiesRes.data || [];
+      var allTiers     = tiersRes.data || [];
+      var allStages    = stagesRes.data || [];
 
-      const tCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-      let tTotal = 0;
-      let mCount = 0;
-
-      uProgress.forEach(p => {
-        const lvl = p.current_tier_id || p.current_tier_level || 0;
-        if (lvl >= 1 && lvl <= 5) {
-          tCounts[lvl]++;
-          tTotal++;
-          if (lvl === 5) mCount++;
+      // Map tier IDs to lowercase names ('common', 'uncommon', 'rare', 'epic', 'mythic')
+      var tierIdToName = {};
+      allTiers.forEach(t => {
+        if (t.id && t.name) {
+          tierIdToName[t.id] = String(t.name).toLowerCase().trim();
         }
       });
 
-      // Update UI Pills
-      if (elements.tierCommon) elements.tierCommon.textContent = tCounts[1];
-      if (elements.tierUncommon) elements.tierUncommon.textContent = tCounts[2];
-      if (elements.tierRare) elements.tierRare.textContent = tCounts[3];
-      if (elements.tierEpic) elements.tierEpic.textContent = tCounts[4];
-      if (elements.tierMythic) elements.tierMythic.textContent = tCounts[5];
+      var tierCounts = { common: 0, uncommon: 0, rare: 0, epic: 0, mythic: 0 };
+      var totalTrophies = 0;
+      var mythicCount = 0;
 
-      // Update Trophies Card
-      if (trophiesEl) trophiesEl.textContent = tTotal;
-      if (elements.numTrophies) elements.numTrophies.textContent = tTotal;
+      userProgress.forEach(p => {
+        var tierId = p.current_tier_id || p.current_tier_level;
+        var tierName = tierIdToName[tierId];
+        
+        // Fallback for numeric IDs 1..5
+        if (!tierName) {
+          var numMap = { 1: 'common', 2: 'uncommon', 3: 'rare', 4: 'epic', 5: 'mythic' };
+          tierName = numMap[tierId];
+        }
 
-      // Avatar Stage Logic
-      let cStage = uStages[0] || { journey_name: 'The Seeker', stage_order: 1, mythic_trophies_required: 0 };
-      for (let i = uStages.length - 1; i >= 0; i--) {
-        if (mCount >= (uStages[i].mythic_trophies_required || 0)) {
-          cStage = uStages[i];
+        if (tierName && tierCounts.hasOwnProperty(tierName)) {
+          tierCounts[tierName]++;
+          totalTrophies++;
+          if (tierName === 'mythic') mythicCount++;
+        }
+      });
+
+      // Update Trophy Tier Pills
+      updateDOMText(['tierCommon', 'tier-count-common', 'tier_common', 'common'], tierCounts.common);
+      updateDOMText(['tierUncommon', 'tier-count-uncommon', 'tier_uncommon', 'uncommon'], tierCounts.uncommon);
+      updateDOMText(['tierRare', 'tier-count-rare', 'tier_rare', 'rare'], tierCounts.rare);
+      updateDOMText(['tierEpic', 'tier-count-epic', 'tier_epic', 'epic'], tierCounts.epic);
+      updateDOMText(['tierMythic', 'tier-count-mythic', 'tier_mythic', 'mythic'], tierCounts.mythic);
+
+      // Update Total Trophies Card
+      updateDOMText(['numTrophies', 'num-trophies', 'stat-trophies', 'trophies'], totalTrophies);
+
+      // Determine & Render Avatar Stage
+      var currentStage = null;
+      for (var i = allStages.length - 1; i >= 0; i--) {
+        if (mythicCount >= (allStages[i].mythic_trophies_required || 0)) {
+          currentStage = allStages[i];
           break;
         }
       }
-      console.log('[Impact] Successfully Mapped:', { tTotal, mCount, badgeCount });
+
+      if (currentStage) {
+        var stageTitle = currentStage.journey_name || currentStage.name || currentStage.title || '';
+        updateDOMText(['journeyStage', 'journey-stage-name', 'stageName', 'stage-title', 'avatarStageName'], stageTitle);
+
+        var stageImg = currentStage.image_url || currentStage.avatar_url || currentStage.icon_url || userProfile.avatar_url;
+        if (stageImg) {
+          updateDOMSrc(['avatarImg', 'avatar-image', 'userAvatar', 'user-avatar', 'stageImage'], stageImg);
+        }
+      } else if (userProfile.avatar_url) {
+        updateDOMSrc(['avatarImg', 'avatar-image', 'userAvatar', 'user-avatar'], userProfile.avatar_url);
+      }
+
+      console.log('[Impact Summary Loaded]', {
+        totalShares: totalShares,
+        totalRecruits: totalRecruits,
+        badgeCount: badgeCount,
+        totalTrophies: totalTrophies,
+        mythicCount: mythicCount,
+        tierCounts: tierCounts,
+        currentStage: currentStage
+      });
+
+    } catch (err) {
+      console.error('[Impact] Trophy/Avatar error:', err);
     }
 
   } catch (err) {
-    console.error('[Impact] Final Error:', err);
+    console.error('[Impact] Page execution error:', err);
   }
 }
 </script>
