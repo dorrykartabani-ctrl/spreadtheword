@@ -6,8 +6,7 @@
   <title>Impact — Command Center</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="badges-config.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Manrope:wght@400;600;700;800&family=Lora:ital@1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Lora:ital@1&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
   <link rel="stylesheet" href="nav.css">
 
@@ -38,12 +37,12 @@
     .time-btn.active { background: white; color: #0f172a; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
     .mythic-glow { box-shadow: 0 0 20px rgba(217, 119, 6, 0.4); animation: pulse-glow 2s infinite alternate; }
     @keyframes pulse-glow { from { filter: brightness(1); } to { filter: brightness(1.15); } }
+    .tier-block { border-radius: 16px; padding: 16px; text-align: center; color: white; }
   </style>
 </head>
 <body class="pb-32">
 
-<header class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100"
-        style="padding-top: env(safe-area-inset-top);">
+<header class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100" style="padding-top: env(safe-area-inset-top);">
   <div class="max-w-[430px] mx-auto px-6 py-4">
     <h1 class="font-headline font-extrabold text-xl text-slate-900">Command Center</h1>
     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Your Global Impact</p>
@@ -57,13 +56,52 @@
     <div class="flex items-center gap-5">
       <div class="relative flex-shrink-0">
         <div class="w-20 h-24 rounded-2xl bg-gradient-to-b from-slate-100 to-slate-200 flex items-end justify-center overflow-hidden border border-white shadow-md">
-          <img id="heroAvatarImg" src="/images/avatars/maleseeker.svg" class="w-full h-full object-contain p-1" alt="Avatar">
+          <img id="heroAvatarImg" src="" class="w-full h-full object-contain p-1 hidden" alt="Avatar">
+          <div id="avatarFallback" class="w-full h-full flex items-center justify-center">
+            <span class="material-symbols-outlined text-slate-300" style="font-size: 48px;">person</span>
+          </div>
         </div>
         <div id="heroRankBadge" class="hidden absolute -bottom-2 left-1/2 -translate-x-1/2 bg-primary text-white text-[8px] font-black px-2 py-0.5 rounded-full border-2 border-white shadow-sm"></div>
       </div>
       <div class="flex-1">
-        <h2 id="heroRankName" class="font-headline font-black text-xl text-slate-900">The Seeker</h2>
-        <p id="heroRankDesc" class="text-[12px] text-slate-500 mt-1 leading-snug">Take your first steps. Earn a Mythic to evolve through the ages.</p>
+        <h2 id="heroRankName" class="font-headline font-black text-xl text-slate-900">Loading...</h2>
+        <p id="heroRankStage" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Stage 0</p>
+        <div class="mt-3">
+          <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase mb-1">
+            <span id="nextRankName">Next: ...</span>
+            <span id="mythicProgressText">0/0 Mythic</span>
+          </div>
+          <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div id="mythicProgressBar" class="h-full bg-gradient-to-r from-primary to-gold rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TROPHY TIERS -->
+  <section class="fade-up">
+    <h3 class="font-headline font-bold text-lg mb-3 px-1">Trophy Tiers</h3>
+    <div class="grid grid-cols-5 gap-2">
+      <div class="tier-block" style="background: #64748b;">
+        <p class="text-[9px] font-black uppercase tracking-widest opacity-80 mb-1">Common</p>
+        <p id="tierCommon" class="font-headline font-black text-2xl">0</p>
+      </div>
+      <div class="tier-block" style="background: #16a34a;">
+        <p class="text-[9px] font-black uppercase tracking-widest opacity-80 mb-1">Uncommon</p>
+        <p id="tierUncommon" class="font-headline font-black text-2xl">0</p>
+      </div>
+      <div class="tier-block" style="background: #2563eb;">
+        <p class="text-[9px] font-black uppercase tracking-widest opacity-80 mb-1">Rare</p>
+        <p id="tierRare" class="font-headline font-black text-2xl">0</p>
+      </div>
+      <div class="tier-block" style="background: #9333ea;">
+        <p class="text-[9px] font-black uppercase tracking-widest opacity-80 mb-1">Epic</p>
+        <p id="tierEpic" class="font-headline font-black text-2xl">0</p>
+      </div>
+      <div class="tier-block" style="background: #d97706;">
+        <p class="text-[9px] font-black uppercase tracking-widest opacity-80 mb-1">Mythic</p>
+        <p id="tierMythic" class="font-headline font-black text-2xl">0</p>
       </div>
     </div>
   </section>
@@ -158,7 +196,7 @@
     </a>
   </section>
 
-  <!-- GLOBAL IMPACT (same pattern as personal) -->
+  <!-- GLOBAL IMPACT -->
   <section class="fade-up">
     <div class="flex justify-between items-center mb-3 px-1 gap-3">
       <h3 class="font-headline font-bold text-lg text-slate-900">Global Impact</h3>
@@ -214,27 +252,6 @@
     </div>
     <div class="dash-card">
       <div id="countryCloud" class="flex flex-wrap justify-center -m-1"></div>
-    </div>
-  </section>
-
-  <section class="fade-up">
-    <div class="dash-card !bg-slate-900 !text-white border-slate-800 relative overflow-hidden">
-      <div class="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-full blur-2xl"></div>
-      <div class="relative z-10 flex items-center justify-between">
-        <div>
-          <h3 class="font-headline font-bold text-base">Languages</h3>
-          <p class="text-[11px] text-white/50 mt-1">Expanding the Word globally.</p>
-        </div>
-        <div class="flex -space-x-2">
-          <div class="w-8 h-8 rounded-full bg-white/10 border-2 border-slate-900 flex items-center justify-center text-xs">🇬🇧</div>
-          <div class="w-8 h-8 rounded-full bg-white/10 border-2 border-slate-900 flex items-center justify-center text-xs">🇪🇸</div>
-          <div class="w-8 h-8 rounded-full bg-white/20 border-2 border-slate-900 flex items-center justify-center text-xs font-bold">+4</div>
-        </div>
-      </div>
-      <div class="mt-4 h-1 bg-white/10 rounded-full overflow-hidden">
-        <div class="h-full bg-gold w-1/4 rounded-full"></div>
-      </div>
-      <p class="text-[9px] text-white/40 mt-2 text-center uppercase tracking-widest">Phase 2 Expansion</p>
     </div>
   </section>
 
@@ -317,119 +334,166 @@ async function loadData() {
       : 'All-time movement totals';
   }
 
-  var profileRes = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-  userProfile = profileRes.data || {};
+  try {
+    // Fetch user profile
+    var profileRes = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+    userProfile = profileRes.data || {};
 
-  var res = await Promise.allSettled([
-    supabaseClient.from('shares').select('id', { count: 'exact', head: true }).eq('user_id', currentUser.id).gte('shared_at', sinceISO),
-    supabaseClient.from('profiles').select('country, subscription_tier').eq('referred_by', currentUser.id).gte('created_at', sinceISO),
-    supabaseClient.from('shares').select('id', { count: 'exact', head: true }).gte('shared_at', sinceISO),
-    supabaseClient.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', sinceISO),
-    supabaseClient.from('profiles').select('country').not('country', 'is', null).gte('created_at', sinceISO).limit(1000),
-    supabaseClient.from('trophy_definitions').select('*').eq('is_active', true),
-    supabaseClient.from('avatar_stages').select('*').order('stage'),
-    supabaseClient.from('donations').select('amount').eq('user_id', currentUser.id),
-    supabaseClient.from('donations').select('amount'),
-    supabaseClient.from('projects').select('raised_amount, status')
-  ]);
+    // Fetch all data in parallel
+    var [sharesRes, recruitsRes, globalSharesRes, globalWarriorsRes, countryRowsRes, 
+         trophyProgressRes, avatarStagesRes, myDonationsRes, allDonationsRes, projectsRes] = 
+      await Promise.all([
+        supabaseClient.from('shares').select('id', { count: 'exact', head: true }).eq('user_id', currentUser.id).gte('created_at', sinceISO),
+        supabaseClient.from('profiles').select('country, subscription_tier').eq('referred_by', currentUser.id).gte('created_at', sinceISO),
+        supabaseClient.from('shares').select('id', { count: 'exact', head: true }).gte('created_at', sinceISO),
+        supabaseClient.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', sinceISO),
+        supabaseClient.from('profiles').select('country').not('country', 'is', null).gte('created_at', sinceISO).limit(1000),
+        supabaseClient.from('user_trophy_progress').select('*, trophy_definitions!inner(type, stat_type)').eq('user_id', currentUser.id),
+        supabaseClient.from('avatar_stages').select('*').order('stage_order'),
+        supabaseClient.from('donations').select('amount').eq('user_id', currentUser.id),
+        supabaseClient.from('donations').select('amount'),
+        supabaseClient.from('projects').select('raised_amount, status')
+      ]);
 
-  function ok(i, fallback) {
-    return (res[i].status === 'fulfilled' && res[i].value) ? res[i].value : fallback;
-  }
+    var sharesCount = sharesRes.count || 0;
+    var recruits = recruitsRes.data || [];
+    var globalShares = globalSharesRes.count || 0;
+    var globalWarriors = globalWarriorsRes.count || 0;
+    var countryRows = countryRowsRes.data || [];
+    var trophyProgress = trophyProgressRes.data || [];
+    var avatarStages = avatarStagesRes.data || [];
+    var myDonations = myDonationsRes.data || [];
+    var allDonations = allDonationsRes.data || [];
+    var projects = projectsRes.data || [];
 
-  var sharesCount = ok(0, {}).count || 0;
-  var recruits = ok(1, {}).data || [];
-  var globalShares = ok(2, {}).count || 0;
-  var globalWarriors = ok(3, {}).count || 0;
-  var countryRows = ok(4, {}).data || [];
-  var trophyDefs = ok(5, {}).data || [];
-  var avatarStages = ok(6, {}).data || [];
-  var myDonations = ok(7, {}).data || [];
-  var allDonations = ok(8, {}).data || [];
-  var projects = ok(9, {}).data || [];
+    // Calculate trophy tiers
+    var tierCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    var mythicCount = 0;
+    var totalTrophies = 0;
 
-  var paidRecruits = recruits.filter(function(r) { return r.subscription_tier && r.subscription_tier !== 'free'; });
-  var myNations = new Set(paidRecruits.map(function(r) { return r.country; }).filter(Boolean)).size;
-
-  document.getElementById('statShares').textContent = sharesCount;
-  document.getElementById('statRecruits').textContent = recruits.length;
-  document.getElementById('statCountries').textContent = myNations;
-
-  document.getElementById('statBadges').textContent = (userProfile.badges || []).length;
-
-  var trophyCount = 0;
-  var avatarStats = { shares: sharesCount, recruits_paid: paidRecruits.length, countries_paid: myNations };
-  if (typeof getTrophyState === 'function') {
-    trophyDefs.forEach(function(t) {
-      var state = getTrophyState(t, avatarStats);
-      if (state.isUnlocked) trophyCount++;
+    trophyProgress.forEach(function(p) {
+      var level = p.current_tier_id || 0;
+      if (level > 0) {
+        tierCounts[level] = (tierCounts[level] || 0) + 1;
+        totalTrophies++;
+        if (level === 5) mythicCount++;
+      }
     });
-  }
-  document.getElementById('statTrophies').textContent = trophyCount;
-  document.getElementById('statMissions').textContent = '0';
 
-  var donationTotal = myDonations.reduce(function(sum, d) { return sum + Number(d.amount || 0); }, 0);
-  var prices = { warrior: 3.99, commander: 5.99, legacy: 9.99 };
-  var tier = (userProfile.subscription_tier || 'free').toLowerCase();
-  var monthly = prices[tier] || 0;
-  var months = 0;
-  if (userProfile.created_at && tier !== 'free') {
-    var start = new Date(userProfile.created_at);
-    var now = new Date();
-    months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
-    if (months < 1) months = 1;
-  }
-  var subValue = months * monthly;
-  document.getElementById('statSubValue').textContent = money2(subValue);
-  document.getElementById('statDonations').textContent = money2(donationTotal);
-  document.getElementById('statTotalContrib').textContent = money2(subValue + donationTotal);
+    // Update trophy tier display
+    document.getElementById('tierCommon').textContent = tierCounts[1] || 0;
+    document.getElementById('tierUncommon').textContent = tierCounts[2] || 0;
+    document.getElementById('tierRare').textContent = tierCounts[3] || 0;
+    document.getElementById('tierEpic').textContent = tierCounts[4] || 0;
+    document.getElementById('tierMythic').textContent = tierCounts[5] || 0;
 
-  if (typeof calculateAvatarStage === 'function' && avatarStages.length > 0) {
-    var avatar = calculateAvatarStage(trophyDefs, avatarStats, avatarStages);
-    var img = document.getElementById('heroAvatarImg');
-    var badgeEl = document.getElementById('heroRankBadge');
-    if (img) {
-      img.src = avatar.image_url || '/images/avatars/maleseeker.svg';
-      img.classList.remove('grayscale', 'opacity-60', 'opacity-40');
-      if (avatar.stage >= 5) img.classList.add('mythic-glow');
-      else img.classList.remove('mythic-glow');
+    // Calculate avatar stage based on mythic trophies
+    var currentStage = avatarStages[0] || { journey_name: 'The Seeker', stage_order: 0, mythic_trophies_required: 0, image_url_male: '', image_url_female: '' };
+    var nextStage = null;
+
+    for (var i = avatarStages.length - 1; i >= 0; i--) {
+      if (mythicCount >= avatarStages[i].mythic_trophies_required) {
+        currentStage = avatarStages[i];
+        nextStage = avatarStages[i + 1] || null;
+        break;
+      }
     }
-    document.getElementById('heroRankName').textContent = avatar.name || 'The Seeker';
-    document.getElementById('heroRankDesc').textContent = avatar.description || 'Take your first steps. Earn a Mythic to evolve through the ages.';
-    if (avatar.stage > 0) {
-      badgeEl.textContent = (avatar.era || '').toUpperCase();
-      badgeEl.classList.remove('hidden');
+
+    // Update avatar display
+    var gender = userProfile.gender || 'male';
+    var avatarImg = (gender === 'female' && currentStage.image_url_female) ? currentStage.image_url_female : currentStage.image_url_male;
+    
+    var imgEl = document.getElementById('heroAvatarImg');
+    var fallbackEl = document.getElementById('avatarFallback');
+    
+    if (avatarImg) {
+      imgEl.src = avatarImg;
+      imgEl.classList.remove('hidden');
+      fallbackEl.classList.add('hidden');
     } else {
-      badgeEl.classList.add('hidden');
+      imgEl.classList.add('hidden');
+      fallbackEl.classList.remove('hidden');
     }
-  }
 
-  var nations = new Set(countryRows.map(function(p) { return (p.country || '').trim(); }).filter(Boolean));
-  document.getElementById('globalShares').textContent = globalShares.toLocaleString();
-  document.getElementById('globalWarriors').textContent = globalWarriors.toLocaleString();
-  document.getElementById('globalCountries').textContent = nations.size;
-  document.getElementById('globalCountryCount').textContent = nations.size + (nations.size === 1 ? ' nation' : ' nations');
+    document.getElementById('heroRankName').textContent = currentStage.journey_name || 'The Seeker';
+    document.getElementById('heroRankStage').textContent = 'Stage ' + currentStage.stage_order;
 
-  var missionRaised = 0;
-  projects.forEach(function(p) {
-    if (p.status === 'completed' || p.status === 'active') missionRaised += Number(p.raised_amount || 0);
-  });
-  var giftTotal = allDonations.reduce(function(sum, d) { return sum + Number(d.amount || 0); }, 0);
-  document.getElementById('globalMissionsRaised').textContent = money(missionRaised);
-  document.getElementById('globalDonations').textContent = money(giftTotal);
-  document.getElementById('globalRaised').textContent = money(missionRaised + giftTotal);
+    // Update progress bar
+    if (nextStage) {
+      document.getElementById('nextRankName').textContent = 'Next: ' + nextStage.journey_name;
+      var prevReq = currentStage.mythic_trophies_required;
+      var range = nextStage.mythic_trophies_required - prevReq;
+      var progress = mythicCount - prevReq;
+      var pct = Math.max(0, Math.min(100, (progress / range) * 100));
+      
+      document.getElementById('mythicProgressText').textContent = mythicCount + '/' + nextStage.mythic_trophies_required + ' Mythic';
+      document.getElementById('mythicProgressBar').style.width = pct + '%';
+    } else {
+      document.getElementById('nextRankName').textContent = 'Max Level Reached';
+      document.getElementById('mythicProgressText').textContent = mythicCount + ' Mythic';
+      document.getElementById('mythicProgressBar').style.width = '100%';
+    }
 
-  var cloud = document.getElementById('countryCloud');
-  cloud.innerHTML = '';
-  if (nations.size === 0) {
-    cloud.innerHTML = '<p class="text-sm text-slate-400 py-4 text-center">No nations recorded for this window yet.</p>';
-  } else {
-    Array.from(nations).sort().slice(0, 20).forEach(function(c) {
-      cloud.innerHTML += '<div class="flag-pill">🌍 ' + c + '</div>';
+    // Update personal stats
+    var paidRecruits = recruits.filter(function(r) { return r.subscription_tier && r.subscription_tier !== 'free'; });
+    var myNations = new Set(paidRecruits.map(function(r) { return r.country; }).filter(Boolean)).size;
+
+    document.getElementById('statShares').textContent = sharesCount;
+    document.getElementById('statRecruits').textContent = recruits.length;
+    document.getElementById('statCountries').textContent = myNations;
+    document.getElementById('statBadges').textContent = (userProfile.badges || []).length;
+    document.getElementById('statTrophies').textContent = totalTrophies;
+    document.getElementById('statMissions').textContent = '0';
+
+    // Calculate donations
+    var donationTotal = myDonations.reduce(function(sum, d) { return sum + Number(d.amount || 0); }, 0);
+    var prices = { warrior: 3.99, commander: 5.99, legacy: 9.99 };
+    var tier = (userProfile.subscription_tier || 'free').toLowerCase();
+    var monthly = prices[tier] || 0;
+    var months = 0;
+    if (userProfile.created_at && tier !== 'free') {
+      var start = new Date(userProfile.created_at);
+      var now = new Date();
+      months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+      if (months < 1) months = 1;
+    }
+    var subValue = months * monthly;
+    document.getElementById('statSubValue').textContent = money2(subValue);
+    document.getElementById('statDonations').textContent = money2(donationTotal);
+    document.getElementById('statTotalContrib').textContent = money2(subValue + donationTotal);
+
+    // Update global stats
+    var nations = new Set(countryRows.map(function(p) { return (p.country || '').trim(); }).filter(Boolean));
+    document.getElementById('globalShares').textContent = globalShares.toLocaleString();
+    document.getElementById('globalWarriors').textContent = globalWarriors.toLocaleString();
+    document.getElementById('globalCountries').textContent = nations.size;
+    document.getElementById('globalCountryCount').textContent = nations.size + (nations.size === 1 ? ' nation' : ' nations');
+
+    var missionRaised = 0;
+    projects.forEach(function(p) {
+      if (p.status === 'completed' || p.status === 'active') missionRaised += Number(p.raised_amount || 0);
     });
-  }
+    var giftTotal = allDonations.reduce(function(sum, d) { return sum + Number(d.amount || 0); }, 0);
+    document.getElementById('globalMissionsRaised').textContent = money(missionRaised);
+    document.getElementById('globalDonations').textContent = money(giftTotal);
+    document.getElementById('globalRaised').textContent = money(missionRaised + giftTotal);
 
-  updateScripture(sharesCount);
+    var cloud = document.getElementById('countryCloud');
+    cloud.innerHTML = '';
+    if (nations.size === 0) {
+      cloud.innerHTML = '<p class="text-sm text-slate-400 py-4 text-center">No nations recorded for this window yet.</p>';
+    } else {
+      Array.from(nations).sort().slice(0, 20).forEach(function(c) {
+        cloud.innerHTML += '<div class="flag-pill">🌍 ' + c + '</div>';
+      });
+    }
+
+    updateScripture(sharesCount);
+
+  } catch (err) {
+    console.error('Error loading impact data:', err);
+    document.getElementById('heroRankName').textContent = 'Error loading data';
+  }
 }
 
 function updateScripture(count) {
