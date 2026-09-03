@@ -318,7 +318,7 @@ async function loadData() {
     supabaseClient.from('campaigns').select('*').order('created_at',{ascending:false}),
     supabaseClient.from('quotes').select('id, text, source, campaign_id, status'),
     supabaseClient.from('badge_definitions').select('id, name').eq('is_active',true),
-    supabaseClient.from('media').select('id, url, label').eq('type','icon_logo') // Adjust type if needed
+    supabaseClient.from('media').select('id, url, label').eq('type','icon_logo') 
   ]);
 
   allCampaigns = cRes.data || [];
@@ -327,12 +327,18 @@ async function loadData() {
   mediaIcons = mRes.data || [];
 
   // Populate Badge Dropdown
-  var bSel = getEl('campBadge'); bSel.innerHTML = '<option value="">-- No Reward --</option>';
-  allBadges.forEach(b => bSel.innerHTML += `<option value="${b.id}">${b.name}</option>`);
+  var bSel = getEl('campBadge'); 
+  if(bSel) {
+    bSel.innerHTML = '<option value="">-- No Reward --</option>';
+    allBadges.forEach(b => bSel.innerHTML += `<option value="${b.id}">${b.name}</option>`);
+  }
 
-  // Populate Icon Dropdown
-  var iSel = getEl('campIcon'); iSel.innerHTML = '<option value="">-- Select Icon --</option>';
-  mediaIcons.forEach(m => iSel.innerHTML += `<option value="${m.url}">${m.label}</option>`); // Using URL as icon identifier for simplicity, or ID
+  // Populate NEW Media Image Dropdown
+  var iSel = getEl('campImage'); 
+  if(iSel) {
+    iSel.innerHTML = '<option value="">-- No Custom Image --</option>';
+    mediaIcons.forEach(m => iSel.innerHTML += `<option value="${m.url}">${m.label}</option>`);
+  }
 
   renderStats();
   renderList();
@@ -434,7 +440,24 @@ function openEditor(id = null) {
     renderCompletions();
   } else {
     getEl('campName').value=''; getEl('campDesc').value=''; getEl('campStart').value=''; getEl('campEnd').value='';
-    getEl('campBadge').value=''; getEl('campIcon').value='';
+    getEl('campBadge').value='';     
+    // Handle Icon vs Image logic safely
+    var existingIcon = c.icon || '';
+    if (existingIcon.startsWith('http') || existingIcon.startsWith('/')) {
+    // It's a custom image
+      currentImage = existingIcon;
+      currentIcon = '';
+      var imgSel = getEl('campImage'); if(imgSel) imgSel.value = existingIcon;
+      document.querySelectorAll('.icon-pick').forEach(b => b.classList.remove('selected'));
+    } else {
+      // It's a system icon
+      currentIcon = existingIcon || 'campaign';
+      currentImage = '';
+      var imgSel = getEl('campImage'); if(imgSel) imgSel.value = '';
+      document.querySelectorAll('.icon-pick').forEach(b => b.classList.remove('selected'));
+      var iconBtn = document.querySelector(`[data-icon="${currentIcon}"]`);
+      if (iconBtn) iconBtn.classList.add('selected');
+    }
     selectColor('#3d6285', document.querySelector('[data-color="#3d6285"]'));
     document.querySelector('input[value="active"]').checked=true; updateStatusCards();
     getEl('editorQuoteList').innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No quotes added yet.</p>';
@@ -467,8 +490,9 @@ async function saveCampaign() {
   
   var data = {
     name: name, description: getEl('campDesc').value.trim()||null,
-    icon: currentImage || currentIcon,
-    icon: getEl('campIcon').value||null, color: currentColor,
+    // This line saves the media image if chosen, otherwise it saves the system icon name
+    icon: currentImage || currentIcon, 
+    color: currentColor,
     status: document.querySelector('.status-radio:checked').value,
     start_date: getEl('campStart').value||null, end_date: getEl('campEnd').value||null,
     reward_badge_id: getEl('campBadge').value||null, updated_at: new Date().toISOString()
