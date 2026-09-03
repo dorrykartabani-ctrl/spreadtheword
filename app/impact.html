@@ -580,388 +580,139 @@ async function loadUserImpactStats(userId) {
       }
     }
 
-    // 6. Update Personal Impact Cards
+     // 6. Update Personal Impact Cards
     const badgesEl = document.getElementById('stat-badges') || document.querySelector('[data-stat="badges"]');
     const trophiesEl = document.getElementById('stat-trophies') || document.querySelector('[data-stat="trophies"]');
 
-    if (badgesEl) badgesEl.textContent = badgeCount;
-    if (trophiesEl) trophiesEl.textContent = totalTrophiesEarned;
+    // Parse Badges from user profile (jsonb)
+    let badgeCount = 0;
+    if (userProfile.badges) {
+      if (Array.isArray(userProfile.badges)) {
+        badgeCount = userProfile.badges.length;
+      } else if (typeof userProfile.badges === 'object') {
+        badgeCount = Object.keys(userProfile.badges).length;
+      }
+    }
 
-    console.log('[Impact] Stats loaded successfully:', {
-      tierCounts,
-      badgeCount,
-      totalTrophiesEarned
+    if (badgesEl) badgesEl.textContent = badgeCount;
+
+    // 7. Fetch Shares
+    const { data: userShares, error: sharesErr } = await sharesQuery;
+    if (sharesErr) console.error('Error loading shares:', sharesErr);
+    const sharesList = userShares || [];
+
+    if (currentTimeframe === 'all') {
+      const profileTotal = Number(userProfile.total_shares || 0);
+      totalShares = Math.max(profileTotal, sharesList.length);
+    } else {
+      totalShares = sharesList.length;
+    }
+    if (elements.numShares) elements.numShares.textContent = totalShares;
+
+    // 8. Fetch Recruits
+    let recruitsQuery = supabaseClient
+      .from('profiles')
+      .select('id, country, created_at')
+      .eq('recruited_by', currentUser.id);
+
+    if (currentTimeframe === 'week' && sinceISO) {
+      recruitsQuery = recruitsQuery.gte('created_at', sinceISO);
+    }
+
+    const { data: recruitsData, error: recruitsErr } = await recruitsQuery;
+    if (recruitsErr) console.error('Error loading recruits:', recruitsErr);
+    const recruitsList = recruitsData || [];
+
+    if (currentTimeframe === 'all') {
+      const recruitTotal = Number(userProfile.recruit_count || 0);
+      if (elements.numRecruits) elements.numRecruits.textContent = Math.max(recruitTotal, recruitsList.length);
+    } else {
+      if (elements.numRecruits) elements.numRecruits.textContent = recruitsList.length;
+    }
+
+    // Foreign nations
+    const foreignNationsSet = new Set(
+      recruitsList
+        .filter(r => r.country && r.country !== userProfile.country)
+        .map(r => r.country)
+    );
+    if (elements.numNations) elements.numNations.textContent = foreignNationsSet.size;
+
+    // 9. Missions count
+    if (typeof refreshMissionsCount === 'function') {
+      await refreshMissionsCount();
+    }
+
+    // 10. Fetch Trophies, Tiers & Progression
+    const [trophiesRes, tiersRes, stagesRes] = await Promise.all([
+      supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
+      supabaseClient.from('trophy_tiers').select('*'),
+      supabaseClient.from('avatar_stages').select('*').order('stage_order', { ascending: true })
+    ]);
+
+    const userProgress = trophiesRes.data || [];
+    const allTiers = tiersRes.data || [];
+    const allStages = stagesRes.data || [];
+
+    // Map tier ID or level to name/tier
+    const tierLevelMap = {};
+    const tierNameMap = {};
+    allTiers.forEach(t => {
+      tierLevelMap[t.id] = t.id; // Map tier ID
+      if (t.name) tierNameMap[t.id] = String(t.name).toLowerCase().trim();
     });
+
+    const tierCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    let totalTrophies = 0;
+    let mythicCount = 0;
+
+    userProgress.forEach(p => {
+      // Find tier ID from progress row
+      const tierId = p.current_tier_id || p.current_tier_level || 0;
+      
+      if (tierId >= 1 && tierId <= 5) {
+        tierCounts[tierId]++;
+        totalTrophies++;
+        if (tierId === 5) mythicCount++;
+      } else if (tierLevelMap[tierId]) {
+        const lvl = tierLevelMap[tierId];
+        if (lvl >= 1 && lvl <= 5) {
+          tierCounts[lvl]++;
+          totalTrophies++;
+          if (lvl === 5) mythicCount++;
+        }
+      }
+    });
+
+    // Update Tier Pills (Common=1, Uncommon=2, Rare=3, Epic=4, Mythic=5)
+    if (elements.tierCommon) elements.tierCommon.textContent = tierCounts[1];
+    if (elements.tierUncommon) elements.tierUncommon.textContent = tierCounts[2];
+    if (elements.tierRare) elements.tierRare.textContent = tierCounts[3];
+    if (elements.tierEpic) elements.tierEpic.textContent = tierCounts[4];
+    if (elements.tierMythic) elements.tierMythic.textContent = tierCounts[5];
+
+    if (trophiesEl) trophiesEl.textContent = totalTrophies;
+    if (elements.numTrophies) elements.numTrophies.textContent = totalTrophies;
+
+    // Match Avatar Stage
+    let currentStage = allStages[0] || { journey_name: 'The Seeker', stage_order: 1, mythic_trophies_required: 0 };
+    let nextStage = null;
+
+    for (let i = allStages.length - 1; i >= 0; i--) {
+      if (mythicCount >= (allStages[i].mythic_trophies_required || 0)) {
+        currentStage = allStages[i];
+        nextStage = allStages[i + 1] || null;
+        break;
+      }
+    }
+
+    console.log('[Impact] Stats loaded:', { totalShares, totalTrophies, mythicCount, badgeCount });
 
   } catch (err) {
-    console.error('[Impact] Error loading user impact stats:', err);
+    console.error('[Impact] Error loading impact page:', err);
   }
 }
 
-  const { data: userShares, error: sharesErr } = await sharesQuery;
-  if (sharesErr) console.error('Error loading shares:', sharesErr);
-  const sharesList = userShares || [];
-
-  if (currentTimeframe === 'all') {
-    const profileTotal = Number(userProfile.total_shares || 0);
-    totalShares = Math.max(profileTotal, sharesList.length);
-  } else {
-    totalShares = sharesList.length;
-  }
-  elements.numShares.textContent = totalShares;
-
-  // 3. Fetch Recruits
-  let recruitsQuery = supabaseClient
-    .from('profiles')
-    .select('id, country, created_at')
-    .eq('recruited_by', currentUser.id);
-
-  if (currentTimeframe === 'week' && sinceISO) {
-    recruitsQuery = recruitsQuery.gte('created_at', sinceISO);
-  }
-
-  const { data: recruitsData, error: recruitsErr } = await recruitsQuery;
-  if (recruitsErr) console.error('Error loading recruits:', recruitsErr);
-  const recruitsList = recruitsData || [];
-
-  if (currentTimeframe === 'all') {
-    const recruitTotal = Number(userProfile.recruit_count || 0);
-    elements.numRecruits.textContent = Math.max(recruitTotal, recruitsList.length);
-  } else {
-    elements.numRecruits.textContent = recruitsList.length;
-  }
-
-  // Foreign nations
-  const foreignNationsSet = new Set(
-    recruitsList
-      .filter(r => r.country && r.country !== userProfile.country)
-      .map(r => r.country)
-  );
-  elements.numNations.textContent = foreignNationsSet.size;
-
-  // 4. Missions from badges
-  await refreshMissionsCount();
-
-  // 5. Trophies & Avatar Progression
-  const [trophiesRes, tiersRes, stagesRes] = await Promise.all([
-    supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
-    supabaseClient.from('trophy_tiers').select('*'),
-    supabaseClient.from('avatar_stages').select('*').order('stage_order', { ascending: true })
-  ]);
-
-  const userProgress = trophiesRes.data || [];
-  const allTiers = tiersRes.data || [];
-  const allStages = stagesRes.data || [];
-
-  const tierLevelMap = {};
-  allTiers.forEach(t => { tierLevelMap[t.id] = t.tier_level; });
-
-  const tierCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-  let totalTrophies = 0;
-  let mythicCount = 0;
-
-  userProgress.forEach(p => {
-    const level = p.current_tier_level || tierLevelMap[p.current_tier_id] || 0;
-    if (level >= 1 && level <= 5) {
-      tierCounts[level]++;
-      totalTrophies++;
-      if (level === 5) mythicCount++;
-    }
-  });
-
-  elements.tierCommon.textContent = tierCounts[1];
-  elements.tierUncommon.textContent = tierCounts[2];
-  elements.tierRare.textContent = tierCounts[3];
-  elements.tierEpic.textContent = tierCounts[4];
-  elements.tierMythic.textContent = tierCounts[5];
-  elements.numTrophies.textContent = totalTrophies;
-
-  // Match Avatar Stage
-  let currentStage = allStages[0] || { journey_name: 'The Seeker', stage_order: 1, mythic_trophies_required: 0 };
-  let nextStage = null;
-
-  for (let i = allStages.length - 1; i >= 0; i--) {
-    if (mythicCount >= (allStages[i].mythic_trophies_required || 0)) {
-      currentStage = allStages[i];
-      nextStage = allStages[i + 1] || null;
-      break;
-    }
-  }
-
-  // Update Hero Card
-  elements.userName.textContent = userProfile.nickname || userProfile.full_name || 'Warrior';
-  elements.journeyName.textContent = currentStage.journey_name || 'The Seeker';
-  elements.avatarTitle.textContent = `Stage ${currentStage.stage_order || 1}`;
-
-  const gender = userProfile.gender || 'male';
-  const avatarImgUrl = (gender === 'female' && currentStage.image_url_female)
-    ? currentStage.image_url_female
-    : currentStage.image_url_male;
-
-  if (avatarImgUrl) {
-    elements.avatarImg.src = avatarImgUrl;
-    elements.avatarImg.style.display = 'block';
-    elements.avatarFallback.style.display = 'none';
-  } else {
-    elements.avatarImg.style.display = 'none';
-    elements.avatarFallback.style.display = 'flex';
-  }
-
-  if (nextStage) {
-    elements.nextRank.textContent = `Next: ${nextStage.journey_name}`;
-    const prevReq = currentStage.mythic_trophies_required || 0;
-    const nextReq = nextStage.mythic_trophies_required || 1;
-    const range = nextReq - prevReq;
-    const progress = mythicCount - prevReq;
-    const pct = Math.max(0, Math.min(100, (progress / (range || 1)) * 100));
-
-    elements.progressText.textContent = `${mythicCount}/${nextReq} Mythic`;
-    elements.progressBar.style.width = `${pct}%`;
-    const needed = nextReq - mythicCount;
-    elements.progressSubtext.textContent = `Earn ${needed} more Mythic Trophy${needed > 1 ? 's' : ''} to evolve.`;
-  } else {
-    elements.nextRank.textContent = 'Highest Rank Achieved';
-    elements.progressText.textContent = `${mythicCount} Mythic`;
-    elements.progressBar.style.width = '100%';
-    elements.progressSubtext.textContent = 'You have reached the pinnacle of evolution.';
-  }
-
-  // 6. Platforms
-  renderPlatformBreakdown(sharesList);
-
-  // 7. Kingdom Investment
-  await loadKingdomInvestment();
-
-  // 8. Leaderboards
-  await loadLeaderboards();
-
-  // 9. Check + award any newly earned badges from live stats
-  await checkAndAwardBadges();
-}
-
-function renderPlatformBreakdown(shares) {
-  if (!shares || shares.length === 0) {
-    elements.platformsContainer.innerHTML = '<p class="text-xs text-slate-400 py-2 text-center">No shares recorded for this period.</p>';
-    return;
-  }
-
-  const counts = {};
-  shares.forEach(s => {
-    let platformName = s.platform || 'Other';
-    if (platformName === 'copy_link') platformName = 'Copy Link';
-    else platformName = platformName.charAt(0).toUpperCase() + platformName.slice(1);
-    counts[platformName] = (counts[platformName] || 0) + 1;
-  });
-
-  const sortedPlatforms = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  const highestCount = sortedPlatforms[0][1] || 1;
-
-  let html = '';
-  sortedPlatforms.forEach(([platform, count]) => {
-    const pct = Math.round((count / highestCount) * 100);
-    let barColor = 'bg-slate-400';
-    if (platform.toLowerCase().includes('whatsapp')) barColor = 'bg-green-500';
-    else if (platform.toLowerCase().includes('instagram')) barColor = 'bg-pink-500';
-    else if (platform.toLowerCase().includes('facebook')) barColor = 'bg-blue-600';
-
-    html += `
-      <div>
-        <div class="flex justify-between text-xs font-bold mb-1">
-          <span class="text-slate-700">${platform}</span>
-          <span class="text-slate-500">${count} share${count > 1 ? 's' : ''}</span>
-        </div>
-        <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-          <div class="h-full ${barColor} rounded-full" style="width: ${pct}%"></div>
-        </div>
-      </div>
-    `;
-  });
-  elements.platformsContainer.innerHTML = html;
-}
-
-async function loadKingdomInvestment() {
-  let subFee = 0;
-  if (userProfile.subscription_status === 'active' && userProfile.subscription_tier) {
-    const { data: tierData } = await supabaseClient
-      .from('subscription_tiers')
-      .select('price')
-      .eq('id', userProfile.subscription_tier)
-      .maybeSingle();
-
-    if (tierData) subFee = Number(tierData.price || 0);
-  }
-
-  const recurringContribution = subFee * 0.30;
-
-  const { data: donations } = await supabaseClient
-    .from('donations')
-    .select('amount')
-    .eq('user_id', currentUser.id)
-    .eq('status', 'completed');
-
-  const giftsContribution = (donations || []).reduce((sum, d) => sum + Number(d.amount || 0), 0);
-  const totalInv = recurringContribution + giftsContribution;
-
-  elements.totalContribution.textContent = `$${totalInv.toFixed(2)}`;
-  elements.subsContribution.innerHTML = `<div class="w-2 h-2 rounded-full bg-primary"></div> Subs ($${recurringContribution.toFixed(2)})`;
-  elements.giftsContribution.innerHTML = `<div class="w-2 h-2 rounded-full bg-gold"></div> Gifts ($${giftsContribution.toFixed(2)})`;
-
-  if (totalInv > 0) {
-    elements.splitSubs.style.width = `${(recurringContribution / totalInv) * 100}%`;
-    elements.splitGifts.style.width = `${(giftsContribution / totalInv) * 100}%`;
-  } else {
-    elements.splitSubs.style.width = '0%';
-    elements.splitGifts.style.width = '0%';
-  }
-}
-
-async function loadLeaderboards() {
-  const weekStart = get7DaysAgoISO();
-
-  // Sharers
-  const { data: sharesData, error: sharesErr } = await supabaseClient
-    .from('shares')
-    .select('user_id')
-    .gte('shared_at', weekStart);
-
-  if (sharesErr) console.error('Error loading leaderboard shares:', sharesErr);
-
-  const shareCounts = {};
-  (sharesData || []).forEach(s => {
-    if (s.user_id) shareCounts[s.user_id] = (shareCounts[s.user_id] || 0) + 1;
-  });
-
-  const sortedSharerIds = Object.keys(shareCounts).sort((a, b) => shareCounts[b] - shareCounts[a]);
-  const userRankIdx = sortedSharerIds.indexOf(currentUser.id);
-  elements.userShareRank.textContent = userRankIdx !== -1 ? `YOU: #${userRankIdx + 1}` : 'YOU: --';
-
-  const top3SharerIds = sortedSharerIds.slice(0, 3);
-  if (top3SharerIds.length > 0) {
-    const { data: sharerProfiles } = await supabaseClient
-      .from('profiles')
-      .select('id, nickname, full_name')
-      .in('id', top3SharerIds);
-
-    const profileMap = {};
-    (sharerProfiles || []).forEach(p => { profileMap[p.id] = p; });
-
-    let sharersHtml = '';
-    top3SharerIds.forEach((uid, idx) => {
-      const p = profileMap[uid] || {};
-      const name = p.nickname || p.full_name || 'Warrior';
-      const count = shareCounts[uid] || 0;
-      const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'W';
-      const isCurrentUser = uid === currentUser.id;
-      const highlightClass = isCurrentUser ? 'bg-primary/5 -mx-2 px-2 py-2 rounded-lg' : '';
-      const textClass = isCurrentUser ? 'text-primary' : 'text-slate-900';
-      const rankColor = idx === 0 ? 'text-gold' : 'text-slate-400';
-
-      sharersHtml += `
-        <div class="flex items-center gap-3 ${highlightClass}">
-          <span class="font-headline font-black ${rankColor} text-lg w-6">${idx + 1}</span>
-          <div class="w-8 h-8 rounded-full ${isCurrentUser ? 'bg-primary text-white' : 'bg-slate-200 text-slate-700'} flex items-center justify-center font-bold text-xs">${initials}</div>
-          <div class="flex-1">
-            <p class="font-bold text-sm ${textClass}">${name} ${isCurrentUser ? '(You)' : ''}</p>
-            <p class="text-[10px] ${isCurrentUser ? 'text-primary/60' : 'text-slate-400'}">${count} shares</p>
-          </div>
-        </div>
-      `;
-    });
-    elements.topSharers.innerHTML = sharersHtml;
-  } else {
-    elements.topSharers.innerHTML = '<p class="text-xs text-slate-400 py-3 text-center">No shares recorded this week.</p>';
-  }
-
-  // Recruiters
-  const { data: recruitsData, error: recruitsErr } = await supabaseClient
-    .from('profiles')
-    .select('recruited_by')
-    .not('recruited_by', 'is', null)
-    .gte('created_at', weekStart);
-
-  if (recruitsErr) console.error('Error loading leaderboard recruits:', recruitsErr);
-
-  const recruitCounts = {};
-  (recruitsData || []).forEach(r => {
-    if (r.recruited_by) recruitCounts[r.recruited_by] = (recruitCounts[r.recruited_by] || 0) + 1;
-  });
-
-  const sortedRecruiterIds = Object.keys(recruitCounts).sort((a, b) => recruitCounts[b] - recruitCounts[a]);
-  const top3RecruiterIds = sortedRecruiterIds.slice(0, 3);
-
-  if (top3RecruiterIds.length > 0) {
-    const { data: recruiterProfiles } = await supabaseClient
-      .from('profiles')
-      .select('id, nickname, full_name')
-      .in('id', top3RecruiterIds);
-
-    const profileMap = {};
-    (recruiterProfiles || []).forEach(p => { profileMap[p.id] = p; });
-
-    let recruitersHtml = '';
-    top3RecruiterIds.forEach((uid, idx) => {
-      const p = profileMap[uid] || {};
-      const name = p.nickname || p.full_name || 'Warrior';
-      const count = recruitCounts[uid] || 0;
-      const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'W';
-      const isCurrentUser = uid === currentUser.id;
-      const highlightClass = isCurrentUser ? 'bg-primary/5 -mx-2 px-2 py-2 rounded-lg' : '';
-      const textClass = isCurrentUser ? 'text-primary' : 'text-slate-900';
-      const rankColor = idx === 0 ? 'text-gold' : 'text-slate-400';
-
-      recruitersHtml += `
-        <div class="flex items-center gap-3 ${highlightClass}">
-          <span class="font-headline font-black ${rankColor} text-lg w-6">${idx + 1}</span>
-          <div class="w-8 h-8 rounded-full ${isCurrentUser ? 'bg-primary text-white' : 'bg-slate-200 text-slate-700'} flex items-center justify-center font-bold text-xs">${initials}</div>
-          <div class="flex-1">
-            <p class="font-bold text-sm ${textClass}">${name} ${isCurrentUser ? '(You)' : ''}</p>
-            <p class="text-[10px] ${isCurrentUser ? 'text-primary/60' : 'text-slate-400'}">${count} warrior${count > 1 ? 's' : ''}</p>
-          </div>
-        </div>
-      `;
-    });
-    elements.topRecruiters.innerHTML = recruitersHtml;
-  } else {
-    elements.topRecruiters.innerHTML = '<p class="text-xs text-slate-400 py-3 text-center">No recruits recorded this week.</p>';
-  }
-}
-
-async function loadGlobalStats() {
-  const [globalSharesCount, globalProfiles, nationsData] = await Promise.all([
-    supabaseClient.from('shares').select('id', { count: 'exact', head: true }),
-    supabaseClient.from('profiles').select('id', { count: 'exact', head: true }),
-    supabaseClient.from('profiles').select('country').not('country', 'is', null)
-  ]);
-
-  elements.globalShares.textContent = formatCompact(globalSharesCount.count || 0);
-  elements.globalWarriors.textContent = formatCompact(globalProfiles.count || 0);
-
-  const countries = [...new Set((nationsData.data || []).map(p => p.country).filter(Boolean))];
-  elements.globalNations.textContent = countries.length;
-
-  const emojiFlag = (cc) => {
-    if (!cc || cc.length !== 2) return '🌐';
-    const codePoints = cc.toUpperCase().split('').map(c => 127397 + c.charCodeAt());
-    return String.fromCodePoint(...codePoints);
-  };
-
-  let flagHtml = '';
-  countries.slice(0, 10).forEach(cc => {
-    flagHtml += `<span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-3 py-1.5 rounded-full">${emojiFlag(cc)} ${cc.toUpperCase()}</span>`;
-  });
-  if (countries.length > 10) {
-    flagHtml += `<span class="bg-slate-100 text-slate-400 text-[10px] font-bold px-3 py-1.5 rounded-full">+ ${countries.length - 10} More</span>`;
-  }
-  elements.globalNationsFlags.innerHTML = flagHtml || '<span class="text-xs text-slate-400">Expanding Kingdom...</span>';
-}
-
-function formatCompact(num) {
-  if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'm';
-  if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
-  return String(num);
-}
-
-// Start
 init();
 </script>
 </body>
