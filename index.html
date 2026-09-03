@@ -231,27 +231,40 @@
       </section>`;
   }
 
-  function renderStats(d, id) {
-    return `
-      <section data-cms-id="${id}" class="bg-surface-clow py-12 border-y border-surface-chigh">
-        <div class="max-w-5xl mx-auto px-6">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div class="text-center">
-              <span id="landingStatWarriors" class="font-headline font-extrabold text-4xl text-primary block">—</span>
-              <span class="font-body font-semibold text-xs text-on-surface-variant tracking-wider uppercase mt-1.5 block">${esc(d.label_1)}</span>
+ function renderStats(d, id) {
+  const items = Array.isArray(d.items) && d.items.length
+    ? d.items
+    : [
+        { metric: 'warriors', label: d.label_1 || 'Warriors Enlisted', fallback: '1248' },
+        { metric: 'shares', label: d.label_2 || 'Words Deployed', fallback: '47892' },
+        { metric: 'countries', label: d.label_3 || 'Countries Reached', fallback: '38' }
+      ];
+
+  const cols = Math.min(Math.max(items.length, 1), 5);
+
+  return `
+    <section data-cms-id="${id}" class="bg-surface-clow py-14 border-y border-surface-chigh">
+      <div class="max-w-6xl mx-auto px-6">
+        ${(d.section_title || d.section_subtitle) ? `
+          <div class="text-center max-w-2xl mx-auto mb-10">
+            ${d.section_title ? `<span class="font-body font-bold text-xs text-primary uppercase tracking-widest mb-3 block">${esc(d.section_title)}</span>` : ''}
+            ${d.section_subtitle ? `<h2 class="font-headline font-extrabold text-2xl md:text-4xl text-on-surface">${esc(d.section_subtitle)}</h2>` : ''}
+          </div>` : ''}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${cols} gap-8" data-stats-root="${id}">
+          ${items.map((item, i) => `
+            <div class="text-center ${i > 0 ? 'lg:border-l lg:border-surface-chigh' : ''}">
+              <span class="font-headline font-extrabold text-4xl text-primary block"
+                    data-stat-metric="${esc(item.metric || 'custom')}"
+                    data-stat-fallback="${esc(item.fallback || '0')}">—</span>
+              <span class="font-body font-semibold text-xs text-on-surface-variant tracking-wider uppercase mt-1.5 block">
+                ${esc(item.label || 'Stat')}
+              </span>
             </div>
-            <div class="text-center md:border-x md:border-surface-chigh">
-              <span id="landingStatShares" class="font-headline font-extrabold text-4xl text-primary block">—</span>
-              <span class="font-body font-semibold text-xs text-on-surface-variant tracking-wider uppercase mt-1.5 block">${esc(d.label_2)}</span>
-            </div>
-            <div class="text-center">
-              <span id="landingStatCountries" class="font-headline font-extrabold text-4xl text-primary block">—</span>
-              <span class="font-body font-semibold text-xs text-on-surface-variant tracking-wider uppercase mt-1.5 block">${esc(d.label_3)}</span>
-            </div>
-          </div>
+          `).join('')}
         </div>
-      </section>`;
-  }
+      </div>
+    </section>`;
+}
 
   function renderFeatures(d, id) {
     return `
@@ -423,30 +436,96 @@
 
   loadPage();
 
-  async function loadLiveStats() {
-    try {
-      const [pRes, sRes] = await Promise.all([
-        supabaseClient.from('profiles').select('id', { count: 'exact', head: true }),
-        supabaseClient.from('shares').select('id', { count: 'exact', head: true })
-      ]);
-      // Use live counts, fallback to nice numbers if DB is empty or RLS blocks
-      const warriors = pRes.count > 0 ? pRes.count : 1248;
-      const shares   = sRes.count > 0 ? sRes.count : 47892;
-      animateStat(document.getElementById('landingStatWarriors'), warriors, 1000);
-      animateStat(document.getElementById('landingStatShares'), shares, 1200);
-      animateStat(document.getElementById('landingStatCountries'), 38, 800);
-    } catch (e) { console.error('[Stats]', e); }
+ async function loadLiveStats() {
+  const nodes = document.querySelectorAll('[data-stat-metric]');
+  if (!nodes.length) return;
+
+  // Fetch base metrics in parallel
+  let warriors = 0, shares = 0, countries = 0, trending = 0, mostShared = 0, activeToday = 0;
+
+  try {
+    const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    const tasks = [
+      supabaseClient.from('profiles').select('id', { count: 'exact', head: true }),
+      supabaseClient.from('shares').select('id', { count: 'exact', head: true }),
+      supabaseClient.from('profiles').select('country').not('country', 'is', null),
+    ];
+
+    // Optional tables/columns — fail soft if missing
+    const optional = await Promise.allSettled([
+      supabaseClient.from('shares').select('id', { count: 'exact', head: true }).gte('created_at', since24h),
+      supabaseClient.from('shares').select('quote_id').gte('created_at', since24h).limit(5000),
+      supabaseClient.from('profiles').select('id', { count: 'exact', head: true }).gte('last_active_at', since24h),
+    ]);
+
+    const [pRes, sRes, cRes] = await Promise.all(tasks);
+
+    warriors = pRes.count || 0;
+    shares = sRes.count || 0;
+
+    const countrySet = new Set();
+    (cRes.data || []).forEach(r => { if (r.country) countrySet.add(r.country); });
+    countries = countrySet.size;
+
+    if (optional[0].status === 'fulfilled') {
+      trending = optional[0].value.count || 0;
+    }
+    if (optional[1].status === 'fulfilled') {
+      const counts = {};
+      (optional[1].value.data || []).forEach(r => {
+        const k = r.quote_id || 'unknown';
+        counts[k] = (counts[k] || 0) + 1;
+      });
+      mostShared = Object.values(counts).reduce((a, b) => Math.max(a, b), 0);
+    }
+    if (optional[2].status === 'fulfilled') {
+      activeToday = optional[2].value.count || 0;
+    }
+  } catch (e) {
+    console.error('[Stats] live fetch error:', e);
   }
 
-  function animateStat(el, target, duration) {
-    if (!el) return;
-    let start = 0; const step = target / (duration / 16);
-    const timer = setInterval(() => {
-      start += step;
-      if (start >= target) { start = target; clearInterval(timer); }
-      el.textContent = Math.floor(start).toLocaleString();
-    }, 16);
-  }
+  const map = {
+    warriors,
+    shares,
+    countries,
+    trending,
+    most_shared: mostShared,
+    active_today: activeToday
+  };
+
+  nodes.forEach(el => {
+    const metric = el.getAttribute('data-stat-metric') || 'custom';
+    const fallback = parseInt(el.getAttribute('data-stat-fallback') || '0', 10) || 0;
+    let value = map[metric];
+
+    // If live value missing/zero and fallback exists, use fallback (nice for empty DBs)
+    if ((value === undefined || value === null || value === 0) && fallback > 0 && metric !== 'custom') {
+      // Prefer live when > 0; otherwise fallback
+      value = (map[metric] > 0) ? map[metric] : fallback;
+    }
+    if (metric === 'custom' || value === undefined || value === null) {
+      value = fallback;
+    }
+
+    animateStat(el, Number(value) || 0, 900);
+  });
+}
+
+function animateStat(el, target, duration) {
+  if (!el) return;
+  let start = 0;
+  const step = Math.max(target / (duration / 16), 0.01);
+  const timer = setInterval(() => {
+    start += step;
+    if (start >= target) {
+      start = target;
+      clearInterval(timer);
+    }
+    el.textContent = Math.floor(start).toLocaleString();
+  }, 16);
+}
 </script>
 </body>
 </html>
