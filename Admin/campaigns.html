@@ -355,7 +355,19 @@
             <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Visual Identity</label>
             <p class="font-body text-outline mt-1" style="font-size:11px;">Icon and color help identify this campaign at a glance</p>
           </div>
-
+          
+        <!-- Reward Badge -->
+        <div class="bg-surface-cl rounded-2xl p-5 space-y-2">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-amber-500" style="font-size:20px;">emoji_events</span>
+            <label class="font-body text-on-surface-variant block" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Reward Badge <span class="text-outline font-normal normal-case ml-1" style="letter-spacing:0;">(optional)</span></label>
+          </div>
+          <p class="font-body text-outline mb-3" style="font-size:11px;">Select a badge to reward users who complete this campaign.</p>
+          <select id="campaignRewardBadge" class="form-input w-full rounded-xl px-4 py-3 font-body text-on-surface cursor-pointer" style="font-size:14px;">
+            <option value="">-- No Reward Badge --</option>
+          </select>
+        </div>
+          
           <!-- Icon picker -->
           <div>
             <label class="font-body text-on-surface-variant block mb-2" style="font-size:11px;font-weight:500;">Icon</label>
@@ -596,7 +608,19 @@ async function autoEndExpiredCampaigns() {
       .lt('end_date', nowIso)
   } catch(e) { console.warn('Auto-end failed:', e) }
 }
-
+async function loadBadges() {
+  var r = await supabaseClient.from('badge_definitions').select('id, name').eq('is_active', true).order('name');
+  var select = document.getElementById('campaignRewardBadge');
+  if (select) {
+    select.innerHTML = '<option value="">-- No Reward Badge --</option>';
+    if (r.data) {
+      r.data.forEach(function(b) {
+        select.innerHTML += `<option value="${b.id}">${escapeHtml(b.name)}</option>`;
+      });
+    }
+  }
+}
+  
 // ════════════════════════════════════════════
 // LOAD CAMPAIGNS + QUOTE COUNTS
 // ════════════════════════════════════════════
@@ -736,6 +760,7 @@ function openCreate() {
   document.getElementById('formCrumb').textContent = 'Create Campaign'
   document.getElementById('submitLabel').textContent = 'Create Campaign'
   document.getElementById('submitIcon').textContent = 'save'
+  document.getElementById('campaignRewardBadge').value = '';
 }
 
 async function openEdit(id) {
@@ -748,6 +773,7 @@ async function openEdit(id) {
   document.getElementById('formCrumb').textContent = 'Edit Campaign'
   document.getElementById('submitLabel').textContent = 'Save Changes'
   document.getElementById('submitIcon').textContent = 'save'
+  document.getElementById('campaignRewardBadge').value = c.reward_badge_id || '';
 
   var result = await supabaseClient.from('campaigns').select('*').eq('id', id).single()
   if (result.error || !result.data) { showToast('Error loading campaign'); showList(); return }
@@ -870,6 +896,17 @@ async function handleSubmit(e) {
   var status = document.querySelector('.status-radio:checked').value
   var errorEl = document.getElementById('formError')
   var errorMsg = document.getElementById('formErrorMsg')
+  var data = {
+    name: name,
+    description: desc || null,
+    icon: currentIcon,
+    color: currentColor,
+    status: status,
+    start_date: startDate || null,
+    end_date: endDate || null,
+    reward_badge_id: document.getElementById('campaignRewardBadge').value || null, // ADD THIS LINE
+    updated_at: new Date().toISOString()
+  }
 
   errorEl.classList.add('hidden')
   document.querySelectorAll('.form-input').forEach(function(f) { f.classList.remove('error') })
@@ -1004,7 +1041,8 @@ function showToast(msg) {
 async function init() {
   var isAdmin = await checkAdminAuth()
   if (!isAdmin) return
-  await loadCampaigns()
+  // Load both campaigns and badges at startup
+  await Promise.all([loadCampaigns(), loadBadges()])
 
   // Check for URL param to open edit directly
   var editId = new URLSearchParams(window.location.search).get('edit')
