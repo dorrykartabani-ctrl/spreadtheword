@@ -47,6 +47,13 @@
     /* Campaign Card */
     .campaign-card{background:#ffffff;border-radius:16px;transition:all 0.2s ease;cursor:pointer;overflow:hidden;border:1px solid #efeee7;}
     .campaign-card:hover{box-shadow:0 10px 25px rgba(49,51,46,0.05); border-color: #b2b2ab;}
+
+    .icon-pick{
+    width:40px;height:40px;border-radius:10px;background:#f5f4ed;color:#5e6059;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s ease;
+    }
+    .icon-pick:hover{background:#efeee7}
+    .icon-pick.selected{background:#3d6285;color:#f7f9ff;box-shadow:0 4px 12px rgba(61,98,133,0.25)}
     
     /* Form Elements */
     .form-input{background:#f5f4ed;border:1px solid transparent;transition:all 0.2s ease;color:#31332e;}
@@ -179,26 +186,39 @@
               <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Description</label><textarea id="campDesc" rows="3" class="form-input w-full rounded-xl px-4 py-3 text-sm resize-none" placeholder="Admin notes..."></textarea></div>
             </div>
 
-            <div class="bg-white rounded-2xl p-5 space-y-4 shadow-sm border border-surface-c">
-              <label class="text-[11px] font-bold text-slate-500 uppercase block">Visual Identity</label>
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Icon (From Media)</label>
-                  <select id="campIcon" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select>
-                </div>
-                <div>
-                  <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Color</label>
-                  <div class="flex items-center gap-2">
-                    <div class="flex gap-2 flex-1">
-                      <div class="color-swatch selected" onclick="selectColor('#3d6285',this)" data-color="#3d6285" style="background:#3d6285;"></div>
-                      <div class="color-swatch" onclick="selectColor('#ad332b',this)" data-color="#ad332b" style="background:#ad332b;"></div>
-                      <div class="color-swatch" onclick="selectColor('#16a34a',this)" data-color="#16a34a" style="background:#16a34a;"></div>
-                    </div>
-                    <input type="color" id="colorPicker" value="#3d6285" oninput="selectColor(this.value,null)" class="w-8 h-8 rounded cursor-pointer border-0 bg-transparent p-0">
-                  </div>
-                </div>
-              </div>
-            </div>
+           <div class="bg-white rounded-2xl p-5 space-y-4 shadow-sm border border-surface-c">
+  <label class="text-[11px] font-bold text-slate-500 uppercase block">Visual Identity</label>
+  
+  <!-- OPTION 1: System Icons Grid -->
+  <div>
+    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">System Icons</label>
+    <div class="flex gap-2 flex-wrap" id="systemIconGrid">
+      <div class="icon-pick" onclick="selectIcon('campaign',this)" data-icon="campaign"><span class="material-symbols-outlined">campaign</span></div>
+      <div class="icon-pick" onclick="selectIcon('celebration',this)" data-icon="celebration"><span class="material-symbols-outlined">celebration</span></div>
+      <div class="icon-pick" onclick="selectIcon('auto_awesome',this)" data-icon="auto_awesome"><span class="material-symbols-outlined">auto_awesome</span></div>
+      <div class="icon-pick" onclick="selectIcon('healing',this)" data-icon="healing"><span class="material-symbols-outlined">healing</span></div>
+      <div class="icon-pick" onclick="selectIcon('favorite',this)" data-icon="favorite"><span class="material-symbols-outlined">favorite</span></div>
+      <div class="icon-pick" onclick="selectIcon('menu_book',this)" data-icon="menu_book"><span class="material-symbols-outlined">menu_book</span></div>
+      <div class="icon-pick" onclick="selectIcon('groups',this)" data-icon="groups"><span class="material-symbols-outlined">groups</span></div>
+      <div class="icon-pick" onclick="selectIcon('bolt',this)" data-icon="bolt"><span class="material-symbols-outlined">bolt</span></div>
+    </div>
+  </div>
+
+  <!-- Divider -->
+  <div class="flex items-center gap-3 py-1">
+    <div class="h-px bg-surface-c flex-1"></div>
+    <span class="text-[10px] font-bold text-slate-400 uppercase">Or Custom Image</span>
+    <div class="h-px bg-surface-c flex-1"></div>
+  </div>
+
+  <!-- OPTION 2: Media Manager Dropdown -->
+  <div>
+    <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">From Media Library</label>
+    <select id="campImage" onchange="selectMediaIcon(this.value)" class="form-input w-full rounded-xl px-4 py-3 text-sm">
+      <option value="">-- No Custom Image --</option>
+    </select>
+  </div>
+</div>
 
             <div class="grid grid-cols-2 gap-5">
               <div class="bg-white rounded-2xl p-5 shadow-sm border border-surface-c"><label class="text-[11px] font-bold text-slate-500 uppercase block mb-2">Start Date</label><input id="campStart" type="date" class="form-input w-full rounded-xl px-4 py-3 text-sm"></div>
@@ -274,6 +294,7 @@
 var supabaseClient = supabase.createClient('https://nhymadutuhpjgkiurify.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM');
 var currentUser = null, allCampaigns = [], allQuotes = [], allBadges = [], mediaIcons = [];
 var isEditing = false, editId = null, currentColor = '#3d6285', currentFilter = 'all';
+var isEditing = false, editId = null, currentColor = '#3d6285', currentFilter = 'all', currentIcon = 'campaign', currentImage = '';
 
 function getEl(id){return document.getElementById(id);}
 function toggleSidebar(){getEl('sidebar').classList.toggle('hidden');getEl('sidebar').classList.toggle('flex');getEl('sidebarOverlay').classList.toggle('hidden');}
@@ -389,7 +410,24 @@ function openEditor(id = null) {
     var c = allCampaigns.find(x=>x.id===id);
     getEl('campName').value = c.name||''; getEl('campDesc').value = c.description||'';
     getEl('campStart').value = c.start_date||''; getEl('campEnd').value = c.end_date||'';
-    getEl('campBadge').value = c.reward_badge_id||''; getEl('campIcon').value = c.icon||'';
+    getEl('campBadge').value = c.reward_badge_id||'';   
+    // Handle Icon vs Image logic
+    var existingIcon = c.icon || '';
+    if (existingIcon.startsWith('http') || existingIcon.startsWith('/')) {
+      // It's a custom image
+      currentImage = existingIcon;
+      currentIcon = '';
+      document.getElementById('campImage').value = existingIcon;
+      document.querySelectorAll('.icon-pick').forEach(b => b.classList.remove('selected'));
+    } else {
+      // It's a system icon
+      currentIcon = existingIcon || 'campaign';
+      currentImage = '';
+      document.getElementById('campImage').value = '';
+      document.querySelectorAll('.icon-pick').forEach(b => b.classList.remove('selected'));
+      var iconBtn = document.querySelector(`[data-icon="${currentIcon}"]`);
+      if (iconBtn) iconBtn.classList.add('selected');
+    }
     selectColor(c.color||'#3d6285', document.querySelector(`[data-color="${c.color}"]`));
     var rad = document.querySelector(`input[value="${c.status}"]`); if(rad){rad.checked=true;updateStatusCards();}
     renderEditorQuotes();
@@ -429,6 +467,7 @@ async function saveCampaign() {
   
   var data = {
     name: name, description: getEl('campDesc').value.trim()||null,
+    icon: currentImage || currentIcon,
     icon: getEl('campIcon').value||null, color: currentColor,
     status: document.querySelector('.status-radio:checked').value,
     start_date: getEl('campStart').value||null, end_date: getEl('campEnd').value||null,
@@ -447,7 +486,20 @@ async function deleteCampaign(id) {
   await supabaseClient.from('campaigns').delete().eq('id',id);
   showToast('Deleted'); await loadData();
 }
+function selectIcon(iconName, btn) {
+  currentIcon = iconName;
+  currentImage = ''; // Clear custom image
+  document.getElementById('campImage').value = ''; // Reset dropdown
+  
+  document.querySelectorAll('.icon-pick').forEach(b => b.classList.remove('selected'));
+  if (btn) btn.classList.add('selected');
+}
 
+function selectMediaIcon(imageUrl) {
+  currentImage = imageUrl;
+  currentIcon = ''; // Clear system icon
+  document.querySelectorAll('.icon-pick').forEach(b => b.classList.remove('selected'));
+}
 // --- QUOTE MANAGEMENT ---
 function renderEditorQuotes() {
   var list = getEl('editorQuoteList'); list.innerHTML = '';
