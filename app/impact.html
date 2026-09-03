@@ -297,13 +297,19 @@ async function loadImpactData() {
     var { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
     userProfile = profile || {};
 
-    // 2. Fetch ALL Data in Parallel (Personal + Global)
+    // 2. Fetch Personal Shares (FIXED: Better logic for All Time vs Week)
+    var sharesQuery = supabaseClient.from('shares').select('id', { count: 'exact', head: true }).eq('user_id', currentUser.id);
+    if (currentTimeframe === 'week') {
+      sharesQuery = sharesQuery.gte('shared_at', sinceISO);
+    }
+    var sharesRes = await sharesQuery;
+    var totalShares = sharesRes.count || 0;
+
+    // 3. Fetch All Other Data in Parallel
     var [
-      sharesRes, recruitsRes, userNationsRes, trophiesRes, avatarsRes, donationsRes,
+      recruitsRes, userNationsRes, trophiesRes, avatarsRes, donationsRes,
       globalSharesRes, globalWarriorsRes, globalNationsRes, projectsRes, globalDonationsRes
     ] = await Promise.all([
-      // Personal Data
-      supabaseClient.from('shares').select('id').eq('user_id', currentUser.id).gte('shared_at', sinceISO),
       supabaseClient.from('profiles').select('id', { count: 'exact', head: true }).eq('referred_by', currentUser.id).gte('created_at', sinceISO),
       supabaseClient.from('profiles').select('country').eq('referred_by', currentUser.id).not('country', 'is', null),
       supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
@@ -319,16 +325,17 @@ async function loadImpactData() {
     ]);
 
     // --- PERSONAL CALCULATIONS ---
-    var totalShares = (sharesRes.data || []).length;
     var recruits = recruitsRes.count || 0;
     var nationsList = (userNationsRes.data || []).map(p => p.country);
     var nations = new Set(nationsList).size;
-    var badges = (userProfile.badges || []).length;
+    
+    // Badges vs Trophies distinction
+    var badges = (userProfile.badges || []).length; 
     var missions = 0; 
     
     var donationTotal = (donationsRes.data || []).reduce((sum, d) => sum + Number(d.amount || 0), 0);
     
-    // Subscription Value Calculation
+    // Subscription Value
     var prices = { warrior: 3.99, commander: 5.99, legacy: 9.99 };
     var tier = (userProfile.subscription_tier || 'free').toLowerCase();
     var monthly = prices[tier] || 0;
@@ -341,14 +348,15 @@ async function loadImpactData() {
     }
     var subValue = months * monthly;
 
-    // Trophy Logic
+    // Trophy Logic (FIXED: parseInt to ensure 5 === 5)
     var userProgress = trophiesRes.data || [];
     var tierCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     var mythicCount = 0;
     var totalTrophies = 0;
 
     userProgress.forEach(p => {
-      var level = p.current_tier_level || p.current_tier_id || 0;
+      // Check both possible column names and force integer
+      var level = parseInt(p.current_tier_level || p.current_tier_id || 0);
       if (level > 0) {
         tierCounts[level] = (tierCounts[level] || 0) + 1;
         totalTrophies++;
@@ -438,7 +446,6 @@ async function loadImpactData() {
     safeSetText('statDonations', '$' + donationTotal.toFixed(2));
     safeSetText('statTotalContrib', '$' + (subValue + donationTotal).toFixed(2));
     
-    // Update visual bar for personal investment
     var totalPersonal = subValue + donationTotal;
     if(totalPersonal > 0) {
       var subPct = (subValue / totalPersonal) * 100;
