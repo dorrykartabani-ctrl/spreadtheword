@@ -617,8 +617,9 @@ async function loadUserImpactStats(userId) {
       return false;
     }
 
-    // 6. Badges Calculation & DOM Update
-    var badgeCount = 0;
+       // 6. Update Personal Impact Cards
+    // Re-assign badgeCount without re-declaring it
+    badgeCount = 0;
     if (userProfile && userProfile.badges) {
       if (Array.isArray(userProfile.badges)) {
         badgeCount = userProfile.badges.length;
@@ -626,146 +627,122 @@ async function loadUserImpactStats(userId) {
         badgeCount = Object.keys(userProfile.badges).length;
       }
     }
-    updateDOMText(['statBadges', 'stat-badges', 'numBadges', 'num-badges', 'badges'], badgeCount);
 
-    // 7. Shares Calculation & DOM Update
-    var totalShares = 0;
-    try {
-      var sharesRes = await sharesQuery;
-      var sharesList = sharesRes.data || [];
-      if (currentTimeframe === 'all') {
-        totalShares = Math.max(Number(userProfile.total_shares || 0), sharesList.length);
-      } else {
-        totalShares = sharesList.length;
-      }
-    } catch (e) {
-      totalShares = Number(userProfile.total_shares || 0);
-    }
-    updateDOMText(['numShares', 'num-shares', 'stat-shares', 'shares'], totalShares);
+    const badgesEl = document.getElementById('stat-badges') || document.querySelector('[data-stat="badges"]');
+    if (badgesEl) badgesEl.textContent = badgeCount;
+    if (elements && elements.numBadges) elements.numBadges.textContent = badgeCount;
 
-    // 8. Recruits & Foreign Nations DOM Update
-    var recruitsList = [];
-    try {
-      var recruitsQuery = supabaseClient
-        .from('profiles')
-        .select('id, country, created_at')
-        .eq('recruited_by', currentUser.id);
+    // 7. Fetch Shares
+    const sharesRes = await sharesQuery;
+    const sharesList = sharesRes.data || [];
 
-      if (currentTimeframe === 'week' && sinceISO) {
-        recruitsQuery = recruitsQuery.gte('created_at', sinceISO);
-      }
-      var recruitsRes = await recruitsQuery;
-      recruitsList = recruitsRes.data || [];
-    } catch(e) {}
-
-    var totalRecruits = 0;
     if (currentTimeframe === 'all') {
-      totalRecruits = Math.max(Number(userProfile.recruit_count || 0), recruitsList.length);
+      totalShares = Math.max(Number(userProfile.total_shares || 0), sharesList.length);
     } else {
-      totalRecruits = recruitsList.length;
+      totalShares = sharesList.length;
     }
-    updateDOMText(['numRecruits', 'num-recruits', 'stat-recruits', 'recruits'], totalRecruits);
+    if (elements && elements.numShares) elements.numShares.textContent = totalShares;
+    const sharesEl = document.getElementById('stat-shares') || document.getElementById('numShares');
+    if (sharesEl) sharesEl.textContent = totalShares;
 
-    var foreignNationsSet = new Set(
+    // 8. Fetch Recruits
+    let recruitsQuery = supabaseClient
+      .from('profiles')
+      .select('id, country, created_at')
+      .eq('recruited_by', currentUser.id);
+
+    if (currentTimeframe === 'week' && sinceISO) {
+      recruitsQuery = recruitsQuery.gte('created_at', sinceISO);
+    }
+
+    const recruitsRes = await recruitsQuery;
+    const recruitsList = recruitsRes.data || [];
+
+    if (currentTimeframe === 'all') {
+      const recruitTotal = Number(userProfile.recruit_count || 0);
+      if (elements && elements.numRecruits) elements.numRecruits.textContent = Math.max(recruitTotal, recruitsList.length);
+    } else {
+      if (elements && elements.numRecruits) elements.numRecruits.textContent = recruitsList.length;
+    }
+
+    // Foreign nations
+    const foreignNationsSet = new Set(
       recruitsList
         .filter(r => r.country && r.country !== userProfile.country)
         .map(r => r.country)
     );
-    updateDOMText(['numNations', 'num-nations', 'stat-nations', 'nations'], foreignNationsSet.size);
+    if (elements && elements.numNations) elements.numNations.textContent = foreignNationsSet.size;
 
-    // 9. Missions Count
+    // 9. Missions count
     if (typeof refreshMissionsCount === 'function') {
-      try { await refreshMissionsCount(); } catch(e) {}
+      await refreshMissionsCount();
     }
 
-    // 10. Trophies, Tiers & Avatar Stage Rendering
-    try {
-      var [trophiesRes, tiersRes, stagesRes] = await Promise.all([
+    // 10. Fetch Trophies, Tiers & Avatar Progression
+    // Block-scoped to guarantee zero variable collisions
+    {
+      const [trophiesRes, tiersRes, stagesRes] = await Promise.all([
         supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
         supabaseClient.from('trophy_tiers').select('*'),
         supabaseClient.from('avatar_stages').select('*').order('stage_order', { ascending: true })
       ]);
 
-      var userProgress = trophiesRes.data || [];
-      var allTiers     = tiersRes.data || [];
-      var allStages    = stagesRes.data || [];
+      const userProgress = trophiesRes.data || [];
+      const allTiers     = tiersRes.data || [];
+      const allStages    = stagesRes.data || [];
 
-      // Map tier IDs to lowercase names ('common', 'uncommon', 'rare', 'epic', 'mythic')
-      var tierIdToName = {};
-      allTiers.forEach(t => {
-        if (t.id && t.name) {
-          tierIdToName[t.id] = String(t.name).toLowerCase().trim();
-        }
-      });
-
-      var tierCounts = { common: 0, uncommon: 0, rare: 0, epic: 0, mythic: 0 };
-      var totalTrophies = 0;
-      var mythicCount = 0;
+      const tierCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      let totalTrophies = 0;
+      let mythicCount = 0;
 
       userProgress.forEach(p => {
-        var tierId = p.current_tier_id || p.current_tier_level;
-        var tierName = tierIdToName[tierId];
-        
-        // Fallback for numeric IDs 1..5
-        if (!tierName) {
-          var numMap = { 1: 'common', 2: 'uncommon', 3: 'rare', 4: 'epic', 5: 'mythic' };
-          tierName = numMap[tierId];
-        }
-
-        if (tierName && tierCounts.hasOwnProperty(tierName)) {
-          tierCounts[tierName]++;
+        const tierId = p.current_tier_id || p.current_tier_level || 0;
+        if (tierId >= 1 && tierId <= 5) {
+          tierCounts[tierId]++;
           totalTrophies++;
-          if (tierName === 'mythic') mythicCount++;
+          if (tierId === 5) mythicCount++;
         }
       });
 
-      // Update Trophy Tier Pills
-      updateDOMText(['tierCommon', 'tier-count-common', 'tier_common', 'common'], tierCounts.common);
-      updateDOMText(['tierUncommon', 'tier-count-uncommon', 'tier_uncommon', 'uncommon'], tierCounts.uncommon);
-      updateDOMText(['tierRare', 'tier-count-rare', 'tier_rare', 'rare'], tierCounts.rare);
-      updateDOMText(['tierEpic', 'tier-count-epic', 'tier_epic', 'epic'], tierCounts.epic);
-      updateDOMText(['tierMythic', 'tier-count-mythic', 'tier_mythic', 'mythic'], tierCounts.mythic);
+      // Update Tier Pills (1=Common, 2=Uncommon, 3=Rare, 4=Epic, 5=Mythic)
+      if (elements && elements.tierCommon) elements.tierCommon.textContent = tierCounts[1];
+      if (elements && elements.tierUncommon) elements.tierUncommon.textContent = tierCounts[2];
+      if (elements && elements.tierRare) elements.tierRare.textContent = tierCounts[3];
+      if (elements && elements.tierEpic) elements.tierEpic.textContent = tierCounts[4];
+      if (elements && elements.tierMythic) elements.tierMythic.textContent = tierCounts[5];
 
-      // Update Total Trophies Card
-      updateDOMText(['numTrophies', 'num-trophies', 'stat-trophies', 'trophies'], totalTrophies);
+      // Update Trophies Card
+      if (elements && elements.numTrophies) elements.numTrophies.textContent = totalTrophies;
+      const trophiesEl = document.getElementById('stat-trophies') || document.getElementById('numTrophies');
+      if (trophiesEl) trophiesEl.textContent = totalTrophies;
 
-      // Determine & Render Avatar Stage
-      var currentStage = null;
-      for (var i = allStages.length - 1; i >= 0; i--) {
+      // Determine Avatar Stage
+      let currentStage = allStages[0] || { journey_name: 'The Seeker', stage_order: 1 };
+      for (let i = allStages.length - 1; i >= 0; i--) {
         if (mythicCount >= (allStages[i].mythic_trophies_required || 0)) {
           currentStage = allStages[i];
           break;
         }
       }
 
-      if (currentStage) {
-        var stageTitle = currentStage.journey_name || currentStage.name || currentStage.title || '';
-        updateDOMText(['journeyStage', 'journey-stage-name', 'stageName', 'stage-title', 'avatarStageName'], stageTitle);
+      // Update Avatar Stage Title
+      const stageTitle = currentStage.journey_name || currentStage.name || 'The Seeker';
+      if (elements && elements.journeyStage) elements.journeyStage.textContent = stageTitle;
+      const stageTitleEl = document.getElementById('journeyStage') || document.getElementById('stageName') || document.getElementById('journey-stage-name');
+      if (stageTitleEl) stageTitleEl.textContent = stageTitle;
 
-        var stageImg = currentStage.image_url || currentStage.avatar_url || currentStage.icon_url || userProfile.avatar_url;
-        if (stageImg) {
-          updateDOMSrc(['avatarImg', 'avatar-image', 'userAvatar', 'user-avatar', 'stageImage'], stageImg);
-        }
-      } else if (userProfile.avatar_url) {
-        updateDOMSrc(['avatarImg', 'avatar-image', 'userAvatar', 'user-avatar'], userProfile.avatar_url);
+      // Update Avatar Image
+      const avatarUrl = currentStage.image_url || currentStage.avatar_url || (userProfile && userProfile.avatar_url);
+      if (avatarUrl) {
+        const avatarImgs = document.querySelectorAll('img[id*="avatar"], img[id*="Avatar"], img[class*="avatar"], .user-avatar');
+        avatarImgs.forEach(img => { if (img.tagName === 'IMG') img.src = avatarUrl; });
       }
 
-      console.log('[Impact Summary Loaded]', {
-        totalShares: totalShares,
-        totalRecruits: totalRecruits,
-        badgeCount: badgeCount,
-        totalTrophies: totalTrophies,
-        mythicCount: mythicCount,
-        tierCounts: tierCounts,
-        currentStage: currentStage
-      });
-
-    } catch (err) {
-      console.error('[Impact] Trophy/Avatar error:', err);
+      console.log('[Impact] Successfully Loaded All Data:', { totalShares, totalTrophies, mythicCount, badgeCount, currentStage });
     }
 
   } catch (err) {
-    console.error('[Impact] Page execution error:', err);
+    console.error('[Impact] Error loading impact page:', err);
   }
 }
 </script>
