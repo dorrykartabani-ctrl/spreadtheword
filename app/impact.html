@@ -83,7 +83,7 @@
     <h3 class="font-headline font-bold text-lg mb-3 px-1">Trophy Tiers</h3>
     <div class="grid grid-cols-5 gap-2">
       <div class="rounded-2xl p-3 text-center bg-slate-400 text-white">
-        <p class="text-[8px] font-black uppercase tracking-widest opacity-80">Common</p>
+        <p class="text-[8px] font-black uppercase tracking-widest opacity-80">Comon</p>
         <p id="tierCommon" class="font-headline font-black text-xl mt-1">0</p>
       </div>
       <div class="rounded-2xl p-3 text-center bg-green-500 text-white">
@@ -103,7 +103,7 @@
         <p id="tierMythic" class="font-headline font-black text-xl mt-1">0</p>
       </div>
     </div>
-    <section>
+  </section>
        <!-- PERSONAL IMPACT -->
     <div class="flex justify-between items-center mb-3 px-1 gap-3">
       <h3 class="font-headline font-bold text-lg text-slate-900">Personal Impact</h3>
@@ -296,6 +296,12 @@ var currentUser = null;
 var userProfile = null;
 var currentTimeframe = 'all';
 
+// Helper to prevent "null" crashes
+function safeSetText(id, text) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
 // UI Toggle Logic
 document.querySelectorAll('.time-btn').forEach(btn => {
   btn.addEventListener('click', function() {
@@ -326,34 +332,25 @@ async function loadImpactData() {
     var { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
     userProfile = profile || {};
 
-    // 2. Fetch All Data in Parallel
+    // 2. Fetch All Data in Parallel (Using select('*') to avoid 400 column errors)
     var [sharesRes, recruitsRes, userNationsRes, trophiesRes, avatarsRes, donationsRes] = await Promise.all([
-      // Shares
-      supabaseClient.from('shares').select('platform, created_at').eq('user_id', currentUser.id).gte('created_at', sinceISO),
-      // Recruits count
+      supabaseClient.from('shares').select('*').eq('user_id', currentUser.id).gte('created_at', sinceISO),
       supabaseClient.from('profiles').select('id', { count: 'exact', head: true }).eq('referred_by', currentUser.id).gte('created_at', sinceISO),
-      // User's Recruits' Countries (Fixed: was looking at global profiles before)
       supabaseClient.from('profiles').select('country').eq('referred_by', currentUser.id).not('country', 'is', null),
-      // Trophy Progress (Simplified query to avoid join errors)
-      supabaseClient.from('user_trophy_progress').select('current_tier_level').eq('user_id', currentUser.id),
-      // Avatar Stages
+      supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
       supabaseClient.from('avatar_stages').select('*').order('stage_order', { ascending: true }),
-      // Donations
       supabaseClient.from('donations').select('amount').eq('user_id', currentUser.id)
     ]);
 
     // --- CALCULATIONS ---
-
-    // Personal Stats
     var totalShares = (sharesRes.data || []).length;
     var recruits = recruitsRes.count || 0;
     
-    // Calculate unique nations from recruits
     var nationsList = (userNationsRes.data || []).map(p => p.country);
     var nations = new Set(nationsList).size;
 
     var badges = (userProfile.badges || []).length;
-    var missions = 0; // Placeholder
+    var missions = 0; 
     var donationTotal = (donationsRes.data || []).reduce((sum, d) => sum + Number(d.amount || 0), 0);
 
     // Trophy & Avatar Logic
@@ -365,7 +362,8 @@ async function loadImpactData() {
     var totalTrophies = 0;
 
     userProgress.forEach(p => {
-      var level = p.current_tier_level || 0;
+      // Check both possible column names just in case
+      var level = p.current_tier_level || p.current_tier_id || 0;
       if (level > 0) {
         tierCounts[level] = (tierCounts[level] || 0) + 1;
         totalTrophies++;
@@ -377,7 +375,6 @@ async function loadImpactData() {
     var currentStage = allAvatars[0] || { journey_name: 'The Seeker', stage_order: 0, image_url_male: '', image_url_female: '', mythic_trophies_required: 0 };
     var nextStage = null;
 
-    // Loop backwards to find the highest stage the user has qualified for
     for (var i = allAvatars.length - 1; i >= 0; i--) {
       if (mythicCount >= (allAvatars[i].mythic_trophies_required || 0)) {
         currentStage = allAvatars[i];
@@ -386,7 +383,7 @@ async function loadImpactData() {
       }
     }
 
-    // --- UPDATE DOM ---
+    // --- UPDATE DOM SAFELY ---
 
     // 1. Update Avatar Image
     var gender = userProfile.gender || 'male';
@@ -398,47 +395,49 @@ async function loadImpactData() {
     if (avatarImg) {
       imgEl.src = avatarImg;
       imgEl.style.display = 'block';
-      fallbackEl.style.display = 'none';
+      if(fallbackEl) fallbackEl.style.display = 'none';
     } else {
-      imgEl.style.display = 'none';
-      fallbackEl.style.display = 'flex';
+      if(imgEl) imgEl.style.display = 'none';
+      if(fallbackEl) fallbackEl.style.display = 'flex';
     }
 
     // 2. Update Text Fields
-    document.getElementById('userNameDisplay').textContent = userProfile.nickname || userProfile.full_name || 'Warrior';
-    document.getElementById('journeyNameDisplay').textContent = currentStage.journey_name || 'The Seeker';
-    document.getElementById('avatarTitleDisplay').textContent = 'Stage ' + (currentStage.stage_order || 0);
+    safeSetText('userNameDisplay', userProfile.nickname || userProfile.full_name || 'Warrior');
+    safeSetText('journeyNameDisplay', currentStage.journey_name || 'The Seeker');
+    safeSetText('avatarTitleDisplay', 'Stage ' + (currentStage.stage_order || 0));
 
     // 3. Update Progress Bar
     if (nextStage) {
-      document.getElementById('nextRankName').textContent = 'Next: ' + nextStage.journey_name;
+      safeSetText('nextRankName', 'Next: ' + nextStage.journey_name);
       var prevReq = currentStage.mythic_trophies_required || 0;
       var range = nextStage.mythic_trophies_required - prevReq;
       var progress = mythicCount - prevReq;
       var pct = Math.max(0, Math.min(100, (progress / range) * 100));
       
-      document.getElementById('mythicProgressText').textContent = mythicCount + '/' + nextStage.mythic_trophies_required + ' Mythic';
-      document.getElementById('mythicProgressBar').style.width = pct + '%';
+      safeSetText('mythicProgressText', mythicCount + '/' + nextStage.mythic_trophies_required + ' Mythic');
+      var bar = document.getElementById('mythicProgressBar');
+      if(bar) bar.style.width = pct + '%';
     } else {
-      document.getElementById('nextRankName').textContent = 'Max Level Reached';
-      document.getElementById('mythicProgressText').textContent = mythicCount + ' Mythic';
-      document.getElementById('mythicProgressBar').style.width = '100%';
+      safeSetText('nextRankName', 'Max Level Reached');
+      safeSetText('mythicProgressText', mythicCount + ' Mythic');
+      var bar = document.getElementById('mythicProgressBar');
+      if(bar) bar.style.width = '100%';
     }
 
     // 4. Update Trophy Tiers
-    document.getElementById('tierCommon').textContent = tierCounts[1] || 0;
-    document.getElementById('tierUncommon').textContent = tierCounts[2] || 0;
-    document.getElementById('tierRare').textContent = tierCounts[3] || 0;
-    document.getElementById('tierEpic').textContent = tierCounts[4] || 0;
-    document.getElementById('tierMythic').textContent = tierCounts[5] || 0;
+    safeSetText('tierCommon', tierCounts[1] || 0);
+    safeSetText('tierUncommon', tierCounts[2] || 0);
+    safeSetText('tierRare', tierCounts[3] || 0);
+    safeSetText('tierEpic', tierCounts[4] || 0);
+    safeSetText('tierMythic', tierCounts[5] || 0);
 
     // 5. Update Personal Impact Stats
-    document.getElementById('statShares').textContent = totalShares;
-    document.getElementById('statRecruits').textContent = recruits;
-    document.getElementById('statNations').textContent = nations;
-    document.getElementById('statBadges').textContent = badges;
-    document.getElementById('statMissions').textContent = missions;
-    document.getElementById('statTrophies').textContent = totalTrophies;
+    safeSetText('statShares', totalShares);
+    safeSetText('statRecruits', recruits);
+    safeSetText('statNations', nations);
+    safeSetText('statBadges', badges);
+    safeSetText('statMissions', missions);
+    safeSetText('statTrophies', totalTrophies);
 
   } catch (err) {
     console.error("Error loading impact data:", err);
