@@ -260,6 +260,29 @@
       </div>
 
       <!-- RUNWAY STATUS -->
+     <!-- NEW: FILTER BAR -->
+<section class="fade-up mb-6">
+  <div class="bg-surface-cl rounded-xl p-4 flex flex-wrap items-center gap-3 border border-surface-c shadow-sm">
+    <span class="font-body font-bold text-on-surface" style="font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Filter:</span>
+    
+    <!-- Campaign Dropdown -->
+    <select id="filterCampaign" class="form-input rounded-lg px-3 py-2 text-sm flex-1 min-w-[150px] cursor-pointer" onchange="applyFilters()">
+      <option value="">All Campaigns</option>
+      <!-- Populated by JS -->
+    </select>
+
+    <!-- Category Dropdown -->
+    <select id="filterCategory" class="form-input rounded-lg px-3 py-2 text-sm flex-1 min-w-[150px] cursor-pointer" onchange="applyFilters()">
+      <option value="">All Categories</option>
+      <!-- Populated by JS -->
+    </select>
+
+    <!-- Clear Button -->
+    <button onclick="clearFilters()" class="px-3 py-2 text-xs font-bold text-tertiary hover:bg-tertiary/5 rounded-lg transition-colors border border-tertiary/20">
+      Clear All
+    </button>
+  </div>
+</section> 
       <section id="runwaySection">
         <div class="skeleton h-24 w-full"></div>
       </section>
@@ -378,6 +401,10 @@ var showArchived = false
 var openMenuId = null
 var confirmAction = null
 var campaignFilterId = null  // active campaign filter
+var baseLiveQuotes = [];
+var baseScheduledQuotes = [];
+var baseArchivedQuotes = [];
+var allCampaignsForFilter = [];
 
 var RUNWAY_DAYS = 42
 
@@ -482,55 +509,116 @@ function clearCampaignFilter() {
 // ════════════════════════════════════════════
 // LOAD QUOTES
 // ════════════════════════════════════════════
+async function loadCampaignsForFilter() {
+  var r = await supabaseClient.from('campaigns').select('id, name, color, icon');
+  if (r.data) {
+    allCampaignsForFilter = r.data;
+    var select = document.getElementById('filterCampaign');
+    select.innerHTML = '<option value="">All Campaigns</option>';
+    allCampaignsForFilter.forEach(function(c) {
+      select.innerHTML += `<option value="${c.id}">${escapeHtml(c.name)}</option>`;
+    });
+  }
+}
+
 async function loadQuotes() {
   try { await supabaseClient.rpc('promote_scheduled_quotes') } catch(e) {}
 
-  // Live quote query
-  var liveQuery = supabaseClient
-    .from('quotes')
-    .select('*')
-    .eq('status', 'live')
+  // 1. Fetch ALL Live Quotes (removed limit)
+  var liveQuery = supabaseClient.from('quotes').select('*').eq('status', 'live').order('published_at', { ascending: false });
+  var liveResult = await liveQuery;
+  baseLiveQuotes = liveResult.data || [];
 
-  if (campaignFilterId) liveQuery = liveQuery.eq('campaign_id', campaignFilterId)
+  // 2. Fetch ALL Scheduled Quotes
+  var nowIso = new Date().toISOString();
+  var schedQuery = supabaseClient.from('quotes').select('*').eq('status', 'scheduled').gte('scheduled_for', nowIso).order('scheduled_for', { ascending: true });
+  var scheduledResult = await schedQuery;
+  baseScheduledQuotes = scheduledResult.data || [];
 
-  var liveResult = await liveQuery.order('published_at', { ascending: false }).limit(1)
-  liveQuote = (liveResult.data && liveResult.data[0]) || null
+  // 3. Extract Categories from all quotes to populate dropdown
+  var allFetched = [...baseLiveQuotes, ...baseScheduledQuotes];
+  var categories = new Set();
+  allFetched.forEach(q => { if(q.category) categories.add(q.category); });
+  
+  var catSelect = document.getElementById('filterCategory');
+  catSelect.innerHTML = '<option value="">All Categories</option>';
+  Array.from(categories).sort().forEach(cat => {
+    catSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+  });
 
-  // Scheduled quotes query
-  var nowIso = new Date().toISOString()
-  var schedQuery = supabaseClient
-    .from('quotes')
-    .select('*')
-    .eq('status', 'scheduled')
-    .gte('scheduled_for', nowIso)
+  // 4. Check URL for campaign filter
+  var urlParams = new URLSearchParams(window.location.search);
+  var urlCampId = urlParams.get('campaign_id') || urlParams.get('campaign');
+  if (urlCampId) {
+    document.getElementById('filterCampaign').value = urlCampId;
+    // Apply the banner logic you already have
+    applyCampaignFilter(urlCampId); 
+  }
 
-  if (campaignFilterId) schedQuery = schedQuery.eq('campaign_id', campaignFilterId)
-
-  var scheduledResult = await schedQuery.order('scheduled_for', { ascending: true })
-  scheduledQuotes = scheduledResult.data || []
-
-  renderRunway()
-  renderLive()
-  renderScheduled()
+  // 5. Apply filters and render
+  applyFilters();
 }
 
 async function loadArchived() {
-  var query = supabaseClient
-    .from('quotes')
-    .select('*')
-    .eq('status', 'archived')
+  var query = supabaseClient.from('quotes').select('*').eq('status', 'archived').order('published_at', { ascending: false, nullsFirst: false });
+  var result = await query;
+  baseArchivedQuotes = result.data || [];
+  
+  // Re-apply filters to include archived in the logic if needed, 
+  // though archived usually renders separately.
+  applyFilters(); 
+}
+  function applyFilters() {
+  var campId = document.getElementById('filterCampaign').value;
+  var cat = document.getElementById('filterCategory').value;
 
-  if (campaignFilterId) query = query.eq('campaign_id', campaignFilterId)
+  // Helper to check if a quote matches
+  function matches(q) {
+    if (campId && q.campaign_id !== campId) return false;
+    if (cat && q.category !== cat) return false;
+    return true;
+  }
 
-  var result = await query
-    .order('published_at', { ascending: false, nullsFirst: false })
-    .order('created_at', { ascending: false })
-    .limit(50)
+  // Filter the base arrays
+  var filteredLive = baseLiveQuotes.filter(matches);
+  var filteredSched = baseScheduledQuotes.filter(matches);
+  var filteredArch = baseArchivedQuotes.filter(matches);
 
-  archivedQuotes = result.data || []
-  renderArchived()
+  // Update the variables your render functions use
+  liveQuote = filteredLive.length > 0 ? filteredLive[0] : null; // Keeping your singular logic for live
+  scheduledQuotes = filteredSched;
+  archivedQuotes = filteredArch;
+
+  // Update counts for the UI
+  updateFilteredCounts(filteredLive.length, filteredSched.length, filteredArch.length);
+
+  // Render
+  renderRunway();
+  renderLive();
+  renderScheduled();
+  renderArchived();
 }
 
+function updateFilteredCounts(live, sched, arch) {
+  // Optional: Update the top banner text if you want it to reflect filtered totals
+  // For now, the individual section headers (e.g. "1 quote queued") will update automatically via render functions.
+}
+
+function clearFilters() {
+  document.getElementById('filterCampaign').value = '';
+  document.getElementById('filterCategory').value = '';
+  
+  // Clear URL params
+  var url = new URL(window.location.href);
+  url.searchParams.delete('campaign_id');
+  url.searchParams.delete('campaign');
+  window.history.replaceState({}, '', url);
+  
+  // Clear banner
+  applyCampaignFilter(null);
+  
+  applyFilters();
+}
 // ════════════════════════════════════════════
 // RUNWAY STATUS
 // ════════════════════════════════════════════
