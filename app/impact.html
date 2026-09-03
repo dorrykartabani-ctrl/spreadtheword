@@ -280,82 +280,57 @@ async function init() {
   await loadImpactData();
 }
 
-function getSinceDate() {
-  if (currentTimeframe !== 'week') return '1970-01-01';
-  var d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString();
-}
-
 function formatMoney(amount) {
   return '$' + Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 async function loadImpactData() {
-  var sinceISO = getSinceDate();
-
   try {
-    // 1. Fetch User Profile
+    // 1. Fetch User Profile (This now includes total_shares!)
     var { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
     userProfile = profile || {};
 
-    // 2. Fetch Personal Shares (FIXED: Better logic for All Time vs Week)
-    var sharesQuery = supabaseClient.from('shares').select('id', { count: 'exact', head: true }).eq('user_id', currentUser.id);
-    if (currentTimeframe === 'week') {
-      sharesQuery = sharesQuery.gte('shared_at', sinceISO);
-    }
-    var sharesRes = await sharesQuery;
-    var totalShares = sharesRes.count || 0;
-
-    // 3. Fetch All Other Data in Parallel
+    // 2. Fetch Data in Parallel
     var [
-      recruitsRes, userNationsRes, trophiesRes, avatarsRes, donationsRes,
-      globalSharesRes, globalWarriorsRes, globalNationsRes, projectsRes, globalDonationsRes
+      recruitsRes, userNationsRes, trophiesRes, avatarsRes,
+      globalSharesRes, globalWarriorsRes, globalNationsRes, projectsRes
     ] = await Promise.all([
-      supabaseClient.from('profiles').select('id', { count: 'exact', head: true }).eq('referred_by', currentUser.id).gte('created_at', sinceISO),
+      supabaseClient.from('profiles').select('id', { count: 'exact', head: true }).eq('referred_by', currentUser.id),
       supabaseClient.from('profiles').select('country').eq('referred_by', currentUser.id).not('country', 'is', null),
       supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
       supabaseClient.from('avatar_stages').select('*').order('stage_order', { ascending: true }),
-      supabaseClient.from('donations').select('amount').eq('user_id', currentUser.id),
       
       // Global Data
       supabaseClient.from('shares').select('id', { count: 'exact', head: true }),
       supabaseClient.from('profiles').select('id', { count: 'exact', head: true }),
       supabaseClient.from('profiles').select('country').not('country', 'is', null),
-      supabaseClient.from('projects').select('raised_amount').in('status', ['active', 'completed']),
-      supabaseClient.from('donations').select('amount')
+      supabaseClient.from('projects').select('raised_amount').in('status', ['active', 'completed'])
     ]);
 
     // --- PERSONAL CALCULATIONS ---
+    
+    // FIX: Use total_shares from profile instead of querying shares table
+    var totalShares = userProfile.total_shares || 0;
+    
     var recruits = recruitsRes.count || 0;
     var nationsList = (userNationsRes.data || []).map(p => p.country);
     var nations = new Set(nationsList).size;
     
-    // Badges vs Trophies distinction
+    // Badges vs Trophies
     var badges = (userProfile.badges || []).length; 
     var missions = 0; 
     
-    var donationTotal = (donationsRes.data || []).reduce((sum, d) => sum + Number(d.amount || 0), 0);
-    
-    // Subscription Value
-    var prices = { warrior: 3.99, commander: 5.99, legacy: 9.99 };
-    var tier = (userProfile.subscription_tier || 'free').toLowerCase();
-    var monthly = prices[tier] || 0;
-    var months = 0;
-    if (userProfile.created_at && tier !== 'free') {
-      var start = new Date(userProfile.created_at);
-      var now = new Date();
-      months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
-      if (months < 1) months = 1;
-    }
-    var subValue = months * monthly;
+    // FIX: Force contributions to $0 for launch
+    var subValue = 0;
+    var donationTotal = 0;
 
-    // Trophy Logic (FIXED: parseInt to ensure 5 === 5)
+    // Trophy Logic
     var userProgress = trophiesRes.data || [];
     var tierCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     var mythicCount = 0;
     var totalTrophies = 0;
 
     userProgress.forEach(p => {
-      // Check both possible column names and force integer
       var level = parseInt(p.current_tier_level || p.current_tier_id || 0);
       if (level > 0) {
         tierCounts[level] = (tierCounts[level] || 0) + 1;
@@ -384,8 +359,7 @@ async function loadImpactData() {
     var gNations = new Set(gNationsList).size;
     
     var missionRaised = (projectsRes.data || []).reduce((sum, p) => sum + Number(p.raised_amount || 0), 0);
-    var gDonations = (globalDonationsRes.data || []).reduce((sum, d) => sum + Number(d.amount || 0), 0);
-    var totalRaised = missionRaised + gDonations;
+    var totalRaised = missionRaised; // Donations removed for now
 
     // --- UPDATE DOM ---
 
@@ -441,18 +415,12 @@ async function loadImpactData() {
     safeSetText('statMissions', missions);
     safeSetText('statTrophies', totalTrophies);
 
-    // 5. Kingdom Investment
-    safeSetText('statSubValue', '$' + subValue.toFixed(2));
-    safeSetText('statDonations', '$' + donationTotal.toFixed(2));
-    safeSetText('statTotalContrib', '$' + (subValue + donationTotal).toFixed(2));
-    
-    var totalPersonal = subValue + donationTotal;
-    if(totalPersonal > 0) {
-      var subPct = (subValue / totalPersonal) * 100;
-      var giftPct = (donationTotal / totalPersonal) * 100;
-      document.getElementById('barSubs').style.width = subPct + '%';
-      document.getElementById('barGifts').style.width = giftPct + '%';
-    }
+    // 5. Kingdom Investment (Forced to 0)
+    safeSetText('statSubValue', '$0');
+    safeSetText('statDonations', '$0');
+    safeSetText('statTotalContrib', '$0');
+    document.getElementById('barSubs').style.width = '0%';
+    document.getElementById('barGifts').style.width = '0%';
 
     // 6. Global Stats
     safeSetText('globalShares', gShares.toLocaleString());
@@ -461,7 +429,7 @@ async function loadImpactData() {
     
     safeSetText('globalRaisedTotal', formatMoney(totalRaised));
     safeSetText('globalMissionsRaised', formatMoney(missionRaised));
-    safeSetText('globalDonationsRaised', formatMoney(gDonations));
+    safeSetText('globalDonationsRaised', '$0');
 
   } catch (err) {
     console.error("Error loading impact data:", err);
@@ -470,5 +438,3 @@ async function loadImpactData() {
 
 init();
 </script>
-</body>
-</html>
