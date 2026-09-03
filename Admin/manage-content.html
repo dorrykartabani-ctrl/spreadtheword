@@ -423,7 +423,23 @@ function fieldImage(label, field, d) {
 // ─── SECTION TEMPLATES ─────────────────────────────────────
 const SECTION_TYPES = {
   hero: { label: 'Hero', icon: 'flag', chipClass: 'chip-hero', description: 'Scripture banner & title', defaultData: { layout: 'right-aligned', overlay_style: 'light', headline: 'Spread the Word.|Change the World.', scripture_intro: 'And He said to them,', scripture_quote: 'Go into all the world and preach the gospel to every creature', scripture_ref: 'Mark 16:15', cta_text: 'Enlist in the Mission', cta_link: '#pricing' } },
-  stats: { label: 'Live Stats Grid', icon: 'monitoring', chipClass: 'chip-features', description: 'Dynamic counters', defaultData: { label_1: 'Warriors Enlisted', label_2: 'Words Deployed', label_3: 'Countries Reached' } },
+stats: {
+  label: 'Live Stats Grid',
+  icon: 'monitoring',
+  chipClass: 'chip-features',
+  description: 'Dynamic live counters',
+  defaultData: {
+    section_title: 'FIELD REPORT',
+    section_subtitle: 'The Mission Is Moving',
+    items: [
+      { metric: 'warriors', label: 'Warriors Enlisted', fallback: '1248' },
+      { metric: 'shares',   label: 'Words Deployed',   fallback: '47892' },
+      { metric: 'countries',label: 'Countries Reached',fallback: '38' },
+      { metric: 'trending', label: 'Trending Now',     fallback: '1847' },
+      { metric: 'most_shared', label: 'Most Shared Today', fallback: '3201' }
+    ]
+  }
+},
   features: { label: 'Card Grid', icon: 'view_agenda', chipClass: 'chip-features', description: '3-Column image cards', defaultData: { section_title: 'WHY ENLIST?', section_subtitle: 'Soldiers, Not Spectators.', items: [] } },
   steps: { label: 'Steps / Orders', icon: 'format_list_numbered', chipClass: 'chip-about', description: 'Alternating zig-zag blocks', defaultData: { section_title: 'YOUR ORDERS', section_subtitle: 'How It Works', items: [] } },
   text_block: { label: 'Text / About Block', icon: 'subject', chipClass: 'chip-about', description: 'Centered narrative text', defaultData: { section_title: 'THE STRATEGY', section_subtitle: 'About Us', body_text: 'Your mission narrative here.' } },
@@ -514,7 +530,21 @@ function renderEditor() {
         <hr class="border-surface-chigh my-5">
         <div class="grid grid-cols-2 gap-4">${fieldCta('Primary', 'cta', d)} ${fieldCta('Secondary', 'secondary_cta', d)}</div>
         ${fieldImage('Background Image', 'background_image', d)}`; break;
-    case 'stats': fieldsHTML = `${fieldText('Stat 1 Label', 'label_1', d)} ${fieldText('Stat 2 Label', 'label_2', d)} ${fieldText('Stat 3 Label', 'label_3', d)}`; break;
+  case 'stats':
+  fieldsHTML = `
+    ${fieldText('Section Eyebrow', 'section_title', d)}
+    ${fieldText('Main Headline', 'section_subtitle', d)}
+    <div class="field-group">
+      <label class="field-label">Stat Cards</label>
+      <p class="field-hint mb-3">Pick a live metric for each card. Numbers update from the database.</p>
+      <div id="repeater-stats-items">
+        ${(d.items || []).map((item, i) => statsItemHTML(i, item)).join('')}
+      </div>
+      <button onclick="addStatsItem()" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-c text-[11px] font-bold hover:bg-surface-chigh">
+        <span class="material-symbols-outlined" style="font-size:14px;">add</span>Add Stat
+      </button>
+    </div>`;
+  break;
     case 'features':
     case 'steps':
       fieldsHTML = `${fieldText('Section Eyebrow', 'section_title', d)} ${fieldText('Main Headline', 'section_subtitle', d)}
@@ -538,7 +568,17 @@ function renderEditor() {
 
   panel.innerHTML = `<div class="p-6 lg:p-8 max-w-3xl"><div class="flex items-center gap-3 mb-6"><span class="material-symbols-outlined text-primary text-[24px]">${type.icon}</span><div><h3 class="font-headline font-bold text-[18px]">${escapeHtml(s.title||type.label)}</h3><span class="chip ${type.chipClass}">${type.label}</span></div></div><div class="bg-surface-cl rounded-2xl p-6 shadow-ambient-sm">${fieldText('Admin Label', 'title', s)}<hr class="border-surface-chigh my-5">${fieldsHTML}</div></div>`;
 }
-
+function renderEmptyEditor() {
+  const panel = $('editorPanel');
+  if (!panel) return;
+  panel.innerHTML = `
+    <div class="empty-state h-full min-h-[400px]">
+      <span class="material-symbols-outlined text-outline-variant" style="font-size:48px;">web</span>
+      <p class="font-headline font-bold text-on-surface-variant mt-4" style="font-size:16px;">Select a section to edit</p>
+      <p class="font-body text-outline mt-1" style="font-size:13px;">Choose from the list on the left or add a new section</p>
+    </div>`;
+}
+  
 // ─── REPEATERS & HELPERS ───────────────────────────────────
 function cardItemHTML(type, i, item = {}) {
   return `<div class="repeater-item" data-index="${i}"><div class="remove-btn" onclick="removeRepeaterItem('${type}','items',${i})"><span class="material-symbols-outlined text-[14px]">close</span></div><div class="field-group"><label class="field-label">Image URL</label><div class="flex gap-2"><input type="text" class="field-input flex-1" data-repeater="${type}-items-${i}-image" value="${escapeAttr(item.image||'')}" oninput="markDirty()"><button onclick="openImagePicker('${type}-items-${i}-image', true)" class="px-3 py-2 bg-surface-chigh rounded-lg text-xs font-bold">Pick</button></div></div><div class="grid grid-cols-2 gap-3"><input type="text" class="field-input" data-repeater="${type}-items-${i}-title" value="${escapeAttr(item.title||'')}" placeholder="Title" oninput="markDirty()"><input type="text" class="field-input" data-repeater="${type}-items-${i}-description" value="${escapeAttr(item.description||'')}" placeholder="Description" oninput="markDirty()"></div></div>`;
@@ -562,7 +602,59 @@ function addRepeaterItem(type, key, fn) {
   if(c){ try { c.insertAdjacentHTML('beforeend', fn(type, i, {})); } catch(e) { c.insertAdjacentHTML('beforeend', fn(i, {})); } }
   markDirty();
 }
+const STAT_METRICS = [
+  { value: 'warriors',     label: 'Warriors Enlisted (profiles count)' },
+  { value: 'shares',       label: 'Words Deployed (shares count)' },
+  { value: 'countries',    label: 'Countries Reached (unique countries)' },
+  { value: 'trending',     label: 'Trending Now (shares last 24h)' },
+  { value: 'most_shared',  label: 'Most Shared Today (top quote shares)' },
+  { value: 'active_today', label: 'Active Today (profiles active 24h)' },
+  { value: 'custom',       label: 'Custom (use fallback number only)' }
+];
 
+function statsItemHTML(i, item = {}) {
+  const metric = item.metric || 'warriors';
+  const opts = STAT_METRICS.map(m =>
+    `<option value="${m.value}" ${metric === m.value ? 'selected' : ''}>${m.label}</option>`
+  ).join('');
+
+  return `
+    <div class="repeater-item" data-index="${i}">
+      <div class="remove-btn" onclick="removeRepeaterItem('stats','items',${i})">
+        <span class="material-symbols-outlined" style="font-size:14px;">close</span>
+      </div>
+      <div class="grid grid-cols-1 gap-2">
+        <div class="field-group mb-0">
+          <label class="field-label">Live Metric</label>
+          <select class="field-input" data-repeater="stats-items-${i}-metric" onchange="markDirty()">
+            ${opts}
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div class="field-group mb-0">
+            <label class="field-label">Display Label</label>
+            <input type="text" class="field-input" data-repeater="stats-items-${i}-label"
+              value="${escapeAttr(item.label || '')}" placeholder="Warriors Enlisted" oninput="markDirty()">
+          </div>
+          <div class="field-group mb-0">
+            <label class="field-label">Fallback Number</label>
+            <input type="text" class="field-input" data-repeater="stats-items-${i}-fallback"
+              value="${escapeAttr(item.fallback || '0')}" placeholder="1248" oninput="markDirty()">
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function addStatsItem() {
+  const s = sections.find(x => x.id === activeSectionId);
+  if (!s) return;
+  if (!s.data) s.data = {};
+  if (!Array.isArray(s.data.items)) s.data.items = [];
+  s.data.items.push({ metric: 'warriors', label: 'New Stat', fallback: '0' });
+  renderEditor();
+  markDirty();
+}
 function addSocialItem() {
   const s = sections.find(x => x.id === activeSectionId);
   if(!s)return; if(!s.data)s.data={}; if(!s.data.items)s.data.items=[];
