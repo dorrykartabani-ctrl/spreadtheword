@@ -229,6 +229,7 @@
 <script>
 var supabaseClient = supabase.createClient('https://nhymadutuhpjgkiurify.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM');
 var currentUser = null, allTiers = [], allTrophies = [], allThresholds = [], allCampaigns = [], allMissions = [], trophyImages = [], avatarImages = [], badgeImages = [], allAvatars = [], allBadges = [];
+var currentUser = null, allTiers = [], allTrophies = [], allThresholds = [], allCampaigns = [], allMissions = [], trophyImages = [], avatarImages = [], badgeImages = [], allAvatars = [], allBadges = [], campaignQuoteCounts = {};
 function getEl(id) { return document.getElementById(id); }
 function toggleSidebar() { getEl('sidebar').classList.toggle('hidden'); getEl('sidebar').classList.toggle('flex'); getEl('sidebarOverlay').classList.toggle('hidden'); }
 async function handleLogout() { await supabaseClient.auth.signOut(); window.location.href = 'login.html'; }
@@ -263,6 +264,15 @@ async function loadData() {
   allMissions = projRes.data || []; 
   allCampaigns = campRes.data || [];
   
+  // NEW: Count quotes for every campaign so we can calculate thresholds later
+  campaignQuoteCounts = {};
+  if (allCampaigns.length > 0) {
+    var qRes = await supabaseClient.from('quotes').select('campaign_id').in('campaign_id', allCampaigns.map(c => c.id));
+    (qRes.data || []).forEach(q => {
+        if(q.campaign_id) campaignQuoteCounts[q.campaign_id] = (campaignQuoteCounts[q.campaign_id] || 0) + 1;
+    });
+  }
+  
   var mediaData = mediaRes.data || [];
   trophyImages = mediaData.filter(m => m.type === 'trophy');
   avatarImages = mediaData.filter(m => m.type === 'avatar');
@@ -289,8 +299,39 @@ function toggleTrophyType() {
 }
 
 function renderParticipationChecklists() {
-  getEl('missionChecklist').innerHTML = allMissions.length ? allMissions.map(m => `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer"><input type="checkbox" value="${m.id}" class="mission-cb"><span class="text-sm font-semibold text-slate-700">${m.title}</span></label>`).join('') : '<p class="text-xs text-slate-400 p-2">No active missions.</p>';
-  getEl('campaignChecklist').innerHTML = allCampaigns.length ? allCampaigns.map(c => `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer"><input type="checkbox" value="${c.id}" class="campaign-cb"><span class="text-sm font-semibold text-slate-700">${c.name}</span></label>`).join('') : '<p class="text-xs text-slate-400 p-2">No active campaigns.</p>';
+  // Render Missions
+  getEl('missionChecklist').innerHTML = allMissions.length ? allMissions.map(m => `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer"><input type="checkbox" value="${m.id}" class="mission-cb" onchange="updateCollectionThresholds()"><span class="text-sm font-semibold text-slate-700">${m.title}</span></label>`).join('') : '<p class="text-xs text-slate-400 p-2">No active missions.</p>';
+  
+  // Render Campaigns
+  getEl('campaignChecklist').innerHTML = allCampaigns.length ? allCampaigns.map(c => `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer"><input type="checkbox" value="${c.id}" class="campaign-cb" onchange="updateCollectionThresholds()"><span class="text-sm font-semibold text-slate-700">${c.name}</span></label>`).join('') : '<p class="text-xs text-slate-400 p-2">No active campaigns.</p>';
+}
+
+// NEW FUNCTION: Calculates thresholds based on selected campaigns
+function updateCollectionThresholds() {
+  var type = getEl('trophyType').value;
+  // Only run this if we are in Collection mode
+  if (type !== 'collection') return;
+
+  var checkedBoxes = document.querySelectorAll('#campaignChecklist .campaign-cb:checked');
+  var totalQuotes = 0;
+  
+  // Sum up the quotes from all checked campaigns
+  checkedBoxes.forEach(cb => {
+    totalQuotes += (campaignQuoteCounts[cb.value] || 0);
+  });
+
+  // If we have quotes, update the 5 tier inputs automatically
+  if (totalQuotes > 0) {
+    var tiers = document.querySelectorAll('.tier-thresh');
+    if (tiers.length === 5) {
+      // Distribute evenly: 20%, 40%, 60%, 80%, 100%
+      tiers[0].value = Math.ceil(totalQuotes * 0.2);
+      tiers[1].value = Math.ceil(totalQuotes * 0.4);
+      tiers[2].value = Math.ceil(totalQuotes * 0.6);
+      tiers[3].value = Math.ceil(totalQuotes * 0.8);
+      tiers[4].value = totalQuotes;
+    }
+  }
 }
 
 function openTrophyModal() {
