@@ -25,7 +25,7 @@
     .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
     ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:10px}
     .sidebar{background:#0e0e0c;color:#f7f9ff; z-index: 50;}
-    .sidebar-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;color:rgba(247,249,255,0.6);font-size:13px;font-weight:600; transition:all 0.15s ease;}
+    .sidebar-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;color:rgba(247,249,255,0.6);font-size:13px;font-weight:600; transition:all 0.15s ease;text-decoration:none;}
     .sidebar-item:hover{background:#1a1a18;color:#f7f9ff}.sidebar-item.active{background:#3d6285;color:#f7f9ff}
     .form-input { background: #f5f4ed; border: 1px solid transparent; transition: all 0.2s; color: #31332e; }
     .form-input:focus { background: #ffffff; border-color: rgba(61,98,133,0.3); outline: none; }
@@ -34,6 +34,10 @@
     .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #efeee7; }
     .skeleton{ background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:8px; }
     @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    .toggle-pill{ width:44px;height:24px;background:#b2b2ab;border-radius:12px; position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0; }
+    .toggle-pill.on{background:#3d6285}
+    .toggle-pill .toggle-dot{ width:18px;height:18px;background:white;border-radius:50%; position:absolute;top:3px;left:3px;transition:left 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
+    .toggle-pill.on .toggle-dot{left:23px}
   </style>
 </head>
 <body class="flex bg-surface">
@@ -66,7 +70,7 @@
     <div class="flex items-center gap-3 px-2 py-2">
       <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center text-on-primary font-headline font-bold flex-shrink-0 admin-initials" style="font-size:13px;">AD</div>
       <div class="flex-1 min-w-0"><p class="font-body font-semibold text-white truncate admin-name" style="font-size:12px;">Admin</p><p class="text-white/40 font-body" style="font-size:10px;">Super Admin</p></div>
-      <button onclick="handleLogout()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-all flex-shrink-0" title="Log out"><span class="material-symbols-outlined" style="font-size:16px;">logout</span></button>
+      <button onclick="handleLogout()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-all flex-shrink-0"><span class="material-symbols-outlined" style="font-size:16px;">logout</span></button>
     </div>
   </div>
 </aside>
@@ -78,6 +82,8 @@
     <h2 class="font-headline font-bold text-on-surface text-xl">Progression Engine</h2>
     <div class="flex gap-2">
       <button onclick="openTrophyModal()" class="signature-gradient text-white font-headline font-semibold rounded-xl px-4 py-2 flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform"><span class="material-symbols-outlined text-lg">add</span> New Trophy</button>
+      <button onclick="openBadgeModal()" class="bg-slate-800 text-white font-headline font-semibold rounded-xl px-4 py-2 flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform"><span class="material-symbols-outlined text-lg">add</span> New Badge</button>
+      <button onclick="openAvatarModal()" class="bg-gold text-white font-headline font-semibold rounded-xl px-4 py-2 flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform"><span class="material-symbols-outlined text-lg">add</span> New Avatar Stage</button>
     </div>
   </header>
 
@@ -85,32 +91,13 @@
     <div class="max-w-6xl mx-auto">
       <div class="flex border-b border-surface-c mb-6">
         <button onclick="switchTab('trophies')" id="tab-trophies" class="tab-btn active">Trophies</button>
+        <button onclick="switchTab('badges')" id="tab-badges" class="tab-btn">Badges</button>
         <button onclick="switchTab('avatars')" id="tab-avatars" class="tab-btn">Avatars</button>
-        <button onclick="switchTab('badgeRules')" id="tab-badgeRules" class="tab-btn">Badge Rules</button>
       </div>
 
-      <!-- TROPHIES TAB -->
-      <div id="view-trophies">
-        <div id="trophyGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-      </div>
-
-      <!-- AVATARS TAB -->
-      <div id="view-avatars" class="hidden">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="font-headline font-bold text-lg">Avatar Journey Stages</h3>
-          <button onclick="openAvatarModal()" class="bg-slate-800 text-white font-headline font-semibold rounded-xl px-4 py-2 flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform"><span class="material-symbols-outlined text-lg">add</span> New Stage</button>
-        </div>
-        <div id="avatarList" class="space-y-3"></div>
-      </div>
-
-      <!-- BADGE RULES TAB -->
-      <div id="view-badgeRules" class="hidden">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="font-headline font-bold text-lg">Badge Assignment Rules</h3>
-          <button onclick="openBadgeRuleModal()" class="bg-slate-800 text-white font-headline font-semibold rounded-xl px-4 py-2 flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform"><span class="material-symbols-outlined text-lg">add</span> New Rule</button>
-        </div>
-        <div id="badgeRuleList" class="space-y-3"></div>
-      </div>
+      <div id="view-trophies"><div id="trophyGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"><div class="skeleton h-48 w-full"></div></div></div>
+      <div id="view-badges" class="hidden"><div id="badgeList" class="space-y-3"><div class="skeleton h-20 w-full"></div></div></div>
+      <div id="view-avatars" class="hidden"><div id="avatarList" class="space-y-3"><div class="skeleton h-20 w-full"></div></div></div>
     </div>
   </div>
 </div>
@@ -126,166 +113,158 @@
       <input type="hidden" id="trophyId">
       <div class="grid grid-cols-2 gap-4">
         <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Trophy Name</label><input type="text" id="trophyName" class="form-input w-full rounded-xl px-4 py-3 text-sm"></div>
-        <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Type</label><select id="trophyType" onchange="toggleTrophyType()" class="form-input w-full rounded-xl px-4 py-3 text-sm"><option value="stat">Stat Based (Grind)</option><option value="collection">Collection Based (Campaigns)</option></select></div>
+        <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Type</label>
+          <select id="trophyType" onchange="toggleTrophyType()" class="form-input w-full rounded-xl px-4 py-3 text-sm">
+            <option value="stat">Stat Based (Grind)</option>
+            <option value="collection">Collection Based (Campaigns)</option>
+            <option value="participation">Participation (Missions/Campaigns)</option>
+          </select>
+        </div>
       </div>
-      <div id="statTypeContainer"><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Stat Type</label><select id="trophyStatType" class="form-input w-full rounded-xl px-4 py-3 text-sm"><option value="shares">Total Shares</option><option value="recruits">Warriors Recruited</option><option value="donations">Total Donations ($)</option><option value="countries_reached">Countries Reached</option><option value="platform_shares">Platform Shares</option><option value="streaks">Daily/Weekly Streaks</option><option value="missions_completed">Missions Completed</option><option value="badges_earned">Badges Earned</option><option value="other">Other</option></select></div>
-      <div id="campaignContainer" class="hidden"><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Linked Campaigns</label><div id="campaignChecklist" class="bg-surface-clow rounded-xl p-3 max-h-40 overflow-y-auto space-y-1"></div></div>
+      <div id="statTypeContainer"><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Stat Type</label><select id="trophyStatType" class="form-input w-full rounded-xl px-4 py-3 text-sm"><option value="shares">Total Shares</option><option value="recruits">Warriors Recruited</option><option value="donations">Total Donations ($)</option><option value="other">Other</option></select></div>
+      
+      <div id="participationContainer" class="hidden space-y-3">
+        <label class="text-[11px] font-bold text-slate-500 uppercase block">Link Active Missions</label>
+        <div id="missionChecklist" class="bg-surface-clow rounded-xl p-3 max-h-32 overflow-y-auto space-y-1"></div>
+        <label class="text-[11px] font-bold text-slate-500 uppercase block mt-2">Link Active Campaigns</label>
+        <div id="campaignChecklist" class="bg-surface-clow rounded-xl p-3 max-h-32 overflow-y-auto space-y-1"></div>
+      </div>
+
       <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Base Trophy Image</label><select id="trophyImage" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select></div>
-      <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Description</label><textarea id="trophyDesc" rows="2" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. Awarded for sharing your first quote..."></textarea></div>
-      <div class="pt-4 border-t border-slate-100">
-        <h4 class="font-headline font-bold text-sm mb-3">Tier Thresholds</h4>
-        <p class="text-xs text-slate-500 mb-4">Set the number required to reach each tier level.</p>
-        <div id="thresholdsContainer" class="space-y-2"></div>
+      <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Description</label><textarea id="trophyDesc" rows="2" class="form-input w-full rounded-xl px-4 py-3 text-sm"></textarea></div>
+      <div class="pt-4 border-t border-slate-100"><h4 class="font-headline font-bold text-sm mb-3">Tier Thresholds</h4><div id="thresholdsContainer" class="space-y-2"></div></div>
+    </div>
+    <div class="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 sticky bottom-0"><button onclick="closeTrophyModal()" class="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-200">Cancel</button><button onclick="saveTrophy()" id="saveTrophyBtn" class="signature-gradient text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md">Save Trophy</button></div>
+  </div>
+</div>
+
+<!-- BADGE MODAL -->
+<div id="badgeModal" class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+    <div class="p-6 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10">
+      <h3 class="font-headline font-bold text-xl" id="badgeModalTitle">Edit Badge</h3>
+      <button onclick="closeBadgeModal()" class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="p-6 space-y-5">
+      <input type="hidden" id="badgeId">
+      <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Badge Name</label><input type="text" id="badgeName" class="form-input w-full rounded-xl px-4 py-3 text-sm"></div>
+      <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Description</label><textarea id="badgeDesc" rows="2" class="form-input w-full rounded-xl px-4 py-3 text-sm"></textarea></div>
+      <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Rule Type</label>
+        <select id="badgeRuleType" onchange="toggleBadgeRule()" class="form-input w-full rounded-xl px-4 py-3 text-sm">
+          <option value="milestone">Milestone (Stats)</option>
+          <option value="signup">Signup Condition</option>
+          <option value="participation">Participation</option>
+        </select>
+      </div>
+      <div id="badgeParticipationContainer" class="hidden space-y-3">
+        <label class="text-[11px] font-bold text-slate-500 uppercase block">Trigger</label>
+        <div class="flex items-center gap-2 p-3 bg-surface-clow rounded-xl"><input type="checkbox" id="badgeAdminReferral" class="w-4 h-4 accent-primary"><span class="text-sm font-semibold">Award on Admin Referral Sign-up</span></div>
+        <label class="text-[11px] font-bold text-slate-500 uppercase block mt-2">Or Link Specific Items</label>
+        <div id="badgeMissionChecklist" class="bg-surface-clow rounded-xl p-3 max-h-32 overflow-y-auto space-y-1"></div>
+        <div id="badgeCampaignChecklist" class="bg-surface-clow rounded-xl p-3 max-h-32 overflow-y-auto space-y-1 mt-2"></div>
       </div>
     </div>
-    <div class="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 sticky bottom-0">
-      <button onclick="closeTrophyModal()" class="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-200 transition-colors">Cancel</button>
-      <button onclick="saveTrophy()" id="saveTrophyBtn" class="signature-gradient text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform">Save Trophy</button>
+    <div class="p-6 border-t border-slate-100 bg-slate-50 flex justify-between items-center sticky bottom-0">
+      <button onclick="deleteBadge()" id="deleteBadgeBtn" class="px-5 py-2.5 rounded-xl font-bold text-sm text-red-500 hover:bg-red-50 hidden">Delete</button>
+      <div class="flex gap-3 ml-auto"><button onclick="closeBadgeModal()" class="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-200">Cancel</button><button onclick="saveBadge()" id="saveBadgeBtn" class="signature-gradient text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md">Save Badge</button></div>
     </div>
   </div>
 </div>
 
 <!-- AVATAR MODAL -->
 <div id="avatarModal" class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-    <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+    <div class="p-6 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10">
       <h3 class="font-headline font-bold text-xl" id="avatarModalTitle">Avatar Stage</h3>
       <button onclick="closeAvatarModal()" class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined">close</span></button>
     </div>
     <div class="p-6 space-y-5">
       <input type="hidden" id="avatarId">
       <div class="grid grid-cols-2 gap-4">
-        <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Stage Order</label><input type="number" id="avatarOrder" class="form-input w-full rounded-xl px-4 py-3 text-sm"></div>
-        <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Journey Name</label><input type="text" id="avatarName" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. The Servant"></div>
+        <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Era</label><input type="text" id="avatarEra" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. Era 1"></div>
+        <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Journey</label><input type="text" id="avatarJourney" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. The Seeker"></div>
       </div>
-      <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Mythic Trophies Required</label><input type="number" id="avatarMythicReq" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="0"><p class="text-[9px] text-slate-400 mt-1">Total Mythic trophies needed to unlock this stage.</p></div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Stage Order</label><input type="number" id="avatarOrder" class="form-input w-full rounded-xl px-4 py-3 text-sm"></div>
+        <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Journey Name</label><input type="text" id="avatarName" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. The Slinger"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Req. Type</label>
+          <select id="avatarReqType" class="form-input w-full rounded-xl px-4 py-3 text-sm">
+            <option value="mythic">Mythic Trophies</option>
+            <option value="shares">Total Shares</option>
+            <option value="recruits">Recruits</option>
+            <option value="badge">Specific Badge</option>
+          </select>
+        </div>
+        <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Req. Value</label><input type="number" id="avatarReqValue" class="form-input w-full rounded-xl px-4 py-3 text-sm"></div>
+      </div>
       <div class="grid grid-cols-2 gap-4">
         <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Male Image</label><select id="avatarImageMale" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select></div>
         <div><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Female Image</label><select id="avatarImageFemale" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select></div>
       </div>
     </div>
-    <div class="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-      <button onclick="closeAvatarModal()" class="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-200 transition-colors">Cancel</button>
-      <button onclick="saveAvatar()" id="saveAvatarBtn" class="signature-gradient text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform">Save Stage</button>
-    </div>
+    <div class="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 sticky bottom-0"><button onclick="closeAvatarModal()" class="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-200">Cancel</button><button onclick="saveAvatar()" id="saveAvatarBtn" class="signature-gradient text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md">Save Stage</button></div>
   </div>
 </div>
 
-<!-- BADGE RULE MODAL -->
-<div id="badgeRuleModal" class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-    <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-      <h3 class="font-headline font-bold text-xl">Set Badge Rule</h3>
-      <button onclick="closeBadgeRuleModal()" class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined">close</span></button>
-    </div>
-       <div class="p-6 space-y-5">
-      <input type="hidden" id="ruleBadgeId">
-      <div>
-        <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Select Badge</label>
-        <select id="ruleBadgeSelect" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select>
-      </div>
-      <div>
-        <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Rule Type</label>
-        <select id="ruleType" onchange="toggleRuleFields()" class="form-input w-full rounded-xl px-4 py-3 text-sm">
-          <option value="campaign">Campaign Completion</option>
-          <option value="signup">Signup Condition (Genesis)</option>
-          <option value="gift">Manual Gift (Admin Awarded)</option>
-          <option value="top10">Top 10 Ranking</option>
-        </select>
-      </div>
-
-      <!-- Campaign Field -->
-      <div id="field-campaign" class="hidden">
-        <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Linked Campaigns</label>
-        <div id="ruleCampaignList" class="bg-surface-clow rounded-xl p-3 max-h-32 overflow-y-auto space-y-1"></div>
-      </div>
-
-      <!-- Signup Field -->
-      <div id="field-signup" class="hidden">
-        <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Signup Condition</label>
-        <input type="text" id="signupCondition" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. Referred by Admin, Used Code 'GENESIS'">
-        <p class="text-[10px] text-slate-400 mt-2">App will check this condition when a user signs up.</p>
-      </div>
-
-      <!-- Gift Field -->
-      <div id="field-gift" class="hidden">
-        <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-800">
-          <strong>Manual Award:</strong> This badge will not be auto-assigned. Use the Analytics page to identify worthy users, then award this badge manually via the Warriors page.
-        </div>
-      </div>
-
-      <!-- Top 10 Field -->
-      <div id="field-top10" class="hidden">
-        <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm text-amber-800">
-          <strong>Top 10 Strategy:</strong> Create 10 separate badges (e.g., "Top Sharer #1", "Top Sharer #2"). Assign these manually to the top users in your Analytics dashboard each week/month.
-        </div>
-      </div>
-    </div>
-
-<!-- TOAST NOTIFICATION -->
-<div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-slate-900/90 backdrop-blur-md text-white font-body font-bold px-5 py-3 rounded-full shadow-2xl items-center gap-2 text-sm">
-  <span id="toastIcon" class="material-symbols-outlined text-green-400">check_circle</span>
-  <span id="toastMsg"></span>
-</div>
+<div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-slate-900/90 backdrop-blur-md text-white font-body font-bold px-5 py-3 rounded-full shadow-2xl items-center gap-2 text-sm"><span id="toastIcon" class="material-symbols-outlined text-green-400">check_circle</span><span id="toastMsg"></span></div>
 
 <script>
 var supabaseClient = supabase.createClient('https://nhymadutuhpjgkiurify.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM');
-var currentUser = null, allTiers = [], allTrophies = [], allThresholds = [], allCampaigns = [], trophyImages = [], avatarImages = [], allAvatars = [], allBadgeRules = [];
+var currentUser = null, allTiers = [], allTrophies = [], allThresholds = [], allCampaigns = [], allMissions = [], trophyImages = [], avatarImages = [], allAvatars = [], allBadges = [];
 function getEl(id) { return document.getElementById(id); }
-function toggleSidebar() { getEl('sidebar').classList.toggle('hidden'); getEl('sidebar').classList.toggle('flex'); }
+function toggleSidebar() { getEl('sidebar').classList.toggle('hidden'); getEl('sidebar').classList.toggle('flex'); getEl('sidebarOverlay').classList.toggle('hidden'); }
 async function handleLogout() { await supabaseClient.auth.signOut(); window.location.href = 'login.html'; }
 var toastTimer;
-function showToast(msg, isErr=false) { var t = getEl('toast'); if(!t) return; getEl('toastMsg').textContent = msg; var icon = getEl('toastIcon'); icon.textContent = isErr ? 'error' : 'check_circle'; icon.className = 'material-symbols-outlined ' + (isErr ? 'text-red-400' : 'text-green-400'); t.classList.remove('hidden'); t.classList.add('flex'); clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.classList.add('hidden'); t.classList.remove('flex'); }, 3000); }
+function showToast(msg, isErr=false) { var t = getEl('toast'); getEl('toastMsg').textContent = msg; var icon = getEl('toastIcon'); icon.textContent = isErr ? 'error' : 'check_circle'; icon.className = 'material-symbols-outlined ' + (isErr ? 'text-red-400' : 'text-green-400'); t.classList.remove('hidden'); t.classList.add('flex'); clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.classList.add('hidden'); t.classList.remove('flex'); }, 3000); }
 
 async function init() {
   var s = await supabaseClient.auth.getSession(); if (!s.data.session) return window.location.href = 'login.html'; currentUser = s.data.session.user;
   var p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single(); if (!p.data || p.data.role !== 'admin') return window.location.href = '../app/index.html';
   document.querySelectorAll('.admin-name').forEach(el => el.textContent = p.data.full_name || currentUser.email); document.querySelectorAll('.admin-initials').forEach(el => el.textContent = (p.data.full_name || 'AD').substring(0,2).toUpperCase());
-  await Promise.all([loadMedia(), loadCampaigns(), loadData(), loadBadgeRules()]);
+  await loadData();
 }
 
-async function loadMedia() { var { data } = await supabaseClient.from('media').select('*').in('type', ['trophy', 'avatar']).eq('is_active', true); var media = data || []; trophyImages = media.filter(m => m.type === 'trophy'); avatarImages = media.filter(m => m.type === 'avatar'); }
-async function loadCampaigns() { var { data } = await supabaseClient.from('campaigns').select('id, name').order('name'); allCampaigns = data || []; }
-
 async function loadData() {
-  var [tierRes, tRes, threshRes, avatarRes] = await Promise.all([
+  var [tierRes, tRes, threshRes, bRes, aRes, avRes, mRes, cRes] = await Promise.all([
     supabaseClient.from('trophy_tiers').select('*').order('id'),
     supabaseClient.from('trophy_definitions').select('*').order('created_at', {ascending: false}),
     supabaseClient.from('trophy_thresholds').select('*'),
-    supabaseClient.from('avatar_stages').select('*').order('stage_order')
+    supabaseClient.from('badge_definitions').select('*').order('created_at', {ascending: false}),
+    supabaseClient.from('avatar_stages').select('*').order('stage_order'),
+    supabaseClient.from('media').select('*').in('type', ['trophy', 'avatar']).eq('is_active', true),
+    supabaseClient.from('projects').select('id, name').eq('status', 'active'),
+    supabaseClient.from('campaigns').select('id, name').eq('status', 'active')
   ]);
-  allTiers = tierRes.data || []; allTrophies = tRes.data || []; allThresholds = threshRes.data || []; allAvatars = avatarRes.data || [];
-  renderTrophies(); renderAvatars(); populateDropdowns();
+  allTiers = tierRes.data || []; allTrophies = tRes.data || []; allThresholds = threshRes.data || []; allBadges = bRes.data || []; allAvatars = aRes.data || [];
+  allMissions = mRes.data || []; allCampaigns = cRes.data || [];
+  var media = mRes.data || []; // reusing mRes variable name accidentally, fix below
+  var mediaData = (await supabaseClient.from('media').select('*').in('type', ['trophy', 'avatar']).eq('is_active', true)).data || [];
+  trophyImages = mediaData.filter(m => m.type === 'trophy');
+  avatarImages = mediaData.filter(m => m.type === 'avatar');
+  renderTrophies(); renderBadges(); renderAvatars(); populateDropdowns();
 }
 
-async function loadBadgeRules() {
-  var { data } = await supabaseClient.from('badge_definitions').select('*').not('rule_type', 'is', null).order('created_at', {ascending: false});
-  allBadgeRules = data || [];
-  renderBadgeRules();
-}
+function switchTab(tab) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); getEl('tab-' + tab).classList.add('active'); getEl('view-trophies').classList.toggle('hidden', tab !== 'trophies'); getEl('view-badges').classList.toggle('hidden', tab !== 'badges'); getEl('view-avatars').classList.toggle('hidden', tab !== 'avatars'); }
 
-function switchTab(tab) { 
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); 
-  getEl('tab-' + tab).classList.add('active'); 
-  getEl('view-trophies').classList.toggle('hidden', tab !== 'trophies'); 
-  getEl('view-avatars').classList.toggle('hidden', tab !== 'avatars'); 
-  getEl('view-badgeRules').classList.toggle('hidden', tab !== 'badgeRules'); 
-}
-
-// --- TROPHIES & AVATARS (Kept same as before) ---
-function populateDropdowns() { 
-  var tImgSel = getEl('trophyImage'); if(tImgSel) { tImgSel.innerHTML = '<option value="">-- Select Image --</option>'; trophyImages.forEach(m => tImgSel.innerHTML += `<option value="${m.url}">${m.label}</option>`); }
-  var aImgMaleSel = getEl('avatarImageMale'); var aImgFemaleSel = getEl('avatarImageFemale');
-  if(aImgMaleSel && aImgFemaleSel) { var options = '<option value="">-- Select Image --</option>'; avatarImages.forEach(m => options += `<option value="${m.url}">${m.label}</option>`); aImgMaleSel.innerHTML = options; aImgFemaleSel.innerHTML = options; }
-}
-function toggleTrophyType() { var isC = getEl('trophyType').value === 'collection'; getEl('statTypeContainer').classList.toggle('hidden', isC); getEl('campaignContainer').classList.toggle('hidden', !isC); var inputs = document.querySelectorAll('.tier-thresh'); inputs.forEach(input => input.disabled = isC); if (isC) renderCampaignChecklist(); }
-async function calculateCollectionThresholds() { var selected = Array.from(document.querySelectorAll('.campaign-cb:checked')).map(cb => cb.value); if (selected.length === 0) return; var { count } = await supabaseClient.from('quotes').select('*', { count: 'exact', head: true }).in('campaign_id', selected); var total = count || 0; var rows = document.querySelectorAll('.tier-thresh'); if (rows.length === 5) { rows[0].value = Math.ceil(total * 0.2) || 0; rows[1].value = Math.ceil(total * 0.4) || 0; rows[2].value = Math.ceil(total * 0.6) || 0; rows[3].value = Math.ceil(total * 0.8) || 0; rows[4].value = total || 0; } }
-function renderCampaignChecklist(selectedIds = []) { getEl('campaignChecklist').innerHTML = allCampaigns.map(c => `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer"><input type="checkbox" value="${c.id}" class="campaign-cb" ${selectedIds.includes(c.id) ? 'checked' : ''} onchange="calculateCollectionThresholds()"><span class="text-sm font-semibold text-slate-700">${c.name}</span></label>`).join(''); }
-
+// --- TROPHIES ---
 function renderTrophies() {
   var grid = getEl('trophyGrid'); if(!grid) return;
   if (allTrophies.length === 0) { grid.innerHTML = '<div class="col-span-3 text-center py-10 text-slate-400">No trophies created yet.</div>'; return; }
-  grid.innerHTML = allTrophies.map(t => { return `<div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="editTrophy('${t.id}')"><div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden">${t.image_url ? `<img src="${t.image_url}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300">emoji_events</span>'}</div><div><h4 class="font-headline font-bold text-slate-800">${t.name}</h4><p class="text-[10px] font-bold text-slate-400 uppercase">${t.type} · ${t.stat_type || (t.campaign_ids ? t.campaign_ids.length + ' Campaigns' : 'N/A')}</p></div></div>`; }).join('');
+  grid.innerHTML = allTrophies.map(t => `<div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="editTrophy('${t.id}')"><div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden">${t.image_url ? `<img src="${t.image_url}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300">emoji_events</span>'}</div><div><h4 class="font-headline font-bold text-slate-800">${t.name}</h4><p class="text-[10px] font-bold text-slate-400 uppercase">${t.type} · ${t.stat_type || ''}</p></div></div>`).join('');
+}
+
+function toggleTrophyType() {
+  var type = getEl('trophyType').value;
+  getEl('statTypeContainer').classList.toggle('hidden', type !== 'stat');
+  getEl('participationContainer').classList.toggle('hidden', type !== 'participation');
+  if(type === 'participation') renderParticipationChecklists();
+}
+
+function renderParticipationChecklists() {
+  getEl('missionChecklist').innerHTML = allMissions.map(m => `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer"><input type="checkbox" value="${m.id}" class="mission-cb"><span class="text-sm font-semibold text-slate-700">${m.name}</span></label>`).join('');
+  getEl('campaignChecklist').innerHTML = allCampaigns.map(c => `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer"><input type="checkbox" value="${c.id}" class="campaign-cb"><span class="text-sm font-semibold text-slate-700">${c.name}</span></label>`).join('');
 }
 
 function openTrophyModal() {
@@ -298,7 +277,6 @@ function openTrophyModal() {
 function editTrophy(id) {
   var t = allTrophies.find(x => x.id === id); if (!t) return;
   getEl('trophyId').value = t.id; getEl('trophyName').value = t.name; getEl('trophyType').value = t.type || 'stat'; getEl('trophyStatType').value = t.stat_type || 'shares'; getEl('trophyImage').value = t.image_url || ''; getEl('trophyDesc').value = t.description || ''; getEl('trophyModalTitle').textContent = 'Edit Trophy'; toggleTrophyType();
-  if (t.type === 'collection') renderCampaignChecklist(t.campaign_ids || []);
   var container = getEl('thresholdsContainer'); container.innerHTML = '';
   allTiers.forEach(tier => { var th = allThresholds.find(x => x.trophy_id === id && x.tier_id === tier.id); addThresholdRow(tier.id, tier.name, tier.color_hex, th ? th.threshold_value : 0, th ? th.is_active : true); });
   getEl('trophyModal').classList.remove('hidden');
@@ -316,11 +294,10 @@ function closeTrophyModal() { getEl('trophyModal').classList.add('hidden'); }
 async function saveTrophy() {
   var id = getEl('trophyId').value, name = getEl('trophyName').value.trim(), type = getEl('trophyType').value;
   var statType = type === 'stat' ? getEl('trophyStatType').value : null, imgUrl = getEl('trophyImage').value || null, desc = getEl('trophyDesc').value.trim();
-  var campaignIds = []; if (type === 'collection') document.querySelectorAll('.campaign-cb:checked').forEach(cb => campaignIds.push(cb.value));
-  if (!name) return showToast('Name is required', true);
+  if (!name) return showToast('Name required', true);
   var btn = getEl('saveTrophyBtn'); btn.disabled = true; btn.textContent = 'Saving...';
   try {
-    var data = { name, type, stat_type: statType, image_url: imgUrl, campaign_ids: campaignIds, description: desc };
+    var data = { name, type, stat_type: statType, image_url: imgUrl, description: desc };
     var res = id ? await supabaseClient.from('trophy_definitions').update(data).eq('id', id) : await supabaseClient.from('trophy_definitions').insert([data]).select().single();
     if (res.error) throw new Error(res.error.message);
     var trophyId = id || res.data.id;
@@ -332,70 +309,117 @@ async function saveTrophy() {
   btn.disabled = false; btn.textContent = 'Save Trophy';
 }
 
+// --- BADGES ---
+function renderBadges() {
+  var list = getEl('badgeList'); if(!list) return;
+  if (allBadges.length === 0) { list.innerHTML = '<div class="text-center py-10 text-slate-400">No badges created yet.</div>'; return; }
+  list.innerHTML = allBadges.map(b => `<div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="editBadge('${b.id}')"><div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden">${b.image_url ? `<img src="${b.image_url}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300">emoji_events</span>'}</div><div class="flex-1"><h4 class="font-headline font-bold text-slate-800">${b.name}</h4><p class="text-[10px] font-bold text-slate-400 uppercase">${b.rule_type || 'milestone'} Rule</p></div><button onclick="event.stopPropagation(); deleteBadge('${b.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg"><span class="material-symbols-outlined">delete</span></button></div>`).join('');
+}
+
+function toggleBadgeRule() {
+  var type = getEl('badgeRuleType').value;
+  getEl('badgeParticipationContainer').classList.toggle('hidden', type !== 'participation');
+  if(type === 'participation') renderBadgeParticipationChecklists();
+}
+
+function renderBadgeParticipationChecklists() {
+  getEl('badgeMissionChecklist').innerHTML = allMissions.map(m => `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer"><input type="checkbox" value="${m.id}" class="badge-mission-cb"><span class="text-sm font-semibold text-slate-700">${m.name}</span></label>`).join('');
+  getEl('badgeCampaignChecklist').innerHTML = allCampaigns.map(c => `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer"><input type="checkbox" value="${c.id}" class="badge-campaign-cb"><span class="text-sm font-semibold text-slate-700">${c.name}</span></label>`).join('');
+}
+
+function openBadgeModal() {
+  getEl('badgeId').value = ''; getEl('badgeName').value = ''; getEl('badgeDesc').value = ''; getEl('badgeRuleType').value = 'milestone'; getEl('badgeModalTitle').textContent = 'Create Badge'; getEl('deleteBadgeBtn').classList.add('hidden'); toggleBadgeRule();
+  getEl('badgeModal').classList.remove('hidden');
+}
+
+function editBadge(id) {
+  var b = allBadges.find(x => x.id === id); if (!b) return;
+  getEl('badgeId').value = b.id; getEl('badgeName').value = b.name || ''; getEl('badgeDesc').value = b.description || ''; getEl('badgeRuleType').value = b.rule_type || 'milestone'; getEl('badgeModalTitle').textContent = 'Edit Badge'; getEl('deleteBadgeBtn').classList.remove('hidden'); toggleBadgeRule();
+  getEl('badgeModal').classList.remove('hidden');
+}
+
+function closeBadgeModal() { getEl('badgeModal').classList.add('hidden'); }
+
+async function saveBadge() {
+  var id = getEl('badgeId').value, name = getEl('badgeName').value.trim(), desc = getEl('badgeDesc').value.trim(), ruleType = getEl('badgeRuleType').value;
+  if (!name) return showToast('Name required', true);
+  var btn = getEl('saveBadgeBtn'); btn.disabled = true; btn.textContent = 'Saving...';
+  try {
+    var data = { name, description: desc, rule_type: ruleType };
+    var res = id ? await supabaseClient.from('badge_definitions').update(data).eq('id', id) : await supabaseClient.from('badge_definitions').insert([data]).select().single();
+    if (res.error) throw new Error(res.error.message);
+    showToast('Badge saved!'); closeBadgeModal(); await loadData();
+  } catch(e) { showToast('Error: ' + e.message, true); }
+  btn.disabled = false; btn.textContent = 'Save Badge';
+}
+
+async function deleteBadge(id) {
+  var badgeId = id || getEl('badgeId').value;
+  if (!badgeId) return;
+  if (!confirm('Are you sure you want to permanently delete this badge?')) return;
+  try {
+    var res = await supabaseClient.from('badge_definitions').delete().eq('id', badgeId);
+    if (res.error) throw new Error(res.error.message);
+    showToast('Badge deleted!'); closeBadgeModal(); await loadData();
+  } catch(e) { showToast('Error: ' + e.message, true); }
+}
+
+// --- AVATARS ---
 function renderAvatars() {
   var list = getEl('avatarList'); if(!list) return;
   if (allAvatars.length === 0) { list.innerHTML = '<div class="text-center py-10 text-slate-400">No avatar stages created yet.</div>'; return; }
-  list.innerHTML = allAvatars.map(a => `<div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="editAvatar('${a.id}')"><div class="flex -space-x-2"><div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-white">${a.image_url_male ? `<img src="${a.image_url_male}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300 text-sm">male</span>'}</div><div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-white">${a.image_url_female ? `<img src="${a.image_url_female}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300 text-sm">female</span>'}</div></div><div class="flex-1"><div class="flex items-center gap-2"><span class="bg-primary/10 text-primary text-[10px] font-black px-2 py-0.5 rounded-full">STAGE ${a.stage_order}</span><h4 class="font-headline font-bold text-slate-800">${a.journey_name}</h4></div><p class="text-[11px] text-slate-500 mt-1">Unlocks at: <span class="font-bold text-slate-700">${a.mythic_trophies_required} Mythic Trophies</span></p></div><span class="material-symbols-outlined text-slate-300">edit</span></div>`).join('');
+  
+  // Group by Era
+  var grouped = {};
+  allAvatars.forEach(a => {
+    var era = a.era || 'Unassigned Era';
+    if (!grouped[era]) grouped[era] = {};
+    var journey = a.journey || 'Unassigned Journey';
+    if (!grouped[era][journey]) grouped[era][journey] = [];
+    grouped[era][journey].push(a);
+  });
+
+  var html = '';
+  Object.keys(grouped).sort().forEach(era => {
+    html += `<h3 class="font-headline font-bold text-lg text-slate-800 mt-6 mb-2 px-1">${era}</h3>`;
+    Object.keys(grouped[era]).sort().forEach(journey => {
+      html += `<h4 class="font-headline font-semibold text-md text-slate-600 mb-3 px-4">${journey}</h4>`;
+      html += `<div class="space-y-3 pl-4">`;
+      grouped[era][journey].sort((a,b) => a.stage_order - b.stage_order).forEach(a => {
+        html += `<div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="editAvatar('${a.id}')"><div class="flex -space-x-2"><div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-white">${a.image_url_male ? `<img src="${a.image_url_male}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300 text-sm">male</span>'}</div></div><div class="flex-1"><div class="flex items-center gap-2"><span class="bg-primary/10 text-primary text-[10px] font-black px-2 py-0.5 rounded-full">STAGE ${a.stage_order}</span><h4 class="font-headline font-bold text-slate-800">${a.journey_name}</h4></div><p class="text-[11px] text-slate-500 mt-1">Req: ${a.requirement_value} ${a.requirement_type}</p></div><span class="material-symbols-outlined text-slate-300">edit</span></div>`;
+      });
+      html += `</div>`;
+    });
+  });
+  list.innerHTML = html;
 }
 
-function openAvatarModal() { getEl('avatarId').value = ''; getEl('avatarOrder').value = allAvatars.length + 1; getEl('avatarName').value = ''; getEl('avatarImageMale').value = ''; getEl('avatarImageFemale').value = ''; getEl('avatarMythicReq').value = '0'; getEl('avatarModalTitle').textContent = 'New Avatar Stage'; getEl('avatarModal').classList.remove('hidden'); }
-function editAvatar(id) { var a = allAvatars.find(x => x.id === id); if (!a) return; getEl('avatarId').value = a.id; getEl('avatarOrder').value = a.stage_order; getEl('avatarName').value = a.journey_name; getEl('avatarImageMale').value = a.image_url_male || ''; getEl('avatarImageFemale').value = a.image_url_female || ''; getEl('avatarMythicReq').value = a.mythic_trophies_required || 0; getEl('avatarModalTitle').textContent = 'Edit Avatar Stage'; getEl('avatarModal').classList.remove('hidden'); }
+function openAvatarModal() {
+  getEl('avatarId').value = ''; getEl('avatarEra').value = 'Era 1'; getEl('avatarJourney').value = 'The Beginning'; getEl('avatarOrder').value = allAvatars.length + 1; getEl('avatarName').value = ''; getEl('avatarReqType').value = 'mythic'; getEl('avatarReqValue').value = '0'; getEl('avatarImageMale').value = ''; getEl('avatarImageFemale').value = ''; getEl('avatarModalTitle').textContent = 'New Avatar Stage'; getEl('avatarModal').classList.remove('hidden');
+}
+
+function editAvatar(id) {
+  var a = allAvatars.find(x => x.id === id); if (!a) return;
+  getEl('avatarId').value = a.id; getEl('avatarEra').value = a.era || ''; getEl('avatarJourney').value = a.journey || ''; getEl('avatarOrder').value = a.stage_order; getEl('avatarName').value = a.journey_name; getEl('avatarReqType').value = a.requirement_type || 'mythic'; getEl('avatarReqValue').value = a.requirement_value || 0; getEl('avatarImageMale').value = a.image_url_male || ''; getEl('avatarImageFemale').value = a.image_url_female || ''; getEl('avatarModalTitle').textContent = 'Edit Avatar Stage'; getEl('avatarModal').classList.remove('hidden');
+}
+
 function closeAvatarModal() { getEl('avatarModal').classList.add('hidden'); }
 
 async function saveAvatar() {
   var id = getEl('avatarId').value;
-  var data = { stage_order: parseInt(getEl('avatarOrder').value), journey_name: getEl('avatarName').value.trim(), image_url_male: getEl('avatarImageMale').value || null, image_url_female: getEl('avatarImageFemale').value || null, mythic_trophies_required: parseInt(getEl('avatarMythicReq').value) || 0 };
+  var orderVal = parseInt(getEl('avatarOrder').value); if (isNaN(orderVal)) orderVal = 1;
+  var reqVal = parseInt(getEl('avatarReqValue').value); if (isNaN(reqVal)) reqVal = 0;
+  var data = { era: getEl('avatarEra').value.trim(), journey: getEl('avatarJourney').value.trim(), stage_order: orderVal, journey_name: getEl('avatarName').value.trim(), requirement_type: getEl('avatarReqType').value, requirement_value: reqVal, image_url_male: getEl('avatarImageMale').value || null, image_url_female: getEl('avatarImageFemale').value || null };
   if (!data.journey_name) return showToast('Name is required', true);
   var btn = getEl('saveAvatarBtn'); btn.disabled = true; btn.textContent = 'Saving...';
   try { var res = id ? await supabaseClient.from('avatar_stages').update(data).eq('id', id) : await supabaseClient.from('avatar_stages').insert([data]); if (res.error) throw new Error(res.error.message); showToast('Avatar stage saved!'); closeAvatarModal(); await loadData(); } catch(e) { showToast('Error: ' + e.message, true); }
   btn.disabled = false; btn.textContent = 'Save Stage';
 }
 
-// --- BADGE RULES (UPDATED LOGIC) ---
-function renderBadgeRules() {
-  var list = getEl('badgeRuleList'); if(!list) return;
-  if (allBadgeRules.length === 0) { list.innerHTML = '<div class="text-center py-10 text-slate-400">No badge rules created yet.</div>'; return; }
-  list.innerHTML = allBadgeRules.map(b => `<div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="editBadgeRule('${b.id}')"><div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">${b.image_url ? `<img src="${b.image_url}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300">emoji_events</span>'}</div><div class="flex-1"><h4 class="font-headline font-bold text-slate-800">${b.name}</h4><p class="text-[10px] font-bold text-primary uppercase">${b.rule_type} Rule</p></div><span class="material-symbols-outlined text-slate-300">edit</span></div>`).join('');
-}
-
-function renderRuleCampaignChecklist(selectedIds = []) {
-  getEl('ruleCampaignList').innerHTML = allCampaigns.map(c => `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer"><input type="checkbox" value="${c.id}" class="rule-campaign-cb" ${selectedIds.includes(c.id) ? 'checked' : ''}><span class="text-sm font-semibold text-slate-700">${c.name}</span></label>`).join('');
-}
-
-function openBadgeRuleModal() {
-  getEl('ruleBadgeId').value = ''; getEl('ruleType').value = 'campaign'; getEl('signupCondition').value = ''; toggleRuleFields();
-  var sel = getEl('ruleBadgeSelect'); sel.innerHTML = '<option value="">-- Select Badge --</option>';
-  supabaseClient.from('badge_definitions').select('*').then(res => { res.data.forEach(b => { sel.innerHTML += `<option value="${b.id}">${b.name}</option>`; }); });
-  getEl('badgeRuleModal').classList.remove('hidden');
-}
-
-function editBadgeRule(id) {
-  var b = allBadgeRules.find(x => x.id === id); if (!b) return;
-  getEl('ruleBadgeId').value = b.id; getEl('ruleType').value = b.rule_type || 'campaign'; toggleRuleFields();
-  var config = b.rule_config || {};
-  if (b.rule_type === 'campaign') { renderRuleCampaignChecklist(config.campaign_ids || []); }
-  if (b.rule_type === 'signup') { getEl('signupCondition').value = config.condition || ''; }
-  getEl('badgeRuleModal').classList.remove('hidden');
-}
-
-function toggleRuleFields() {
-  var type = getEl('ruleType').value;
-  ['campaign', 'signup', 'gift', 'top10'].forEach(t => getEl(`field-${t}`).classList.add('hidden'));
-  getEl(`field-${type}`).classList.remove('hidden');
-  if (type === 'campaign') renderRuleCampaignChecklist();
-}
-
-function closeBadgeRuleModal() { getEl('badgeRuleModal').classList.add('hidden'); }
-
-async function saveBadgeRule() {
-  var id = getEl('ruleBadgeId').value; var type = getEl('ruleType').value; var config = {};
-  if (type === 'campaign') { config.campaign_ids = Array.from(document.querySelectorAll('.rule-campaign-cb:checked')).map(cb => cb.value); } 
-  else if (type === 'signup') { config.condition = getEl('signupCondition').value; }
-  
-  var data = { rule_type: type, rule_config: config };
-  var btn = getEl('saveRuleBtn'); btn.disabled = true; btn.textContent = 'Saving...';
-  try { var res = await supabaseClient.from('badge_definitions').update(data).eq('id', id); if (res.error) throw new Error(res.error.message); showToast('Badge rule saved!'); closeBadgeRuleModal(); await loadBadgeRules(); } catch(e) { showToast('Error: ' + e.message, true); }
-  btn.disabled = false; btn.textContent = 'Save Rule';
+function populateDropdowns() { 
+  var tImgSel = getEl('trophyImage'); if(tImgSel) { tImgSel.innerHTML = '<option value="">-- Select Image --</option>'; trophyImages.forEach(m => tImgSel.innerHTML += `<option value="${m.url}">${m.label}</option>`); }
+  var aImgMaleSel = getEl('avatarImageMale'); var aImgFemaleSel = getEl('avatarImageFemale');
+  if(aImgMaleSel && aImgFemaleSel) { var options = '<option value="">-- Select Image --</option>'; avatarImages.forEach(m => options += `<option value="${m.url}">${m.label}</option>`); aImgMaleSel.innerHTML = options; aImgFemaleSel.innerHTML = options; }
 }
 
 init();
