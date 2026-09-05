@@ -1458,6 +1458,66 @@ function doReset(){
 }
 
 function goHome(){window.location.href='index.html'}
+  // Ensure all final functions are properly closed
+function closeSuccess(){
+  var m=document.getElementById('successModal');
+  if(m) m.classList.add('hidden');
+}
+
+async function saveImageAndClose(){
+  haptic('light')
+  if(isMobileDevice()){
+    if(imageFile && navigator.canShare && navigator.canShare({files:[imageFile]})){
+      try{
+        await navigator.share({ files:[imageFile], title:'GSTW image' })
+        showToast('Done')
+        return
+      }catch(e){
+        if(e.name === 'AbortError') return
+      }
+    }
+    showSaveImageFallback()
+    return
+  }
+  var ok = downloadImage()
+  if(ok) showToast('Image saved to device')
+}
+
+function showSaveImageFallback(){
+  if(!imageDataUrl){ showToast('Please try sharing again'); return }
+  var w = window.open()
+  if(!w){ showToast('Popup blocked — allow popups to save'); return }
+  w.document.write(
+    '<html><head><title>Save Image</title>' +
+    '<style>body{margin:0;background:#0e0e0c;font-family:sans-serif;color:#fff;text-align:center;padding:20px}' +
+    'img{max-width:100%;height:auto;border-radius:12px;margin-top:12px}' +
+    'p{font-size:14px;line-height:1.5;padding:12px 20px;background:rgba(255,255,255,0.1);border-radius:12px;margin:0 0 16px 0}' +
+    '</style></head><body>' +
+    '<p><b>Long-press the image</b> and choose <b>Save to Photos</b></p>' +
+    '<img src="' + imageDataUrl + '" alt="GSTW">' +
+    '</body></html>'
+  )
+}
+
+function goToImpact(){ window.location.href='impact.html' }
+
+function confirmReset(){
+  document.getElementById('resetOverlay').classList.remove('hidden');
+  requestAnimationFrame(function(){ document.getElementById('resetSheet').classList.add('open') })
+}
+
+function closeResetSheet(){
+  document.getElementById('resetSheet').classList.remove('open');
+  setTimeout(function(){ document.getElementById('resetOverlay').classList.add('hidden') }, 300)
+}
+
+function doReset(){
+  clearCustomizationState()
+  closeResetSheet()
+  setTimeout(function(){ location.reload() }, 300)
+}
+
+function goHome(){ window.location.href='index.html' }
 </script>
 </body>
 </html>
