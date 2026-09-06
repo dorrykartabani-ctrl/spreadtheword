@@ -267,22 +267,15 @@
         <p id="detailUserStatusText" class="font-body font-semibold text-primary" style="font-size:13px;"></p>
       </div>
 
-            <div class="flex gap-2 pt-2">
+      <div class="flex gap-2 pt-2">
         <button id="detailLikeBtn" onclick="toggleLike()" class="detail-action detail-action-like">
           <span id="detailLikeIcon" class="material-symbols-outlined" style="font-size:18px;">favorite</span>
           <span id="detailLikeLabel">Like</span>
         </button>
-        
-        ${quote.status === 'scheduled' 
-          ? `<div class="detail-action" style="background:#e2e8f0;color:#64748b;cursor:not-allowed;">
-               <span class="material-symbols-outlined" style="font-size:18px;">lock</span>
-               Unlocks ${new Date(quote.scheduled_for).toLocaleDateString()}
-             </div>`
-          : `<button onclick="shareFromDetail()" class="detail-action detail-action-share">
-               <span class="material-symbols-outlined" style="font-size:18px;">ios_share</span>
-               Share
-             </button>`
-        }
+        <button onclick="shareFromDetail()" class="detail-action detail-action-share">
+          <span class="material-symbols-outlined" style="font-size:18px;">ios_share</span>
+          Share
+        </button>
       </div>
     </div>
   </div>
@@ -373,23 +366,21 @@ function getData(settled, fallback){
 
 async function loadEverything(){
   var results = await Promise.allSettled([
-    // RULE 1: Fetch ALL quotes (live, scheduled, archived)
+    // FIX B: Only fetch 'live' quotes. Scheduled are hidden until live.
     supabaseClient.from('quotes')
-      .select('id,text,source,category,status,scheduled_for,published_at,share_count,context,background_url,tags,hashtags,mission_id,campaign_id')
+      .select('id,text,source,category,status,published_at,share_count,context,background_url,tags,hashtags,mission_id,campaign_id')
+      .eq('status', 'live') 
       .order('published_at', { ascending: false }),
-      
     supabaseClient.from('campaigns').select('*').order('created_at', { ascending: false }),
     supabaseClient.from('shares').select('quote_id, shared_at').eq('user_id', currentUser.id),
     supabaseClient.from('quote_likes').select('quote_id, liked_at').eq('user_id', currentUser.id),
     supabaseClient.from('quote_likes').select('quote_id'),
-    supabaseClient.from('shares').select('quote_id'),
-    // RULE 5: Fetch badges to show rewards in campaign cards
-    supabaseClient.from('badge_definitions').select('*') 
+    // FIX D: Fetch global shares to count them accurately
+    supabaseClient.from('shares').select('quote_id')
   ])
 
   allQuotes    = getData(results[0], [])
   allCampaigns = getData(results[1], [])
-  allBadges    = getData(results[6], []) // Store badges for campaign cards
 
   var shares = getData(results[2], [])
   shares.forEach(function(s){
@@ -400,13 +391,22 @@ async function loadEverything(){
   })
 
   var likes = getData(results[3], [])
-  likes.forEach(function(l){ if(l.quote_id) userLikedQuoteIds[l.quote_id] = l.liked_at })
+  likes.forEach(function(l){
+    if(l.quote_id) userLikedQuoteIds[l.quote_id] = l.liked_at
+  })
 
   var allLikes = getData(results[4], [])
-  allLikes.forEach(function(l){ if(!l.quote_id) return; likeCounts[l.quote_id] = (likeCounts[l.quote_id] || 0) + 1 })
+  allLikes.forEach(function(l){
+    if(!l.quote_id) return
+    likeCounts[l.quote_id] = (likeCounts[l.quote_id] || 0) + 1
+  })
 
+  // FIX D: Process global share counts
   var allSharesGlobal = getData(results[5], [])
-  allSharesGlobal.forEach(function(s){ if(!s.quote_id) return; shareCounts[s.quote_id] = (shareCounts[s.quote_id] || 0) + 1 })
+  allSharesGlobal.forEach(function(s){
+    if(!s.quote_id) return
+    shareCounts[s.quote_id] = (shareCounts[s.quote_id] || 0) + 1
+  })
 
   buildTabs()
   document.getElementById('loadingSection').classList.add('hidden')
@@ -416,24 +416,20 @@ function buildTabs(){
   var strip = document.getElementById('tabStrip')
   strip.innerHTML = ''
 
-  // RULE 3: Hardcoded specific tabs first
+  var activeCampaigns = allCampaigns.filter(function(c){ return c.status === 'active' })
+  var hasEndedCampaigns = allCampaigns.some(function(c){ return c.status === 'ended' })
+
+  // FIX A & E: Added 'Liked' tab and fixed 'All' logic
   addTab(strip, 'all', 'All', getAllTabQuotes().length, 'library_books')
   addTab(strip, 'shared', 'Shared', Object.keys(userSharedQuoteIds).length, 'check_circle')
   addTab(strip, 'liked', 'Liked', Object.keys(userLikedQuoteIds).length, 'favorite')
 
-  // RULE 4: Active Campaigns (Active OR has scheduled quotes)
-  allCampaigns.forEach(function(c){
-    var hasScheduled = allQuotes.some(function(q){ return q.campaign_id === c.id && q.status === 'scheduled' })
-    
-    if(c.status === 'active' || hasScheduled) {
-      var count = allQuotes.filter(function(q){ return q.campaign_id === c.id }).length
-      addTab(strip, c.id, c.name, count, c.icon || 'campaign', c.color)
-    }
+  activeCampaigns.forEach(function(c){
+    var count = allQuotes.filter(function(q){ return q.campaign_id === c.id }).length
+    addTab(strip, c.id, c.name, count, c.icon || 'campaign', c.color)
   })
 
-  // Archives Tab
-  var hasEndedCampaigns = allCampaigns.some(function(c){ return c.status === 'ended' })
-  if(hasEndedCampaigns){
+   if(hasEndedCampaigns){
     addTab(strip, 'archives', 'Archives', allCampaigns.filter(function(c){ return c.status === 'ended' }).length, 'inventory_2')
   }
 }
@@ -641,17 +637,7 @@ function renderCampaignHero(campaign){
             + (dateRange ? '<p class="font-body opacity-80 mt-0.5" style="font-size:11px;font-weight:600;">' + dateRange + '</p>' : '')
           + '</div>'
         + '</div>'
-        + (campaign.description ? '<p class="font-body opacity-85 mb-2" style="font-size:12px;line-height:18px;">' + escapeHtml(campaign.description) + '</p>' : '')
-        // RULE 5: Show Reward Badge if it exists
-        + (function(){
-            if(!campaign.reward_badge_id || !allBadges) return '';
-            var badge = allBadges.find(function(b){ return b.id === campaign.reward_badge_id });
-            if(!badge) return '';
-            return '<div class="flex items-center gap-2 bg-white/20 rounded-lg px-3 py-1.5 mb-4 w-fit">' +
-                     '<span class="material-symbols-outlined filled" style="font-size:16px;">workspace_premium</span>' +
-                     '<span class="font-body font-bold" style="font-size:11px;">Reward: ' + escapeHtml(badge.name) + '</span>' +
-                   '</div>';
-          })()
+        + (campaign.description ? '<p class="font-body opacity-85 mb-4" style="font-size:12px;line-height:18px;">' + escapeHtml(campaign.description) + '</p>' : '')
         + '<div class="mb-2">'
           + '<div class="flex items-baseline justify-between mb-2">'
             + '<span class="font-headline font-bold" style="font-size:14px;">' + sharedCount + ' of ' + totalCount + ' shared</span>'
@@ -791,14 +777,13 @@ function buildQuoteCard(q){
   var isShared = !!userSharedQuoteIds[q.id]
   var isLiked  = !!userLikedQuoteIds[q.id]
 
-    var statusChip = ''
-  if(q.status === 'scheduled'){
-    statusChip = '<span class="status-chip status-scheduled"><span class="material-symbols-outlined" style="font-size:10px;">schedule</span>Scheduled</span>'
-  } else if(isShared){
+  var statusChip = ''
+  if(isShared){
     statusChip = '<span class="status-chip status-shared"><span class="material-symbols-outlined filled" style="font-size:10px;">check_circle</span>Shared</span>'
   } else if(isLiked){
     statusChip = '<span class="status-chip status-liked"><span class="material-symbols-outlined filled" style="font-size:10px;">favorite</span>Liked</span>'
   }
+
   var catChip = q.category
     ? '<span class="quote-cat-chip">' + catEmoji(q.category) + ' ' + escapeHtml(q.category) + '</span>'
     : ''
