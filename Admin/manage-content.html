@@ -707,15 +707,89 @@ function toggleVisibility(id) { const s=sections.find(x=>x.id===id); if(s){ s.is
 function deleteSection(id) { if(!confirm('Delete section?'))return; sections=sections.filter(x=>x.id!==id); if(activeSectionId===id){ activeSectionId=null; renderEmptyEditor(); } renderSectionList(); markDirty(); }
 function onDrop(e, tIdx) { e.preventDefault(); if(dragIndex===null||dragIndex===tIdx)return; const [m]=sections.splice(dragIndex,1); sections.splice(tIdx,0,m); sections.forEach((x,i)=>x.sort_order=i); renderSectionList(); markDirty(); }
 
-function openImagePicker(field, isRep=false) { imagePickerTarget={field, isRep}; $('imagePickerGrid').innerHTML=mediaLibrary.map(m=>`<div onclick="selectImage('${m.id}')" class="cursor-pointer group"><img src="${escapeAttr(m.url)}" class="img-thumb w-full h-20" id="imgpick-${m.id}"><p class="text-[9px] truncate mt-1">${escapeHtml(m.name)}</p></div>`).join(''); $('imagePickerModal').classList.add('open'); }
-function selectImage(id) { selectedImageId=id; document.querySelectorAll('.img-thumb').forEach(e=>e.classList.remove('selected')); $(`imgpick-${id}`).classList.add('selected'); }
+function openImagePicker(field, isRep = false) {
+  imagePickerTarget = { field, isRep };
+  selectedImageId = null;
+  
+  // Default filter dropdown to 'landing page'
+  const filterSelect = $('mediaCategoryFilter');
+  if (filterSelect) filterSelect.value = 'landing page';
+
+  filterMediaGrid();
+  $('imagePickerModal').classList.add('open');
+}
+
+function filterMediaGrid() {
+  const grid = $('imagePickerGrid');
+  if (!grid) return;
+
+  const selectedCategory = ($('mediaCategoryFilter')?.value || 'landing page').toLowerCase();
+
+  // Filter media library
+  const filtered = mediaLibrary.filter(m => {
+    if (selectedCategory === 'all') return true;
+    const itemCategory = String(m.type || m.folder || m.category || 'other').toLowerCase().trim();
+    return itemCategory === selectedCategory;
+  });
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div class="col-span-full text-center py-10">
+        <span class="material-symbols-outlined text-outline-variant text-[36px]">photo_library</span>
+        <p class="font-body text-outline text-xs mt-2">No images found in <strong>${escapeHtml(selectedCategory)}</strong>.</p>
+        <button onclick="$('mediaCategoryFilter').value='all'; filterMediaGrid();" class="mt-3 px-3 py-1.5 rounded-lg bg-surface-c text-primary font-body font-semibold text-[11px]">View All Media (${mediaLibrary.length})</button>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(m => `
+    <div onclick="selectImage('${m.id}')" class="cursor-pointer group">
+      <div class="relative overflow-hidden rounded-lg border border-surface-chigh bg-surface-c">
+        <img src="${escapeAttr(m.url)}" class="img-thumb w-full h-20 object-cover" id="imgpick-${m.id}">
+      </div>
+      <p class="font-body text-outline truncate mt-1 group-hover:text-primary text-[9px] font-semibold">${escapeHtml(m.name || 'image')}</p>
+      <span class="text-[8px] uppercase tracking-wider text-outline-variant font-bold block">${escapeHtml(m.type || 'other')}</span>
+    </div>
+  `).join('');
+}
+
+function selectImage(id) {
+  selectedImageId = id;
+  document.querySelectorAll('#imagePickerGrid .img-thumb').forEach(el => el.classList.remove('selected'));
+  const el = document.getElementById('imgpick-' + id);
+  if (el) el.classList.add('selected');
+}
+
 function confirmImagePick() {
-  if(!selectedImageId||!imagePickerTarget)return; const m=mediaLibrary.find(x=>x.id===selectedImageId); if(!m)return;
-  if(imagePickerTarget.isRep) { const i=document.querySelector(`input[data-repeater="${imagePickerTarget.field}"]`); if(i){ i.value=m.url; collectEditorData(); renderEditor(); markDirty(); } }
-  else { const s=sections.find(x=>x.id===activeSectionId); if(s){ s.data[imagePickerTarget.field]=m.url; renderEditor(); markDirty(); } }
+  if (!selectedImageId || !imagePickerTarget) return;
+  const m = mediaLibrary.find(x => x.id === selectedImageId);
+  if (!m) return;
+
+  if (imagePickerTarget.isRep) {
+    const input = document.querySelector(`input[data-repeater="${imagePickerTarget.field}"]`);
+    if (input) {
+      input.value = m.url;
+      collectEditorData();
+      renderEditor();
+      markDirty();
+    }
+  } else {
+    const s = sections.find(x => x.id === activeSectionId);
+    if (s) {
+      if (!s.data) s.data = {};
+      s.data[imagePickerTarget.field] = m.url;
+      renderEditor();
+      markDirty();
+    }
+  }
   closeImagePicker();
 }
-function closeImagePicker() { $('imagePickerModal').classList.remove('open'); }
+  
+function closeImagePicker() {
+  const m = $('imagePickerModal');
+  if (m) m.classList.remove('open');
+  imagePickerTarget = null;
+}
 
 function openTierPicker() {
   const s=sections.find(x=>x.id===activeSectionId); selectedTierIds=[...(s?.data?.tier_ids||[])];
