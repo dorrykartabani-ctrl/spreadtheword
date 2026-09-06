@@ -231,13 +231,13 @@
       </section>`;
   }
 
-  function renderStats(d, id) {
+ function renderStats(d, id) {
   const items = Array.isArray(d.items) && d.items.length
     ? d.items
     : [
-        { metric: 'warriors', label: d.label_1 || 'Warriors Enlisted', fallback: '1248' },
-        { metric: 'shares', label: d.label_2 || 'Words Deployed', fallback: '47892' },
-        { metric: 'countries', label: d.label_3 || 'Countries Reached', fallback: '38' }
+        { metric: 'warriors', label: 'Warriors Enlisted', fallback: '1248' },
+        { metric: 'shares', label: 'Words Deployed', fallback: '47892' },
+        { metric: 'countries', label: 'Countries Reached', fallback: '38' }
       ];
 
   const cols = Math.min(Math.max(items.length, 1), 5);
@@ -436,30 +436,20 @@
 
   loadPage();
 
-  async function loadLiveStats() {
+ async function loadLiveStats() {
   const nodes = document.querySelectorAll('[data-stat-metric]');
   if (!nodes.length) return;
 
-  // Fetch base metrics in parallel
-  let warriors = 0, shares = 0, countries = 0, trending = 0, mostShared = 0, activeToday = 0;
+  let warriors = 0, shares = 0, countries = 0, trending = 0, mostShared = 0;
 
   try {
     const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    const tasks = [
+    const [pRes, sRes, cRes] = await Promise.all([
       supabaseClient.from('profiles').select('id', { count: 'exact', head: true }),
       supabaseClient.from('shares').select('id', { count: 'exact', head: true }),
-      supabaseClient.from('profiles').select('country').not('country', 'is', null),
-    ];
-
-    // Optional tables/columns — fail soft if missing
-    const optional = await Promise.allSettled([
-      supabaseClient.from('shares').select('id', { count: 'exact', head: true }).gte('created_at', since24h),
-      supabaseClient.from('shares').select('quote_id').gte('created_at', since24h).limit(5000),
-      supabaseClient.from('profiles').select('id', { count: 'exact', head: true }).gte('last_active_at', since24h),
+      supabaseClient.from('profiles').select('country').not('country', 'is', null)
     ]);
-
-    const [pRes, sRes, cRes] = await Promise.all(tasks);
 
     warriors = pRes.count || 0;
     shares = sRes.count || 0;
@@ -468,9 +458,13 @@
     (cRes.data || []).forEach(r => { if (r.country) countrySet.add(r.country); });
     countries = countrySet.size;
 
-    if (optional[0].status === 'fulfilled') {
-      trending = optional[0].value.count || 0;
-    }
+    // Optional 24h metrics queries
+    const optional = await Promise.allSettled([
+      supabaseClient.from('shares').select('id', { count: 'exact', head: true }).gte('created_at', since24h),
+      supabaseClient.from('shares').select('quote_id').gte('created_at', since24h).limit(5000)
+    ]);
+
+    if (optional[0].status === 'fulfilled') trending = optional[0].value.count || 0;
     if (optional[1].status === 'fulfilled') {
       const counts = {};
       (optional[1].value.data || []).forEach(r => {
@@ -479,31 +473,19 @@
       });
       mostShared = Object.values(counts).reduce((a, b) => Math.max(a, b), 0);
     }
-    if (optional[2].status === 'fulfilled') {
-      activeToday = optional[2].value.count || 0;
-    }
   } catch (e) {
-    console.error('[Stats] live fetch error:', e);
+    console.error('[Stats] Live fetch error:', e);
   }
 
-  const map = {
-    warriors,
-    shares,
-    countries,
-    trending,
-    most_shared: mostShared,
-    active_today: activeToday
-  };
+  const map = { warriors, shares, countries, trending, most_shared: mostShared };
 
   nodes.forEach(el => {
     const metric = el.getAttribute('data-stat-metric') || 'custom';
     const fallback = parseInt(el.getAttribute('data-stat-fallback') || '0', 10) || 0;
     let value = map[metric];
 
-    // If live value missing/zero and fallback exists, use fallback (nice for empty DBs)
     if ((value === undefined || value === null || value === 0) && fallback > 0 && metric !== 'custom') {
-      // Prefer live when > 0; otherwise fallback
-      value = (map[metric] > 0) ? map[metric] : fallback;
+      value = fallback;
     }
     if (metric === 'custom' || value === undefined || value === null) {
       value = fallback;
