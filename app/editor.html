@@ -503,6 +503,71 @@
   </div>
 </div>
 
+<!-- FACEBOOK INSTRUCTIONS MODAL -->
+<div id="fbInstructModal" class="hidden fixed inset-0 z-[125] flex items-center justify-center px-4">
+  <div class="absolute inset-0 bg-inverse-surface/70 backdrop-blur-sm" onclick="closeFbInstructions()"></div>
+  <div class="relative w-full max-w-md bg-surface-cl rounded-2xl shadow-float p-6">
+    <div class="text-center mb-5">
+      <div class="w-14 h-14 rounded-2xl bg-[#1877F2] flex items-center justify-center mx-auto mb-3">
+        <span class="text-white font-black" style="font-size:28px;font-family:Georgia,serif;">f</span>
+      </div>
+      <h3 class="font-headline font-extrabold text-on-surface mb-2" style="font-size:20px;">Share on Facebook</h3>
+      <p class="font-body text-on-surface-variant" style="font-size:13px;">Everything is ready for you</p>
+    </div>
+    
+    <!-- Status indicators -->
+    <div class="space-y-2 mb-5">
+      <div class="flex items-center gap-3 bg-primary-container/20 rounded-xl p-3">
+        <span class="material-symbols-outlined text-primary text-[20px] filled flex-shrink-0">download_done</span>
+        <div class="flex-1">
+          <p class="font-body font-semibold text-primary" style="font-size:13px;">Image downloaded</p>
+          <p class="font-body text-on-surface-variant" style="font-size:11px;">Check your Downloads folder</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-3 bg-primary-container/20 rounded-xl p-3">
+        <span class="material-symbols-outlined text-primary text-[20px] filled flex-shrink-0">content_copy</span>
+        <div class="flex-1">
+          <p class="font-body font-semibold text-primary" style="font-size:13px;">Caption copied</p>
+          <p class="font-body text-on-surface-variant" style="font-size:11px;">Ready to paste</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step by step -->
+    <div class="bg-surface-clow rounded-xl p-4 mb-5">
+      <p class="font-body font-semibold text-on-surface mb-3" style="font-size:12px;">Next steps:</p>
+      <div class="space-y-2.5">
+        <div class="flex gap-2.5">
+          <div class="w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center flex-shrink-0 font-bold" style="font-size:11px;">1</div>
+          <p class="font-body text-on-surface" style="font-size:13px;">Click <b>"Open Facebook"</b> below</p>
+        </div>
+        <div class="flex gap-2.5">
+          <div class="w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center flex-shrink-0 font-bold" style="font-size:11px;">2</div>
+          <p class="font-body text-on-surface" style="font-size:13px;">Create a new post and <b>upload the image</b> from Downloads</p>
+        </div>
+        <div class="flex gap-2.5">
+          <div class="w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center flex-shrink-0 font-bold" style="font-size:11px;">3</div>
+          <p class="font-body text-on-surface" style="font-size:13px;"><b>Paste</b> the caption (Ctrl+V / Cmd+V)</p>
+        </div>
+        <div class="flex gap-2.5">
+          <div class="w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center flex-shrink-0 font-bold" style="font-size:11px;">4</div>
+          <p class="font-body text-on-surface" style="font-size:13px;">Share and spread the Word! 🌱</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option to copy again if needed -->
+    <button onclick="recopyCaption()" class="w-full py-2.5 bg-surface-chigh text-on-surface font-body font-semibold rounded-xl mb-2 flex items-center justify-center gap-2" style="font-size:13px;">
+      <span class="material-symbols-outlined text-[16px]">content_copy</span>
+      Copy Caption Again
+    </button>
+
+    <button onclick="openFacebookAndClose()" class="w-full py-3.5 signature-gradient text-on-primary font-headline font-bold rounded-xl mb-2" style="font-size:14px;">Open Facebook</button>
+    <button onclick="closeFbInstructions()" class="w-full py-2.5 text-on-surface-variant font-body font-semibold" style="font-size:13px;">Cancel</button>
+  </div>
+</div>
+
 <!-- SUCCESS MODAL -->
 <div id="successModal" class="hidden fixed inset-0 z-[120] flex items-end justify-center">
   <div class="absolute inset-0 bg-inverse-surface/70 backdrop-blur-sm" onclick="closeSuccess()"></div>
@@ -541,9 +606,9 @@
           Share to another platform
         </button>
         <button onclick="saveImageAndClose()" class="quick-action quick-action-secondary">
-  <span class="material-symbols-outlined text-[20px]" style="color:#3d6285">save_alt</span>
-  Save image
-</button>
+          <span class="material-symbols-outlined text-[20px]" style="color:#3d6285">save_alt</span>
+          Save image
+        </button>
         <button onclick="goToImpact()" class="quick-action quick-action-tertiary">
           <span class="material-symbols-outlined text-[20px]" style="color:#3d6285">analytics</span>
           See your impact
@@ -1033,7 +1098,6 @@ function setupOverflowClickOutside(){document.addEventListener('click',function(
 // ═══ CUSTOMIZE ═══
 function openCustomize(){
   haptic('medium')
-  // Ensure current state is saved before navigating
   saveCustomizationState()
   window.location.href = 'customize.html'
 }
@@ -1170,22 +1234,63 @@ function closeDesktopPickerAndSucceed(){
   closeDesktopPicker()
   setTimeout(function(){ showSuccess('downloaded to your device') }, 200)
 }
+
 function openPlatform(platform){
-  // 1. Copy caption to clipboard
-  if(fullCaption && navigator.clipboard){
-    navigator.clipboard.writeText(fullCaption).catch(function(e){ console.error('Copy failed', e) })
-  }
-
-  // 2. Download image
-  downloadImage()
-
-  // 3. Platform URLs
   var appUrl = 'https://gospreadtheword.app'
   
+  // Special handling for Facebook - show instructions modal
+  if(platform === 'facebook'){
+    // FIRST: Download image
+    var downloadSuccess = downloadImage()
+    if(!downloadSuccess){
+      showToast('Failed to download image - please try again')
+      return
+    }
+    
+    // SECOND: Copy caption to clipboard
+    if(fullCaption && navigator.clipboard){
+      navigator.clipboard.writeText(fullCaption)
+        .then(function(){
+          // THIRD: Show instructions modal after successful copy
+          closeDesktopPicker()
+          setTimeout(function(){
+            var m = document.getElementById('fbInstructModal')
+            if(m) m.classList.remove('hidden')
+          }, 200)
+        })
+        .catch(function(e){
+          console.error('Clipboard failed:', e)
+          // Show modal anyway with warning
+          closeDesktopPicker()
+          setTimeout(function(){
+            showToast('⚠️ Could not copy caption - you may need to type it manually')
+            var m = document.getElementById('fbInstructModal')
+            if(m) m.classList.remove('hidden')
+          }, 200)
+        })
+    } else {
+      // Clipboard API not available
+      showToast('⚠️ Clipboard not available - you will need to type caption manually')
+      closeDesktopPicker()
+      setTimeout(function(){
+        var m = document.getElementById('fbInstructModal')
+        if(m) m.classList.remove('hidden')
+      }, 200)
+    }
+    return
+  }
+  
+  // For all other platforms - existing logic
+  if(fullCaption && navigator.clipboard){
+    navigator.clipboard.writeText(fullCaption).catch(function(e){ 
+      console.error('Copy failed', e) 
+    })
+  }
+
+  downloadImage()
+
   var urls = {
     twitter:  'https://twitter.com/intent/tweet?text=' + encodeURIComponent(fullCaption),
-    // ✅ BEST FIX: Just open Facebook directly - user will share manually
-    facebook: 'https://www.facebook.com/',
     whatsapp: 'https://api.whatsapp.com/send?text=' + encodeURIComponent(fullCaption + '\n\n' + appUrl),
     telegram: 'https://t.me/share/url?url=' + encodeURIComponent(appUrl) + '&text=' + encodeURIComponent(fullCaption),
     threads:  'https://www.threads.net/intent/post?text=' + encodeURIComponent(fullCaption),
@@ -1195,26 +1300,52 @@ function openPlatform(platform){
 
   var url = urls[platform]
   
-  // 4. Open platform with special instructions for Facebook
   if(url){
     window.open(url, '_blank', 'noopener,noreferrer')
     logShare('desktop-' + platform)
     closeDesktopPicker()
     
-    // Special message for Facebook (since it requires manual posting)
-    if(platform === 'facebook'){
-      showToast('✓ Image saved & caption copied! Create a post on Facebook and paste')
-    } else {
-      var platformName = platform.charAt(0).toUpperCase() + platform.slice(1)
-      showToast('Caption copied & image downloaded! Upload on ' + platformName)
-    }
+    var platformName = platform.charAt(0).toUpperCase() + platform.slice(1)
+    showToast('Caption copied & image downloaded! Upload on ' + platformName)
     haptic('success')
   }
 }
+
 async function copyLinkOnly(){
   if(navigator.clipboard){
     try{ await navigator.clipboard.writeText(fullCaption); showToast('Caption copied again'); haptic('success') }
     catch(e){ showToast('Could not copy') }
+  }
+}
+
+function openFacebookAndClose(){
+  window.open('https://www.facebook.com/', '_blank', 'noopener,noreferrer')
+  logShare('desktop-facebook')
+  closeFbInstructions()
+  
+  // Show reminder toast
+  setTimeout(function(){
+    showToast('💡 Upload image from Downloads, then paste caption')
+  }, 1000)
+}
+
+function closeFbInstructions(){
+  var m = document.getElementById('fbInstructModal')
+  if(m) m.classList.add('hidden')
+}
+
+function recopyCaption(){
+  if(fullCaption && navigator.clipboard){
+    navigator.clipboard.writeText(fullCaption)
+      .then(function(){
+        showToast('✓ Caption copied again!')
+        haptic('success')
+      })
+      .catch(function(){
+        showToast('Could not copy - check browser permissions')
+      })
+  } else {
+    showToast('Caption not available')
   }
 }
 
@@ -1334,22 +1465,38 @@ function generateImage(){
 
 // ═══ HELPERS ═══
 function downloadImage(){
-  if(!imageDataUrl && !imageBlob){showToast('Could not save — try sharing again');return false}
+  if(!imageDataUrl && !imageBlob){
+    showToast('Image not ready - please try sharing again')
+    return false
+  }
+  
   try{
     if(imageBlob){
       var blobUrl = URL.createObjectURL(imageBlob)
       var a = document.createElement('a')
-      a.download = 'GSTW-'+Date.now()+'.png'
-      a.href = blobUrl;a.style.display = 'none'
-      document.body.appendChild(a);a.click();document.body.removeChild(a)
+      a.download = 'GSTW-' + Date.now() + '.png'
+      a.href = blobUrl
+      a.style.display = 'none'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
       setTimeout(function(){ URL.revokeObjectURL(blobUrl) }, 1000)
       return true
     } else if(imageDataUrl){
       var a2 = document.createElement('a')
-      a2.download = 'GSTW-'+Date.now()+'.png'
-      a2.href = imageDataUrl;a2.click();return true
+      a2.download = 'GSTW-' + Date.now() + '.png'
+      a2.href = imageDataUrl
+      a2.style.display = 'none'
+      document.body.appendChild(a2)
+      a2.click()
+      document.body.removeChild(a2)
+      return true
     }
-  }catch(e){console.error(e);showToast('Save failed — try again');return false}
+  } catch(e){
+    console.error('Download failed:', e)
+    showToast('Download failed - please try again')
+    return false
+  }
   return false
 }
 
@@ -1365,7 +1512,6 @@ function showToast(msg){
   setTimeout(function(){if(t.parentNode)t.remove()},2200)
 }
 
-// ═══ SUCCESS MODAL ═══
 // ═══ SUCCESS MODAL ═══
 function showSuccess(method){
   var m = document.getElementById('successModal');
@@ -1409,64 +1555,6 @@ function burstConfetti(){
   setTimeout(function(){ if(container) container.innerHTML = '' }, 1500)
 }
 
-function closeSuccess(){var m=document.getElementById('successModal');if(m)m.classList.add('hidden')}
-async function saveImageAndClose(){
-  haptic('light')
-
-  // On mobile — use native share sheet (includes "Save to Photos")
-  if(isMobileDevice()){
-    if(imageFile && navigator.canShare && navigator.canShare({files:[imageFile]})){
-      try{
-        await navigator.share({
-          files:[imageFile],
-          title:'GSTW image'
-        })
-        // User made a choice — assume success
-        showToast('Done')
-        return
-      }catch(e){
-        if(e.name === 'AbortError') return  // User cancelled — silent
-        // Fall through to fallback
-      }
-    }
-    // Fallback for mobile browsers without share
-    showSaveImageFallback()
-    return
-  }
-
-  // Desktop — direct download works
-  var ok = downloadImage()
-  if(ok) showToast('Image saved to device')
-}
-
-function showSaveImageFallback(){
-  // Open image in new tab so user can long-press to save
-  if(!imageDataUrl){ showToast('Please try sharing again'); return }
-  var w = window.open()
-  if(!w){ showToast('Popup blocked — allow popups to save'); return }
-  w.document.write(
-    '<html><head><title>Save Image</title>' +
-    '<style>body{margin:0;background:#0e0e0c;font-family:sans-serif;color:#fff;text-align:center;padding:20px}' +
-    'img{max-width:100%;height:auto;border-radius:12px;margin-top:12px}' +
-    'p{font-size:14px;line-height:1.5;padding:12px 20px;background:rgba(255,255,255,0.1);border-radius:12px;margin:0 0 16px 0}' +
-    '</style></head><body>' +
-    '<p><b>Long-press the image</b> and choose <b>Save to Photos</b></p>' +
-    '<img src="' + imageDataUrl + '" alt="GSTW">' +
-    '</body></html>'
-  )
-}function goToImpact(){window.location.href='impact.html'}
-
-// ═══ RESET ═══
-function confirmReset(){document.getElementById('resetOverlay').classList.remove('hidden');requestAnimationFrame(function(){document.getElementById('resetSheet').classList.add('open')})}
-function closeResetSheet(){document.getElementById('resetSheet').classList.remove('open');setTimeout(function(){document.getElementById('resetOverlay').classList.add('hidden')},300)}
-function doReset(){
-  clearCustomizationState()
-  closeResetSheet()
-  setTimeout(function(){location.reload()},300)
-}
-
-function goHome(){window.location.href='index.html'}
-  // Ensure all final functions are properly closed
 function closeSuccess(){
   var m=document.getElementById('successModal');
   if(m) m.classList.add('hidden');
@@ -1509,6 +1597,7 @@ function showSaveImageFallback(){
 
 function goToImpact(){ window.location.href='impact.html' }
 
+// ═══ RESET ═══
 function confirmReset(){
   document.getElementById('resetOverlay').classList.remove('hidden');
   requestAnimationFrame(function(){ document.getElementById('resetSheet').classList.add('open') })
