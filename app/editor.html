@@ -1171,35 +1171,38 @@ function closeDesktopPickerAndSucceed(){
   setTimeout(function(){ showSuccess('downloaded to your device') }, 200)
 }
 function openPlatform(platform){
-  // 1. Automatically copy the caption to the clipboard
+  // 1. Copy caption to clipboard
   if(fullCaption && navigator.clipboard){
     navigator.clipboard.writeText(fullCaption).catch(function(e){ console.error('Copy failed', e) })
   }
 
-  // 2. Automatically download the image to the device
+  // 2. Download image
   downloadImage()
 
-  // 3. Define Platform URLs (Passing our app link since platforms block pre-filled text anyway)
+  // 3. Platform URLs
   var appUrl = 'https://gospreadtheword.app'
   var urls = {
-    twitter:  'https://twitter.com/intent/tweet?text=' + encodeURIComponent(appUrl),
-    facebook: 'https://www.facebook.com=' + encodeURIComponent(appUrl),
-    whatsapp: 'https://web.whatsapp.com/send?text=' + encodeURIComponent(appUrl),
-    telegram: 'https://t.me/share/url?url=' + encodeURIComponent(appUrl),
-    threads:  'https://www.threads.net/intent/post?text=' + encodeURIComponent(appUrl),
+    twitter:  'https://twitter.com/intent/tweet?text=' + encodeURIComponent(fullCaption),
+    facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(appUrl),
+    whatsapp: 'https://api.whatsapp.com/send?text=' + encodeURIComponent(fullCaption + '\n\n' + appUrl),
+    telegram: 'https://t.me/share/url?url=' + encodeURIComponent(appUrl) + '&text=' + encodeURIComponent(fullCaption),
+    threads:  'https://www.threads.net/intent/post?text=' + encodeURIComponent(fullCaption),
     linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(appUrl),
-    email:    'mailto:?subject=' + encodeURIComponent('A word to spread') + '&body=' + encodeURIComponent(fullCaption || '') + '%0A%0A' + encodeURIComponent(appUrl)
+    email:    'mailto:?subject=' + encodeURIComponent('A word to spread') + '&body=' + encodeURIComponent(fullCaption + '\n\n' + appUrl)
   }
 
   var url = urls[platform]
   
-  // 4. Open the platform and show the user what happened
+  // 4. Open platform
   if(url){
     window.open(url, '_blank', 'noopener,noreferrer')
     logShare('desktop-' + platform)
     
     closeDesktopPicker()
-    showToast('Caption copied & image downloaded! Paste on ' + platform)
+    
+    // Provide clear instructions
+    var platformName = platform.charAt(0).toUpperCase() + platform.slice(1)
+    showToast('Caption copied & image downloaded! Upload manually on ' + platformName)
     haptic('success')
   }
 }
