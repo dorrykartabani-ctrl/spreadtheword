@@ -99,6 +99,7 @@
     .status-chip{ display:inline-flex;align-items:center;gap:3px; padding:2px 7px;border-radius:99px; font-size:9px;font-weight:700;letter-spacing:0.03em; text-transform:uppercase; }
     .status-shared{background:rgba(61,98,133,0.15);color:#3d6285}
     .status-liked{background:rgba(173,51,43,0.12);color:#ad332b}
+    .status-scheduled{background:rgba(217,119,6,0.15);color:#d97706}
 
     .campaign-hero{ border-radius:20px; overflow:hidden; padding:20px; color:#f7f9ff; position:relative; box-shadow:0 12px 32px rgba(49,51,46,0.1); }
     .campaign-hero::before{ content:'';position:absolute;top:-40px;right:-40px; width:180px;height:180px; background:radial-gradient(circle,rgba(255,255,255,0.15) 0%,transparent 70%); border-radius:50%; pointer-events:none; }
@@ -272,7 +273,7 @@
           <span id="detailLikeIcon" class="material-symbols-outlined" style="font-size:18px;">favorite</span>
           <span id="detailLikeLabel">Like</span>
         </button>
-        <button onclick="shareFromDetail()" class="detail-action detail-action-share">
+        <button id="detailShareBtn" onclick="shareFromDetail()" class="detail-action detail-action-share">
           <span class="material-symbols-outlined" style="font-size:18px;">ios_share</span>
           Share
         </button>
@@ -318,7 +319,7 @@ var allCampaigns = []
 var userSharedQuoteIds = {}
 var userLikedQuoteIds = {}
 var likeCounts = {}
-var shareCounts = {} // NEW: Real share counts
+var shareCounts = {} 
 
 var state = {
   tab: 'all',
@@ -332,12 +333,13 @@ var currentDetailQuote = null
 var searchDebounce = null
 
 var categoryEmoji = {
-  'love':'❤️','faith':'✝️','hope':'️','prayer':'🙏',
-  'grace':'✨','mercy':'','strength':'💪','wisdom':'',
-  'joy':'😊','peace':'️','forgiveness':'🫂','salvation':'🌟',
-  'courage':'🦁','gratitude':'🙌','trust':'🤝','patience':'',
+  'love':'❤️','faith':'✝️','hope':'🍀','prayer':'🙏',
+  'grace':'✨','mercy':'🕊️','strength':'💪','wisdom':'🧠',
+  'joy':'😊','peace':'☮️','forgiveness':'🫂','salvation':'🌟',
+  'courage':'🦁','gratitude':'🙌','trust':'🤝','patience':'⏳',
   'kindness':'💐','healing':'🌿','purpose':'🎯','freedom':'🕊️'
 }
+
 function catEmoji(cat){
   if(!cat) return '📜'
   return categoryEmoji[cat.toLowerCase()] || '📜'
@@ -364,18 +366,24 @@ function getData(settled, fallback){
   return fallback
 }
 
+// Check helper to determine if a quote is scheduled (scheduled status or future publish time)
+function isQuoteScheduled(q) {
+  if (!q) return false;
+  if (q.status === 'scheduled') return true;
+  if (q.published_at && new Date(q.published_at) > new Date()) return true;
+  return false;
+}
+
 async function loadEverything(){
   var results = await Promise.allSettled([
-    // FIX B: Only fetch 'live' quotes. Scheduled are hidden until live.
+    // CHANGE 1: Fetches all quotes without restricting to 'live' so past, present and scheduled quotes are captured
     supabaseClient.from('quotes')
       .select('id,text,source,category,status,published_at,share_count,context,background_url,tags,hashtags,mission_id,campaign_id')
-      .eq('status', 'live') 
       .order('published_at', { ascending: false }),
     supabaseClient.from('campaigns').select('*').order('created_at', { ascending: false }),
     supabaseClient.from('shares').select('quote_id, shared_at').eq('user_id', currentUser.id),
     supabaseClient.from('quote_likes').select('quote_id, liked_at').eq('user_id', currentUser.id),
     supabaseClient.from('quote_likes').select('quote_id'),
-    // FIX D: Fetch global shares to count them accurately
     supabaseClient.from('shares').select('quote_id')
   ])
 
@@ -401,7 +409,6 @@ async function loadEverything(){
     likeCounts[l.quote_id] = (likeCounts[l.quote_id] || 0) + 1
   })
 
-  // FIX D: Process global share counts
   var allSharesGlobal = getData(results[5], [])
   allSharesGlobal.forEach(function(s){
     if(!s.quote_id) return
@@ -416,20 +423,33 @@ function buildTabs(){
   var strip = document.getElementById('tabStrip')
   strip.innerHTML = ''
 
-  var activeCampaigns = allCampaigns.filter(function(c){ return c.status === 'active' })
-  var hasEndedCampaigns = allCampaigns.some(function(c){ return c.status === 'ended' })
-
-  // FIX A & E: Added 'Liked' tab and fixed 'All' logic
+  // CHANGE 3 & 4: Strict Category filters in requested order: ALL - SHARED - LIKED - (ACTIVE CAMPAIGNS) - ARCHIVES
+  // 1. ALL
   addTab(strip, 'all', 'All', getAllTabQuotes().length, 'library_books')
+  
+  // 2. SHARED
   addTab(strip, 'shared', 'Shared', Object.keys(userSharedQuoteIds).length, 'check_circle')
+  
+  // 3. LIKED
   addTab(strip, 'liked', 'Liked', Object.keys(userLikedQuoteIds).length, 'favorite')
+
+  // 4. (ACTIVE CAMPAIGNS) - Active OR has scheduled quotes
+  var activeCampaigns = allCampaigns.filter(function(c){
+    var isActive = c.status === 'active';
+    var hasScheduledQuotes = allQuotes.some(function(q) {
+      return q.campaign_id === c.id && isQuoteScheduled(q);
+    });
+    return isActive || hasScheduledQuotes;
+  })
 
   activeCampaigns.forEach(function(c){
     var count = allQuotes.filter(function(q){ return q.campaign_id === c.id }).length
     addTab(strip, c.id, c.name, count, c.icon || 'campaign', c.color)
   })
 
-   if(hasEndedCampaigns){
+  // 5. ARCHIVES
+  var hasEndedCampaigns = allCampaigns.some(function(c){ return c.status === 'ended' })
+  if(hasEndedCampaigns){
     addTab(strip, 'archives', 'Archives', allCampaigns.filter(function(c){ return c.status === 'ended' }).length, 'inventory_2')
   }
 }
@@ -483,14 +503,13 @@ function updateTabScrollButtons(){
   rightBtn.classList.toggle('visible', canScrollRight)
 }
 
-// FIX A: "All" tab now shows all live quotes
+// CHANGE 1: "All" returns all quotes (past/archived, present/live, scheduled)
 function getAllTabQuotes(){
-  return allQuotes.filter(function(q){ return q.status === 'live' })
+  return allQuotes
 }
 function getSharedTabQuotes(){
   return allQuotes.filter(function(q){ return userSharedQuoteIds[q.id] })
 }
-// FIX E: Liked tab logic
 function getLikedTabQuotes(){
   return allQuotes.filter(function(q){ return userLikedQuoteIds[q.id] })
 }
@@ -567,7 +586,7 @@ function render(){
   var quotes = []
   if(state.tab === 'all')          quotes = getAllTabQuotes()
   else if(state.tab === 'shared')  quotes = getSharedTabQuotes()
-  else if(state.tab === 'liked')   quotes = getLikedTabQuotes() // FIX E
+  else if(state.tab === 'liked')   quotes = getLikedTabQuotes()
   else                             quotes = getCampaignTabQuotes(state.tab)
 
   quotes = applySearch(quotes)
@@ -624,6 +643,20 @@ function renderCampaignHero(campaign){
     dateRange = 'Ends ' + new Date(campaign.end_date).toLocaleDateString('en-AU', { month:'short', day:'numeric' })
   }
 
+  // CHANGE 5: Read rewards received/associated with the campaign
+  var rewardText = campaign.reward || campaign.rewards || campaign.rewards_received || campaign.reward_received || "";
+  var rewardHtml = "";
+  if (rewardText.trim()) {
+    rewardHtml = 
+      '<div class="mt-4 p-3 bg-white/10 backdrop-blur-sm rounded-xl flex items-center gap-2.5 border border-white/20">'
+        + '<span class="material-symbols-outlined text-yellow-300 filled animate-bounce" style="font-size:20px;">emoji_events</span>'
+        + '<div class="flex-1 min-w-0">'
+          + '<p class="font-headline font-bold text-white" style="font-size:12px;line-height:1.2;">Campaign Rewards</p>'
+          + '<p class="font-body text-white/95 mt-0.5 truncate" style="font-size:11px;font-weight:500;">' + escapeHtml(rewardText) + '</p>'
+        + '</div>'
+      + '</div>';
+  }
+
   heroEl.classList.remove('hidden')
   heroEl.innerHTML =
     '<div class="campaign-hero" style="background:linear-gradient(135deg,' + color + ',' + shadeColor(color, 25) + ');">'
@@ -647,7 +680,8 @@ function renderCampaignHero(campaign){
             + '<div class="progress-fill progress-fill-white" style="width:' + progressPct + '%"></div>'
           + '</div>'
         + '</div>'
-        + '<p class="font-body opacity-85 mt-2" style="font-size:11px;">'
+        + rewardHtml
+        + '<p class="font-body opacity-85 mt-3" style="font-size:11px;">'
           + (isComplete
               ? '✨ You\'ve shared every quote in this campaign!'
               : remaining + ' quote' + (remaining !== 1 ? 's' : '') + ' waiting for you')
@@ -772,13 +806,17 @@ function buildQuoteCard(q){
   var dateStr = pubDate ? pubDate.toLocaleDateString('en-AU', { weekday:'short', day:'numeric', month:'short' }) : ''
 
   var likes = likeCounts[q.id] || 0
-  // FIX D: Use real share counts
   var shares = shareCounts[q.id] || 0 
   var isShared = !!userSharedQuoteIds[q.id]
   var isLiked  = !!userLikedQuoteIds[q.id]
+  var isScheduled = isQuoteScheduled(q)
 
+  // CHANGE 2: Render unique Scheduled lock badge with upcoming unlock date
   var statusChip = ''
-  if(isShared){
+  if(isScheduled){
+    var formatUnlock = pubDate ? pubDate.toLocaleDateString('en-AU', { day:'numeric', month:'short' }) : 'Soon'
+    statusChip = '<span class="status-chip status-scheduled"><span class="material-symbols-outlined" style="font-size:10px;">lock</span>Unlocks ' + formatUnlock + '</span>'
+  } else if(isShared){
     statusChip = '<span class="status-chip status-shared"><span class="material-symbols-outlined filled" style="font-size:10px;">check_circle</span>Shared</span>'
   } else if(isLiked){
     statusChip = '<span class="status-chip status-liked"><span class="material-symbols-outlined filled" style="font-size:10px;">favorite</span>Liked</span>'
@@ -846,7 +884,7 @@ function openDetail(quote){
     : ''
 
   document.getElementById('detailLikeCount').textContent = likeCounts[quote.id] || 0
-  document.getElementById('detailShareCount').textContent = shareCounts[quote.id] || 0 // FIX D
+  document.getElementById('detailShareCount').textContent = shareCounts[quote.id] || 0
 
   var ctxWrap = document.getElementById('detailContextWrap')
   if(quote.context && quote.context.trim()){
@@ -887,6 +925,19 @@ function openDetail(quote){
     likeBtn.classList.remove('liked')
     likeIcon.classList.remove('filled')
     likeLabel.textContent = 'Like'
+  }
+
+  // CHANGE 2: Disable, style, and update the text of the Share button if scheduled
+  var shareBtn = document.getElementById('detailShareBtn')
+  if(isQuoteScheduled(quote)){
+    var unlockTimeStr = pubDate ? pubDate.toLocaleDateString('en-AU', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : 'scheduled time'
+    shareBtn.disabled = true
+    shareBtn.classList.add('opacity-40', 'cursor-not-allowed')
+    shareBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">lock</span> Unlocks ' + unlockTimeStr
+  } else {
+    shareBtn.disabled = false
+    shareBtn.classList.remove('opacity-40', 'cursor-not-allowed')
+    shareBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">ios_share</span> Share'
   }
 
   var modal = document.getElementById('detailModal')
@@ -944,6 +995,12 @@ async function toggleLike(){
 
 function shareFromDetail(){
   if(!currentDetailQuote) return
+  // CHANGE 2: Extra JS safety block to ensure scheduled posts cannot be shared
+  if(isQuoteScheduled(currentDetailQuote)){
+    alert("This scheduled quote is not open for sharing yet.")
+    return
+  }
+
   sessionStorage.setItem('gstw_selected_quote_id', currentDetailQuote.id)
   sessionStorage.setItem('gstw_selected_quote_text', currentDetailQuote.text)
   sessionStorage.setItem('gstw_selected_quote_source', currentDetailQuote.source || '')
