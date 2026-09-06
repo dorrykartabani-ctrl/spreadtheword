@@ -1171,26 +1171,38 @@ function closeDesktopPickerAndSucceed(){
   setTimeout(function(){ showSuccess('downloaded to your device') }, 200)
 }
 function openPlatform(platform){
-  var text = encodeURIComponent(fullCaption || '')
+  // 1. Automatically copy the caption to the clipboard
+  if(fullCaption && navigator.clipboard){
+    navigator.clipboard.writeText(fullCaption).catch(function(e){ console.error('Copy failed', e) })
+  }
+
+  // 2. Automatically download the image to the device
+  downloadImage()
+
+  // 3. Define Platform URLs (Passing our app link since platforms block pre-filled text anyway)
   var appUrl = 'https://gospreadtheword.app'
   var urls = {
-    twitter:  'https://twitter.com/intent/tweet?text=' + text,
-    facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(appUrl) + '&quote=' + text,
-    whatsapp: 'https://web.whatsapp.com/send?text=' + text,
-    telegram: 'https://t.me/share/url?url=' + encodeURIComponent(appUrl) + '&text=' + text,
-    threads:  'https://www.threads.net/intent/post?text=' + text,
-    linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(appUrl) + '&summary=' + text,
-    email:    'mailto:?subject=' + encodeURIComponent('A word to spread') + '&body=' + text
+    twitter:  'https://twitter.com/intent/tweet?text=' + encodeURIComponent(appUrl),
+    facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(appUrl),
+    whatsapp: 'https://web.whatsapp.com/send?text=' + encodeURIComponent(appUrl),
+    telegram: 'https://t.me/share/url?url=' + encodeURIComponent(appUrl),
+    threads:  'https://www.threads.net/intent/post?text=' + encodeURIComponent(appUrl),
+    linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(appUrl),
+    email:    'mailto:?subject=' + encodeURIComponent('A word to spread') + '&body=' + encodeURIComponent(fullCaption || '') + '%0A%0A' + encodeURIComponent(appUrl)
   }
+
   var url = urls[platform]
+  
+  // 4. Open the platform and show the user what happened
   if(url){
     window.open(url, '_blank', 'noopener,noreferrer')
     logShare('desktop-' + platform)
-    setTimeout(function(){
-      closeDesktopPicker()
-      showSuccess('shared to ' + platform)
-    }, 500)
+    
+    closeDesktopPicker()
+    showToast('Caption copied & image downloaded! Paste on ' + platform)
+    haptic('success')
   }
+}
 }
 async function copyLinkOnly(){
   if(navigator.clipboard){
