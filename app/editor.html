@@ -1181,9 +1181,11 @@ function openPlatform(platform){
 
   // 3. Platform URLs
   var appUrl = 'https://gospreadtheword.app'
+  
   var urls = {
     twitter:  'https://twitter.com/intent/tweet?text=' + encodeURIComponent(fullCaption),
-    facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(appUrl),
+    // ✅ BEST FIX: Just open Facebook directly - user will share manually
+    facebook: 'https://www.facebook.com/',
     whatsapp: 'https://api.whatsapp.com/send?text=' + encodeURIComponent(fullCaption + '\n\n' + appUrl),
     telegram: 'https://t.me/share/url?url=' + encodeURIComponent(appUrl) + '&text=' + encodeURIComponent(fullCaption),
     threads:  'https://www.threads.net/intent/post?text=' + encodeURIComponent(fullCaption),
@@ -1193,16 +1195,19 @@ function openPlatform(platform){
 
   var url = urls[platform]
   
-  // 4. Open platform
+  // 4. Open platform with special instructions for Facebook
   if(url){
     window.open(url, '_blank', 'noopener,noreferrer')
     logShare('desktop-' + platform)
-    
     closeDesktopPicker()
     
-    // Provide clear instructions
-    var platformName = platform.charAt(0).toUpperCase() + platform.slice(1)
-    showToast('Caption copied & image downloaded! Upload manually on ' + platformName)
+    // Special message for Facebook (since it requires manual posting)
+    if(platform === 'facebook'){
+      showToast('✓ Image saved & caption copied! Create a post on Facebook and paste')
+    } else {
+      var platformName = platform.charAt(0).toUpperCase() + platform.slice(1)
+      showToast('Caption copied & image downloaded! Upload on ' + platformName)
+    }
     haptic('success')
   }
 }
