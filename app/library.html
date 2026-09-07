@@ -96,6 +96,10 @@
     .quote-thumb{ width:80px;height:80px;flex-shrink:0; background:#e9e8e1;background-size:cover;background-position:center; }
     .quote-meta{ display:inline-flex;align-items:center;gap:4px; font-size:10px;font-weight:700;color:#5e6059; letter-spacing:0.02em; }
     .quote-cat-chip{ display:inline-flex;align-items:center;gap:3px; padding:2px 7px;border-radius:99px; background:rgba(176,213,254,0.35);color:#234a6c; font-size:9px;font-weight:700;letter-spacing:0.03em; text-transform:uppercase; }
+    
+    /* Campaign solid chip style */
+    .campaign-chip{ display:inline-flex;align-items:center;gap:4px; padding:2px 7px;border-radius:99px; font-size:9px;font-weight:700;letter-spacing:0.03em; text-transform:uppercase; color:#ffffff; }
+    
     .status-chip{ display:inline-flex;align-items:center;gap:3px; padding:2px 7px;border-radius:99px; font-size:9px;font-weight:700;letter-spacing:0.03em; text-transform:uppercase; }
     .status-shared{background:rgba(61,98,133,0.15);color:#3d6285}
     .status-liked{background:rgba(173,51,43,0.12);color:#ad332b}
@@ -189,7 +193,7 @@
     </div>
   </section>
 
-  <section id="quoteList" class="space-y-3"></section>
+  <section id="quoteList" class="mb-4"></section>
   <section id="archiveList" class="hidden space-y-3"></section>
   <section id="archiveDetailSection" class="hidden"></section>
 
@@ -221,7 +225,7 @@
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
           <span id="detailCategoryChip" class="quote-cat-chip"></span>
-          <span id="detailCampaignChip" class="hidden quote-cat-chip"></span>
+          <span id="detailCampaignChip" class="hidden campaign-chip"></span>
         </div>
         <button onclick="closeDetail()" class="w-9 h-9 rounded-full bg-surface-clow flex items-center justify-center text-on-surface-variant active:scale-90 transition-transform">
           <span class="material-symbols-outlined" style="font-size:18px;">close</span>
@@ -327,7 +331,8 @@ var state = {
   search: '',
   page: 1,
   perPage: 20,
-  archiveViewingCampaignId: null
+  archiveViewingCampaignId: null,
+  showArchives: false
 }
 
 var currentDetailQuote = null
@@ -338,25 +343,13 @@ var categoryEmoji = {
   'grace':'✨','mercy':'🕊️','strength':'💪','wisdom':'🧠',
   'joy':'😊','peace':'☮️','forgiveness':'🫂','salvation':'🌟',
   'courage':'🦁','gratitude':'🙌','trust':'🤝','patience':'⏳',
-  'kindness':'💐','healing':'🌿','purpose':'🎯','freedom':'🕊️'
+  'kindness':'💐','healing':'🌿','purpose':'🎯','freedom':'🕊️',
+  'mission':'📜'
 }
 
 function catEmoji(cat){
   if(!cat) return '📜'
   return categoryEmoji[cat.toLowerCase()] || '📜'
-}
-
-// Color tint engine to create beautiful 12% translucent background borders
-function hexToRgba(hex, alpha) {
-  if (!hex) return 'rgba(61, 98, 133, ' + alpha + ')';
-  hex = hex.replace('#', '');
-  if (hex.length === 3) {
-    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
-  }
-  var r = parseInt(hex.substring(0, 2), 16);
-  var g = parseInt(hex.substring(2, 4), 16);
-  var b = parseInt(hex.substring(4, 6), 16);
-  return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
 }
 
 async function init(){
@@ -380,13 +373,12 @@ function getData(settled, fallback){
   return fallback
 }
 
-// Scheduled quotes validation helper
+// Scheduled quotes validation strictly comparing scheduled_for against user's local time
 function isQuoteScheduled(q) {
   if (!q) return false;
   if (q.status === 'scheduled') {
     if (q.scheduled_for) {
       var schedDate = new Date(q.scheduled_for);
-      // It is only scheduled if its unlock date is in the future relative to the user's current client time
       if (schedDate > new Date()) {
         return true;
       }
@@ -397,22 +389,13 @@ function isQuoteScheduled(q) {
 
 async function loadEverything(){
   var results = await Promise.allSettled([
-    // Fetches all Quotes
-    supabaseClient.from('quotes')
-      .select('id,text,source,category,status,published_at,scheduled_for,share_count,context,background_url,tags,hashtags,mission_id,campaign_id')
-      .order('published_at', { ascending: false }),
-    // Fetches all Campaigns
+    supabaseClient.from('quotes').select('id,text,source,category,status,published_at,scheduled_for,share_count,context,background_url,tags,hashtags,mission_id,campaign_id').order('published_at', { ascending: false }),
     supabaseClient.from('campaigns').select('*').order('created_at', { ascending: false }),
-    // Fetches User Shares
     supabaseClient.from('shares').select('quote_id, shared_at').eq('user_id', currentUser.id),
-    // Fetches User Likes
     supabaseClient.from('quote_likes').select('quote_id, liked_at').eq('user_id', currentUser.id),
-    // Fetches Global Likes
     supabaseClient.from('quote_likes').select('quote_id'),
-    // Fetches Global Shares
     supabaseClient.from('shares').select('quote_id'),
-    // Fetches Rewards Badge Names
-    supabaseClient.from('badge_definitions').select('id, name')
+    supabaseClient.from('badge_definitions').select('id, name, image_url')
   ])
 
   allQuotes    = getData(results[0], [])
@@ -445,7 +428,7 @@ async function loadEverything(){
 
   var badges = getData(results[6], [])
   badges.forEach(function(b){
-    if(b.id) badgesMap[b.id] = b.name
+    if(b.id) badgesMap[b.id] = { name: b.name, image_url: b.image_url }
   })
 
   buildTabs()
@@ -456,21 +439,13 @@ function buildTabs(){
   var strip = document.getElementById('tabStrip')
   strip.innerHTML = ''
 
-  // Category filter strictly matching: ALL - SHARED - LIKED - (ACTIVE CAMPAIGNS) - ARCHIVES
-  // 1. ALL
   addTab(strip, 'all', 'All', getAllTabQuotes().length, 'library_books')
-  
-  // 2. SHARED
   addTab(strip, 'shared', 'Shared', Object.keys(userSharedQuoteIds).length, 'check_circle')
-  
-  // 3. LIKED
   addTab(strip, 'liked', 'Liked', Object.keys(userLikedQuoteIds).length, 'favorite')
 
-  // 4. (ACTIVE CAMPAIGNS) - Campaigns with status active or holding scheduled quotes, AND must have assigned quotes
   var activeCampaigns = allCampaigns.filter(function(c){
     var campaignQuotes = allQuotes.filter(function(q){ return q.campaign_id === c.id });
-    var hasAssignedQuotes = campaignQuotes.length > 0;
-    if (!hasAssignedQuotes) return false;
+    if (campaignQuotes.length === 0) return false;
 
     var isActive = c.status === 'active';
     var hasScheduledQuotes = campaignQuotes.some(isQuoteScheduled);
@@ -482,7 +457,6 @@ function buildTabs(){
     addTab(strip, c.id, c.name, count, c.icon || 'campaign', c.color)
   })
 
-  // 5. ARCHIVES
   var hasEndedCampaigns = allCampaigns.some(function(c){ return c.status === 'ended' })
   if(hasEndedCampaigns){
     addTab(strip, 'archives', 'Archives', allCampaigns.filter(function(c){ return c.status === 'ended' }).length, 'inventory_2')
@@ -510,6 +484,7 @@ function setTab(tabId){
   state.tab = tabId
   state.page = 1
   state.archiveViewingCampaignId = null
+  state.showArchives = false
   document.getElementById('archiveDetailSection').classList.add('hidden')
   document.querySelectorAll('.lib-tab').forEach(function(t){
     t.classList.toggle('active', t.dataset.tabId === tabId)
@@ -547,11 +522,9 @@ function getSharedTabQuotes(){
 function getLikedTabQuotes(){
   return allQuotes.filter(function(q){ return userLikedQuoteIds[q.id] })
 }
-
 function getCampaignTabQuotes(campaignId){
   return allQuotes.filter(function(q){ return q.campaign_id === campaignId })
 }
-
 function getArchivedCampaigns(){
   return allCampaigns.filter(function(c){ return c.status === 'ended' })
 }
@@ -574,6 +547,53 @@ function applySearch(quotes){
         || tags.some(function(t){ return t.indexOf(q) > -1 })
         || hashes.some(function(t){ return t.indexOf(q) > -1 })
   })
+}
+
+// Renders individual sections into the view dynamically
+function appendSection(listEl, title, qArray, isArchivedSection) {
+  if(qArray.length === 0) return;
+  
+  if(title) {
+    var header = document.createElement('div');
+    header.className = 'mb-2 mt-5';
+    header.innerHTML = '<h3 class="font-headline font-bold text-on-surface" style="font-size:14px;">' + title + '</h3>';
+    if (isArchivedSection) {
+      header.id = 'libArchiveHeader';
+      if (!state.showArchives) header.classList.add('hidden');
+    }
+    listEl.appendChild(header);
+  }
+
+  var wrap = document.createElement('div');
+  wrap.className = 'space-y-3 mb-6';
+  if(isArchivedSection) {
+    wrap.id = 'libArchiveSection';
+    if(!state.showArchives) wrap.classList.add('hidden');
+  }
+  
+  qArray.forEach(function(q) {
+    wrap.appendChild(buildQuoteCard(q));
+  });
+  listEl.appendChild(wrap);
+}
+
+function toggleLibraryArchives() {
+  state.showArchives = !state.showArchives;
+  var sec = document.getElementById('libArchiveSection');
+  var hdr = document.getElementById('libArchiveHeader');
+  var lbl = document.getElementById('libArchiveToggleLabel');
+  
+  if (sec) {
+    if(state.showArchives) {
+      sec.classList.remove('hidden');
+      if(hdr) hdr.classList.remove('hidden');
+      if(lbl) lbl.textContent = 'Hide Archived Quotes';
+    } else {
+      sec.classList.add('hidden');
+      if(hdr) hdr.classList.add('hidden');
+      if(lbl) lbl.textContent = 'Show Archived Quotes';
+    }
+  }
 }
 
 function render(){
@@ -639,20 +659,45 @@ function render(){
     return
   }
 
-  var totalPages = Math.max(1, Math.ceil(quotes.length / state.perPage))
-  if(state.page > totalPages) state.page = totalPages
-  var start = (state.page - 1) * state.perPage
-  var pageQuotes = quotes.slice(start, start + state.perPage)
+  // GROUPED VIEW FOR 'ALL' AND 'CAMPAIGNS'
+  if (state.tab === 'all' || isCampaignTab) {
+    listEl.innerHTML = '';
+    
+    var liveQuotes = quotes.filter(function(q) { return q.status === 'live' || (!isQuoteScheduled(q) && q.status !== 'archived' && q.status !== 'draft'); });
+    var schedQuotes = quotes.filter(function(q) { return isQuoteScheduled(q); });
+    var archQuotes = quotes.filter(function(q) { return q.status === 'archived'; });
 
-  listEl.innerHTML = ''
-  pageQuotes.forEach(function(q){ listEl.appendChild(buildQuoteCard(q)) })
+    appendSection(listEl, 'Live Now', liveQuotes, false);
+    appendSection(listEl, 'Scheduled', schedQuotes, false);
 
-  if(totalPages > 1){
-    paginationEl.classList.remove('hidden')
-    paginationEl.classList.add('flex')
-    document.getElementById('pageInfo').textContent = 'Page ' + state.page + ' of ' + totalPages
-    document.getElementById('prevBtn').disabled = state.page === 1
-    document.getElementById('nextBtn').disabled = state.page === totalPages
+    if (archQuotes.length > 0) {
+      var toggleWrap = document.createElement('div');
+      toggleWrap.className = 'pt-4 pb-4 text-center';
+      toggleWrap.innerHTML = '<button onclick="toggleLibraryArchives()" id="libArchiveToggleBtn" class="inline-flex items-center gap-2 px-5 py-2.5 bg-surface-cl text-on-surface-variant font-body font-semibold rounded-xl hover:bg-surface-clow transition-colors shadow-ambient-sm" style="font-size:13px;">' +
+        '<span class="material-symbols-outlined" style="font-size:18px;">archive</span>' +
+        '<span id="libArchiveToggleLabel">' + (state.showArchives ? 'Hide Archived Quotes' : 'Show Archived Quotes') + '</span></button>';
+      listEl.appendChild(toggleWrap);
+
+      appendSection(listEl, 'Archived', archQuotes, true);
+    }
+  } 
+  // STANDARD PAGINATED VIEW FOR 'SHARED' AND 'LIKED'
+  else {
+    var totalPages = Math.max(1, Math.ceil(quotes.length / state.perPage))
+    if(state.page > totalPages) state.page = totalPages
+    var start = (state.page - 1) * state.perPage
+    var pageQuotes = quotes.slice(start, start + state.perPage)
+
+    listEl.innerHTML = ''
+    pageQuotes.forEach(function(q){ listEl.appendChild(buildQuoteCard(q)) })
+
+    if(totalPages > 1){
+      paginationEl.classList.remove('hidden')
+      paginationEl.classList.add('flex')
+      document.getElementById('pageInfo').textContent = 'Page ' + state.page + ' of ' + totalPages
+      document.getElementById('prevBtn').disabled = state.page === 1
+      document.getElementById('nextBtn').disabled = state.page === totalPages
+    }
   }
 }
 
@@ -677,16 +722,20 @@ function renderCampaignHero(campaign){
     dateRange = 'Ends ' + new Date(campaign.end_date).toLocaleDateString('en-AU', { month:'short', day:'numeric' })
   }
 
-  // Display reward badges assigned dynamically matching reward_badge_id
+  // Display genuine reward badge image if available in badge_definitions
   var rewardHtml = "";
   if (campaign.reward_badge_id && badgesMap[campaign.reward_badge_id]) {
-    var rewardName = badgesMap[campaign.reward_badge_id];
+    var badgeData = badgesMap[campaign.reward_badge_id];
+    var badgeImg = badgeData.image_url
+      ? '<img src="' + escapeAttr(badgeData.image_url) + '" class="w-9 h-9 object-contain">'
+      : '<span class="material-symbols-outlined text-yellow-300 filled" style="font-size:32px;">emoji_events</span>';
+      
     rewardHtml = 
-      '<div class="mt-4 p-3 bg-white/10 backdrop-blur-sm rounded-xl flex items-center gap-2.5 border border-white/20">'
-        + '<span class="material-symbols-outlined text-yellow-300 filled animate-bounce" style="font-size:20px;">emoji_events</span>'
+      '<div class="mt-4 p-3 bg-white/10 backdrop-blur-sm rounded-xl flex items-center gap-3 border border-white/20">'
+        + '<div class="flex-shrink-0 animate-bounce">' + badgeImg + '</div>'
         + '<div class="flex-1 min-w-0">'
           + '<p class="font-headline font-bold text-white" style="font-size:12px;line-height:1.2;">Campaign Rewards</p>'
-          + '<p class="font-body text-white/95 mt-0.5 truncate" style="font-size:11px;font-weight:500;">Earn Badge: ' + escapeHtml(rewardName) + '</p>'
+          + '<p class="font-body text-white/95 mt-0.5 truncate" style="font-size:11px;font-weight:500;">Earn Badge: ' + escapeHtml(badgeData.name) + '</p>'
         + '</div>'
       + '</div>';
   }
@@ -836,16 +885,20 @@ function buildQuoteCard(q){
   card.onclick = function(){ openDetail(q) }
 
   var bgUrl = q.background_url || ''
-  var pubDate = q.published_at ? new Date(q.published_at) : (q.created_at ? new Date(q.created_at) : null)
-  var dateStr = pubDate ? pubDate.toLocaleDateString('en-AU', { weekday:'short', day:'numeric', month:'short' }) : ''
+  
+  var isScheduled = isQuoteScheduled(q)
+  
+  // Date logic: scheduled cards show 'scheduled_for', everything else shows 'published_at'/'created_at'
+  var displayDateObj = isScheduled 
+    ? (q.scheduled_for ? new Date(q.scheduled_for) : null) 
+    : (q.published_at ? new Date(q.published_at) : (q.created_at ? new Date(q.created_at) : null));
+  var dateStr = displayDateObj ? displayDateObj.toLocaleDateString('en-AU', { weekday:'short', day:'numeric', month:'short' }) : ''
 
   var likes = likeCounts[q.id] || 0
   var shares = shareCounts[q.id] || 0 
   var isShared = !!userSharedQuoteIds[q.id]
   var isLiked  = !!userLikedQuoteIds[q.id]
-  var isScheduled = isQuoteScheduled(q)
 
-  // Evaluates dynamic unlock target date strictly comparing scheduled_for against local time
   var statusChip = ''
   if(isScheduled){
     var formatUnlock = 'Soon'
@@ -862,17 +915,21 @@ function buildQuoteCard(q){
     statusChip = '<span class="status-chip status-liked"><span class="material-symbols-outlined filled" style="font-size:10px;">favorite</span>Liked</span>'
   }
 
-  var catChip = q.category
+  // Auto-hide category chip if tagged 'None'
+  var catChip = (q.category && q.category.toLowerCase() !== 'none')
     ? '<span class="quote-cat-chip">' + catEmoji(q.category) + ' ' + escapeHtml(q.category) + '</span>'
     : ''
 
-  // Shows custom styled campaign pills with dynamic theme color values
+  // Solid, styled campaign pill
   var campChip = ''
-  if (state.tab === 'all' && q.campaign_id) {
+  if (q.campaign_id) {
     var camp = allCampaigns.find(function(c){ return c.id === q.campaign_id })
     if (camp) {
       var cColor = camp.color || '#3d6285';
-      campChip = '<span class="quote-cat-chip" style="background:' + hexToRgba(cColor, 0.12) + '; color:' + cColor + '; margin-left:4px;">' + escapeHtml(camp.name) + '</span>'
+      var cIcon = camp.icon || 'campaign';
+      campChip = '<span class="campaign-chip" style="background:' + cColor + '; margin-left:4px;">'
+        + '<span class="material-symbols-outlined filled" style="font-size:11px;">' + cIcon + '</span>'
+        + escapeHtml(camp.name) + '</span>'
     }
   }
 
@@ -904,21 +961,22 @@ function openDetail(quote){
   currentDetailQuote = quote
 
   var catEl = document.getElementById('detailCategoryChip')
-  if(quote.category){
+  if(quote.category && quote.category.toLowerCase() !== 'none'){
     catEl.innerHTML = catEmoji(quote.category) + ' ' + escapeHtml(quote.category)
     catEl.classList.remove('hidden')
   } else {
     catEl.classList.add('hidden')
   }
 
+  // Campaign Pill logic for detail view
   var campEl = document.getElementById('detailCampaignChip')
   if(quote.campaign_id){
     var camp = allCampaigns.find(function(c){ return c.id === quote.campaign_id })
     if(camp){
       var cColor = camp.color || '#3d6285';
-      campEl.textContent = camp.name;
-      campEl.style.background = hexToRgba(cColor, 0.12);
-      campEl.style.color = cColor;
+      var cIcon = camp.icon || 'campaign';
+      campEl.innerHTML = '<span class="material-symbols-outlined filled" style="font-size:11px;">' + cIcon + '</span>' + escapeHtml(camp.name);
+      campEl.style.background = cColor;
       campEl.classList.remove('hidden')
     } else {
       campEl.classList.add('hidden')
@@ -933,7 +991,7 @@ function openDetail(quote){
   document.getElementById('detailImageSource').textContent = '— ' + (quote.source || 'GSTW').toUpperCase()
 
   var pubDate = quote.published_at ? new Date(quote.published_at) : null
-  document.getElementById('detailDate').textContent = pubDate
+  document.getElementById('detailDate').textContent = pubDate && !isQuoteScheduled(quote)
     ? 'Published ' + pubDate.toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
     : ''
 
@@ -981,7 +1039,6 @@ function openDetail(quote){
     likeLabel.textContent = 'Like'
   }
 
-  // Disable sharing action panel entirely if the quote's release is scheduled for the future
   var shareBtn = document.getElementById('detailShareBtn')
   if(isQuoteScheduled(quote)){
     var unlockTimeStr = 'scheduled time';
