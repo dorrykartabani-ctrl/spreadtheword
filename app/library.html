@@ -6,7 +6,1217 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Library — Go Spread The Word</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Library — Go Spread The Word</title>
 
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+
+  <link rel="stylesheet" href="nav.css">
+
+  <link rel="icon" type="image/x-icon" href="/images/favicon/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'surface':'#f2f6fa','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
+            'surface-c':'#efeee7','surface-chigh':'#e9e8e1','surface-chighest':'#e3e3db',
+            'on-surface':'#31332e','on-surface-variant':'#5e6059',
+            'inverse-surface':'#0e0e0c','inverse-on-surface':'#9e9d99',
+            'outline':'#7a7b75','outline-variant':'#b2b2ab',
+            'primary':'#3d6285','on-primary':'#f7f9ff',
+            'primary-container':'#b0d5fe','on-primary-container':'#234a6c',
+            'secondary':'#41637c','secondary-container':'#cae6ff',
+            'tertiary':'#ad332b','on-tertiary':'#fff7f6',
+            'primary-dim':'#305678','secondary-dim':'#355670','tertiary-dim':'#9d2621',
+            'background':'#f2f6fa','on-background':'#31332e',
+          },
+          fontFamily:{
+            'headline':['Plus Jakarta Sans','sans-serif'],
+            'body':['Manrope','sans-serif'],
+            'quote':['Lora','serif'],
+          },
+          boxShadow:{
+            'ambient':'0 20px 40px rgba(49,51,46,0.05)',
+            'ambient-sm':'0 8px 24px rgba(49,51,46,0.04)',
+            'float':'0 20px 40px rgba(49,51,46,0.08)',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    body{ font-family:'Manrope',sans-serif; background:#f2f6fa; color:#31332e; -webkit-tap-highlight-color:transparent; min-height:100dvh; letter-spacing:-0.005em; }
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
+    .font-quote{font-family:'Lora',serif}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
+    .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+    ::-webkit-scrollbar{display:none}
+    body{-ms-overflow-style:none;scrollbar-width:none}
+
+    .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
+    .glass-header{ background:rgba(242,246,250,0.85); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); transition:box-shadow 0.2s ease; padding-top:env(safe-area-inset-top); padding-left:env(safe-area-inset-left); padding-right:env(safe-area-inset-right); }
+    .header-scrolled{box-shadow:0 8px 24px rgba(49,51,46,0.04)}
+
+    .search-wrap{ background:#ffffff; border-radius:14px; display:flex;align-items:center;gap:8px; padding:10px 14px; border:1px solid transparent; transition:all 0.15s ease; }
+    .search-wrap:focus-within{border-color:rgba(61,98,133,0.3);box-shadow:0 4px 12px rgba(49,51,46,0.03)}
+    .search-wrap input{ flex:1;background:transparent;border:none;outline:none; font-family:'Manrope',sans-serif;font-size:14px;color:#31332e; }
+    .search-wrap input::placeholder{color:#8a8c85}
+
+    .tab-wrap{position:relative}
+    .tab-strip{ display:flex;gap:8px;overflow-x:auto;padding:2px 0; -ms-overflow-style:none;scrollbar-width:none; scroll-behavior:smooth; }
+    .tab-strip::-webkit-scrollbar{display:none}
+
+    .tab-scroll-btn{ position:absolute;top:50%;transform:translateY(-50%); width:32px;height:32px;border-radius:50%; background:#ffffff;color:#3d6285; display:none;align-items:center;justify-content:center; box-shadow:0 4px 12px rgba(49,51,46,0.12); cursor:pointer;transition:all 0.15s ease;z-index:2; }
+    .tab-scroll-btn:hover{background:#f5f4ed;transform:translateY(-50%) scale(1.05)}
+    .tab-scroll-btn:active{transform:translateY(-50%) scale(0.95)}
+    .tab-scroll-btn.left{left:-6px}
+    .tab-scroll-btn.right{right:-6px}
+
+    @media (hover:hover) and (pointer:fine){ .tab-scroll-btn.visible{display:flex} }
+    
+    .lib-tab{ flex-shrink:0;padding:8px 14px;border-radius:99px; background:#ffffff;color:#5e6059; font-family:'Plus Jakarta Sans',sans-serif; font-size:12px;font-weight:700; transition:all 0.15s ease; white-space:nowrap; display:inline-flex;align-items:center;gap:6px; }
+    .lib-tab:active{transform:scale(0.96)}
+    .lib-tab.active{background:#3d6285;color:#f7f9ff;box-shadow:0 4px 12px rgba(61,98,133,0.25)}
+    .lib-tab-count{ background:rgba(0,0,0,0.08);color:inherit; padding:1px 7px;border-radius:99px; font-size:10px;font-weight:700; opacity:0.85; }
+    .lib-tab.active .lib-tab-count{background:rgba(255,255,255,0.2)}
+    .lib-tab-icon{font-size:14px!important}
+
+    .quote-card{ background:#ffffff; border-radius:16px; overflow:hidden; cursor:pointer; transition:transform 0.15s ease, box-shadow 0.2s ease; }
+    .quote-card:hover{box-shadow:0 12px 24px rgba(49,51,46,0.05)}
+    .quote-card:active{transform:scale(0.99)}
+    .quote-thumb{ width:80px;height:80px;flex-shrink:0; background:#e9e8e1;background-size:cover;background-position:center; }
+    .quote-meta{ display:inline-flex;align-items:center;gap:4px; font-size:10px;font-weight:700;color:#5e6059; letter-spacing:0.02em; }
+    .quote-cat-chip{ display:inline-flex;align-items:center;gap:3px; padding:2px 7px;border-radius:99px; background:rgba(176,213,254,0.35);color:#234a6c; font-size:9px;font-weight:700;letter-spacing:0.03em; text-transform:uppercase; }
+    
+    /* Campaign solid chip style */
+    .campaign-chip{ display:inline-flex;align-items:center;gap:4px; padding:2px 7px;border-radius:99px; font-size:9px;font-weight:700;letter-spacing:0.03em; text-transform:uppercase; color:#ffffff; }
+    
+    .status-chip{ display:inline-flex;align-items:center;gap:3px; padding:2px 7px;border-radius:99px; font-size:9px;font-weight:700;letter-spacing:0.03em; text-transform:uppercase; }
+    .status-shared{background:rgba(61,98,133,0.15);color:#3d6285}
+    .status-liked{background:rgba(173,51,43,0.12);color:#ad332b}
+    .status-scheduled{background:rgba(217,119,6,0.15);color:#d97706}
+
+    .campaign-hero{ border-radius:20px; overflow:hidden; padding:20px; color:#f7f9ff; position:relative; box-shadow:0 12px 32px rgba(49,51,46,0.1); }
+    .campaign-hero::before{ content:'';position:absolute;top:-40px;right:-40px; width:180px;height:180px; background:radial-gradient(circle,rgba(255,255,255,0.15) 0%,transparent 70%); border-radius:50%; pointer-events:none; }
+    .campaign-hero-inner{position:relative;z-index:1}
+    .progress-track{ height:8px;background:rgba(255,255,255,0.18); border-radius:99px;overflow:hidden; }
+    .progress-fill{ height:100%;border-radius:99px; transition:width 1.2s cubic-bezier(0.22,1,0.36,1); }
+    .progress-fill-white{background:#ffffff}
+
+    .archive-card{ background:#ffffff; border-radius:18px; padding:16px; cursor:pointer; transition:transform 0.15s ease, box-shadow 0.2s ease; display:flex;align-items:center;gap:14px; }
+    .archive-card:hover{box-shadow:0 12px 24px rgba(49,51,46,0.05)}
+    .archive-card:active{transform:scale(0.99)}
+
+    .skeleton{ background:linear-gradient(90deg,#e8eff5 25%,#f0f5f9 50%,#e8eff5 75%); background-size:200% 100%;animation:shimmer 1.5s infinite; border-radius:16px; }
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    .fade-up{opacity:0;transform:translateY(12px);transition:opacity 0.5s ease,transform 0.5s ease}
+    .fade-up.visible{opacity:1;transform:translateY(0)}
+
+    .modal-inner{max-height:88dvh;overflow-y:auto;-ms-overflow-style:none;scrollbar-width:none}
+    .modal-inner::-webkit-scrollbar{display:none}
+    @keyframes modalSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+    @keyframes modalOverlayIn{from{opacity:0}to{opacity:1}}
+    #detailModal{opacity:0;pointer-events:none}
+    #detailModal.open{opacity:1;pointer-events:auto;animation:modalOverlayIn 0.3s ease-out forwards}
+    #detailModal .modal-panel{transform:translateY(100%)}
+    #detailModal.open .modal-panel{animation:modalSlideUp 0.4s cubic-bezier(0.16,1,0.3,1) forwards}
+
+    .detail-image{ width:100%;aspect-ratio:1; border-radius:16px;overflow:hidden; background:#0e0e0c; background-size:cover;background-position:center; position:relative; }
+    .detail-image-overlay{ position:absolute;inset:0; background:rgba(0,0,0,0.35); }
+    .detail-image-text{ position:absolute;inset:0; display:flex;flex-direction:column;justify-content:center;align-items:center; padding:24px;text-align:center;color:#ffffff; text-shadow:0 4px 20px rgba(0,0,0,0.7),0 2px 6px rgba(0,0,0,0.4); }
+    .detail-image-text .q{font-family:'Lora',serif;font-size:17px;font-weight:500;line-height:1.4;margin-bottom:12px}
+    .detail-image-text .s{font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;opacity:0.9}
+
+    .detail-action{ flex:1;display:flex;align-items:center;justify-content:center;gap:6px; padding:12px 8px;border-radius:12px; font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700; transition:all 0.15s ease; }
+    .detail-action:active{transform:scale(0.97)}
+    .detail-action-share{background:#3d6285;color:#f7f9ff}
+    .detail-action-like{background:#f5f4ed;color:#31332e}
+    .detail-action-like.liked{background:rgba(173,51,43,0.12);color:#ad332b}
+
+    .page-btn{ padding:8px 14px;border-radius:10px; background:#ffffff;color:#31332e; font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700; display:inline-flex;align-items:center;gap:4px; transition:all 0.15s ease; }
+    .page-btn:active{transform:scale(0.96)}
+    .page-btn:disabled{opacity:0.4;pointer-events:none}
+    .empty-icon-wrap{ width:64px;height:64px;border-radius:20px; background:#ffffff; display:flex;align-items:center;justify-content:center; margin:0 auto 12px; }
+  </style>
+</head>
+
+<script src="nav.js"></script>
+
+<body>
+
+<header id="pageHeader" class="fixed top-0 w-full z-50 glass-header">
+  <div class="max-w-[430px] mx-auto px-5 pt-10 pb-3">
+    <h1 class="font-headline font-bold text-on-surface" style="font-size:22px;line-height:28px;">Library</h1>
+    <p class="font-body text-on-surface-variant mt-0.5" style="font-size:12px;">Discover, revisit, share.</p>
+  </div>
+</header>
+
+<main class="pt-28 pb-32 px-5 max-w-[430px] mx-auto space-y-4">
+
+  <section class="fade-up">
+    <div class="search-wrap">
+      <span class="material-symbols-outlined text-outline" style="font-size:18px;">search</span>
+      <input id="searchInput" type="text" placeholder="Search hope, faith, love, source..." autocomplete="off">
+      <button id="searchClear" onclick="clearSearch()" class="hidden text-outline hover:text-on-surface transition-colors">
+        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+      </button>
+    </div>
+  </section>
+
+ <section class="fade-up">
+  <div class="tab-wrap">
+    <button id="tabScrollLeft" onclick="scrollTabs(-160)" class="tab-scroll-btn left" aria-label="Scroll left">
+      <span class="material-symbols-outlined" style="font-size:18px;">chevron_left</span>
+    </button>
+    <div id="tabStrip" class="tab-strip"></div>
+    <button id="tabScrollRight" onclick="scrollTabs(160)" class="tab-scroll-btn right" aria-label="Scroll right">
+      <span class="material-symbols-outlined" style="font-size:18px;">chevron_right</span>
+    </button>
+  </div>
+</section>
+
+  <section id="campaignHero" class="hidden fade-up"></section>
+  <section id="loadingSection">
+    <div class="space-y-3">
+      <div class="skeleton h-24"></div>
+      <div class="skeleton h-24"></div>
+      <div class="skeleton h-24"></div>
+    </div>
+  </section>
+
+  <section id="quoteList" class="mb-4"></section>
+  <section id="archiveList" class="hidden space-y-3"></section>
+  <section id="archiveDetailSection" class="hidden"></section>
+
+  <section id="emptyState" class="hidden text-center py-16 fade-up">
+    <div class="empty-icon-wrap">
+      <span class="material-symbols-outlined text-outline" style="font-size:32px;">search_off</span>
+    </div>
+    <h3 class="font-headline font-bold text-on-surface mb-1" style="font-size:16px;">Nothing here yet</h3>
+    <p id="emptyMsg" class="font-body text-on-surface-variant" style="font-size:13px;">Try a different search or tab.</p>
+  </section>
+
+  <section id="paginationSection" class="hidden flex items-center justify-between pt-2">
+    <button id="prevBtn" onclick="prevPage()" class="page-btn">
+      <span class="material-symbols-outlined" style="font-size:16px;">chevron_left</span>Prev
+    </button>
+    <span id="pageInfo" class="page-info">Page 1 of 1</span>
+    <button id="nextBtn" onclick="nextPage()" class="page-btn">
+      Next<span class="material-symbols-outlined" style="font-size:16px;">chevron_right</span>
+    </button>
+  </section>
+
+</main>
+
+<div id="detailModal" class="fixed inset-0 bg-inverse-surface/70 backdrop-blur-sm z-[110] flex items-end justify-center" onclick="closeDetail()">
+  <div class="modal-panel w-full max-w-[430px] bg-surface-cl rounded-t-3xl modal-inner" onclick="event.stopPropagation()">
+    <div class="p-5 pb-8 space-y-4" style="padding-bottom:max(32px,env(safe-area-inset-bottom))">
+      <div class="w-10 h-1 bg-on-surface/10 rounded-full mx-auto"></div>
+
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span id="detailCategoryChip" class="quote-cat-chip"></span>
+          <span id="detailCampaignChip" class="hidden campaign-chip"></span>
+        </div>
+        <button onclick="closeDetail()" class="w-9 h-9 rounded-full bg-surface-clow flex items-center justify-center text-on-surface-variant active:scale-90 transition-transform">
+          <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+        </button>
+      </div>
+
+      <div id="detailImage" class="detail-image">
+        <div class="detail-image-overlay"></div>
+        <div class="detail-image-text">
+          <p id="detailImageQuote" class="q"></p>
+          <p id="detailImageSource" class="s"></p>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between text-on-surface-variant">
+        <span id="detailDate" class="font-body" style="font-size:12px;font-weight:600;"></span>
+        <div class="flex items-center gap-3">
+          <span class="quote-meta">
+            <span class="material-symbols-outlined text-tertiary filled" style="font-size:14px;">favorite</span>
+            <span id="detailLikeCount">0</span>
+          </span>
+          <span class="quote-meta">
+            <span class="material-symbols-outlined text-primary" style="font-size:14px;">ios_share</span>
+            <span id="detailShareCount">0</span>
+          </span>
+        </div>
+      </div>
+
+      <div id="detailContextWrap" class="hidden">
+        <button id="detailContextToggle" onclick="toggleContext()" class="w-full flex items-center justify-between p-3 bg-surface-clow rounded-xl active:scale-99 transition-transform">
+          <span class="font-headline font-bold text-on-surface flex items-center gap-2" style="font-size:13px;">
+            <span class="material-symbols-outlined text-primary" style="font-size:16px;">menu_book</span>
+            Read Context
+          </span>
+          <span id="detailContextArrow" class="material-symbols-outlined text-outline transition-transform" style="font-size:20px;">expand_more</span>
+        </button>
+        <div id="detailContextBody" class="hidden mt-2 p-3 bg-surface-clow rounded-xl">
+          <p id="detailContextText" class="font-body text-on-surface-variant leading-relaxed" style="font-size:13px;"></p>
+        </div>
+      </div>
+
+      <div id="detailUserStatus" class="hidden bg-primary-container/20 rounded-xl p-3 flex items-center gap-2">
+        <span id="detailUserStatusIcon" class="material-symbols-outlined text-primary" style="font-size:18px;">check_circle</span>
+        <p id="detailUserStatusText" class="font-body font-semibold text-primary" style="font-size:13px;"></p>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button id="detailLikeBtn" onclick="toggleLike()" class="detail-action detail-action-like">
+          <span id="detailLikeIcon" class="material-symbols-outlined" style="font-size:18px;">favorite</span>
+          <span id="detailLikeLabel">Like</span>
+        </button>
+        <button id="detailShareBtn" onclick="shareFromDetail()" class="detail-action detail-action-share">
+          <span class="material-symbols-outlined" style="font-size:18px;">ios_share</span>
+          Share
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<nav id="bottom-nav" class="fixed bottom-0 inset-x-0 z-40 bg-surface-cl/80 backdrop-blur-[20px] safe-area-bottom" style="-webkit-backdrop-filter:blur(20px);padding-bottom:env(safe-area-inset-bottom);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);">
+  <div class="max-w-lg mx-auto flex items-center justify-around h-16 px-2">
+    <a href="index.html" data-nav="home" class="bottom-nav-item flex flex-col items-center gap-0.5 transition-colors duration-200 py-1.5 px-3 rounded-xl">
+      <span class="ms bottom-nav-icon" style="font-size:1.35rem;">home</span>
+      <span class="font-body text-[10px] font-600 bottom-nav-label">Home</span>
+    </a>
+   <a href="library.html" data-nav="library" class="bottom-nav-item flex flex-col items-center gap-0.5 transition-colors duration-200 py-1.5 px-3 rounded-xl">
+      <span class="ms bottom-nav-icon" style="font-size:1.35rem;color:#3d6285;">auto_stories</span>
+      <span class="font-body text-[10px] font-600 bottom-nav-label" style="color:#3d6285;font-weight:700;">Library</span>
+    </a>
+    <a href="cause.html" data-nav="missions" class="bottom-nav-item flex flex-col items-center gap-0.5 transition-colors duration-200 py-1.5 px-3 rounded-xl">
+      <span class="ms bottom-nav-icon" style="font-size:1.35rem;">volunteer_activism</span>
+      <span class="font-body text-[10px] font-600 bottom-nav-label">Missions</span>
+    </a>
+    <a href="impact.html" data-nav="impact" class="bottom-nav-item flex flex-col items-center gap-0.5 transition-colors duration-200 py-1.5 px-3 rounded-xl">
+      <span class="ms bottom-nav-icon" style="font-size:1.35rem;">bar_chart</span>
+      <span class="font-body text-[10px] font-600 bottom-nav-label">Impact</span>
+    </a>
+      <a href="profile.html" data-nav="profile" class="bottom-nav-item flex flex-col items-center gap-0.5 transition-colors duration-200 py-1.5 px-3 rounded-xl">
+      <span class="ms bottom-nav-icon" style="font-size:1.35rem;">person</span>
+      <span class="font-body text-[10px] font-600 bottom-nav-label">Profile</span>
+    </a>
+  </div>
+</nav>
+
+<script>
+var supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+)
+
+var currentUser = null
+var allQuotes = []           
+var allCampaigns = [] 
+var badgesMap = {}       
+var userSharedQuoteIds = {}
+var userLikedQuoteIds = {}
+var likeCounts = {}
+var shareCounts = {} 
+
+var state = {
+  tab: 'all',
+  search: '',
+  page: 1,
+  perPage: 20,
+  archiveViewingCampaignId: null,
+  showArchives: false
+}
+
+var currentDetailQuote = null
+var searchDebounce = null
+
+var categoryEmoji = {
+  'love':'❤️','faith':'✝️','hope':'🍀','prayer':'🙏',
+  'grace':'✨','mercy':'🕊️','strength':'💪','wisdom':'🧠',
+  'joy':'😊','peace':'☮️','forgiveness':'🫂','salvation':'🌟',
+  'courage':'🦁','gratitude':'🙌','trust':'🤝','patience':'⏳',
+  'kindness':'💐','healing':'🌿','purpose':'🎯','freedom':'🕊️',
+  'mission':'📜'
+}
+
+function catEmoji(cat){
+  if(!cat) return '📜'
+  return categoryEmoji[cat.toLowerCase()] || '📜'
+}
+
+async function init(){
+  var s = await supabaseClient.auth.getSession()
+  if(!s.data.session){ window.location.href='login.html'; return }
+  currentUser = s.data.session.user
+
+  setupListeners()
+  await loadEverything()
+
+  render()
+  document.querySelectorAll('.fade-up').forEach(function(el){
+    setTimeout(function(){ el.classList.add('visible') }, 100)
+  })
+}
+
+function getData(settled, fallback){
+  if(settled && settled.status === 'fulfilled' && settled.value && settled.value.data !== undefined){
+    return settled.value.data || fallback
+  }
+  return fallback
+}
+
+// Scheduled quotes validation strictly comparing scheduled_for against user's local time
+function isQuoteScheduled(q) {
+  if (!q) return false;
+  if (q.status === 'scheduled') {
+    if (q.scheduled_for) {
+      var schedDate = new Date(q.scheduled_for);
+      if (schedDate > new Date()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Helper to determine accurate timestamp for sorting
+function getQuoteSortDate(q) {
+  if (isQuoteScheduled(q) && q.scheduled_for) return new Date(q.scheduled_for).getTime()
+  if (q.published_at) return new Date(q.published_at).getTime()
+  if (q.scheduled_for) return new Date(q.scheduled_for).getTime()
+  if (q.created_at) return new Date(q.created_at).getTime()
+  return 0
+}
+
+// Section-level sorting engine
+function sortQuotesForSection(quotesList, section) {
+  var list = quotesList.slice()
+  if (section === 'scheduled') {
+    // Scheduled section: soonest unlock date first (e.g. Sept 11 before Sept 29)
+    list.sort(function (a, b) { return getQuoteSortDate(a) - getQuoteSortDate(b) })
+  } else {
+    // Live / Archived: newest first
+    list.sort(function (a, b) { return getQuoteSortDate(b) - getQuoteSortDate(a) })
+  }
+  return list
+}
+
+async function loadEverything(){
+  var results = await Promise.allSettled([
+    supabaseClient.from('quotes').select('id,text,source,category,status,published_at,scheduled_for,share_count,context,background_url,tags,hashtags,mission_id,campaign_id,created_at').order('created_at', { ascending: false }),
+    supabaseClient.from('campaigns').select('*').order('created_at', { ascending: false }),
+    supabaseClient.from('shares').select('quote_id, shared_at').eq('user_id', currentUser.id),
+    supabaseClient.from('quote_likes').select('quote_id, liked_at').eq('user_id', currentUser.id),
+    supabaseClient.from('quote_likes').select('quote_id'),
+    supabaseClient.from('shares').select('quote_id'),
+    supabaseClient.from('badge_definitions').select('id, name, image_url')
+  ])
+
+  allQuotes    = getData(results[0], [])
+  allCampaigns = getData(results[1], [])
+
+  var shares = getData(results[2], [])
+  shares.forEach(function(s){
+    if(!s.quote_id) return
+    if(!userSharedQuoteIds[s.quote_id] || new Date(s.shared_at) > new Date(userSharedQuoteIds[s.quote_id])){
+      userSharedQuoteIds[s.quote_id] = s.shared_at
+    }
+  })
+
+  var likes = getData(results[3], [])
+  likes.forEach(function(l){
+    if(l.quote_id) userLikedQuoteIds[l.quote_id] = l.liked_at
+  })
+
+  var allLikes = getData(results[4], [])
+  allLikes.forEach(function(l){
+    if(!l.quote_id) return
+    likeCounts[l.quote_id] = (likeCounts[l.quote_id] || 0) + 1
+  })
+
+  var allSharesGlobal = getData(results[5], [])
+  allSharesGlobal.forEach(function(s){
+    if(!s.quote_id) return
+    shareCounts[s.quote_id] = (shareCounts[s.quote_id] || 0) + 1
+  })
+
+  var badges = getData(results[6], [])
+  badges.forEach(function(b){
+    if(b.id) badgesMap[b.id] = { name: b.name, image_url: b.image_url }
+  })
+
+  buildTabs()
+  document.getElementById('loadingSection').classList.add('hidden')
+}
+
+function buildTabs(){
+  var strip = document.getElementById('tabStrip')
+  strip.innerHTML = ''
+
+  addTab(strip, 'all', 'All', getAllTabQuotes().length, 'library_books')
+  addTab(strip, 'shared', 'Shared', Object.keys(userSharedQuoteIds).length, 'check_circle')
+  addTab(strip, 'liked', 'Liked', Object.keys(userLikedQuoteIds).length, 'favorite')
+
+  var activeCampaigns = allCampaigns.filter(function(c){
+    var campaignQuotes = allQuotes.filter(function(q){ return q.campaign_id === c.id });
+    if (campaignQuotes.length === 0) return false;
+
+    var isActive = c.status === 'active';
+    var hasScheduledQuotes = campaignQuotes.some(isQuoteScheduled);
+    return isActive || hasScheduledQuotes;
+  })
+
+  activeCampaigns.forEach(function(c){
+    var count = allQuotes.filter(function(q){ return q.campaign_id === c.id }).length
+    addTab(strip, c.id, c.name, count, c.icon || 'campaign', c.color)
+  })
+
+  var hasEndedCampaigns = allCampaigns.some(function(c){ return c.status === 'ended' })
+  if(hasEndedCampaigns){
+    addTab(strip, 'archives', 'Archives', allCampaigns.filter(function(c){ return c.status === 'ended' }).length, 'inventory_2')
+  }
+}
+
+function addTab(strip, id, label, count, icon, color){
+  var btn = document.createElement('button')
+  btn.className = 'lib-tab' + (state.tab === id ? ' active' : '')
+  btn.dataset.tabId = id
+
+  var iconHtml = icon
+    ? '<span class="material-symbols-outlined lib-tab-icon' + (state.tab === id ? ' filled' : '') + '"' + (color ? ' style="color:' + (state.tab === id ? '#f7f9ff' : color) + ';"' : '') + '>' + icon + '</span>'
+    : ''
+
+  btn.innerHTML = iconHtml
+    + '<span>' + escapeHtml(label) + '</span>'
+    + '<span class="lib-tab-count">' + count + '</span>'
+
+  btn.onclick = function(){ setTab(id) }
+  strip.appendChild(btn)
+}
+
+function setTab(tabId){
+  state.tab = tabId
+  state.page = 1
+  state.archiveViewingCampaignId = null
+  state.showArchives = false
+  document.getElementById('archiveDetailSection').classList.add('hidden')
+  document.querySelectorAll('.lib-tab').forEach(function(t){
+    t.classList.toggle('active', t.dataset.tabId === tabId)
+  })
+  buildTabs()
+  render()
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function scrollTabs(delta){
+  var strip = document.getElementById('tabStrip')
+  if(strip) strip.scrollBy({ left: delta, behavior: 'smooth' })
+  setTimeout(updateTabScrollButtons, 350)
+}
+
+function updateTabScrollButtons(){
+  var strip = document.getElementById('tabStrip')
+  var leftBtn = document.getElementById('tabScrollLeft')
+  var rightBtn = document.getElementById('tabScrollRight')
+  if(!strip || !leftBtn || !rightBtn) return
+
+  var canScrollLeft = strip.scrollLeft > 4
+  var canScrollRight = strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 4
+
+  leftBtn.classList.toggle('visible', canScrollLeft)
+  rightBtn.classList.toggle('visible', canScrollRight)
+}
+
+function getAllTabQuotes(){
+  return allQuotes
+}
+function getSharedTabQuotes(){
+  return allQuotes.filter(function(q){ return userSharedQuoteIds[q.id] })
+}
+function getLikedTabQuotes(){
+  return allQuotes.filter(function(q){ return userLikedQuoteIds[q.id] })
+}
+function getCampaignTabQuotes(campaignId){
+  return allQuotes.filter(function(q){ return q.campaign_id === campaignId })
+}
+function getArchivedCampaigns(){
+  return allCampaigns.filter(function(c){ return c.status === 'ended' })
+}
+
+function applySearch(quotes){
+  if(!state.search) return quotes
+  var q = state.search.toLowerCase().trim()
+  return quotes.filter(function(quote){
+    var text  = (quote.text || '').toLowerCase()
+    var cat   = (quote.category || '').toLowerCase()
+    var src   = (quote.source || '').toLowerCase()
+    var tags  = (quote.tags || []).map(function(t){ return (t || '').toLowerCase() })
+    var hashes = (quote.hashtags || []).map(function(t){ return (t || '').toLowerCase() })
+    var ctx   = (quote.context || '').toLowerCase()
+
+    return text.indexOf(q) > -1
+        || cat.indexOf(q) > -1
+        || src.indexOf(q) > -1
+        || ctx.indexOf(q) > -1
+        || tags.some(function(t){ return t.indexOf(q) > -1 })
+        || hashes.some(function(t){ return t.indexOf(q) > -1 })
+  })
+}
+
+function appendSection(listEl, title, qArray, isArchivedSection) {
+  if(qArray.length === 0) return;
+  
+  if(title) {
+    var header = document.createElement('div');
+    header.className = 'mb-2 mt-5';
+    header.innerHTML = '<h3 class="font-headline font-bold text-on-surface" style="font-size:14px;">' + title + '</h3>';
+    if (isArchivedSection) {
+      header.id = 'libArchiveHeader';
+      if (!state.showArchives) header.classList.add('hidden');
+    }
+    listEl.appendChild(header);
+  }
+
+  var wrap = document.createElement('div');
+  wrap.className = 'space-y-3 mb-6';
+  if(isArchivedSection) {
+    wrap.id = 'libArchiveSection';
+    if(!state.showArchives) wrap.classList.add('hidden');
+  }
+  
+  qArray.forEach(function(q) {
+    wrap.appendChild(buildQuoteCard(q));
+  });
+  listEl.appendChild(wrap);
+}
+
+function toggleLibraryArchives() {
+  state.showArchives = !state.showArchives;
+  var sec = document.getElementById('libArchiveSection');
+  var hdr = document.getElementById('libArchiveHeader');
+  var lbl = document.getElementById('libArchiveToggleLabel');
+  
+  if (sec) {
+    if(state.showArchives) {
+      sec.classList.remove('hidden');
+      if(hdr) hdr.classList.remove('hidden');
+      if(lbl) lbl.textContent = 'Hide Archived Quotes';
+    } else {
+      sec.classList.add('hidden');
+      if(hdr) hdr.classList.add('hidden');
+      if(lbl) lbl.textContent = 'Show Archived Quotes';
+    }
+  }
+}
+
+function render(){
+  var heroEl = document.getElementById('campaignHero')
+  var listEl = document.getElementById('quoteList')
+  var archListEl = document.getElementById('archiveList')
+  var archDetailEl = document.getElementById('archiveDetailSection')
+  var emptyEl = document.getElementById('emptyState')
+  var paginationEl = document.getElementById('paginationSection')
+
+  heroEl.classList.add('hidden')
+  archListEl.classList.add('hidden')
+  archDetailEl.classList.add('hidden')
+  emptyEl.classList.add('hidden')
+  paginationEl.classList.add('hidden')
+  listEl.classList.remove('hidden')
+
+  if(state.tab === 'archives' && !state.archiveViewingCampaignId){
+    listEl.classList.add('hidden')
+    var archived = getArchivedCampaigns()
+    if(archived.length === 0){
+      emptyEl.classList.remove('hidden')
+      document.getElementById('emptyMsg').textContent = 'No archived campaigns yet.'
+      return
+    }
+    archListEl.classList.remove('hidden')
+    renderArchiveList(archived)
+    return
+  }
+
+  if(state.tab === 'archives' && state.archiveViewingCampaignId){
+    listEl.classList.add('hidden')
+    archDetailEl.classList.remove('hidden')
+    renderArchiveDetail(state.archiveViewingCampaignId)
+    return
+  }
+
+  var isCampaignTab = state.tab !== 'all' && state.tab !== 'shared' && state.tab !== 'liked' && state.tab !== 'archives'
+  if(isCampaignTab){
+    var campaign = allCampaigns.find(function(c){ return c.id === state.tab })
+    if(campaign) renderCampaignHero(campaign)
+  }
+
+  var quotes = []
+  if(state.tab === 'all')          quotes = getAllTabQuotes()
+  else if(state.tab === 'shared')  quotes = getSharedTabQuotes()
+  else if(state.tab === 'liked')   quotes = getLikedTabQuotes()
+  else                             quotes = getCampaignTabQuotes(state.tab)
+
+  quotes = applySearch(quotes)
+
+  if(quotes.length === 0){
+    emptyEl.classList.remove('hidden')
+    listEl.innerHTML = ''
+    var msg = state.search
+      ? 'No quotes match "' + escapeHtml(state.search) + '".'
+      : state.tab === 'shared'
+        ? "You haven't shared any quotes yet."
+        : state.tab === 'liked'
+        ? "You haven't liked any quotes yet."
+        : 'No quotes in this section yet.'
+    document.getElementById('emptyMsg').textContent = msg
+    return
+  }
+
+  // GROUPED VIEW FOR 'ALL' AND 'CAMPAIGNS'
+  if (state.tab === 'all' || isCampaignTab) {
+    listEl.innerHTML = '';
+    
+    var liveQuotes = sortQuotesForSection(quotes.filter(function(q) { 
+      return q.status === 'live' || (!isQuoteScheduled(q) && q.status !== 'archived' && q.status !== 'draft'); 
+    }), 'live');
+    
+    var schedQuotes = sortQuotesForSection(quotes.filter(function(q) { 
+      return isQuoteScheduled(q); 
+    }), 'scheduled');
+    
+    var archQuotes = sortQuotesForSection(quotes.filter(function(q) { 
+      return q.status === 'archived'; 
+    }), 'archived');
+
+    appendSection(listEl, 'Live Now', liveQuotes, false);
+    appendSection(listEl, 'Scheduled', schedQuotes, false);
+
+    if (archQuotes.length > 0) {
+      var toggleWrap = document.createElement('div');
+      toggleWrap.className = 'pt-4 pb-4 text-center';
+      toggleWrap.innerHTML = '<button onclick="toggleLibraryArchives()" id="libArchiveToggleBtn" class="inline-flex items-center gap-2 px-5 py-2.5 bg-surface-cl text-on-surface-variant font-body font-semibold rounded-xl hover:bg-surface-clow transition-colors shadow-ambient-sm" style="font-size:13px;">' +
+        '<span class="material-symbols-outlined" style="font-size:18px;">archive</span>' +
+        '<span id="libArchiveToggleLabel">' + (state.showArchives ? 'Hide Archived Quotes' : 'Show Archived Quotes') + '</span></button>';
+      listEl.appendChild(toggleWrap);
+
+      appendSection(listEl, 'Archived', archQuotes, true);
+    }
+  } 
+  // PAGINATED VIEW FOR 'SHARED' AND 'LIKED'
+  else {
+    var sortedPaginatedQuotes = sortQuotesForSection(quotes, 'live');
+    var totalPages = Math.max(1, Math.ceil(sortedPaginatedQuotes.length / state.perPage))
+    if(state.page > totalPages) state.page = totalPages
+    var start = (state.page - 1) * state.perPage
+    var pageQuotes = sortedPaginatedQuotes.slice(start, start + state.perPage)
+
+    listEl.innerHTML = ''
+    pageQuotes.forEach(function(q){ listEl.appendChild(buildQuoteCard(q)) })
+
+    if(totalPages > 1){
+      paginationEl.classList.remove('hidden')
+      paginationEl.classList.add('flex')
+      document.getElementById('pageInfo').textContent = 'Page ' + state.page + ' of ' + totalPages
+      document.getElementById('prevBtn').disabled = state.page === 1
+      document.getElementById('nextBtn').disabled = state.page === totalPages
+    }
+  }
+}
+
+function renderCampaignHero(campaign){
+  var heroEl = document.getElementById('campaignHero')
+  var color = campaign.color || '#3d6285'
+  var icon = campaign.icon || 'campaign'
+
+  var campaignQuotes = allQuotes.filter(function(q){ return q.campaign_id === campaign.id })
+  var totalCount     = campaignQuotes.length
+  var sharedCount    = campaignQuotes.filter(function(q){ return userSharedQuoteIds[q.id] }).length
+  var progressPct    = totalCount > 0 ? Math.round((sharedCount / totalCount) * 100) : 0
+  var remaining      = Math.max(totalCount - sharedCount, 0)
+  var isComplete     = totalCount > 0 && sharedCount === totalCount
+
+  var dateRange = ''
+  if(campaign.start_date && campaign.end_date){
+    var s = new Date(campaign.start_date).toLocaleDateString('en-AU', { month:'short', day:'numeric' })
+    var e = new Date(campaign.end_date).toLocaleDateString('en-AU', { month:'short', day:'numeric', year:'numeric' })
+    dateRange = s + ' – ' + e
+  } else if(campaign.end_date){
+    dateRange = 'Ends ' + new Date(campaign.end_date).toLocaleDateString('en-AU', { month:'short', day:'numeric' })
+  }
+
+  var rewardHtml = "";
+  if (campaign.reward_badge_id && badgesMap[campaign.reward_badge_id]) {
+    var badgeData = badgesMap[campaign.reward_badge_id];
+    var badgeImg = badgeData.image_url
+      ? '<img src="' + escapeAttr(badgeData.image_url) + '" class="w-9 h-9 object-contain">'
+      : '<span class="material-symbols-outlined text-yellow-300 filled" style="font-size:32px;">emoji_events</span>';
+      
+    rewardHtml = 
+      '<div class="mt-4 p-3 bg-white/10 backdrop-blur-sm rounded-xl flex items-center gap-3 border border-white/20">'
+        + '<div class="flex-shrink-0 animate-bounce">' + badgeImg + '</div>'
+        + '<div class="flex-1 min-w-0">'
+          + '<p class="font-headline font-bold text-white" style="font-size:12px;line-height:1.2;">Campaign Rewards</p>'
+          + '<p class="font-body text-white/95 mt-0.5 truncate" style="font-size:11px;font-weight:500;">Earn Badge: ' + escapeHtml(badgeData.name) + '</p>'
+        + '</div>'
+      + '</div>';
+  }
+
+  heroEl.classList.remove('hidden')
+  heroEl.innerHTML =
+    '<div class="campaign-hero" style="background:linear-gradient(135deg,' + color + ',' + shadeColor(color, 25) + ');">'
+      + '<div class="campaign-hero-inner">'
+        + '<div class="flex items-start gap-3 mb-4">'
+          + '<div class="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">'
+            + '<span class="material-symbols-outlined text-white filled" style="font-size:22px;">' + icon + '</span>'
+          + '</div>'
+          + '<div class="flex-1 min-w-0">'
+            + '<h3 class="font-headline font-extrabold" style="font-size:18px;line-height:1.2;">' + escapeHtml(campaign.name) + '</h3>'
+            + (dateRange ? '<p class="font-body opacity-80 mt-0.5" style="font-size:11px;font-weight:600;">' + dateRange + '</p>' : '')
+          + '</div>'
+        + '</div>'
+        + (campaign.description ? '<p class="font-body opacity-85 mb-4" style="font-size:12px;line-height:18px;">' + escapeHtml(campaign.description) + '</p>' : '')
+        + '<div class="mb-2">'
+          + '<div class="flex items-baseline justify-between mb-2">'
+            + '<span class="font-headline font-bold" style="font-size:14px;">' + sharedCount + ' of ' + totalCount + ' shared</span>'
+            + '<span class="font-body opacity-80" style="font-size:11px;font-weight:600;">' + progressPct + '%</span>'
+          + '</div>'
+          + '<div class="progress-track">'
+            + '<div class="progress-fill progress-fill-white" style="width:' + progressPct + '%"></div>'
+          + '</div>'
+        + '</div>'
+        + rewardHtml
+        + '<p class="font-body opacity-85 mt-3" style="font-size:11px;">'
+          + (isComplete
+              ? '✨ You\'ve shared every quote in this campaign!'
+              : remaining + ' quote' + (remaining !== 1 ? 's' : '') + ' waiting for you')
+        + '</p>'
+      + '</div>'
+    + '</div>'
+}
+
+function shadeColor(color, percent){
+  var num = parseInt(color.replace('#',''), 16)
+  var amt = Math.round(2.55 * percent)
+  var R = (num >> 16) + amt
+  var G = (num >> 8 & 0x00FF) + amt
+  var B = (num & 0x0000FF) + amt
+  var r = Math.max(Math.min(R, 255), 0)
+  var g = Math.max(Math.min(G, 255), 0)
+  var b = Math.max(Math.min(B, 255), 0)
+  return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)
+}
+
+function renderArchiveList(archivedCampaigns){
+  var container = document.getElementById('archiveList')
+  container.innerHTML = ''
+
+  archivedCampaigns.forEach(function(c){
+    var count = allQuotes.filter(function(q){ return q.campaign_id === c.id }).length
+    var sharedCount = allQuotes.filter(function(q){ return q.campaign_id === c.id && userSharedQuoteIds[q.id] }).length
+    var color = c.color || '#3d6285'
+    var icon  = c.icon || 'campaign'
+    var completed = count > 0 && sharedCount === count
+
+    var endDate = c.end_date
+      ? 'Ended ' + new Date(c.end_date).toLocaleDateString('en-AU', { month:'short', year:'numeric' })
+      : 'Archived'
+
+    var card = document.createElement('div')
+    card.className = 'archive-card'
+    card.onclick = function(){ openArchivedCampaign(c.id) }
+    card.innerHTML =
+      '<div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background:' + color + ';">'
+        + '<span class="material-symbols-outlined text-white filled" style="font-size:22px;">' + icon + '</span>'
+      + '</div>'
+      + '<div class="flex-1 min-w-0">'
+        + '<div class="flex items-start justify-between gap-2 mb-1">'
+          + '<h4 class="font-headline font-bold text-on-surface truncate" style="font-size:14px;">' + escapeHtml(c.name) + '</h4>'
+          + (completed ? '<span class="status-chip status-shared"><span class="material-symbols-outlined filled" style="font-size:10px;">check</span>Done</span>' : '')
+        + '</div>'
+        + '<p class="font-body text-on-surface-variant" style="font-size:11px;">' + count + ' quote' + (count !== 1 ? 's' : '') + ' · ' + endDate + '</p>'
+      + '</div>'
+      + '<span class="material-symbols-outlined text-outline" style="font-size:18px;">chevron_right</span>'
+    container.appendChild(card)
+  })
+}
+
+function openArchivedCampaign(campaignId){
+  state.archiveViewingCampaignId = campaignId
+  state.page = 1
+  render()
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function renderArchiveDetail(campaignId){
+  var container = document.getElementById('archiveDetailSection')
+  container.innerHTML = ''
+
+  var campaign = allCampaigns.find(function(c){ return c.id === campaignId })
+  if(!campaign) return
+
+  var quotes = allQuotes.filter(function(q){ return q.campaign_id === campaignId })
+  quotes = applySearch(quotes)
+
+  var back = document.createElement('button')
+  back.onclick = function(){ state.archiveViewingCampaignId = null; render() }
+  back.className = 'flex items-center gap-1 font-body text-primary font-semibold mb-3'
+  back.style.fontSize = '13px'
+  back.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;">arrow_back</span> All Archives'
+  container.appendChild(back)
+
+  var heroDiv = document.createElement('div')
+  heroDiv.className = 'mb-4'
+  var sharedCount = quotes.filter(function(q){ return userSharedQuoteIds[q.id] }).length
+  var color = campaign.color || '#3d6285'
+  heroDiv.innerHTML =
+    '<div class="campaign-hero" style="background:linear-gradient(135deg,' + color + ',' + shadeColor(color, 25) + ');">'
+      + '<div class="campaign-hero-inner">'
+        + '<div class="flex items-center gap-3 mb-3">'
+          + '<div class="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">'
+            + '<span class="material-symbols-outlined text-white filled" style="font-size:22px;">' + (campaign.icon || 'campaign') + '</span>'
+          + '</div>'
+          + '<div>'
+            + '<h3 class="font-headline font-extrabold" style="font-size:17px;">' + escapeHtml(campaign.name) + '</h3>'
+            + '<p class="font-body opacity-80" style="font-size:11px;font-weight:600;">Archived · ' + sharedCount + ' of ' + quotes.length + ' shared</p>'
+          + '</div>'
+        + '</div>'
+      + '</div>'
+    + '</div>'
+  container.appendChild(heroDiv)
+
+  if(quotes.length === 0){
+    var empty = document.createElement('div')
+    empty.className = 'text-center py-8'
+    empty.innerHTML =
+      '<div class="empty-icon-wrap"><span class="material-symbols-outlined text-outline" style="font-size:32px;">inbox</span></div>'
+      + '<p class="font-body text-on-surface-variant" style="font-size:13px;">No quotes match your search.</p>'
+    container.appendChild(empty)
+    return
+  }
+
+  var listWrap = document.createElement('div')
+  listWrap.className = 'space-y-3'
+  quotes.forEach(function(q){ listWrap.appendChild(buildQuoteCard(q)) })
+  container.appendChild(listWrap)
+}
+
+function buildQuoteCard(q){
+  var card = document.createElement('article')
+  card.className = 'quote-card fade-up visible'
+  card.onclick = function(){ openDetail(q) }
+
+  var bgUrl = q.background_url || ''
+  var isScheduled = isQuoteScheduled(q)
+  
+  // Display date: scheduled cards show 'scheduled_for', live/archived show 'published_at'/'created_at'
+  var displayDateObj = isScheduled 
+    ? (q.scheduled_for ? new Date(q.scheduled_for) : null) 
+    : (q.published_at ? new Date(q.published_at) : (q.created_at ? new Date(q.created_at) : null));
+  var dateStr = displayDateObj ? displayDateObj.toLocaleDateString('en-AU', { weekday:'short', day:'numeric', month:'short' }) : ''
+
+  var likes = likeCounts[q.id] || 0
+  var shares = shareCounts[q.id] || 0 
+  var isShared = !!userSharedQuoteIds[q.id]
+  var isLiked  = !!userLikedQuoteIds[q.id]
+
+  var statusChip = ''
+  if(isScheduled){
+    var formatUnlock = 'Soon'
+    if (q.scheduled_for) {
+      var sDate = new Date(q.scheduled_for);
+      if (!isNaN(sDate.getTime())) {
+        formatUnlock = sDate.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+      }
+    }
+    statusChip = '<span class="status-chip status-scheduled"><span class="material-symbols-outlined" style="font-size:10px;">lock</span>Unlocks ' + formatUnlock + '</span>'
+  } else if(isShared){
+    statusChip = '<span class="status-chip status-shared"><span class="material-symbols-outlined filled" style="font-size:10px;">check_circle</span>Shared</span>'
+  } else if(isLiked){
+    statusChip = '<span class="status-chip status-liked"><span class="material-symbols-outlined filled" style="font-size:10px;">favorite</span>Liked</span>'
+  }
+
+  // Auto-hide category chip if tagged 'None'
+  var catChip = (q.category && q.category.toLowerCase() !== 'none')
+    ? '<span class="quote-cat-chip">' + catEmoji(q.category) + ' ' + escapeHtml(q.category) + '</span>'
+    : ''
+
+  // Solid, styled campaign pill
+  var campChip = ''
+  if (q.campaign_id) {
+    var camp = allCampaigns.find(function(c){ return c.id === q.campaign_id })
+    if (camp) {
+      var cColor = camp.color || '#3d6285';
+      var cIcon = camp.icon || 'campaign';
+      campChip = '<span class="campaign-chip" style="background:' + cColor + '; margin-left:4px;">'
+        + '<span class="material-symbols-outlined filled" style="font-size:11px;">' + cIcon + '</span>'
+        + escapeHtml(camp.name) + '</span>'
+    }
+  }
+
+  card.innerHTML =
+    '<div class="flex gap-3 p-3">'
+      + '<div class="quote-thumb rounded-lg" style="' + (bgUrl ? 'background-image:url(\'' + escapeAttr(bgUrl) + '\');' : '') + '"></div>'
+      + '<div class="flex-1 min-w-0">'
+        + '<div class="flex items-center gap-2 flex-wrap mb-1">'
+          + (dateStr ? '<span class="quote-meta"><span class="material-symbols-outlined" style="font-size:12px;">event</span>' + dateStr + '</span>' : '')
+          + catChip
+          + campChip
+        + '</div>'
+        + '<p class="font-quote text-on-surface mb-1" style="font-size:13px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">"' + escapeHtml(q.text || '') + '"</p>'
+        + '<p class="font-body font-semibold text-on-surface-variant" style="font-size:10px;letter-spacing:0.03em;">— ' + escapeHtml((q.source || 'GSTW').toUpperCase()) + '</p>'
+        + '<div class="flex items-center justify-between mt-2 pt-2 border-t border-outline-variant/20">'
+          + '<div class="flex items-center gap-3">'
+            + '<span class="quote-meta"><span class="material-symbols-outlined text-tertiary filled" style="font-size:12px;">favorite</span>' + likes + '</span>'
+            + '<span class="quote-meta"><span class="material-symbols-outlined text-primary" style="font-size:12px;">ios_share</span>' + shares + '</span>'
+          + '</div>'
+          + statusChip
+        + '</div>'
+      + '</div>'
+    + '</div>'
+
+  return card
+}
+
+function openDetail(quote){
+  currentDetailQuote = quote
+
+  var catEl = document.getElementById('detailCategoryChip')
+  if(quote.category && quote.category.toLowerCase() !== 'none'){
+    catEl.innerHTML = catEmoji(quote.category) + ' ' + escapeHtml(quote.category)
+    catEl.classList.remove('hidden')
+  } else {
+    catEl.classList.add('hidden')
+  }
+
+  var campEl = document.getElementById('detailCampaignChip')
+  if(quote.campaign_id){
+    var camp = allCampaigns.find(function(c){ return c.id === quote.campaign_id })
+    if(camp){
+      var cColor = camp.color || '#3d6285';
+      var cIcon = camp.icon || 'campaign';
+      campEl.innerHTML = '<span class="material-symbols-outlined filled" style="font-size:11px;">' + cIcon + '</span>' + escapeHtml(camp.name);
+      campEl.style.background = cColor;
+      campEl.classList.remove('hidden')
+    } else {
+      campEl.classList.add('hidden')
+    }
+  } else {
+    campEl.classList.add('hidden')
+  }
+
+  var imgEl = document.getElementById('detailImage')
+  imgEl.style.backgroundImage = quote.background_url ? 'url("' + quote.background_url + '")' : 'none'
+  document.getElementById('detailImageQuote').textContent = '"' + (quote.text || '') + '"'
+  document.getElementById('detailImageSource').textContent = '— ' + (quote.source || 'GSTW').toUpperCase()
+
+  var pubDate = quote.published_at ? new Date(quote.published_at) : null
+  document.getElementById('detailDate').textContent = pubDate && !isQuoteScheduled(quote)
+    ? 'Published ' + pubDate.toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
+    : ''
+
+  document.getElementById('detailLikeCount').textContent = likeCounts[quote.id] || 0
+  document.getElementById('detailShareCount').textContent = shareCounts[quote.id] || 0
+
+  var ctxWrap = document.getElementById('detailContextWrap')
+  if(quote.context && quote.context.trim()){
+    ctxWrap.classList.remove('hidden')
+    document.getElementById('detailContextText').textContent = quote.context
+    document.getElementById('detailContextBody').classList.add('hidden')
+    document.getElementById('detailContextArrow').style.transform = 'rotate(0deg)'
+  } else {
+    ctxWrap.classList.add('hidden')
+  }
+
+  var statusEl = document.getElementById('detailUserStatus')
+  var statusIcon = document.getElementById('detailUserStatusIcon')
+  var statusText = document.getElementById('detailUserStatusText')
+  if(userSharedQuoteIds[quote.id]){
+    var when = new Date(userSharedQuoteIds[quote.id]).toLocaleDateString('en-AU', { day:'numeric', month:'short' })
+    statusIcon.textContent = 'check_circle'
+    statusIcon.classList.add('filled')
+    statusText.textContent = 'You shared this on ' + when
+    statusEl.classList.remove('hidden')
+  } else if(userLikedQuoteIds[quote.id]){
+    statusIcon.textContent = 'favorite'
+    statusIcon.classList.add('filled')
+    statusText.textContent = 'You liked this'
+    statusEl.classList.remove('hidden')
+  } else {
+    statusEl.classList.add('hidden')
+  }
+
+  var likeBtn = document.getElementById('detailLikeBtn')
+  var likeIcon = document.getElementById('detailLikeIcon')
+  var likeLabel = document.getElementById('detailLikeLabel')
+  if(userLikedQuoteIds[quote.id]){
+    likeBtn.classList.add('liked')
+    likeIcon.classList.add('filled')
+    likeLabel.textContent = 'Liked'
+  } else {
+    likeBtn.classList.remove('liked')
+    likeIcon.classList.remove('filled')
+    likeLabel.textContent = 'Like'
+  }
+
+  var shareBtn = document.getElementById('detailShareBtn')
+  if(isQuoteScheduled(quote)){
+    var unlockTimeStr = 'scheduled time';
+    if (quote.scheduled_for) {
+      var sDate = new Date(quote.scheduled_for);
+      if (!isNaN(sDate.getTime())) {
+        unlockTimeStr = sDate.toLocaleDateString('en-AU', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+      }
+    }
+    shareBtn.disabled = true
+    shareBtn.classList.add('opacity-40', 'cursor-not-allowed')
+    shareBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">lock</span> Unlocks ' + unlockTimeStr
+  } else {
+    shareBtn.disabled = false
+    shareBtn.classList.remove('opacity-40', 'cursor-not-allowed')
+    shareBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">ios_share</span> Share'
+  }
+
+  var modal = document.getElementById('detailModal')
+  modal.classList.remove('hidden')
+  modal.classList.add('open')
+  document.body.style.overflow = 'hidden'
+}
+
+function closeDetail(){
+  var modal = document.getElementById('detailModal')
+  modal.classList.remove('open')
+  setTimeout(function(){
+    modal.classList.add('hidden')
+    document.body.style.overflow = ''
+    currentDetailQuote = null
+  }, 300)
+}
+
+function toggleContext(){
+  var body = document.getElementById('detailContextBody')
+  var arrow = document.getElementById('detailContextArrow')
+  var isOpen = !body.classList.contains('hidden')
+  if(isOpen){
+    body.classList.add('hidden')
+    arrow.style.transform = 'rotate(0deg)'
+  } else {
+    body.classList.remove('hidden')
+    arrow.style.transform = 'rotate(180deg)'
+  }
+}
+
+async function toggleLike(){
+  if(!currentDetailQuote) return
+  var quoteId = currentDetailQuote.id
+  var isLiked = !!userLikedQuoteIds[quoteId]
+
+  if(isLiked){
+    delete userLikedQuoteIds[quoteId]
+    likeCounts[quoteId] = Math.max((likeCounts[quoteId] || 1) - 1, 0)
+    try {
+      await supabaseClient.from('quote_likes').delete()
+        .eq('user_id', currentUser.id).eq('quote_id', quoteId)
+    } catch(e) { console.error('unlike:', e) }
+  } else {
+    userLikedQuoteIds[quoteId] = new Date().toISOString()
+    likeCounts[quoteId] = (likeCounts[quoteId] || 0) + 1
+    try {
+      await supabaseClient.from('quote_likes').insert({ user_id: currentUser.id, quote_id: quoteId })
+    } catch(e) { console.error('like:', e) }
+  }
+
+  openDetail(currentDetailQuote)
+  render()
+}
+
+function shareFromDetail(){
+  if(!currentDetailQuote) return
+  if(isQuoteScheduled(currentDetailQuote)){
+    alert("This scheduled quote is locked until its release time.")
+    return
+  }
+
+  sessionStorage.setItem('gstw_selected_quote_id', currentDetailQuote.id)
+  sessionStorage.setItem('gstw_selected_quote_text', currentDetailQuote.text)
+  sessionStorage.setItem('gstw_selected_quote_source', currentDetailQuote.source || '')
+  sessionStorage.setItem('gstw_selected_quote_category', (currentDetailQuote.category || '').toLowerCase())
+  sessionStorage.removeItem('gstw_final_image')
+  sessionStorage.removeItem('gstw_personal_msg')
+  sessionStorage.removeItem('gstw_hashtags')
+  sessionStorage.removeItem('gstw_full_caption')
+  window.location.href = 'editor.html'
+}
+
+function handleSearchInput(val){
+  if(searchDebounce) clearTimeout(searchDebounce)
+  var input = document.getElementById('searchInput')
+  var clearBtn = document.getElementById('searchClear')
+  if(input.value.length > 0) clearBtn.classList.remove('hidden')
+  else clearBtn.classList.add('hidden')
+
+  searchDebounce = setTimeout(function(){
+    state.search = val.trim()
+    state.page = 1
+    render()
+  }, 300)
+}
+
+function clearSearch(){
+  var input = document.getElementById('searchInput')
+  input.value = ''
+  document.getElementById('searchClear').classList.add('hidden')
+  state.search = ''
+  state.page = 1
+  render()
+  input.focus()
+}
+
+function prevPage(){
+  if(state.page > 1){ state.page--; render(); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+}
+function nextPage(){
+  state.page++; render(); window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function escapeHtml(str){
+  if(!str) return ''
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')
+}
+function escapeAttr(str){ return escapeHtml(str) }
+
+function setupListeners(){
+  window.addEventListener('scroll', function(){
+    document.getElementById('pageHeader').classList.toggle('header-scrolled', window.scrollY > 8)
+  })
+  var input = document.getElementById('searchInput')
+  input.addEventListener('input', function(){ handleSearchInput(this.value) })
+
+  var strip = document.getElementById('tabStrip')
+  if(strip){
+    strip.addEventListener('scroll', updateTabScrollButtons)
+    window.addEventListener('resize', updateTabScrollButtons)
+  }
+}
+init()
+</script>
+</body>
+</html>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
