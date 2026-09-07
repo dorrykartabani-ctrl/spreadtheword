@@ -221,7 +221,7 @@
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
           <span id="detailCategoryChip" class="quote-cat-chip"></span>
-          <span id="detailCampaignChip" class="hidden quote-cat-chip" style="background:rgba(61,98,133,0.15);color:#3d6285;"></span>
+          <span id="detailCampaignChip" class="hidden quote-cat-chip"></span>
         </div>
         <button onclick="closeDetail()" class="w-9 h-9 rounded-full bg-surface-clow flex items-center justify-center text-on-surface-variant active:scale-90 transition-transform">
           <span class="material-symbols-outlined" style="font-size:18px;">close</span>
@@ -315,7 +315,8 @@ var supabaseClient = supabase.createClient(
 
 var currentUser = null
 var allQuotes = []           
-var allCampaigns = []        
+var allCampaigns = [] 
+var badgesMap = {}       
 var userSharedQuoteIds = {}
 var userLikedQuoteIds = {}
 var likeCounts = {}
@@ -345,6 +346,19 @@ function catEmoji(cat){
   return categoryEmoji[cat.toLowerCase()] || '📜'
 }
 
+// Color tint engine to create beautiful 12% translucent background borders
+function hexToRgba(hex, alpha) {
+  if (!hex) return 'rgba(61, 98, 133, ' + alpha + ')';
+  hex = hex.replace('#', '');
+  if (hex.length === 3) {
+    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+  }
+  var r = parseInt(hex.substring(0, 2), 16);
+  var g = parseInt(hex.substring(2, 4), 16);
+  var b = parseInt(hex.substring(4, 6), 16);
+  return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+}
+
 async function init(){
   var s = await supabaseClient.auth.getSession()
   if(!s.data.session){ window.location.href='login.html'; return }
@@ -366,34 +380,39 @@ function getData(settled, fallback){
   return fallback
 }
 
-// TWEAK 2 & 3: Evaluates scheduling properties comparing dates explicitly against current user system time
+// Scheduled quotes validation helper
 function isQuoteScheduled(q) {
   if (!q) return false;
-  var now = new Date();
-  var pubDate = q.published_at ? new Date(q.published_at) : null;
-  
-  // If the published date is in the past, it is no longer scheduled
-  if (pubDate && pubDate <= now) {
-    return false;
+  if (q.status === 'scheduled') {
+    if (q.scheduled_for) {
+      var schedDate = new Date(q.scheduled_for);
+      // It is only scheduled if its unlock date is in the future relative to the user's current client time
+      if (schedDate > new Date()) {
+        return true;
+      }
+    }
   }
-  
-  // Otherwise flag future publish timestamps or explicit 'scheduled' statuses as scheduled
-  if (q.status === 'scheduled') return true;
-  if (pubDate && pubDate > now) return true;
-  
   return false;
 }
 
 async function loadEverything(){
   var results = await Promise.allSettled([
+    // Fetches all Quotes
     supabaseClient.from('quotes')
-      .select('id,text,source,category,status,published_at,share_count,context,background_url,tags,hashtags,mission_id,campaign_id')
+      .select('id,text,source,category,status,published_at,scheduled_for,share_count,context,background_url,tags,hashtags,mission_id,campaign_id')
       .order('published_at', { ascending: false }),
+    // Fetches all Campaigns
     supabaseClient.from('campaigns').select('*').order('created_at', { ascending: false }),
+    // Fetches User Shares
     supabaseClient.from('shares').select('quote_id, shared_at').eq('user_id', currentUser.id),
+    // Fetches User Likes
     supabaseClient.from('quote_likes').select('quote_id, liked_at').eq('user_id', currentUser.id),
+    // Fetches Global Likes
     supabaseClient.from('quote_likes').select('quote_id'),
-    supabaseClient.from('shares').select('quote_id')
+    // Fetches Global Shares
+    supabaseClient.from('shares').select('quote_id'),
+    // Fetches Rewards Badge Names
+    supabaseClient.from('badge_definitions').select('id, name')
   ])
 
   allQuotes    = getData(results[0], [])
@@ -424,6 +443,11 @@ async function loadEverything(){
     shareCounts[s.quote_id] = (shareCounts[s.quote_id] || 0) + 1
   })
 
+  var badges = getData(results[6], [])
+  badges.forEach(function(b){
+    if(b.id) badgesMap[b.id] = b.name
+  })
+
   buildTabs()
   document.getElementById('loadingSection').classList.add('hidden')
 }
@@ -432,16 +456,24 @@ function buildTabs(){
   var strip = document.getElementById('tabStrip')
   strip.innerHTML = ''
 
-  // Category Tabs order: ALL -> SHARED -> LIKED -> (ACTIVE CAMPAIGNS) -> ARCHIVES
+  // Category filter strictly matching: ALL - SHARED - LIKED - (ACTIVE CAMPAIGNS) - ARCHIVES
+  // 1. ALL
   addTab(strip, 'all', 'All', getAllTabQuotes().length, 'library_books')
+  
+  // 2. SHARED
   addTab(strip, 'shared', 'Shared', Object.keys(userSharedQuoteIds).length, 'check_circle')
+  
+  // 3. LIKED
   addTab(strip, 'liked', 'Liked', Object.keys(userLikedQuoteIds).length, 'favorite')
 
+  // 4. (ACTIVE CAMPAIGNS) - Campaigns with status active or holding scheduled quotes, AND must have assigned quotes
   var activeCampaigns = allCampaigns.filter(function(c){
+    var campaignQuotes = allQuotes.filter(function(q){ return q.campaign_id === c.id });
+    var hasAssignedQuotes = campaignQuotes.length > 0;
+    if (!hasAssignedQuotes) return false;
+
     var isActive = c.status === 'active';
-    var hasScheduledQuotes = allQuotes.some(function(q) {
-      return q.campaign_id === c.id && isQuoteScheduled(q);
-    });
+    var hasScheduledQuotes = campaignQuotes.some(isQuoteScheduled);
     return isActive || hasScheduledQuotes;
   })
 
@@ -450,6 +482,7 @@ function buildTabs(){
     addTab(strip, c.id, c.name, count, c.icon || 'campaign', c.color)
   })
 
+  // 5. ARCHIVES
   var hasEndedCampaigns = allCampaigns.some(function(c){ return c.status === 'ended' })
   if(hasEndedCampaigns){
     addTab(strip, 'archives', 'Archives', allCampaigns.filter(function(c){ return c.status === 'ended' }).length, 'inventory_2')
@@ -644,15 +677,16 @@ function renderCampaignHero(campaign){
     dateRange = 'Ends ' + new Date(campaign.end_date).toLocaleDateString('en-AU', { month:'short', day:'numeric' })
   }
 
-  var rewardText = campaign.reward || campaign.rewards || campaign.rewards_received || campaign.reward_received || "";
+  // Display reward badges assigned dynamically matching reward_badge_id
   var rewardHtml = "";
-  if (rewardText.trim()) {
+  if (campaign.reward_badge_id && badgesMap[campaign.reward_badge_id]) {
+    var rewardName = badgesMap[campaign.reward_badge_id];
     rewardHtml = 
       '<div class="mt-4 p-3 bg-white/10 backdrop-blur-sm rounded-xl flex items-center gap-2.5 border border-white/20">'
         + '<span class="material-symbols-outlined text-yellow-300 filled animate-bounce" style="font-size:20px;">emoji_events</span>'
         + '<div class="flex-1 min-w-0">'
           + '<p class="font-headline font-bold text-white" style="font-size:12px;line-height:1.2;">Campaign Rewards</p>'
-          + '<p class="font-body text-white/95 mt-0.5 truncate" style="font-size:11px;font-weight:500;">' + escapeHtml(rewardText) + '</p>'
+          + '<p class="font-body text-white/95 mt-0.5 truncate" style="font-size:11px;font-weight:500;">Earn Badge: ' + escapeHtml(rewardName) + '</p>'
         + '</div>'
       + '</div>';
   }
@@ -811,10 +845,16 @@ function buildQuoteCard(q){
   var isLiked  = !!userLikedQuoteIds[q.id]
   var isScheduled = isQuoteScheduled(q)
 
-  // TWEAK 2 & 3: Render specific 'Unlocks [Date]' tag safely, avoiding both 'soon' or past dates.
+  // Evaluates dynamic unlock target date strictly comparing scheduled_for against local time
   var statusChip = ''
   if(isScheduled){
-    var formatUnlock = (pubDate && pubDate > new Date()) ? pubDate.toLocaleDateString('en-AU', { day:'numeric', month:'short' }) : 'Soon'
+    var formatUnlock = 'Soon'
+    if (q.scheduled_for) {
+      var sDate = new Date(q.scheduled_for);
+      if (!isNaN(sDate.getTime())) {
+        formatUnlock = sDate.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+      }
+    }
     statusChip = '<span class="status-chip status-scheduled"><span class="material-symbols-outlined" style="font-size:10px;">lock</span>Unlocks ' + formatUnlock + '</span>'
   } else if(isShared){
     statusChip = '<span class="status-chip status-shared"><span class="material-symbols-outlined filled" style="font-size:10px;">check_circle</span>Shared</span>'
@@ -826,12 +866,13 @@ function buildQuoteCard(q){
     ? '<span class="quote-cat-chip">' + catEmoji(q.category) + ' ' + escapeHtml(q.category) + '</span>'
     : ''
 
-  // TWEAK 1: Render 'campaign' pill for quote cards inside the 'all' tab view
+  // Shows custom styled campaign pills with dynamic theme color values
   var campChip = ''
   if (state.tab === 'all' && q.campaign_id) {
     var camp = allCampaigns.find(function(c){ return c.id === q.campaign_id })
     if (camp) {
-      campChip = '<span class="quote-cat-chip" style="background:rgba(61,98,133,0.15);color:#3d6285;margin-left:4px;">' + escapeHtml(camp.name) + '</span>'
+      var cColor = camp.color || '#3d6285';
+      campChip = '<span class="quote-cat-chip" style="background:' + hexToRgba(cColor, 0.12) + '; color:' + cColor + '; margin-left:4px;">' + escapeHtml(camp.name) + '</span>'
     }
   }
 
@@ -874,7 +915,10 @@ function openDetail(quote){
   if(quote.campaign_id){
     var camp = allCampaigns.find(function(c){ return c.id === quote.campaign_id })
     if(camp){
-      campEl.textContent = camp.name
+      var cColor = camp.color || '#3d6285';
+      campEl.textContent = camp.name;
+      campEl.style.background = hexToRgba(cColor, 0.12);
+      campEl.style.color = cColor;
       campEl.classList.remove('hidden')
     } else {
       campEl.classList.add('hidden')
@@ -937,9 +981,16 @@ function openDetail(quote){
     likeLabel.textContent = 'Like'
   }
 
+  // Disable sharing action panel entirely if the quote's release is scheduled for the future
   var shareBtn = document.getElementById('detailShareBtn')
   if(isQuoteScheduled(quote)){
-    var unlockTimeStr = pubDate ? pubDate.toLocaleDateString('en-AU', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : 'scheduled time'
+    var unlockTimeStr = 'scheduled time';
+    if (quote.scheduled_for) {
+      var sDate = new Date(quote.scheduled_for);
+      if (!isNaN(sDate.getTime())) {
+        unlockTimeStr = sDate.toLocaleDateString('en-AU', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+      }
+    }
     shareBtn.disabled = true
     shareBtn.classList.add('opacity-40', 'cursor-not-allowed')
     shareBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">lock</span> Unlocks ' + unlockTimeStr
@@ -1005,7 +1056,7 @@ async function toggleLike(){
 function shareFromDetail(){
   if(!currentDetailQuote) return
   if(isQuoteScheduled(currentDetailQuote)){
-    alert("This scheduled quote is not open for sharing yet.")
+    alert("This scheduled quote is locked until its release time.")
     return
   }
 
