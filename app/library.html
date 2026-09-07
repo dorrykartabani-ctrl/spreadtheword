@@ -386,7 +386,24 @@ function isQuoteScheduled(q) {
   }
   return false;
 }
+function getQuoteSortDate(q) {
+  if (isQuoteScheduled(q) && q.scheduled_for) return new Date(q.scheduled_for).getTime()
+  if (q.published_at) return new Date(q.published_at).getTime()
+  if (q.scheduled_for) return new Date(q.scheduled_for).getTime()
+  if (q.created_at) return new Date(q.created_at).getTime()
+  return 0
+}
 
+// Live / archived: newest first. Scheduled: soonest unlock first.
+function sortQuotesForSection(quotes, section) {
+  var list = quotes.slice()
+  if (section === 'scheduled') {
+    list.sort(function (a, b) { return getQuoteSortDate(a) - getQuoteSortDate(b) })
+  } else {
+    list.sort(function (a, b) { return getQuoteSortDate(b) - getQuoteSortDate(a) })
+  }
+  return list
+}
 async function loadEverything(){
   var results = await Promise.allSettled([
     supabaseClient.from('quotes').select('id,text,source,category,status,published_at,scheduled_for,share_count,context,background_url,tags,hashtags,mission_id,campaign_id').order('published_at', { ascending: false }),
@@ -631,58 +648,44 @@ function render(){
     return
   }
 
-  var isCampaignTab = state.tab !== 'all' && state.tab !== 'shared' && state.tab !== 'liked' && state.tab !== 'archives'
-  if(isCampaignTab){
-    var campaign = allCampaigns.find(function(c){ return c.id === state.tab })
-    if(campaign) renderCampaignHero(campaign)
+ // GROUPED VIEW FOR 'ALL' AND 'CAMPAIGNS'
+if (state.tab === 'all' || isCampaignTab) {
+  listEl.innerHTML = ''
+
+  var liveQuotes = sortQuotesForSection(
+    quotes.filter(function (q) {
+      return q.status === 'live' || (!isQuoteScheduled(q) && q.status !== 'archived' && q.status !== 'draft')
+    }),
+    'live'
+  )
+  var schedQuotes = sortQuotesForSection(
+    quotes.filter(function (q) { return isQuoteScheduled(q) }),
+    'scheduled'
+  )
+  var archQuotes = sortQuotesForSection(
+    quotes.filter(function (q) { return q.status === 'archived' }),
+    'archived'
+  )
+
+  appendSection(listEl, 'Live Now', liveQuotes, false)
+  appendSection(listEl, 'Scheduled', schedQuotes, false)
+
+  if (archQuotes.length > 0) {
+    var toggleWrap = document.createElement('div')
+    toggleWrap.className = 'pt-4 pb-4 text-center'
+    toggleWrap.innerHTML =
+      '<button onclick="toggleLibraryArchives()" id="libArchiveToggleBtn" class="inline-flex items-center gap-2 px-5 py-2.5 bg-surface-cl text-on-surface-variant font-body font-semibold rounded-xl hover:bg-surface-clow transition-colors shadow-ambient-sm" style="font-size:13px;">' +
+      '<span class="material-symbols-outlined" style="font-size:18px;">archive</span>' +
+      '<span id="libArchiveToggleLabel">' +
+      (state.showArchives ? 'Hide Archived Quotes' : 'Show Archived Quotes') +
+      '</span></button>'
+    listEl.appendChild(toggleWrap)
+    appendSection(listEl, 'Archived', archQuotes, true)
   }
-
-  var quotes = []
-  if(state.tab === 'all')          quotes = getAllTabQuotes()
-  else if(state.tab === 'shared')  quotes = getSharedTabQuotes()
-  else if(state.tab === 'liked')   quotes = getLikedTabQuotes()
-  else                             quotes = getCampaignTabQuotes(state.tab)
-
-  quotes = applySearch(quotes)
-
-  if(quotes.length === 0){
-    emptyEl.classList.remove('hidden')
-    listEl.innerHTML = ''
-    var msg = state.search
-      ? 'No quotes match "' + escapeHtml(state.search) + '".'
-      : state.tab === 'shared'
-        ? "You haven't shared any quotes yet."
-        : state.tab === 'liked'
-        ? "You haven't liked any quotes yet."
-        : 'No quotes in this section yet.'
-    document.getElementById('emptyMsg').textContent = msg
-    return
-  }
-
-  // GROUPED VIEW FOR 'ALL' AND 'CAMPAIGNS'
-  if (state.tab === 'all' || isCampaignTab) {
-    listEl.innerHTML = '';
-    
-    var liveQuotes = quotes.filter(function(q) { return q.status === 'live' || (!isQuoteScheduled(q) && q.status !== 'archived' && q.status !== 'draft'); });
-    var schedQuotes = quotes.filter(function(q) { return isQuoteScheduled(q); });
-    var archQuotes = quotes.filter(function(q) { return q.status === 'archived'; });
-
-    appendSection(listEl, 'Live Now', liveQuotes, false);
-    appendSection(listEl, 'Scheduled', schedQuotes, false);
-
-    if (archQuotes.length > 0) {
-      var toggleWrap = document.createElement('div');
-      toggleWrap.className = 'pt-4 pb-4 text-center';
-      toggleWrap.innerHTML = '<button onclick="toggleLibraryArchives()" id="libArchiveToggleBtn" class="inline-flex items-center gap-2 px-5 py-2.5 bg-surface-cl text-on-surface-variant font-body font-semibold rounded-xl hover:bg-surface-clow transition-colors shadow-ambient-sm" style="font-size:13px;">' +
-        '<span class="material-symbols-outlined" style="font-size:18px;">archive</span>' +
-        '<span id="libArchiveToggleLabel">' + (state.showArchives ? 'Hide Archived Quotes' : 'Show Archived Quotes') + '</span></button>';
-      listEl.appendChild(toggleWrap);
-
-      appendSection(listEl, 'Archived', archQuotes, true);
-    }
-  } 
+}
   // STANDARD PAGINATED VIEW FOR 'SHARED' AND 'LIKED'
   else {
+    quotes = sortQuotesForSection(quotes, 'live')
     var totalPages = Math.max(1, Math.ceil(quotes.length / state.perPage))
     if(state.page > totalPages) state.page = totalPages
     var start = (state.page - 1) * state.perPage
