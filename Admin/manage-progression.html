@@ -1,3 +1,22 @@
+Before replacing your `manage-progression.html` file, run this single SQL command in your Supabase SQL Editor to ensure the `trophy_definitions` table can store the mission reference numbers (the `badge_definitions` table already has the `rule_config` JSONB column we need):
+
+```sql
+ALTER TABLE public.trophy_definitions 
+ADD COLUMN IF NOT EXISTS mission_refs text[] DEFAULT '{}';
+```
+
+Here is the complete, updated **`manage-progression.html`** file. 
+
+### What has been fixed in this file:
+1. **Mission References Loaded & Displayed**: The checklists now display the mission title alongside its permanent tracking reference (e.g., `Clean Water Kenya (M-A8X9Q2)`).
+2. **Trophy Persistence Fixed**: `saveTrophy()` and `editTrophy()` now properly save and restore linked `mission_refs` and `campaign_ids`.
+3. **Badge Persistence Fixed**: `saveBadge()` and `editBadge()` now properly save and restore the Admin Referral toggle, the Mission Priority toggle, and the linked missions/campaigns inside the `rule_config` JSONB column.
+4. **State Leaks Fixed**: Opening a "New Badge" or "New Trophy" modal now properly clears out old checkboxes and inputs from previously edited items.
+5. **Completed Missing Functions**: Reconstructed the image dropdown populators and Avatar save/edit functions so the file is 100% complete and self-contained.
+
+### `manage-progression.html`
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -120,7 +139,7 @@
       <div id="statTypeContainer"><label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Stat Type</label><select id="trophyStatType" class="form-input w-full rounded-xl px-4 py-3 text-sm"><option value="shares">Total Shares</option><option value="recruits">Warriors Recruited</option><option value="donations">Total Donations ($)</option><option value="other">Other</option></select></div>
       
       <div id="participationContainer" class="hidden space-y-3">
-        <label class="text-[11px] font-bold text-slate-500 uppercase block">Link Active Missions</label>
+        <label class="text-[11px] font-bold text-slate-500 uppercase block">Link Active Missions (By Reference)</label>
         <div id="missionChecklist" class="bg-surface-clow rounded-xl p-3 max-h-32 overflow-y-auto space-y-1"></div>
         <label class="text-[11px] font-bold text-slate-500 uppercase block mt-2">Link Active Campaigns</label>
         <div id="campaignChecklist" class="bg-surface-clow rounded-xl p-3 max-h-32 overflow-y-auto space-y-1"></div>
@@ -167,8 +186,9 @@
         <div class="flex items-center gap-2 p-3 bg-surface-clow rounded-xl"><input type="checkbox" id="badgeAdminReferral" class="w-4 h-4 accent-primary"><span class="text-sm font-semibold">Award on Admin Referral Sign-up</span></div>
         <div class="flex items-center gap-2 p-3 bg-surface-clow rounded-xl"><input type="checkbox" id="badgeMissionPriority" class="w-4 h-4 accent-primary"><span class="text-sm font-semibold">Award for Mission Priority (1,2,3) + Donation</span></div>
         
-        <label class="text-[11px] font-bold text-slate-500 uppercase block mt-2">Or Link Specific Items</label>
+        <label class="text-[11px] font-bold text-slate-500 uppercase block mt-2">Or Link Specific Missions (By Reference)</label>
         <div id="badgeMissionChecklist" class="bg-surface-clow rounded-xl p-3 max-h-32 overflow-y-auto space-y-1"></div>
+        <label class="text-[11px] font-bold text-slate-500 uppercase block mt-2">Or Link Specific Campaigns</label>
         <div id="badgeCampaignChecklist" class="bg-surface-clow rounded-xl p-3 max-h-32 overflow-y-auto space-y-1 mt-2"></div>
       </div>
 
@@ -228,13 +248,21 @@
 
 <script>
 var supabaseClient = supabase.createClient('https://nhymadutuhpjgkiurify.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM');
-var currentUser = null, allTiers = [], allTrophies = [], allThresholds = [], allCampaigns = [], allMissions = [], trophyImages = [], avatarImages = [], badgeImages = [], allAvatars = [], allBadges = [];
 var currentUser = null, allTiers = [], allTrophies = [], allThresholds = [], allCampaigns = [], allMissions = [], trophyImages = [], avatarImages = [], badgeImages = [], allAvatars = [], allBadges = [], campaignQuoteCounts = {};
+
 function getEl(id) { return document.getElementById(id); }
+function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function toggleSidebar() { getEl('sidebar').classList.toggle('hidden'); getEl('sidebar').classList.toggle('flex'); getEl('sidebarOverlay').classList.toggle('hidden'); }
 async function handleLogout() { await supabaseClient.auth.signOut(); window.location.href = 'login.html'; }
+
 var toastTimer;
-function showToast(msg, isErr=false) { var t = getEl('toast'); getEl('toastMsg').textContent = msg; var icon = getEl('toastIcon'); icon.textContent = isErr ? 'error' : 'check_circle'; icon.className = 'material-symbols-outlined ' + (isErr ? 'text-red-400' : 'text-green-400'); t.classList.remove('hidden'); t.classList.add('flex'); clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.classList.add('hidden'); t.classList.remove('flex'); }, 3000); }
+function showToast(msg, isErr=false) { 
+  var t = getEl('toast'); getEl('toastMsg').textContent = msg; 
+  var icon = getEl('toastIcon'); icon.textContent = isErr ? 'error' : 'check_circle'; 
+  icon.className = 'material-symbols-outlined ' + (isErr ? 'text-red-400' : 'text-green-400'); 
+  t.classList.remove('hidden'); t.classList.add('flex'); 
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.classList.add('hidden'); t.classList.remove('flex'); }, 3000); 
+}
 
 async function init() {
   var s = await supabaseClient.auth.getSession(); if (!s.data.session) return window.location.href = 'login.html'; currentUser = s.data.session.user;
@@ -244,7 +272,6 @@ async function init() {
 }
 
 async function loadData() {
-  // Clean Promise.all to ensure all data loads correctly
   var [tierRes, tRes, threshRes, bRes, aRes, mediaRes, projRes, campRes] = await Promise.all([
     supabaseClient.from('trophy_tiers').select('*').order('id'),
     supabaseClient.from('trophy_definitions').select('*').order('created_at', {ascending: false}),
@@ -252,7 +279,7 @@ async function loadData() {
     supabaseClient.from('badge_definitions').select('*').order('created_at', {ascending: false}),
     supabaseClient.from('avatar_stages').select('*').order('stage_order'),
     supabaseClient.from('media').select('*').in('type', ['trophy', 'avatar', 'badge']).eq('is_active', true),
-    supabaseClient.from('projects').select('id, title').eq('status', 'active'),
+    supabaseClient.from('projects').select('id, title, mission_ref').eq('status', 'active'),
     supabaseClient.from('campaigns').select('id, name').eq('status', 'active')
   ]);
 
@@ -264,7 +291,6 @@ async function loadData() {
   allMissions = projRes.data || []; 
   allCampaigns = campRes.data || [];
   
-  // NEW: Count quotes for every campaign so we can calculate thresholds later
   campaignQuoteCounts = {};
   if (allCampaigns.length > 0) {
     var qRes = await supabaseClient.from('quotes').select('campaign_id').in('campaign_id', allCampaigns.map(c => c.id));
@@ -281,50 +307,96 @@ async function loadData() {
   renderTrophies(); renderBadges(); renderAvatars(); populateDropdowns();
 }
 
-function switchTab(tab) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); getEl('tab-' + tab).classList.add('active'); getEl('view-trophies').classList.toggle('hidden', tab !== 'trophies'); getEl('view-badges').classList.toggle('hidden', tab !== 'badges'); getEl('view-avatars').classList.toggle('hidden', tab !== 'avatars'); }
+function populateDropdowns() {
+  var tSel = getEl('trophyImage');
+  if (tSel) {
+    tSel.innerHTML = '<option value="">-- Select Trophy Image --</option>';
+    trophyImages.forEach(m => tSel.innerHTML += `<option value="${m.url}">${escapeHtml(m.label)}</option>`);
+  }
+  var bSel = getEl('badgeImage');
+  if (bSel) {
+    bSel.innerHTML = '<option value="">-- Select Badge Image --</option>';
+    badgeImages.forEach(m => bSel.innerHTML += `<option value="${m.url}">${escapeHtml(m.label)}</option>`);
+  }
+  var amSel = getEl('avatarImageMale'), afSel = getEl('avatarImageFemale');
+  if (amSel && afSel) {
+    amSel.innerHTML = '<option value="">-- Select Male Image --</option>';
+    afSel.innerHTML = '<option value="">-- Select Female Image --</option>';
+    avatarImages.forEach(m => {
+      amSel.innerHTML += `<option value="${m.url}">${escapeHtml(m.label)}</option>`;
+      afSel.innerHTML += `<option value="${m.url}">${escapeHtml(m.label)}</option>`;
+    });
+  }
+  var reqBadgeSel = getEl('avatarReqBadge');
+  if (reqBadgeSel) {
+    reqBadgeSel.innerHTML = '<option value="">-- Select Required Badge --</option>';
+    allBadges.forEach(b => reqBadgeSel.innerHTML += `<option value="${b.id}">${escapeHtml(b.name)}</option>`);
+  }
+}
+
+function switchTab(tab) { 
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); 
+  getEl('tab-' + tab).classList.add('active'); 
+  getEl('view-trophies').classList.toggle('hidden', tab !== 'trophies'); 
+  getEl('view-badges').classList.toggle('hidden', tab !== 'badges'); 
+  getEl('view-avatars').classList.toggle('hidden', tab !== 'avatars'); 
+}
 
 // --- TROPHIES ---
 function renderTrophies() {
   var grid = getEl('trophyGrid'); if(!grid) return;
   if (allTrophies.length === 0) { grid.innerHTML = '<div class="col-span-3 text-center py-10 text-slate-400">No trophies created yet.</div>'; return; }
-  grid.innerHTML = allTrophies.map(t => `<div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="editTrophy('${t.id}')"><div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden">${t.image_url ? `<img src="${t.image_url}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300">emoji_events</span>'}</div><div><h4 class="font-headline font-bold text-slate-800">${t.name}</h4><p class="text-[10px] font-bold text-slate-400 uppercase">${t.type} · ${t.stat_type || ''}</p></div></div>`).join('');
+  grid.innerHTML = allTrophies.map(t => `
+    <div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="editTrophy('${t.id}')">
+      <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden">
+        ${t.image_url ? `<img src="${t.image_url}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300">emoji_events</span>'}
+      </div>
+      <div>
+        <h4 class="font-headline font-bold text-slate-800">${escapeHtml(t.name)}</h4>
+        <p class="text-[10px] font-bold text-slate-400 uppercase">${t.type} · ${t.stat_type || 'Linked'}</p>
+      </div>
+    </div>
+  `).join('');
 }
 
 function toggleTrophyType() {
   var type = getEl('trophyType').value;
   getEl('statTypeContainer').classList.toggle('hidden', type !== 'stat');
-  // Show participation container for BOTH collection and participation types
   getEl('participationContainer').classList.toggle('hidden', type !== 'participation' && type !== 'collection');
   if(type === 'participation' || type === 'collection') renderParticipationChecklists();
 }
 
 function renderParticipationChecklists() {
-  // Render Missions
-  getEl('missionChecklist').innerHTML = allMissions.length ? allMissions.map(m => `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer"><input type="checkbox" value="${m.id}" class="mission-cb" onchange="updateCollectionThresholds()"><span class="text-sm font-semibold text-slate-700">${m.title}</span></label>`).join('') : '<p class="text-xs text-slate-400 p-2">No active missions.</p>';
+  getEl('missionChecklist').innerHTML = allMissions.length ? allMissions.map(m => {
+    var ref = m.mission_ref || m.id;
+    return `<label class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-c cursor-pointer">
+      <div class="flex items-center gap-2">
+        <input type="checkbox" value="${ref}" class="mission-cb">
+        <span class="text-sm font-semibold text-slate-700">${escapeHtml(m.title)}</span>
+      </div>
+      <span class="text-[10px] font-mono font-bold text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200">${m.mission_ref || 'NO-REF'}</span>
+    </label>`;
+  }).join('') : '<p class="text-xs text-slate-400 p-2">No active missions.</p>';
   
-  // Render Campaigns
-  getEl('campaignChecklist').innerHTML = allCampaigns.length ? allCampaigns.map(c => `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer"><input type="checkbox" value="${c.id}" class="campaign-cb" onchange="updateCollectionThresholds()"><span class="text-sm font-semibold text-slate-700">${c.name}</span></label>`).join('') : '<p class="text-xs text-slate-400 p-2">No active campaigns.</p>';
+  getEl('campaignChecklist').innerHTML = allCampaigns.length ? allCampaigns.map(c => `
+    <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer">
+      <input type="checkbox" value="${c.id}" class="campaign-cb" onchange="updateCollectionThresholds()">
+      <span class="text-sm font-semibold text-slate-700">${escapeHtml(c.name)}</span>
+    </label>
+  `).join('') : '<p class="text-xs text-slate-400 p-2">No active campaigns.</p>';
 }
 
-// NEW FUNCTION: Calculates thresholds based on selected campaigns
 function updateCollectionThresholds() {
   var type = getEl('trophyType').value;
-  // Only run this if we are in Collection mode
   if (type !== 'collection') return;
 
   var checkedBoxes = document.querySelectorAll('#campaignChecklist .campaign-cb:checked');
   var totalQuotes = 0;
-  
-  // Sum up the quotes from all checked campaigns
-  checkedBoxes.forEach(cb => {
-    totalQuotes += (campaignQuoteCounts[cb.value] || 0);
-  });
+  checkedBoxes.forEach(cb => { totalQuotes += (campaignQuoteCounts[cb.value] || 0); });
 
-  // If we have quotes, update the 5 tier inputs automatically
   if (totalQuotes > 0) {
     var tiers = document.querySelectorAll('.tier-thresh');
     if (tiers.length === 5) {
-      // Distribute evenly: 20%, 40%, 60%, 80%, 100%
       tiers[0].value = Math.ceil(totalQuotes * 0.2);
       tiers[1].value = Math.ceil(totalQuotes * 0.4);
       tiers[2].value = Math.ceil(totalQuotes * 0.6);
@@ -335,7 +407,8 @@ function updateCollectionThresholds() {
 }
 
 function openTrophyModal() {
-  getEl('trophyId').value = ''; getEl('trophyName').value = ''; getEl('trophyType').value = 'stat'; getEl('trophyStatType').value = 'shares'; getEl('trophyImage').value = ''; getEl('trophyDesc').value = ''; getEl('trophyModalTitle').textContent = 'Create Trophy'; toggleTrophyType();
+  getEl('trophyId').value = ''; getEl('trophyName').value = ''; getEl('trophyType').value = 'stat'; getEl('trophyStatType').value = 'shares'; getEl('trophyImage').value = ''; getEl('trophyDesc').value = ''; getEl('trophyModalTitle').textContent = 'Create Trophy'; 
+  toggleTrophyType();
   var container = getEl('thresholdsContainer'); container.innerHTML = '';
   allTiers.forEach(t => { var defaults = [1, 10, 50, 150, 500]; addThresholdRow(t.id, t.name, t.color_hex, defaults[t.id-1] || 0, true); });
   getEl('trophyModal').classList.remove('hidden');
@@ -343,7 +416,15 @@ function openTrophyModal() {
 
 function editTrophy(id) {
   var t = allTrophies.find(x => x.id === id); if (!t) return;
-  getEl('trophyId').value = t.id; getEl('trophyName').value = t.name; getEl('trophyType').value = t.type || 'stat'; getEl('trophyStatType').value = t.stat_type || 'shares'; getEl('trophyImage').value = t.image_url || ''; getEl('trophyDesc').value = t.description || ''; getEl('trophyModalTitle').textContent = 'Edit Trophy'; toggleTrophyType();
+  getEl('trophyId').value = t.id; getEl('trophyName').value = t.name; getEl('trophyType').value = t.type || 'stat'; getEl('trophyStatType').value = t.stat_type || 'shares'; getEl('trophyImage').value = t.image_url || ''; getEl('trophyDesc').value = t.description || ''; getEl('trophyModalTitle').textContent = 'Edit Trophy'; 
+  
+  // Render checklists first, then restore checked states
+  toggleTrophyType();
+  var linkedMissions = t.mission_refs || [];
+  var linkedCampaigns = t.campaign_ids || [];
+  document.querySelectorAll('#missionChecklist .mission-cb').forEach(cb => { cb.checked = linkedMissions.includes(cb.value); });
+  document.querySelectorAll('#campaignChecklist .campaign-cb').forEach(cb => { cb.checked = linkedCampaigns.includes(cb.value); });
+
   var container = getEl('thresholdsContainer'); container.innerHTML = '';
   allTiers.forEach(tier => { var th = allThresholds.find(x => x.trophy_id === id && x.tier_id === tier.id); addThresholdRow(tier.id, tier.name, tier.color_hex, th ? th.threshold_value : 0, th ? th.is_active : true); });
   getEl('trophyModal').classList.remove('hidden');
@@ -352,7 +433,7 @@ function editTrophy(id) {
 function addThresholdRow(tierId, name, color, val, isActive = true) {
   var container = getEl('thresholdsContainer');
   var div = document.createElement('div'); div.className = 'flex items-center gap-3 p-3 bg-surface-clow rounded-xl';
-  div.innerHTML = `<div class="w-4 h-4 rounded-full flex-shrink-0" style="background:${color}"></div><span class="text-xs font-bold text-slate-600 w-20">${name}</span><input type="number" placeholder="Threshold" value="${val}" class="tier-thresh form-input flex-1 rounded-lg px-3 py-2 text-sm" data-tier="${tierId}"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer tier-toggle" data-tier="${tierId}" ${isActive ? 'checked' : ''}><div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div></label>`;
+  div.innerHTML = `<div class="w-4 h-4 rounded-full flex-shrink-0" style="background:${color}"></div><span class="text-xs font-bold text-slate-600 w-20">${escapeHtml(name)}</span><input type="number" placeholder="Threshold" value="${val}" class="tier-thresh form-input flex-1 rounded-lg px-3 py-2 text-sm" data-tier="${tierId}"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer tier-toggle" data-tier="${tierId}" ${isActive ? 'checked' : ''}><div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div></label>`;
   container.appendChild(div);
 }
 
@@ -362,15 +443,34 @@ async function saveTrophy() {
   var id = getEl('trophyId').value, name = getEl('trophyName').value.trim(), type = getEl('trophyType').value;
   var statType = type === 'stat' ? getEl('trophyStatType').value : null, imgUrl = getEl('trophyImage').value || null, desc = getEl('trophyDesc').value.trim();
   if (!name) return showToast('Name required', true);
+  
+  var missionRefs = [];
+  var campaignIds = [];
+  if (type === 'participation' || type === 'collection') {
+    document.querySelectorAll('#missionChecklist .mission-cb:checked').forEach(cb => missionRefs.push(cb.value));
+    document.querySelectorAll('#campaignChecklist .campaign-cb:checked').forEach(cb => campaignIds.push(cb.value));
+  }
+
   var btn = getEl('saveTrophyBtn'); btn.disabled = true; btn.textContent = 'Saving...';
   try {
-    var data = { name, type, stat_type: statType, image_url: imgUrl, description: desc };
+    var data = { 
+      name, type, stat_type: statType, image_url: imgUrl, description: desc,
+      mission_refs: missionRefs, campaign_ids: campaignIds
+    };
     var res = id ? await supabaseClient.from('trophy_definitions').update(data).eq('id', id) : await supabaseClient.from('trophy_definitions').insert([data]).select().single();
     if (res.error) throw new Error(res.error.message);
+    
     var trophyId = id || res.data.id;
-    var threshData = Array.from(document.querySelectorAll('.tier-thresh')).map(el => { var tierId = parseInt(el.dataset.tier); var toggle = document.querySelector(`.tier-toggle[data-tier="${tierId}"]`); return { trophy_id: trophyId, tier_id: tierId, threshold_value: parseInt(el.value) || 0, is_active: toggle ? toggle.checked : true }; });
+    var threshData = Array.from(document.querySelectorAll('.tier-thresh')).map(el => { 
+      var tierId = parseInt(el.dataset.tier); 
+      var toggle = document.querySelector(`.tier-toggle[data-tier="${tierId}"]`); 
+      return { trophy_id: trophyId, tier_id: tierId, threshold_value: parseInt(el.value) || 0, is_active: toggle ? toggle.checked : true }; 
+    });
+    
     await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', trophyId);
-    var tRes = await supabaseClient.from('trophy_thresholds').insert(threshData); if (tRes.error) throw new Error(tRes.error.message);
+    var tRes = await supabaseClient.from('trophy_thresholds').insert(threshData); 
+    if (tRes.error) throw new Error(tRes.error.message);
+    
     showToast('Trophy saved!'); closeTrophyModal(); await loadData();
   } catch(e) { showToast('Error: ' + e.message, true); }
   btn.disabled = false; btn.textContent = 'Save Trophy';
@@ -380,7 +480,18 @@ async function saveTrophy() {
 function renderBadges() {
   var list = getEl('badgeList'); if(!list) return;
   if (allBadges.length === 0) { list.innerHTML = '<div class="text-center py-10 text-slate-400">No badges created yet.</div>'; return; }
-  list.innerHTML = allBadges.map(b => `<div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="editBadge('${b.id}')"><div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden">${b.image_url ? `<img src="${b.image_url}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300">emoji_events</span>'}</div><div class="flex-1"><h4 class="font-headline font-bold text-slate-800">${b.name}</h4><p class="text-[10px] font-bold text-slate-400 uppercase">${b.rule_type || 'milestone'} Rule ${b.is_top_10_eligible ? '· Top 10' : ''}</p></div><button onclick="event.stopPropagation(); deleteBadge('${b.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg"><span class="material-symbols-outlined">delete</span></button></div>`).join('');
+  list.innerHTML = allBadges.map(b => `
+    <div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="editBadge('${b.id}')">
+      <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden">
+        ${b.image_url ? `<img src="${b.image_url}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300">emoji_events</span>'}
+      </div>
+      <div class="flex-1">
+        <h4 class="font-headline font-bold text-slate-800">${escapeHtml(b.name)}</h4>
+        <p class="text-[10px] font-bold text-slate-400 uppercase">${b.rule_type || 'milestone'} Rule ${b.is_top_10_eligible ? '· Top 10' : ''}</p>
+      </div>
+      <button onclick="event.stopPropagation(); deleteBadge('${b.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg"><span class="material-symbols-outlined">delete</span></button>
+    </div>
+  `).join('');
 }
 
 function toggleBadgeRule() {
@@ -391,20 +502,56 @@ function toggleBadgeRule() {
 }
 
 function renderBadgeParticipationChecklists() {
-  getEl('badgeMissionChecklist').innerHTML = allMissions.length ? allMissions.map(m => `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer"><input type="checkbox" value="${m.id}" class="badge-mission-cb"><span class="text-sm font-semibold text-slate-700">${m.title}</span></label>`).join('') : '<p class="text-xs text-slate-400 p-2">No active missions.</p>';
-  getEl('badgeCampaignChecklist').innerHTML = allCampaigns.length ? allCampaigns.map(c => `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer"><input type="checkbox" value="${c.id}" class="badge-campaign-cb"><span class="text-sm font-semibold text-slate-700">${c.name}</span></label>`).join('') : '<p class="text-xs text-slate-400 p-2">No active campaigns.</p>';
+  getEl('badgeMissionChecklist').innerHTML = allMissions.length ? allMissions.map(m => {
+    var ref = m.mission_ref || m.id;
+    return `<label class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-c cursor-pointer">
+      <div class="flex items-center gap-2">
+        <input type="checkbox" value="${ref}" class="badge-mission-cb">
+        <span class="text-sm font-semibold text-slate-700">${escapeHtml(m.title)}</span>
+      </div>
+      <span class="text-[10px] font-mono font-bold text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200">${m.mission_ref || 'NO-REF'}</span>
+    </label>`;
+  }).join('') : '<p class="text-xs text-slate-400 p-2">No active missions.</p>';
+  
+  getEl('badgeCampaignChecklist').innerHTML = allCampaigns.length ? allCampaigns.map(c => `
+    <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer">
+      <input type="checkbox" value="${c.id}" class="badge-campaign-cb">
+      <span class="text-sm font-semibold text-slate-700">${escapeHtml(c.name)}</span>
+    </label>
+  `).join('') : '<p class="text-xs text-slate-400 p-2">No active campaigns.</p>';
 }
 
 function openBadgeModal() {
-  getEl('badgeId').value = ''; getEl('badgeName').value = ''; getEl('badgeImage').value = ''; getEl('badgeDesc').value = ''; getEl('badgeRuleType').value = 'milestone'; getEl('badgeModalTitle').textContent = 'Create Badge'; getEl('deleteBadgeBtn').classList.add('hidden'); getEl('badgeTop10').checked = false; toggleBadgeRule();
+  getEl('badgeId').value = ''; getEl('badgeName').value = ''; getEl('badgeImage').value = ''; getEl('badgeDesc').value = ''; 
+  getEl('badgeRuleType').value = 'milestone'; getEl('badgeStatType').value = 'shares'; getEl('badgeStatTarget').value = '';
+  getEl('badgeAdminReferral').checked = false; getEl('badgeMissionPriority').checked = false; getEl('badgeTop10').checked = false;
+  getEl('badgeModalTitle').textContent = 'Create Badge'; getEl('deleteBadgeBtn').classList.add('hidden'); 
+  toggleBadgeRule();
   getEl('badgeModal').classList.remove('hidden');
 }
 
 function editBadge(id) {
   var b = allBadges.find(x => x.id === id); if (!b) return;
-  getEl('badgeId').value = b.id; getEl('badgeName').value = b.name || ''; getEl('badgeImage').value = b.image_url || ''; getEl('badgeDesc').value = b.description || ''; getEl('badgeRuleType').value = b.rule_type || 'milestone'; getEl('badgeModalTitle').textContent = 'Edit Badge'; getEl('deleteBadgeBtn').classList.remove('hidden'); getEl('badgeTop10').checked = b.is_top_10_eligible || false;
-  if(b.rule_type === 'milestone') { getEl('badgeStatType').value = b.stat_type || 'shares'; getEl('badgeStatTarget').value = b.stat_target || 0; }
+  getEl('badgeId').value = b.id; getEl('badgeName').value = b.name || ''; getEl('badgeImage').value = b.image_url || ''; getEl('badgeDesc').value = b.description || ''; 
+  getEl('badgeRuleType').value = b.rule_type || 'milestone'; getEl('badgeModalTitle').textContent = 'Edit Badge'; 
+  getEl('deleteBadgeBtn').classList.remove('hidden'); getEl('badgeTop10').checked = b.is_top_10_eligible || false;
+  
+  if(b.rule_type === 'milestone') { 
+    getEl('badgeStatType').value = b.stat_type || 'shares'; 
+    getEl('badgeStatTarget').value = b.stat_target || 0; 
+  }
+  
+  // Render checklists first, then restore state from rule_config
   toggleBadgeRule();
+  var config = b.rule_config || {};
+  getEl('badgeAdminReferral').checked = !!config.admin_referral;
+  getEl('badgeMissionPriority').checked = !!config.mission_priority_donation;
+  
+  var linkedMissions = config.mission_refs || [];
+  var linkedCampaigns = config.campaign_ids || [];
+  document.querySelectorAll('#badgeMissionChecklist .badge-mission-cb').forEach(cb => { cb.checked = linkedMissions.includes(cb.value); });
+  document.querySelectorAll('#badgeCampaignChecklist .badge-campaign-cb').forEach(cb => { cb.checked = linkedCampaigns.includes(cb.value); });
+
   getEl('badgeModal').classList.remove('hidden');
 }
 
@@ -413,10 +560,32 @@ function closeBadgeModal() { getEl('badgeModal').classList.add('hidden'); }
 async function saveBadge() {
   var id = getEl('badgeId').value, name = getEl('badgeName').value.trim(), desc = getEl('badgeDesc').value.trim(), ruleType = getEl('badgeRuleType').value;
   if (!name) return showToast('Name required', true);
+  
+  var ruleConfig = {};
+  if (ruleType === 'participation') {
+    var mRefs = [], cIds = [];
+    document.querySelectorAll('#badgeMissionChecklist .badge-mission-cb:checked').forEach(cb => mRefs.push(cb.value));
+    document.querySelectorAll('#badgeCampaignChecklist .badge-campaign-cb:checked').forEach(cb => cIds.push(cb.value));
+    ruleConfig = {
+      admin_referral: getEl('badgeAdminReferral').checked,
+      mission_priority_donation: getEl('badgeMissionPriority').checked,
+      mission_refs: mRefs,
+      campaign_ids: cIds
+    };
+  }
+
   var btn = getEl('saveBadgeBtn'); btn.disabled = true; btn.textContent = 'Saving...';
   try {
-    var data = { name, description: desc, rule_type: ruleType, image_url: getEl('badgeImage').value || null, is_top_10_eligible: getEl('badgeTop10').checked };
-    if(ruleType === 'milestone') { data.stat_type = getEl('badgeStatType').value; data.stat_target = parseInt(getEl('badgeStatTarget').value) || 0; }
+    var data = { 
+      name, description: desc, rule_type: ruleType, 
+      image_url: getEl('badgeImage').value || null, 
+      is_top_10_eligible: getEl('badgeTop10').checked,
+      rule_config: ruleConfig
+    };
+    if(ruleType === 'milestone') { 
+      data.stat_type = getEl('badgeStatType').value; 
+      data.stat_target = parseInt(getEl('badgeStatTarget').value) || 0; 
+    }
     
     var res = id ? await supabaseClient.from('badge_definitions').update(data).eq('id', id) : await supabaseClient.from('badge_definitions').insert([data]).select().single();
     if (res.error) throw new Error(res.error.message);
@@ -458,12 +627,12 @@ function renderAvatars() {
 
   var html = '';
   Object.keys(grouped).sort().forEach(era => {
-    html += `<h3 class="font-headline font-bold text-lg text-slate-800 mt-6 mb-2 px-1">${era}</h3>`;
+    html += `<h3 class="font-headline font-bold text-lg text-slate-800 mt-6 mb-2 px-1">${escapeHtml(era)}</h3>`;
     Object.keys(grouped[era]).sort().forEach(journey => {
-      html += `<h4 class="font-headline font-semibold text-md text-slate-600 mb-3 px-4">${journey}</h4>`;
+      html += `<h4 class="font-headline font-semibold text-md text-slate-600 mb-3 px-4">${escapeHtml(journey)}</h4>`;
       html += `<div class="space-y-3 pl-4">`;
       grouped[era][journey].sort((a,b) => a.stage_order - b.stage_order).forEach(a => {
-        html += `<div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="editAvatar('${a.id}')"><div class="flex -space-x-2"><div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-white">${a.image_url_male ? `<img src="${a.image_url_male}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300 text-sm">male</span>'}</div></div><div class="flex-1"><div class="flex items-center gap-2"><span class="bg-primary/10 text-primary text-[10px] font-black px-2 py-0.5 rounded-full">STAGE ${a.stage_order}</span><h4 class="font-headline font-bold text-slate-800">${a.journey_name}</h4></div><p class="text-[11px] text-slate-500 mt-1">Req: ${a.requirement_value} ${a.requirement_type}</p></div><span class="material-symbols-outlined text-slate-300">edit</span></div>`;
+        html += `<div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="editAvatar('${a.id}')"><div class="flex -space-x-2"><div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-white">${a.image_url_male ? `<img src="${a.image_url_male}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300 text-sm">male</span>'}</div></div><div class="flex-1"><div class="flex items-center gap-2"><span class="bg-primary/10 text-primary text-[10px] font-black px-2 py-0.5 rounded-full">STAGE ${a.stage_order}</span><h4 class="font-headline font-bold text-slate-800">${escapeHtml(a.journey_name)}</h4></div><p class="text-[11px] text-slate-500 mt-1">Req: ${a.requirement_value} ${a.requirement_type}</p></div><span class="material-symbols-outlined text-slate-300">edit</span></div>`;
       });
       html += `</div>`;
     });
@@ -477,34 +646,45 @@ function openAvatarModal() {
 
 function editAvatar(id) {
   var a = allAvatars.find(x => x.id === id); if (!a) return;
-  getEl('avatarId').value = a.id; getEl('avatarEra').value = a.era || ''; getEl('avatarJourney').value = a.journey || ''; getEl('avatarOrder').value = a.stage_order; getEl('avatarName').value = a.journey_name; getEl('avatarReqType').value = a.requirement_type || 'mythic'; getEl('avatarReqValue').value = a.requirement_value || 0; getEl('avatarReqBadge').value = a.requirement_badge_id || ''; getEl('avatarImageMale').value = a.image_url_male || ''; getEl('avatarImageFemale').value = a.image_url_female || ''; getEl('avatarModalTitle').textContent = 'Edit Avatar Stage'; toggleAvatarReq(); getEl('avatarModal').classList.remove('hidden');
+  getEl('avatarId').value = a.id; getEl('avatarEra').value = a.era || ''; getEl('avatarJourney').value = a.journey || ''; 
+  getEl('avatarOrder').value = a.stage_order || 1; getEl('avatarName').value = a.journey_name || ''; 
+  getEl('avatarReqType').value = a.requirement_type || 'mythic'; 
+  getEl('avatarReqValue').value = a.requirement_value || 0; 
+  getEl('avatarReqBadge').value = a.requirement_badge_id || ''; 
+  getEl('avatarImageMale').value = a.image_url_male || ''; 
+  getEl('avatarImageFemale').value = a.image_url_female || ''; 
+  getEl('avatarModalTitle').textContent = 'Edit Avatar Stage'; 
+  toggleAvatarReq(); 
+  getEl('avatarModal').classList.remove('hidden');
 }
 
 function closeAvatarModal() { getEl('avatarModal').classList.add('hidden'); }
 
 async function saveAvatar() {
-  var id = getEl('avatarId').value;
-  var orderVal = parseInt(getEl('avatarOrder').value); if (isNaN(orderVal)) orderVal = 1;
-  var reqVal = getEl('avatarReqType').value === 'badge' ? getEl('avatarReqBadge').value : (parseInt(getEl('avatarReqValue').value) || 0);
-  var data = { era: getEl('avatarEra').value.trim(), journey: getEl('avatarJourney').value.trim(), stage_order: orderVal, journey_name: getEl('avatarName').value.trim(), requirement_type: getEl('avatarReqType').value, requirement_value: reqVal, requirement_badge_id: getEl('avatarReqType').value === 'badge' ? getEl('avatarReqBadge').value : null, image_url_male: getEl('avatarImageMale').value || null, image_url_female: getEl('avatarImageFemale').value || null };
-  if (!data.journey_name) return showToast('Name is required', true);
-  var btn = getEl('saveAvatarBtn'); btn.disabled = true; btn.textContent = 'Saving...';
-  try { var res = id ? await supabaseClient.from('avatar_stages').update(data).eq('id', id) : await supabaseClient.from('avatar_stages').insert([data]); if (res.error) throw new Error(res.error.message); showToast('Avatar stage saved!'); closeAvatarModal(); await loadData(); } catch(e) { showToast('Error: ' + e.message, true); }
-  btn.disabled = false; btn.textContent = 'Save Stage';
-}
+  var id = getEl('avatarId').value, era = getEl('avatarEra').value.trim(), journey = getEl('avatarJourney').value.trim(), name = getEl('avatarName').value.trim();
+  var order = parseInt(getEl('avatarOrder').value) || 1, reqType = getEl('avatarReqType').value;
+  if (!name) return showToast('Journey Name required', true);
 
-function populateDropdowns() { 
-  var tImgSel = getEl('trophyImage'); if(tImgSel) { tImgSel.innerHTML = '<option value="">-- Select Image --</option>'; trophyImages.forEach(m => tImgSel.innerHTML += `<option value="${m.url}">${m.label}</option>`); }
-  var bImgSel = getEl('badgeImage'); if(bImgSel) { bImgSel.innerHTML = '<option value="">-- Select Image --</option>'; badgeImages.forEach(m => bImgSel.innerHTML += `<option value="${m.url}">${m.label}</option>`); }
-  var aImgMaleSel = getEl('avatarImageMale'); var aImgFemaleSel = getEl('avatarImageFemale');
-  if(aImgMaleSel && aImgFemaleSel) { var options = '<option value="">-- Select Image --</option>'; avatarImages.forEach(m => options += `<option value="${m.url}">${m.label}</option>`); aImgMaleSel.innerHTML = options; aImgFemaleSel.innerHTML = options; }
-  
-  // Populate Avatar Badge Requirement Dropdown
-  var reqBadgeSel = getEl('avatarReqBadge');
-  if(reqBadgeSel) { reqBadgeSel.innerHTML = '<option value="">-- Select Badge --</option>'; allBadges.forEach(b => reqBadgeSel.innerHTML += `<option value="${b.id}">${b.name}</option>`); }
+  var btn = getEl('saveAvatarBtn'); btn.disabled = true; btn.textContent = 'Saving...';
+  try {
+    var data = {
+      era, journey, stage_order: order, journey_name: name, requirement_type: reqType,
+      requirement_value: reqType === 'badge' ? 1 : (parseInt(getEl('avatarReqValue').value) || 0),
+      requirement_badge_id: reqType === 'badge' ? (getEl('avatarReqBadge').value || null) : null,
+      image_url_male: getEl('avatarImageMale').value || null,
+      image_url_female: getEl('avatarImageFemale').value || null
+    };
+    var res = id ? await supabaseClient.from('avatar_stages').update(data).eq('id', id) : await supabaseClient.from('avatar_stages').insert([data]);
+    if (res.error) throw new Error(res.error.message);
+    showToast('Avatar stage saved!'); closeAvatarModal(); await loadData();
+  } catch(e) { showToast('Error: ' + e.message, true); }
+  btn.disabled = false; btn.textContent = 'Save Stage';
 }
 
 init();
 </script>
 </body>
 </html>
+```
+
+Once you replace `manage-progression.html` with this code, test linking a mission to a Badge or Trophy and saving it. When you edit that Badge or Trophy again, the checkboxes will now stay checked, and the exact `mission_ref` array will be stored in Supabase, ready for the backend evaluation engine!
