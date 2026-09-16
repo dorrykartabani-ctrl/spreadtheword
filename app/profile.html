@@ -423,7 +423,7 @@ async function init(){
 
     safeRender('hero', function(){ renderHero() })
     safeRender('rank', function(){ renderRank(trophyProgress, avatarStages) })
-    safeRender('navHints', function(){ renderNavHints(notifications) })
+    safeRender('navHints', function(){ await renderNavHints(notifications) })
 
     setTimeout(function(){
       document.querySelectorAll('.fade-up').forEach(function(el){observer.observe(el)})
@@ -547,10 +547,9 @@ function renderRank(trophyProgress, avatarStages){
 // ════════════════════════════════════════════
 // NAV HINTS
 // ════════════════════════════════════════════
-function renderNavHints(notifications){
+async function renderNavHints(notifications){
   // Subscription hint (No badge/icon)
   var subHint = document.getElementById('subStatusHint') // Note: This ID was removed from HTML, but keeping logic safe
-  // If you add the ID back to the HTML, it will just show text.
 
   var recruitCount = userProfile.recruit_count || 0
   var recruitHint = document.getElementById('recruitHint')
@@ -561,22 +560,33 @@ function renderNavHints(notifications){
   }
 
   if(!notifications || notifications.length === 0) return
+  
   var myNotifs = notifications.filter(function(n){
     return n.type === 'broadcast' || n.target_user_id === currentUser.id
   })
-  var readIds = []
-  try{readIds = JSON.parse(localStorage.getItem('gstw_read_notifs') || '[]')}catch(e){}
-  var unread = myNotifs.filter(function(n){return readIds.indexOf(n.id) === -1}).length
+  
+  // FIX: Use database instead of localStorage
+  try {
+    var { data: reads } = await supabaseClient
+      .from('notification_reads')
+      .select('notification_id')
+      .eq('user_id', currentUser.id);
+    
+    var readIds = (reads || []).map(function(r) { return r.notification_id; });
+    var unread = myNotifs.filter(function(n){ return readIds.indexOf(n.id) === -1 }).length;
 
-  var notifHint = document.getElementById('notifHint')
-  var notifDot = document.getElementById('notifDot')
+    var notifHint = document.getElementById('notifHint')
+    var notifDot = document.getElementById('notifDot')
 
-  if(unread > 0){
-    if(notifHint) notifHint.textContent = unread + ' unread notification' + (unread !== 1 ? 's' : '')
-    if(notifDot) notifDot.classList.remove('hidden')
-  } else {
-    if(notifHint) notifHint.textContent = 'All caught up'
-    if(notifDot) notifDot.classList.add('hidden')
+    if(unread > 0){
+      if(notifHint) notifHint.textContent = unread + ' unread notification' + (unread !== 1 ? 's' : '')
+      if(notifDot) notifDot.classList.remove('hidden')
+    } else {
+      if(notifHint) notifHint.textContent = 'All caught up'
+      if(notifDot) notifDot.classList.add('hidden')
+    }
+  } catch(e) {
+    console.error('Notification count error:', e);
   }
 }
 
