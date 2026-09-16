@@ -216,7 +216,22 @@
           <div class="toggle-dot"></div>
         </div>
       </div>
+      <div class="setting-row">
+  <div class="setting-icon bg-gold/20">
+    <span class="material-symbols-outlined text-gold-dim text-[20px] filled">image</span>
+  </div>
+  <div class="flex-1">
+    <div class="flex items-center gap-2 mb-0.5">
+      <p class="font-body font-semibold text-on-surface" style="font-size:14px;">Remove Watermark</p>
+      <span id="watermarkBadge" class="hidden bg-gold/20 text-gold-dim text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Premium</span>
     </div>
+    <p class="font-body text-on-surface-variant" style="font-size:11px;">Hide "gospreadtheword.app" from shared images</p>
+  </div>
+  <div id="watermarkToggle" class="toggle-pill" onclick="toggleWatermark(this)">
+    <div class="toggle-dot"></div>
+  </div>
+ </div>
+</div>
   </section>
 
   <section class="fade-up">
@@ -515,6 +530,7 @@ function renderToggles() {
   setToggle('recruitsToggle', userProfile.notif_recruits !== false);
   setToggle('missionsToggle', userProfile.notif_missions !== false);
   setToggle('systemToggle', userProfile.notif_system !== false);
+  renderWatermarkToggle();
 }
 
 function setToggle(id, on) {
@@ -618,7 +634,56 @@ async function requestLocationPermission(el) {
     { timeout: 10000 }
   );
 }
+function renderWatermarkToggle() {
+  var isPaid = userProfile.subscription_tier && userProfile.subscription_tier !== 'free';
+  var toggle = document.getElementById('watermarkToggle');
+  var badge = document.getElementById('watermarkBadge');
+  
+  if (!toggle) return;
+  
+  if (isPaid) {
+    // Paid user - enable toggle
+    toggle.classList.remove('disabled');
+    toggle.onclick = function() { toggleWatermark(this); };
+    // Inverted: watermark_enabled=false means "remove watermark" so toggle ON
+    setToggle('watermarkToggle', userProfile.watermark_enabled === false);
+    if (badge) badge.classList.remove('hidden');
+  } else {
+    // Free user - lock it
+    toggle.classList.add('disabled');
+    toggle.onclick = function() { showToast('Upgrade to premium to remove watermark'); };
+    setToggle('watermarkToggle', false);
+    if (badge) badge.classList.add('hidden');
+  }
+}
 
+async function toggleWatermark(el) {
+  var isPaid = userProfile.subscription_tier && userProfile.subscription_tier !== 'free';
+  if (!isPaid) {
+    showToast('Upgrade to premium to remove watermark');
+    return;
+  }
+  
+  var currentOn = el.classList.contains('on');
+  var newValue = !currentOn;
+  
+  if (newValue) el.classList.add('on');
+  else el.classList.remove('on');
+
+  var watermarkEnabled = !newValue;
+  userProfile.watermark_enabled = watermarkEnabled;
+  
+  try {
+    await supabaseClient.from('profiles').update({ watermark_enabled: watermarkEnabled }).eq('id', currentUser.id);
+    showToast(newValue ? 'Watermark removed' : 'Watermark enabled');
+  } catch(e) {
+    console.error('Toggle save error:', e);
+    if (newValue) el.classList.remove('on');
+    else el.classList.add('on');
+    userProfile.watermark_enabled = !watermarkEnabled;
+    showToast('Could not save. Try again.');
+  }
+}
 function openBillingPortal() {
   if (stripePortalLink) window.open(stripePortalLink, '_blank');
   else showToast('Billing portal not configured');
