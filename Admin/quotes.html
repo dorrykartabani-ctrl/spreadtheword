@@ -325,31 +325,31 @@
           </div>
 
           <!-- Publish Options -->
-          <div class="bg-surface-cl rounded-2xl p-5 space-y-4 shadow-sm border border-surface-c">
-            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">When to Publish</label>
-            <div class="grid grid-cols-3 gap-3">
-              <label class="cursor-pointer">
-                <input type="radio" name="publish_state" value="now" checked class="hidden" onchange="updatePubState(this)">
-                <div class="publish-card active flex flex-col items-center p-3 rounded-xl border-2">
-                  <span class="material-symbols-outlined mb-1 text-xl">bolt</span>
-                  <span class="text-[10px] font-bold uppercase">Now</span>
-                </div>
-              </label>
-              <label class="cursor-pointer">
-                <input type="radio" name="publish_state" value="schedule" class="hidden" onchange="updatePubState(this)">
-                <div class="publish-card flex flex-col items-center p-3 rounded-xl border-2">
-                  <span class="material-symbols-outlined mb-1 text-xl">calendar_month</span>
-                  <span class="text-[10px] font-bold uppercase">Schedule</span>
-                </div>
-              </label>
-              <label class="cursor-pointer">
-                <input type="radio" name="publish_state" value="draft" class="hidden" onchange="updatePubState(this)">
-                <div class="publish-card flex flex-col items-center p-3 rounded-xl border-2">
-                  <span class="material-symbols-outlined mb-1 text-xl">drafts</span>
-                  <span class="text-[10px] font-bold uppercase">Draft</span>
-                </div>
-              </label>
-            </div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+  <!-- FEATURE NOW -->
+  <div id="modeCard-now" onclick="selectPublishMode('now')" class="publish-mode-card cursor-pointer border rounded-xl p-4 text-center transition-all">
+    <span class="material-symbols-outlined text-2xl">bolt</span>
+    <p class="font-bold text-xs mt-1 uppercase">Feature Now</p>
+  </div>
+
+  <!-- SCHEDULE -->
+  <div id="modeCard-schedule" onclick="selectPublishMode('schedule')" class="publish-mode-card cursor-pointer border rounded-xl p-4 text-center transition-all">
+    <span class="material-symbols-outlined text-2xl">calendar_month</span>
+    <p class="font-bold text-xs mt-1 uppercase">Schedule</p>
+  </div>
+
+  <!-- ADD TO LIBRARY (NEW) -->
+  <div id="modeCard-library" onclick="selectPublishMode('library')" class="publish-mode-card cursor-pointer border rounded-xl p-4 text-center transition-all">
+    <span class="material-symbols-outlined text-2xl">library_books</span>
+    <p class="font-bold text-xs mt-1 uppercase">Add to Library</p>
+  </div>
+
+  <!-- DRAFT -->
+  <div id="modeCard-draft" onclick="selectPublishMode('draft')" class="publish-mode-card cursor-pointer border rounded-xl p-4 text-center transition-all">
+    <span class="material-symbols-outlined text-2xl">mail</span>
+    <p class="font-bold text-xs mt-1 uppercase">Draft</p>
+  </div>
+</div>
 
             <div id="schedulePicker" class="hidden grid grid-cols-2 gap-3 mt-4">
               <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Date</label><input type="date" id="scheduleDate" class="form-input w-full rounded-lg px-3 py-2 text-sm"></div>
@@ -640,12 +640,41 @@ async function handleBgUpload(input) {
   }
 }
 
-function updatePubState(rad) {
-  document.querySelectorAll('.publish-card').forEach(c => c.classList.remove('active'));
-  rad.nextElementSibling.classList.add('active');
-  var v = rad.value;
-  getEl('schedulePicker').classList.toggle('hidden', v !== 'schedule');
-  getEl('submitLabel').textContent = v === 'now' ? (isEditMode?'Update & Publish':'Publish Now') : v === 'schedule' ? (isEditMode?'Update Schedule':'Schedule Quote') : 'Save Draft';
+let selectedPublishMode = 'now';
+
+function selectPublishMode(mode) {
+  selectedPublishMode = mode;
+
+  // Reset all cards
+  document.querySelectorAll('.publish-mode-card').forEach(card => {
+    card.classList.remove('bg-primary', 'text-white', 'border-primary');
+    card.classList.add('bg-white', 'text-slate-600', 'border-slate-200');
+  });
+
+  // Highlight active card
+  const activeCard = document.getElementById(`modeCard-${mode}`);
+  if (activeCard) {
+    activeCard.classList.add('bg-primary', 'text-white', 'border-primary');
+    activeCard.classList.remove('bg-white', 'text-slate-600', 'border-slate-200');
+  }
+
+  // Show schedule picker only if scheduling
+  const schedulePicker = document.getElementById('schedulePickerContainer');
+  if (schedulePicker) {
+    schedulePicker.classList.toggle('hidden', mode !== 'schedule');
+  }
+
+  // Update main button label
+  const mainBtn = document.getElementById('submitQuoteBtn');
+  if (mainBtn) {
+    const labels = {
+      now: '⚡ Feature on Homepage Now',
+      schedule: '📅 Schedule Quote',
+      library: '📚 Add to Library',
+      draft: '📝 Save as Draft'
+    };
+    mainBtn.innerHTML = `<span class="flex items-center justify-center gap-2">${labels[mode]}</span>`;
+  }
 }
 
 function openLibraryModal() {
@@ -728,7 +757,79 @@ async function handlePublish(e) {
     btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined text-lg">send</span> <span id="submitLabel">Publish Quote</span>';
   }
 }
+async function handleQuoteSubmit() {
+  const modeToStatus = {
+    now: 'published',      // Live featured homepage quote
+    schedule: 'scheduled', // Future featured quote
+    library: 'library',    // Silently added to library only
+    draft: 'draft'         // Admin private
+  };
 
+  const targetStatus = modeToStatus[selectedPublishMode] || 'draft';
+  await saveQuoteWithStatus(targetStatus);
+}
+
+async function saveQuoteWithStatus(targetStatus) {
+  const text = (document.getElementById('quoteText')?.value || '').trim();
+  const source = (document.getElementById('quoteSource')?.value || '').trim();
+  const category = (document.getElementById('quoteCategory')?.value || '').trim();
+  const context = (document.getElementById('quoteContext')?.value || '').trim();
+  const scheduledForVal = document.getElementById('quoteScheduledFor')?.value;
+  const id = document.getElementById('quoteId')?.value;
+
+  if (!text) return showToast('Please enter quote text', true);
+
+  const payload = {
+    text,
+    source: source || null,
+    category: category || null,
+    context: context || null,
+    status: targetStatus,
+    updated_at: new Date().toISOString()
+  };
+
+  if (targetStatus === 'scheduled') {
+    if (!scheduledForVal) return showToast('Please select a date/time', true);
+    payload.scheduled_for = new Date(scheduledForVal).toISOString();
+    payload.published_at = null;
+  } else if (targetStatus === 'published') {
+    // ONLY this sets published_at, which the homepage reads
+    payload.published_at = new Date().toISOString();
+    payload.scheduled_for = null;
+  } else if (targetStatus === 'library') {
+    // Library: available to discover/share, but NOT featured on homepage
+    payload.published_at = null;
+    payload.scheduled_for = null;
+  } else {
+    // draft
+    payload.published_at = null;
+    payload.scheduled_for = null;
+  }
+
+  try {
+    let result;
+    if (id) {
+      result = await supabaseClient.from('quotes').update(payload).eq('id', id);
+    } else {
+      result = await supabaseClient.from('quotes').insert([payload]);
+    }
+    if (result.error) throw result.error;
+
+    const messages = {
+      published: 'Now featured on the homepage!',
+      scheduled: 'Scheduled successfully!',
+      library: 'Added to Library — discoverable & shareable, homepage untouched.',
+      draft: 'Saved as private draft.'
+    };
+    showToast(messages[targetStatus]);
+
+    if (typeof clearQuoteComposer === 'function') clearQuoteComposer();
+    if (typeof loadQuotes === 'function') await loadQuotes();
+  } catch (e) {
+    console.error('Save error:', e);
+    showToast('Failed to save: ' + e.message, true);
+  }
+}
 async function loadEditData(id) {
   isEditMode = true; editQuoteId = id;
   getEl('formTitle').textContent = 'Edit Quote';
