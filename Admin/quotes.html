@@ -454,58 +454,118 @@ function updatePreview() {
 }
 
 // PUBLISH
+// ==========================================
+// PUBLISH / UPDATE (Bulletproof Sanitized)
+// ==========================================
 async function handlePublish() {
   const urlParams = new URLSearchParams(window.location.search);
   const activeEditId = editQuoteId || urlParams.get('edit');
 
+  // 1. Sanitize text and reference
+  const text = (document.getElementById('quoteText')?.value || '').trim();
+  const source = (document.getElementById('quoteSource')?.value || '').trim();
+
+  if (!text) return showToast('Quote text is required', true);
+  if (!source) return showToast('Source / Reference is required', true);
+
+  // 2. Sanitize Category (Prevents NOT NULL constraint error)
+  let category = (document.getElementById('quoteCategory')?.value || '').trim();
+  if (!category) category = 'General';
+
+  // 3. Sanitize Campaign UUID (Prevents invalid UUID 400 error)
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const rawCampaign = document.getElementById('quoteCampaign')?.value || '';
+  const campaignId = uuidRegex.test(rawCampaign) ? rawCampaign : null;
+
+  // 4. Sanitize Optional Text Fields
+  const context = (document.getElementById('quoteContext')?.value || '').trim() || null;
+  const bgUrl = (document.getElementById('quoteBgUrl')?.value || '').trim() || null;
+  const fontSize = document.getElementById('quoteFontSize')?.value || null;
+  const textAlign = document.getElementById('quoteTextAlign')?.value || 'center';
+
+  // 5. Sanitize Schedule Date
+  const scheduleDate = document.getElementById('scheduleDate')?.value || '';
+  if (publishMode === 'scheduled' && !scheduleDate) {
+    return showToast('Schedule date & time is required', true);
+  }
+
+  // 6. Construct Clean Payload
   const payload = {
-    text: document.getElementById('quoteText').value.trim(),
-    source: document.getElementById('quoteSource').value.trim(),
-    category: document.getElementById('quoteCategory').value.trim() || 'General',
-    campaign_id: document.getElementById('quoteCampaign').value || null,
-    context: document.getElementById('quoteContext').value.trim() || null,
-    background_url: document.getElementById('quoteBgUrl').value.trim() || null,
+    text: text,
+    source: source,
+    category: category,
+    campaign_id: campaignId,
+    context: context,
+    background_url: bgUrl,
     status: publishMode,
-    home_font_size: document.getElementById('quoteFontSize').value || null,
-    home_text_align: document.getElementById('quoteTextAlign').value || 'center',
+    home_font_size: fontSize,
+    home_text_align: textAlign,
     updated_at: new Date().toISOString()
   };
-  const scheduleDate = document.getElementById('scheduleDate').value;
 
-  if (!payload.text) return showToast('Quote text is required', true);
-  if (!payload.source) return showToast('Source is required', true);
-  if (publishMode === 'scheduled' && !scheduleDate) return showToast('Schedule date is required', true);
+  if (publishMode === 'live') {
+    payload.published_at = new Date().toISOString();
+    payload.scheduled_for = null;
+  } else if (publishMode === 'scheduled') {
+    payload.scheduled_for = new Date(scheduleDate).toISOString();
+    payload.published_at = null;
+  } else {
+    // 'library' or 'draft'
+    payload.published_at = null;
+    payload.scheduled_for = null;
+  }
 
-  if (publishMode === 'live') { payload.published_at = new Date().toISOString(); payload.scheduled_for = null; }
-  else if (publishMode === 'scheduled') { payload.scheduled_for = new Date(scheduleDate).toISOString(); payload.published_at = null; }
-  else { payload.published_at = null; payload.scheduled_for = null; }
-
+  // 7. Update UI state
   const btn = document.getElementById('submitBtn');
   const btnText = document.getElementById('submitBtnText');
-  if(btn) btn.disabled = true;
-  if(btnText) btnText.textContent = 'Saving...';
+  if (btn) btn.disabled = true;
+  if (btnText) btnText.textContent = 'Saving...';
 
   try {
+    // If featuring live, demote any other active live quote to library
     if (publishMode === 'live') {
-      let demoteQuery = supabaseClient.from('quotes').update({ status: 'library', updated_at: new Date().toISOString() }).eq('status', 'live');
-      if (activeEditId) demoteQuery = demoteQuery.neq('id', activeEditId);
+      let demoteQuery = supabaseClient
+        .from('quotes')
+        .update({ status: 'library', updated_at: new Date().toISOString() })
+        .eq('status', 'live');
+
+      if (activeEditId && uuidRegex.test(activeEditId)) {
+        demoteQuery = demoteQuery.neq('id', activeEditId);
+      }
       await demoteQuery;
     }
 
-    let result = activeEditId 
-      ? await supabaseClient.from('quotes').update(payload).eq('id', activeEditId)
-      : await supabaseClient.from('quotes').insert([payload]);
+    let result;
+    if (activeEditId && uuidRegex.test(activeEditId)) {
+      // UPDATE existing quote
+      result = await supabaseClient
+        .from('quotes')
+        .update(payload)
+        .eq('id', activeEditId);
+    } else {
+      // INSERT new quote
+      result = await supabaseClient
+        .from('quotes')
+        .insert([payload]);
+    }
 
     if (result.error) throw result.error;
-    showToast(activeEditId ? 'Quote updated!' : 'Quote created!');
-    setTimeout(() => { window.location.href = 'manage-quotes.html'; }, 800);
+
+    showToast(activeEditId ? 'Quote updated successfully!' : 'Quote created successfully!');
+    
+    setTimeout(() => {
+      window.location.href = 'manage-quotes.html';
+    }, 800);
+
   } catch (error) {
-    showToast('Failed to save: ' + (error.message || 'Unknown'), true);
-    if(btn) btn.disabled = false;
-    if(btnText) btnText.textContent = activeEditId ? 'Save Changes' : 'Try Again';
+    console.error('Save failed details:', error);
+    const errorMsg = error.message || error.details || 'Unknown database error';
+    showToast('Failed to save: ' + errorMsg, true);
+
+    if (btn) btn.disabled = false;
+    if (btnText) btnText.textContent = activeEditId ? 'Save Changes' : 'Try Again';
   }
 }
-
 function escapeHtml(str) { if(!str) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
 function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
