@@ -52,7 +52,7 @@
     .form-input:focus { border-color: #3d6285; background: #ffffff; }
     .form-label { display: block; font-size: 11px; font-weight: 800; color: #5e6059; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
 
-    /* Category Chips */
+    /* Category & Bible Chips */
     .cat-chip { padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #f5f4ed; color: #5e6059; border: 1px solid transparent; }
     .cat-chip:hover { background: #e9e8e1; }
     .cat-chip.active { background: #3d6285; color: #ffffff; }
@@ -63,8 +63,8 @@
     .mode-card.active { border-color: #3d6285; background: #3d6285; color: #ffffff; }
 
     /* Phone Preview */
-    .phone-mockup { width: 100%; aspect-ratio: 9/19; border-radius: 32px; border: 8px solid #0e0e0c; background: #1a1a18; position: relative; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
-    .phone-notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 24px; background: #0e0e0c; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; z-index: 20; }
+    .phone-mockup { width: 100%; max-width: 280px; margin: 0 auto; aspect-ratio: 9/19; border-radius: 32px; border: 8px solid #0e0e0c; background: #1a1a18; position: relative; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+    .phone-notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 110px; height: 20px; background: #0e0e0c; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; z-index: 20; }
   </style>
 </head>
 
@@ -92,21 +92,38 @@
 <div class="flex-1 lg:ml-64 flex flex-col min-h-screen">
   
   <header class="sticky top-0 z-20 bg-surface/90 backdrop-blur-md border-b border-surface-c px-6 lg:px-10 py-5 flex items-center justify-between">
-    <h2 class="font-headline font-bold text-on-surface text-2xl" id="pageTitle">Create New Quote</h2>
+    <div>
+      <h2 class="font-headline font-bold text-on-surface text-2xl" id="pageTitle">Create New Quote</h2>
+      <p class="text-xs font-semibold text-outline mt-1">Choose your input method, customise, and publish.</p>
+    </div>
     <a href="manage-quotes.html" class="text-sm font-bold text-primary hover:text-primary-dim">← Back to List</a>
   </header>
 
   <main class="p-6 lg:p-10 flex-1">
-    <!-- TWO COLUMN GRID LAYOUT -->
-    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
       
-      <!-- LEFT COLUMN: FORM (Spans 8 columns) -->
+      <!-- LEFT COLUMN: FORM -->
       <div class="lg:col-span-8 space-y-6">
         
-        <!-- Input Method Toggle (Visual Only) -->
+        <!-- Input Method Toggle -->
         <div class="flex gap-2 bg-surface-cl p-2 rounded-2xl shadow-sm border border-surface-c">
-          <div class="flex-1 py-3 bg-primary text-white rounded-xl text-center font-bold text-sm cursor-pointer"><span class="material-symbols-outlined align-middle mr-1 text-[18px]">menu_book</span>Manual Entry</div>
-          <div class="flex-1 py-3 text-on-surface-variant hover:bg-surface-clow rounded-xl text-center font-bold text-sm cursor-pointer opacity-50"><span class="material-symbols-outlined align-middle mr-1 text-[18px]">auto_awesome</span>AI Generate (Soon)</div>
+          <div class="flex-1 py-3 bg-primary text-white rounded-xl text-center font-bold text-sm cursor-pointer"><span class="material-symbols-outlined align-middle mr-1 text-[18px]">menu_book</span>Bible Lookup</div>
+          <div class="flex-1 py-3 text-on-surface-variant hover:bg-surface-clow rounded-xl text-center font-bold text-sm cursor-pointer opacity-50"><span class="material-symbols-outlined align-middle mr-1 text-[18px]">edit_note</span>Manual Entry</div>
+        </div>
+
+        <!-- Bible Lookup Module -->
+        <div class="form-card space-y-4">
+          <h3 class="font-bold text-sm flex items-center gap-2 text-on-surface"><span class="material-symbols-outlined text-[18px]">menu_book</span> Bible Reference Lookup</h3>
+          <div class="flex gap-2" id="bibleVersions">
+            <button class="cat-chip active" onclick="setBibleVersion('web')">WEB</button>
+            <button class="cat-chip" onclick="setBibleVersion('kjv')">KJV</button>
+            <button class="cat-chip" onclick="setBibleVersion('bbe')">BBE</button>
+          </div>
+          <div class="flex gap-2">
+            <input type="text" id="bibleRefInput" class="form-input flex-1" placeholder="e.g. John 3:16" onkeydown="if(event.key==='Enter') lookupBible()">
+            <button type="button" onclick="lookupBible()" id="lookupBtn" class="bg-primary text-white px-5 rounded-xl font-bold flex items-center gap-1 hover:bg-primary-dim transition-colors"><span class="material-symbols-outlined text-sm">search</span> Lookup</button>
+          </div>
+          <p id="bibleStatus" class="text-xs font-bold hidden"></p>
         </div>
 
         <!-- The Quote -->
@@ -116,12 +133,12 @@
               <label class="form-label mb-0">The Quote *</label>
               <span class="text-xs text-outline font-medium" id="charCount">0 / 500</span>
             </div>
-            <textarea id="quoteText" rows="4" class="form-input resize-none" placeholder="Enter quote text here..." oninput="updatePreview()"></textarea>
+            <textarea id="quoteText" rows="4" class="form-input resize-none" placeholder="Enter scripture..." oninput="updatePreview()"></textarea>
           </div>
           
           <div>
             <label class="form-label">Source / Reference *</label>
-            <input type="text" id="quoteSource" class="form-input" placeholder="e.g. John 3:16 or Author Name" oninput="updatePreview()">
+            <input type="text" id="quoteSource" class="form-input" placeholder="e.g. John 3:16" oninput="updatePreview()">
           </div>
 
           <div>
@@ -130,13 +147,13 @@
           </div>
         </div>
 
-        <!-- Meta: Category & Campaign -->
+        <!-- Category & Campaign -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="form-card">
             <label class="form-label">Category *</label>
             <input type="hidden" id="quoteCategory" value="General">
             <div class="flex flex-wrap gap-2 mb-4" id="categoryChips">
-              <!-- Populated by JS -->
+              <!-- JS Populated -->
             </div>
             <div class="flex gap-2">
               <input type="text" id="newCategoryInput" class="form-input py-2 text-xs" placeholder="Add new...">
@@ -145,29 +162,31 @@
           </div>
 
           <div class="form-card">
-            <label class="form-label">Campaign (Optional)</label>
-            <select id="quoteCampaign" class="form-input cursor-pointer">
+            <label class="form-label">Campaign</label>
+            <select id="quoteCampaign" class="form-input cursor-pointer mt-2">
               <option value="">— None —</option>
-              <!-- Populated by JS -->
             </select>
           </div>
         </div>
 
         <!-- Background Image -->
-        <div class="form-card flex justify-between items-center">
-          <div class="flex-1">
-            <label class="form-label">Background Image (URL)</label>
-            <input type="text" id="quoteBgUrl" class="form-input text-xs" placeholder="https://example.com/image.jpg" oninput="updatePreview()">
+        <div class="form-card">
+          <div class="flex justify-between items-end mb-3">
+            <label class="form-label mb-0">Background Image</label>
+            <div class="flex gap-3">
+              <button type="button" onclick="alert('Media Library modal goes here')" class="text-xs font-bold text-primary flex items-center gap-1 hover:underline"><span class="material-symbols-outlined text-[14px]">photo_library</span> Select from Library</button>
+              <button type="button" onclick="alert('Upload logic goes here')" class="text-xs font-bold text-primary flex items-center gap-1 hover:underline"><span class="material-symbols-outlined text-[14px]">upload</span> Upload Custom</button>
+            </div>
           </div>
+          <input type="text" id="quoteBgUrl" class="form-input text-xs" placeholder="Paste image URL here..." oninput="updatePreview()">
         </div>
 
         <!-- Advanced Display settings -->
         <div class="form-card">
           <button type="button" onclick="document.getElementById('advancedSettings').classList.toggle('hidden')" class="w-full flex justify-between items-center text-left">
-            <span class="font-headline font-bold text-sm text-primary flex items-center gap-2"><span class="material-symbols-outlined">tune</span> Advanced Home Display</span>
+            <span class="font-headline font-bold text-sm text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-outline">tune</span> Advanced Home Display</span>
             <span class="material-symbols-outlined text-outline">expand_more</span>
           </button>
-          
           <div id="advancedSettings" class="hidden mt-6 grid grid-cols-2 gap-4 border-t border-surface-c pt-4">
             <div>
               <label class="form-label">Font Size</label>
@@ -181,8 +200,8 @@
             <div>
               <label class="form-label">Text Align</label>
               <select id="quoteTextAlign" class="form-input" onchange="updatePreview()">
-                <option value="">Default (Left)</option>
                 <option value="center">Center</option>
+                <option value="left">Left</option>
                 <option value="right">Right</option>
               </select>
             </div>
@@ -191,7 +210,7 @@
 
         <!-- When to Publish -->
         <div class="form-card">
-          <label class="form-label">When to Publish</label>
+          <label class="form-label mb-4">When to Publish</label>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <div id="mode-live" onclick="selectMode('live')" class="mode-card active">
               <span class="material-symbols-outlined text-2xl mb-1">bolt</span><p class="text-[11px] font-bold uppercase">Feature Now</p>
@@ -207,54 +226,50 @@
             </div>
           </div>
           
-          <!-- Date Picker -->
-          <div id="scheduleContainer" class="hidden p-4 bg-surface-clow rounded-xl border border-surface-c">
+          <div id="scheduleContainer" class="hidden p-4 bg-surface-clow rounded-xl border border-surface-c mt-2">
             <label class="form-label">Select Date & Time</label>
             <input type="datetime-local" id="scheduleDate" class="form-input md:w-1/2">
           </div>
         </div>
 
-      </div> <!-- End Left Column -->
+      </div> <!-- End Left -->
 
-      <!-- RIGHT COLUMN: PREVIEW & SUBMIT (Spans 4 columns, Sticky) -->
+      <!-- RIGHT COLUMN: SUBMIT & PREVIEW (Sticky) -->
       <div class="lg:col-span-4 lg:sticky lg:top-24 space-y-6">
         
-        <!-- Submit Button -->
-        <button type="button" id="submitBtn" onclick="handlePublish()" class="w-full py-4 rounded-xl font-bold text-white signature-gradient shadow-float flex items-center justify-center gap-2 transition-transform active:scale-[0.98]">
-          ⚡ Feature Live Now
+        <!-- SAVE BUTTON PINNED TO TOP -->
+        <button type="button" id="submitBtn" onclick="handlePublish()" class="w-full py-4 rounded-xl font-bold text-white signature-gradient shadow-md flex items-center justify-center gap-2 transition-transform active:scale-[0.98]">
+          ⚡ Publish Quote
         </button>
 
-        <!-- Live Phone Preview -->
+        <!-- Centered Mobile Preview -->
         <div class="phone-mockup">
           <div class="phone-notch"></div>
           
-          <!-- Background -->
           <div id="previewBg" class="absolute inset-0 bg-cover bg-center bg-[#3d6285]"></div>
-          <!-- Dark Overlay -->
-          <div class="absolute inset-0" style="background:linear-gradient(180deg, rgba(14,14,12,0.4) 0%, rgba(14,14,12,0.8) 100%);"></div>
+          <div class="absolute inset-0" style="background:linear-gradient(180deg, rgba(14,14,12,0.4) 0%, rgba(14,14,12,0.85) 100%);"></div>
           
-          <!-- Content -->
-          <div class="relative z-10 flex flex-col h-full text-white p-6 pb-12">
-            <div class="flex-1"></div>
+          <!-- Flex Center alignment for the text inside the phone -->
+          <div class="relative z-10 flex flex-col h-full text-white p-6 justify-center items-center text-center">
             <div>
-              <span class="block leading-none text-white/40 font-serif" style="font-size:48px; margin-bottom:-10px;">"</span>
-              <p id="previewText" class="font-serif leading-relaxed mb-4" style="font-size:22px;">Your quote will appear here. Start typing to preview...</p>
-              <div class="flex items-center gap-3">
+              <p id="previewText" class="font-serif leading-relaxed mb-4 text-center" style="font-size:22px;">Your quote will appear here. Start typing to preview...</p>
+              <div class="flex items-center justify-center gap-3">
                 <div class="h-px bg-primary-container/60 w-8"></div>
                 <p id="previewSource" class="font-headline font-bold text-primary-container tracking-widest uppercase text-[10px]"></p>
+                <div class="h-px bg-primary-container/60 w-8"></div>
               </div>
             </div>
           </div>
         </div>
-      </div> <!-- End Right Column -->
+      </div>
 
     </div>
   </main>
 </div>
 
 <!-- TOAST -->
-<div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-inverse-surface/90 backdrop-blur-md text-white font-body font-semibold px-5 py-3 rounded-full shadow-float flex items-center gap-2 text-sm transition-opacity duration-300">
-  <span class="material-symbols-outlined text-emerald-400 text-lg filled">check_circle</span>
+<div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-inverse-surface/90 backdrop-blur-md text-white font-body font-semibold px-5 py-3 rounded-full shadow-lg flex items-center gap-2 text-sm transition-opacity">
+  <span id="toastIcon" class="material-symbols-outlined text-emerald-400 text-lg filled">check_circle</span>
   <span id="toastMsg"></span>
 </div>
 
@@ -268,17 +283,14 @@ var supabaseClient = supabase.createClient(
 );
 
 // ==========================================
-// STATE VARIABLES
+// STATE
 // ==========================================
 let publishMode = 'live';
 let editQuoteId = null;
 let defaultCategories = ['General', 'Faith', 'Hope', 'Courage', 'Wisdom', 'Mission'];
+let currentBibleVersion = 'web';
 
-// ==========================================
-// INITIALIZATION
-// ==========================================
 async function init() {
-  await checkAuth();
   await loadCampaigns();
   renderCategoryChips();
   
@@ -289,27 +301,55 @@ async function init() {
     document.getElementById('pageTitle').textContent = 'Edit Quote';
     await loadEditData(editQuoteId);
   }
-  
   updatePreview();
 }
 
-async function checkAuth() {
-  const { data } = await supabaseClient.auth.getSession();
-  if (!data.session) window.location.href = 'login.html';
+// ==========================================
+// BIBLE LOOKUP API
+// ==========================================
+function setBibleVersion(version) {
+  currentBibleVersion = version;
+  document.querySelectorAll('#bibleVersions .cat-chip').forEach(el => el.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+async function lookupBible() {
+  const ref = document.getElementById('bibleRefInput').value.trim();
+  const statusEl = document.getElementById('bibleStatus');
+  const btn = document.getElementById('lookupBtn');
+
+  if (!ref) return;
+
+  btn.innerHTML = 'Searching...';
+  statusEl.classList.add('hidden');
+
+  try {
+    const res = await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=${currentBibleVersion}`);
+    if (!res.ok) throw new Error('Not found');
+    const data = await res.json();
+
+    document.getElementById('quoteText').value = data.text.trim();
+    document.getElementById('quoteSource').value = data.reference;
+    
+    statusEl.textContent = 'Loaded successfully!';
+    statusEl.className = 'text-xs font-bold text-emerald-600 mt-2 block';
+    updatePreview();
+  } catch (err) {
+    statusEl.textContent = 'Reference not found. Try John 3:16 format.';
+    statusEl.className = 'text-xs font-bold text-rose-500 mt-2 block';
+  } finally {
+    btn.innerHTML = '<span class="material-symbols-outlined text-sm">search</span> Lookup';
+  }
 }
 
 // ==========================================
-// LOAD DATA (Campaigns & Editing)
+// DATA LOADING
 // ==========================================
 async function loadCampaigns() {
-  const { data, error } = await supabaseClient.from('campaigns').select('id, name').order('name');
-  if (error) return console.error('Campaigns error:', error);
-  
-  const select = document.getElementById('quoteCampaign');
+  const { data } = await supabaseClient.from('campaigns').select('id, name').order('name');
   if (data) {
-    data.forEach(c => {
-      select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
-    });
+    const select = document.getElementById('quoteCampaign');
+    data.forEach(c => select.innerHTML += `<option value="${c.id}">${c.name}</option>`);
   }
 }
 
@@ -323,15 +363,11 @@ async function loadEditData(id) {
   document.getElementById('quoteBgUrl').value = data.background_url || '';
   document.getElementById('quoteCampaign').value = data.campaign_id || '';
   document.getElementById('quoteFontSize').value = data.home_font_size || '';
-  document.getElementById('quoteTextAlign').value = data.home_text_align || '';
+  document.getElementById('quoteTextAlign').value = data.home_text_align || 'center';
 
-  // Setup category
-  if (data.category && !defaultCategories.includes(data.category)) {
-    defaultCategories.push(data.category);
-  }
+  if (data.category && !defaultCategories.includes(data.category)) defaultCategories.push(data.category);
   setCategory(data.category || 'General');
 
-  // Setup mode & date
   if (data.scheduled_for) {
     const d = new Date(data.scheduled_for);
     document.getElementById('scheduleDate').value = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -341,40 +377,38 @@ async function loadEditData(id) {
 }
 
 // ==========================================
-// UI INTERACTIONS
+// UI & PREVIEW
 // ==========================================
 function selectMode(mode) {
   publishMode = mode;
   document.querySelectorAll('.mode-card').forEach(el => el.classList.remove('active'));
   document.getElementById('mode-' + mode).classList.add('active');
-  
   document.getElementById('scheduleContainer').classList.toggle('hidden', mode !== 'scheduled');
 
   const btn = document.getElementById('submitBtn');
+  
+  // If editing, change wording to "Update"
+  const prefix = editQuoteId ? 'Update: ' : '';
   const labels = {
-    live: '⚡ Feature Live Now',
-    scheduled: '📅 Schedule Quote',
-    library: '📚 Save to Library',
-    draft: '📝 Save as Draft'
+    live: '⚡ ' + prefix + 'Feature Live Now',
+    scheduled: '📅 ' + prefix + 'Schedule Quote',
+    library: '📚 ' + prefix + 'Save to Library',
+    draft: '📝 ' + prefix + 'Save as Draft'
   };
   btn.innerHTML = labels[mode];
 }
 
-// Character counter & Live Preview sync
 function updatePreview() {
   const text = document.getElementById('quoteText').value;
   const source = document.getElementById('quoteSource').value;
   const bgUrl = document.getElementById('quoteBgUrl').value;
-  const fontSize = document.getElementById('quoteFontSize').value;
-  const textAlign = document.getElementById('quoteTextAlign').value;
-
+  
   document.getElementById('charCount').textContent = `${text.length} / 500`;
-
   document.getElementById('previewText').textContent = text || 'Your quote will appear here. Start typing to preview...';
   document.getElementById('previewSource').textContent = source || 'SOURCE';
   
-  document.getElementById('previewText').style.fontSize = fontSize || '22px';
-  document.getElementById('previewText').style.textAlign = textAlign || 'left';
+  document.getElementById('previewText').style.fontSize = document.getElementById('quoteFontSize').value || '22px';
+  document.getElementById('previewText').style.textAlign = document.getElementById('quoteTextAlign').value || 'center';
   
   const bgEl = document.getElementById('previewBg');
   if (bgUrl) {
@@ -387,63 +421,45 @@ function updatePreview() {
 }
 
 // ==========================================
-// CATEGORY CHIP LOGIC
+// CATEGORY CHIPS
 // ==========================================
 function renderCategoryChips() {
   const container = document.getElementById('categoryChips');
-  const activeCat = document.getElementById('quoteCategory').value;
-  
-  container.innerHTML = defaultCategories.map(cat => `
-    <div onclick="setCategory('${cat}')" class="cat-chip ${cat === activeCat ? 'active' : ''}">${cat}</div>
-  `).join('');
+  const active = document.getElementById('quoteCategory').value;
+  container.innerHTML = defaultCategories.map(cat => `<div onclick="setCategory('${cat}')" class="cat-chip ${cat === active ? 'active' : ''}">${cat}</div>`).join('');
 }
-
 function setCategory(cat) {
   document.getElementById('quoteCategory').value = cat;
   if (!defaultCategories.includes(cat)) defaultCategories.push(cat);
   renderCategoryChips();
 }
-
 function addCategory() {
-  const input = document.getElementById('newCategoryInput');
-  const val = input.value.trim();
-  if (val) {
-    setCategory(val);
-    input.value = '';
-  }
+  const val = document.getElementById('newCategoryInput').value.trim();
+  if (val) { setCategory(val); document.getElementById('newCategoryInput').value = ''; }
 }
 
 // ==========================================
-// PUBLISH LOGIC
+// PUBLISH
 // ==========================================
 async function handlePublish() {
-  const text = document.getElementById('quoteText').value.trim();
-  const source = document.getElementById('quoteSource').value.trim();
-  const category = document.getElementById('quoteCategory').value.trim() || 'General';
-  const campaign = document.getElementById('quoteCampaign').value;
-  const context = document.getElementById('quoteContext').value.trim();
-  const bgUrl = document.getElementById('quoteBgUrl').value.trim();
-  const fontSize = document.getElementById('quoteFontSize').value;
-  const textAlign = document.getElementById('quoteTextAlign').value;
-  const scheduleDate = document.getElementById('scheduleDate').value;
-
-  // Validation
-  if (!text) return showToast('Quote text is required', true);
-  if (!source) return showToast('Source is required', true);
-  if (publishMode === 'scheduled' && !scheduleDate) return showToast('Schedule date is required', true);
-
   const payload = {
-    text: text,
-    source: source,
-    category: category,
-    campaign_id: campaign || null,
-    context: context || null,
-    background_url: bgUrl || null,
+    text: document.getElementById('quoteText').value.trim(),
+    source: document.getElementById('quoteSource').value.trim(),
+    category: document.getElementById('quoteCategory').value.trim() || 'General',
+    campaign_id: document.getElementById('quoteCampaign').value || null,
+    context: document.getElementById('quoteContext').value.trim() || null,
+    background_url: document.getElementById('quoteBgUrl').value.trim() || null,
     status: publishMode,
-    home_font_size: fontSize || null,
-    home_text_align: textAlign || null,
+    home_font_size: document.getElementById('quoteFontSize').value || null,
+    home_text_align: document.getElementById('quoteTextAlign').value || 'center',
     updated_at: new Date().toISOString()
   };
+
+  const scheduleDate = document.getElementById('scheduleDate').value;
+
+  if (!payload.text) return showToast('Quote text is required', true);
+  if (!payload.source) return showToast('Source is required', true);
+  if (publishMode === 'scheduled' && !scheduleDate) return showToast('Schedule date is required', true);
 
   if (publishMode === 'live') {
     payload.published_at = new Date().toISOString();
@@ -461,7 +477,6 @@ async function handlePublish() {
   btn.innerHTML = 'Saving...';
 
   try {
-    // If featuring live, move current live quote to library
     if (publishMode === 'live') {
       await supabaseClient.from('quotes').update({ status: 'library' }).eq('status', 'live');
     }
@@ -486,19 +501,16 @@ async function handlePublish() {
   }
 }
 
-// ==========================================
-// UTILS
-// ==========================================
-let toastTimer;
 function showToast(msg, isError = false) {
-  const toast = document.getElementById('toast');
-  toast.innerHTML = `<span class="material-symbols-outlined ${isError ? 'text-red-400' : 'text-emerald-400'} text-lg filled">${isError ? 'error' : 'check_circle'}</span> ${msg}`;
-  toast.classList.remove('hidden');
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('toastIcon').textContent = isError ? 'error' : 'check_circle';
+  document.getElementById('toastIcon').className = `material-symbols-outlined text-lg filled ${isError ? 'text-red-400' : 'text-emerald-400'}`;
+  t.classList.remove('hidden');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.add('hidden'), 3000);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), 3000);
 }
 
-// Boot up
 init();
 </script>
 </body>
