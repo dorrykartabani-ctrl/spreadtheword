@@ -174,7 +174,17 @@
           <div class="flex justify-between items-end mb-3">
             <label class="form-label mb-0">Background Image</label>
             <div class="flex gap-3">
-              <button type="button" onclick="openMediaLibrary()" class="text-xs font-bold text-primary flex items-center gap-1 hover:underline"><span class="material-symbols-outlined text-[14px]">photo_library</span> Select from Library</button>
+  <button type="button" onclick="openMediaLibrary()"
+    class="text-xs font-bold text-primary flex items-center gap-1 hover:underline">
+    <span class="material-symbols-outlined text-[14px]">photo_library</span>
+    Select from Library
+  </button>
+  <a href="manage-media.html"
+    class="text-xs font-bold text-primary flex items-center gap-1 hover:underline">
+    <span class="material-symbols-outlined text-[14px]">upload</span>
+    Manage / Upload Images
+  </a>
+</div>
               <label class="text-xs font-bold text-primary flex items-center gap-1 hover:underline cursor-pointer">
                 <span class="material-symbols-outlined text-[14px]">upload</span> Upload Custom
                 <input type="file" id="customImgUpload" accept="image/*" class="hidden" onchange="uploadCustomImage(event)">
@@ -278,13 +288,30 @@
 
 <!-- MEDIA LIBRARY MODAL -->
 <div id="mediaModal" class="hidden fixed inset-0 bg-black/70 z-[100] flex justify-center items-center p-4 backdrop-blur-sm">
-  <div class="bg-white rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl">
-    <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+  <div class="bg-white rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+    <div class="p-5 border-b border-slate-100 flex flex-wrap gap-3 justify-between items-center">
       <h3 class="font-headline font-bold text-lg">Select Background Image</h3>
-      <button onclick="document.getElementById('mediaModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-700"><span class="material-symbols-outlined">close</span></button>
+      <div class="flex items-center gap-3">
+       <select id="mediaFolderFilter" onchange="loadMediaLibrary()"
+  class="form-input py-2 px-3 text-xs rounded-lg border border-slate-200 bg-slate-50">
+  <option value="background">Folder: Backgrounds</option>
+  <option value="avatar">Folder: Avatars</option>
+  <option value="badge">Folder: Badges</option>
+  <option value="trophy">Folder: Trophies</option>
+  <option value="tier">Folder: Tiers</option>
+  <option value="mission">Folder: Missions</option>
+  <option value="landing page">Folder: Landing page</option>
+  <option value="icon">Folder: Icons & Logos</option>
+  <option value="other">Folder: Other</option>
+  <option value="">All Folders</option>
+</select>
+        <button type="button" onclick="closeMediaLibrary()" class="text-slate-400 hover:text-slate-700">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
     </div>
     <div class="p-5 overflow-y-auto grid grid-cols-2 md:grid-cols-4 gap-4" id="mediaGrid">
-      <div class="col-span-full py-10 text-center text-slate-400">Loading images...</div>
+      <div class="col-span-full py-10 text-center text-slate-400 text-sm">Loading images…</div>
     </div>
   </div>
 </div>
@@ -338,34 +365,75 @@ async function checkAuth() {
 // MEDIA LIBRARY & UPLOAD
 // ==========================================
 async function openMediaLibrary() {
-  document.getElementById('mediaModal').classList.remove('hidden');
+  const modal = document.getElementById('mediaModal');
+  if (modal) modal.classList.remove('hidden');
+  await loadMediaLibrary();
+}
+function closeMediaLibrary() {
+  const modal = document.getElementById('mediaModal');
+  if (modal) modal.classList.add('hidden');
+}
+async function loadMediaLibrary() {
   const grid = document.getElementById('mediaGrid');
-  
-  const { data, error } = await supabaseClient.from('media_library').select('url, name').order('created_at', { ascending: false });
-  if (error || !data) {
-    grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400">Failed to load media.</div>';
-    return;
-  }
-  
-  if (data.length === 0) {
-    grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400">Your media library is empty.</div>';
-    return;
-  }
-  
-  grid.innerHTML = data.map(m => `
-    <div onclick="selectMediaImage('${m.url}')" class="cursor-pointer group relative aspect-square bg-slate-100 rounded-xl overflow-hidden shadow-sm">
-      <img src="${m.url}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
-      <div class="absolute inset-0 bg-primary/0 group-hover:bg-primary/20 transition-colors"></div>
-    </div>
-  `).join('');
-}
+  const folderEl = document.getElementById('mediaFolderFilter');
+  const folder = folderEl ? folderEl.value : 'background';
 
+  if (!grid) return;
+  grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400 text-sm">Loading images…</div>';
+
+  try {
+    // Adjust column names if your table differs:
+    // common variants: category / folder / type , url / file_url / image_url , name / title
+    let query = supabaseClient
+      .from('media_library')
+      .select('id, name, url, category')
+      .order('created_at', { ascending: false });
+
+    if (folder) {
+      query = query.eq('category', folder);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    if (!data || !data.length) {
+      grid.innerHTML = `
+        <div class="col-span-full py-10 text-center text-slate-400 text-sm">
+          No images found in this folder.<br>
+          <span class="text-xs">Add images in the Media Manager admin tab.</span>
+        </div>`;
+      return;
+    }
+
+    grid.innerHTML = data.map(function (m) {
+      const url = m.url || '';
+      const name = m.name || 'Untitled';
+      if (!url) return '';
+      return `
+        <button type="button" onclick="selectMediaImage('${url.replace(/'/g, "\\'")}')"
+          class="cursor-pointer group relative aspect-square bg-slate-100 rounded-xl overflow-hidden shadow-sm border border-slate-100 hover:border-primary transition-all text-left">
+          <img src="${url}" alt="${escapeHtml(name)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          <div class="absolute inset-x-0 bottom-0 bg-black/50 text-white text-[10px] font-semibold px-2 py-1 truncate opacity-0 group-hover:opacity-100 transition-opacity">
+            ${escapeHtml(name)}
+          </div>
+        </button>`;
+    }).join('');
+
+  } catch (err) {
+    console.error('Media library error:', err);
+    grid.innerHTML = `
+      <div class="col-span-full py-10 text-center text-rose-500 text-sm">
+        Failed to load media: ${escapeHtml(err.message || 'Unknown error')}
+      </div>`;
+  }
+}  
 function selectMediaImage(url) {
-  document.getElementById('quoteBgUrl').value = url;
+  const input = document.getElementById('quoteBgUrl');
+  if (input) input.value = url;
   updatePreview();
-  document.getElementById('mediaModal').classList.add('hidden');
+  closeMediaLibrary();
+  showToast('Background image selected');
 }
-
 async function uploadCustomImage(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -373,10 +441,7 @@ async function uploadCustomImage(event) {
   showToast('Uploading image...', false);
   const fileExt = file.name.split('.').pop();
   const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-  
-  // NOTE: Assuming your storage bucket is named "media". Change if different!
-  const { data, error } = await supabaseClient.storage.from('public.media').upload(fileName, file);
-  
+   
   if (error) {
     console.error(error);
     return showToast('Upload failed: ' + error.message, true);
