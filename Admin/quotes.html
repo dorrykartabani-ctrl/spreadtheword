@@ -52,8 +52,8 @@
     .form-input:focus { border-color: #3d6285; background: #ffffff; }
     .form-label { display: block; font-size: 11px; font-weight: 800; color: #5e6059; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
 
-    /* Category & Bible Chips */
-    .cat-chip { padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #f5f4ed; color: #5e6059; border: 1px solid transparent; }
+    /* Category Chips */
+    .cat-chip { display:inline-flex; align-items:center; gap:4px; padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #f5f4ed; color: #5e6059; border: 1px solid transparent; }
     .cat-chip:hover { background: #e9e8e1; }
     .cat-chip.active { background: #3d6285; color: #ffffff; }
 
@@ -174,8 +174,11 @@
           <div class="flex justify-between items-end mb-3">
             <label class="form-label mb-0">Background Image</label>
             <div class="flex gap-3">
-              <button type="button" onclick="alert('Media Library modal goes here')" class="text-xs font-bold text-primary flex items-center gap-1 hover:underline"><span class="material-symbols-outlined text-[14px]">photo_library</span> Select from Library</button>
-              <button type="button" onclick="alert('Upload logic goes here')" class="text-xs font-bold text-primary flex items-center gap-1 hover:underline"><span class="material-symbols-outlined text-[14px]">upload</span> Upload Custom</button>
+              <button type="button" onclick="openMediaLibrary()" class="text-xs font-bold text-primary flex items-center gap-1 hover:underline"><span class="material-symbols-outlined text-[14px]">photo_library</span> Select from Library</button>
+              <label class="text-xs font-bold text-primary flex items-center gap-1 hover:underline cursor-pointer">
+                <span class="material-symbols-outlined text-[14px]">upload</span> Upload Custom
+                <input type="file" id="customImgUpload" accept="image/*" class="hidden" onchange="uploadCustomImage(event)">
+              </label>
             </div>
           </div>
           <input type="text" id="quoteBgUrl" class="form-input text-xs" placeholder="Paste image URL here..." oninput="updatePreview()">
@@ -226,9 +229,15 @@
             </div>
           </div>
           
-          <div id="scheduleContainer" class="hidden p-4 bg-surface-clow rounded-xl border border-surface-c mt-2">
-            <label class="form-label">Select Date & Time</label>
-            <input type="datetime-local" id="scheduleDate" class="form-input md:w-1/2">
+          <!-- Schedule Date & Calendar -->
+          <div id="scheduleContainer" class="hidden p-5 bg-surface-clow rounded-xl border border-surface-c mt-4 shadow-inner">
+            <label class="form-label">Availability Calendar & Time</label>
+            <p class="text-[11px] text-outline mb-4">Green dates are available. Grey dates already have a quote scheduled.</p>
+            
+            <!-- Mini Calendar (JS Generated) -->
+            <div id="miniCalendar" class="mb-4"></div>
+
+            <input type="datetime-local" id="scheduleDate" class="form-input md:w-1/2 mt-2">
           </div>
         </div>
 
@@ -267,6 +276,19 @@
   </main>
 </div>
 
+<!-- MEDIA LIBRARY MODAL -->
+<div id="mediaModal" class="hidden fixed inset-0 bg-black/70 z-[100] flex justify-center items-center p-4 backdrop-blur-sm">
+  <div class="bg-white rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl">
+    <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+      <h3 class="font-headline font-bold text-lg">Select Background Image</h3>
+      <button onclick="document.getElementById('mediaModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-700"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="p-5 overflow-y-auto grid grid-cols-2 md:grid-cols-4 gap-4" id="mediaGrid">
+      <div class="col-span-full py-10 text-center text-slate-400">Loading images...</div>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-inverse-surface/90 backdrop-blur-md text-white font-body font-semibold px-5 py-3 rounded-full shadow-lg flex items-center gap-2 text-sm transition-opacity">
   <span id="toastIcon" class="material-symbols-outlined text-emerald-400 text-lg filled">check_circle</span>
@@ -289,10 +311,13 @@ let publishMode = 'live';
 let editQuoteId = null;
 let defaultCategories = ['General', 'Faith', 'Hope', 'Courage', 'Wisdom', 'Mission'];
 let currentBibleVersion = 'web';
+let scheduledDatesList = [];
 
 async function init() {
+  await checkAuth();
   await loadCampaigns();
   renderCategoryChips();
+  await loadScheduledDates();
   
   const urlParams = new URLSearchParams(window.location.search);
   editQuoteId = urlParams.get('edit');
@@ -303,6 +328,106 @@ async function init() {
   }
   updatePreview();
 }
+
+async function checkAuth() {
+  const { data } = await supabaseClient.auth.getSession();
+  if (!data.session) window.location.href = 'login.html';
+}
+
+// ==========================================
+// MEDIA LIBRARY & UPLOAD
+// ==========================================
+async function openMediaLibrary() {
+  document.getElementById('mediaModal').classList.remove('hidden');
+  const grid = document.getElementById('mediaGrid');
+  
+  const { data, error } = await supabaseClient.from('media_library').select('url, name').order('created_at', { ascending: false });
+  if (error || !data) {
+    grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400">Failed to load media.</div>';
+    return;
+  }
+  
+  if (data.length === 0) {
+    grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400">Your media library is empty.</div>';
+    return;
+  }
+  
+  grid.innerHTML = data.map(m => `
+    <div onclick="selectMediaImage('${m.url}')" class="cursor-pointer group relative aspect-square bg-slate-100 rounded-xl overflow-hidden shadow-sm">
+      <img src="${m.url}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+      <div class="absolute inset-0 bg-primary/0 group-hover:bg-primary/20 transition-colors"></div>
+    </div>
+  `).join('');
+}
+
+function selectMediaImage(url) {
+  document.getElementById('quoteBgUrl').value = url;
+  updatePreview();
+  document.getElementById('mediaModal').classList.add('hidden');
+}
+
+async function uploadCustomImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  showToast('Uploading image...', false);
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+  
+  // NOTE: Assuming your storage bucket is named "media". Change if different!
+  const { data, error } = await supabaseClient.storage.from('media').upload(fileName, file);
+  
+  if (error) {
+    console.error(error);
+    return showToast('Upload failed: ' + error.message, true);
+  }
+  
+  const { data: urlData } = supabaseClient.storage.from('media').getPublicUrl(fileName);
+  document.getElementById('quoteBgUrl').value = urlData.publicUrl;
+  updatePreview();
+  showToast('Image uploaded and applied!');
+}
+
+// ==========================================
+// SCHEDULE CALENDAR LOGIC
+// ==========================================
+async function loadScheduledDates() {
+  const { data } = await supabaseClient.from('quotes').select('scheduled_for').eq('status', 'scheduled').not('scheduled_for', 'is', null);
+  scheduledDatesList = (data || []).map(q => q.scheduled_for.split('T')[0]);
+}
+
+function renderMiniCalendar() {
+  const cal = document.getElementById('miniCalendar');
+  const today = new Date();
+  
+  let html = `<div class="grid grid-cols-7 gap-2">`;
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  days.forEach(d => html += `<div class="text-[10px] font-bold text-center text-slate-400 uppercase">${d}</div>`);
+  
+  for(let i=0; i<28; i++) {
+    let d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const dateStr = d.toISOString().split('T')[0];
+    const isTaken = scheduledDatesList.includes(dateStr) && dateStr !== (editQuoteId ? document.getElementById('scheduleDate').value.split('T')[0] : '');
+    
+    let styles = isTaken 
+      ? 'bg-slate-200 text-slate-400 cursor-not-allowed border-transparent' 
+      : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 cursor-pointer shadow-sm';
+      
+    html += `
+      <div onclick="if(!${isTaken}) setScheduleDate('${dateStr}')" class="border rounded-lg py-2 flex flex-col items-center justify-center transition-colors ${styles}" title="${isTaken ? 'Already booked' : 'Available'}">
+        <span class="text-sm font-bold leading-none">${d.getDate()}</span>
+        <span class="text-[9px] font-semibold mt-1 uppercase">${d.toLocaleString('default', {month:'short'})}</span>
+      </div>`;
+  }
+  html += `</div>`;
+  cal.innerHTML = html;
+}
+
+function setScheduleDate(dateStr) {
+  document.getElementById('scheduleDate').value = dateStr + 'T08:00'; // Default 8 AM
+}
+
 
 // ==========================================
 // BIBLE LOOKUP API
@@ -319,7 +444,6 @@ async function lookupBible() {
   const btn = document.getElementById('lookupBtn');
 
   if (!ref) return;
-
   btn.innerHTML = 'Searching...';
   statusEl.classList.add('hidden');
 
@@ -327,23 +451,22 @@ async function lookupBible() {
     const res = await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=${currentBibleVersion}`);
     if (!res.ok) throw new Error('Not found');
     const data = await res.json();
-
     document.getElementById('quoteText').value = data.text.trim();
     document.getElementById('quoteSource').value = data.reference;
-    
     statusEl.textContent = 'Loaded successfully!';
     statusEl.className = 'text-xs font-bold text-emerald-600 mt-2 block';
     updatePreview();
   } catch (err) {
-    statusEl.textContent = 'Reference not found. Try John 3:16 format.';
+    statusEl.textContent = 'Reference not found. Try "John 3:16" format.';
     statusEl.className = 'text-xs font-bold text-rose-500 mt-2 block';
   } finally {
     btn.innerHTML = '<span class="material-symbols-outlined text-sm">search</span> Lookup';
   }
 }
 
+
 // ==========================================
-// DATA LOADING
+// DATA LOADING (EDIT)
 // ==========================================
 async function loadCampaigns() {
   const { data } = await supabaseClient.from('campaigns').select('id, name').order('name');
@@ -383,11 +506,13 @@ function selectMode(mode) {
   publishMode = mode;
   document.querySelectorAll('.mode-card').forEach(el => el.classList.remove('active'));
   document.getElementById('mode-' + mode).classList.add('active');
-  document.getElementById('scheduleContainer').classList.toggle('hidden', mode !== 'scheduled');
+  
+  const schedContainer = document.getElementById('scheduleContainer');
+  schedContainer.classList.toggle('hidden', mode !== 'scheduled');
+  
+  if (mode === 'scheduled') renderMiniCalendar();
 
   const btn = document.getElementById('submitBtn');
-  
-  // If editing, change wording to "Update"
   const prefix = editQuoteId ? 'Update: ' : '';
   const labels = {
     live: '⚡ ' + prefix + 'Feature Live Now',
@@ -426,7 +551,12 @@ function updatePreview() {
 function renderCategoryChips() {
   const container = document.getElementById('categoryChips');
   const active = document.getElementById('quoteCategory').value;
-  container.innerHTML = defaultCategories.map(cat => `<div onclick="setCategory('${cat}')" class="cat-chip ${cat === active ? 'active' : ''}">${cat}</div>`).join('');
+  
+  container.innerHTML = defaultCategories.map(cat => {
+    const isCore = ['General', 'Faith', 'Hope', 'Courage', 'Wisdom', 'Mission'].includes(cat);
+    const delBtn = !isCore ? `<span onclick="deleteCategory('${cat}', event)" class="material-symbols-outlined text-[14px] hover:text-red-300 ml-1">close</span>` : '';
+    return `<div onclick="setCategory('${cat}')" class="cat-chip ${cat === active ? 'active' : ''}">${cat} ${delBtn}</div>`;
+  }).join('');
 }
 function setCategory(cat) {
   document.getElementById('quoteCategory').value = cat;
@@ -436,6 +566,12 @@ function setCategory(cat) {
 function addCategory() {
   const val = document.getElementById('newCategoryInput').value.trim();
   if (val) { setCategory(val); document.getElementById('newCategoryInput').value = ''; }
+}
+function deleteCategory(cat, event) {
+  event.stopPropagation();
+  defaultCategories = defaultCategories.filter(c => c !== cat);
+  if (document.getElementById('quoteCategory').value === cat) setCategory('General');
+  else renderCategoryChips();
 }
 
 // ==========================================
