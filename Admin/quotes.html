@@ -270,12 +270,16 @@
 
       </div> <!-- End Left -->
 
-      <!-- RIGHT COLUMN: SUBMIT & PREVIEW (Sticky) -->
-      <div class="lg:col-span-4 lg:sticky lg:top-24 space-y-6">
-
-        <button type="button" id="submitBtn" onclick="handlePublish()" class="w-full py-4 rounded-xl font-bold text-white signature-gradient shadow-md flex items-center justify-center gap-2 transition-transform active:scale-[0.98]">
-          ⚡ Publish Quote
-        </button>
+     <!-- MAIN SAVE / ACTION BUTTON -->
+<div class="space-y-2">
+  <button type="button" id="submitBtn" onclick="handlePublish()" class="w-full py-4 rounded-xl font-bold text-white signature-gradient shadow-md flex items-center justify-center gap-2 text-base transition-transform active:scale-[0.98]">
+    <span class="material-symbols-outlined">save</span>
+    <span id="submitBtnText">Save Changes</span>
+  </button>
+  <p class="text-center text-xs font-semibold text-outline">
+    Status: <span id="statusLabelPreview" class="text-primary font-bold">Draft</span>
+  </p>
+</div>
 
         <div class="phone-mockup">
           <div class="phone-notch"></div>
@@ -591,21 +595,27 @@ async function loadEditData(id) {
   const { data, error } = await supabaseClient.from('quotes').select('*').eq('id', id).single();
   if (error || !data) return showToast('Failed to load quote data', true);
 
+  editQuoteId = data.id; // Lock the edit ID
+
   document.getElementById('quoteText').value = data.text || '';
   document.getElementById('quoteSource').value = data.source || '';
   document.getElementById('quoteContext').value = data.context || '';
   document.getElementById('quoteBgUrl').value = data.background_url || '';
   document.getElementById('quoteCampaign').value = data.campaign_id || '';
-  document.getElementById('quoteFontSize').value = data.home_font_size || '';
-  document.getElementById('quoteTextAlign').value = data.home_text_align || 'center';
+  if (document.getElementById('quoteFontSize')) document.getElementById('quoteFontSize').value = data.home_font_size || '';
+  if (document.getElementById('quoteTextAlign')) document.getElementById('quoteTextAlign').value = data.home_text_align || 'center';
 
-  if (data.category && !defaultCategories.includes(data.category)) defaultCategories.push(data.category);
-  setCategory(data.category || 'General');
+  if (data.category && typeof defaultCategories !== 'undefined' && !defaultCategories.includes(data.category)) {
+    defaultCategories.push(data.category);
+  }
+  if (typeof setCategory === 'function') setCategory(data.category || 'General');
 
-  if (data.scheduled_for) {
+  if (data.scheduled_for && document.getElementById('scheduleDate')) {
     const d = new Date(data.scheduled_for);
     document.getElementById('scheduleDate').value = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   }
+
+  // Set selected mode to the quote's current status
   selectMode(data.status || 'draft');
   updatePreview();
 }
@@ -615,24 +625,44 @@ async function loadEditData(id) {
 // ==========================================
 function selectMode(mode) {
   publishMode = mode;
+  
+  // Highlight active mode card
   document.querySelectorAll('.mode-card').forEach(el => el.classList.remove('active'));
-  document.getElementById('mode-' + mode).classList.add('active');
+  const activeCard = document.getElementById('mode-' + mode);
+  if (activeCard) activeCard.classList.add('active');
 
+  // Toggle calendar picker if scheduled
   const schedContainer = document.getElementById('scheduleContainer');
-  schedContainer.classList.toggle('hidden', mode !== 'scheduled');
-  if (mode === 'scheduled') renderMiniCalendar();
+  if (schedContainer) {
+    schedContainer.classList.toggle('hidden', mode !== 'scheduled');
+    if (mode === 'scheduled' && typeof renderMiniCalendar === 'function') {
+      renderMiniCalendar();
+    }
+  }
+const btnText = document.getElementById('submitBtnText');
+  const statusPreview = document.getElementById('statusLabelPreview');
 
-  const btn = document.getElementById('submitBtn');
-  const prefix = editQuoteId ? 'Update: ' : '';
-  const labels = {
-    live: '⚡ ' + prefix + 'Feature Live Now',
-    scheduled: '📅 ' + prefix + 'Schedule Quote',
-    library: '📚 ' + prefix + 'Save to Library',
-    draft: '📝 ' + prefix + 'Save as Draft'
+  const modeNames = {
+    live: 'Live on Homepage',
+    scheduled: 'Scheduled Quote',
+    library: 'Library Quote',
+    draft: 'Private Draft'
   };
-  btn.innerHTML = labels[mode];
-}
 
+  if (btnText) {
+    if (editQuoteId) {
+      // WHEN EDITING: Always show "Save Changes"
+      btnText.textContent = 'Save Changes';
+    } else {
+      // WHEN CREATING NEW: Show action name
+      btnText.textContent = mode === 'live' ? 'Publish Live Now' : 'Create Quote';
+    }
+  }
+
+  if (statusPreview) {
+    statusPreview.textContent = modeNames[mode] || mode;
+  }
+}
 function updatePreview() {
   const text = document.getElementById('quoteText').value;
   const source = document.getElementById('quoteSource').value;
@@ -694,24 +724,37 @@ function deleteCategory(cat, event) {
 // PUBLISH
 // ==========================================
 async function handlePublish() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const activeEditId = editQuoteId || urlParams.get('edit');
+
+  const text = (document.getElementById('quoteText')?.value || '').trim();
+  const source = (document.getElementById('quoteSource')?.value || '').trim();
+  const category = (document.getElementById('quoteCategory')?.value || '').trim() || 'General';
+  const campaign = document.getElementById('quoteCampaign')?.value || null;
+  const context = (document.getElementById('quoteContext')?.value || '').trim() || null;
+  const bgUrl = (document.getElementById('quoteBgUrl')?.value || '').trim() || null;
+  const fontSize = document.getElementById('quoteFontSize')?.value || null;
+  const textAlign = document.getElementById('quoteTextAlign')?.value || 'center';
+  const scheduleDate = document.getElementById('scheduleDate')?.value || '';
+
+  if (!text) return showToast('Quote text is required', true);
+  if (!source) return showToast('Source / Reference is required', true);
+  if (publishMode === 'scheduled' && !scheduleDate) {
+    return showToast('Schedule date is required', true);
+  }
+
   const payload = {
-    text: document.getElementById('quoteText').value.trim(),
-    source: document.getElementById('quoteSource').value.trim(),
-    category: document.getElementById('quoteCategory').value.trim() || 'General',
-    campaign_id: document.getElementById('quoteCampaign').value || null,
-    context: document.getElementById('quoteContext').value.trim() || null,
-    background_url: document.getElementById('quoteBgUrl').value.trim() || null,
+    text: text,
+    source: source,
+    category: category,
+    campaign_id: campaign,
+    context: context,
+    background_url: bgUrl,
     status: publishMode,
-    home_font_size: document.getElementById('quoteFontSize').value || null,
-    home_text_align: document.getElementById('quoteTextAlign').value || 'center',
+    home_font_size: fontSize,
+    home_text_align: textAlign,
     updated_at: new Date().toISOString()
   };
-
-  const scheduleDate = document.getElementById('scheduleDate').value;
-
-  if (!payload.text) return showToast('Quote text is required', true);
-  if (!payload.source) return showToast('Source is required', true);
-  if (publishMode === 'scheduled' && !scheduleDate) return showToast('Schedule date is required', true);
 
   if (publishMode === 'live') {
     payload.published_at = new Date().toISOString();
@@ -725,31 +768,42 @@ async function handlePublish() {
   }
 
   const btn = document.getElementById('submitBtn');
-  btn.disabled = true;
-  btn.innerHTML = 'Saving...';
+  const btnText = document.getElementById('submitBtnText');
+  
+  if (btn) btn.disabled = true;
+  if (btnText) btnText.textContent = 'Saving...';
 
   try {
     if (publishMode === 'live') {
-      await supabaseClient.from('quotes').update({ status: 'library' }).eq('status', 'live');
+      let demoteQuery = supabaseClient
+        .from('quotes')
+        .update({ status: 'library', updated_at: new Date().toISOString() })
+        .eq('status', 'live');
+      
+      if (activeEditId) demoteQuery = demoteQuery.neq('id', activeEditId);
+      await demoteQuery;
     }
 
     let result;
-    if (editQuoteId) {
-      result = await supabaseClient.from('quotes').update(payload).eq('id', editQuoteId);
+    if (activeEditId) {
+      result = await supabaseClient.from('quotes').update(payload).eq('id', activeEditId);
     } else {
       result = await supabaseClient.from('quotes').insert([payload]);
     }
 
     if (result.error) throw result.error;
 
-    showToast('Quote saved successfully!');
-    setTimeout(() => { window.location.href = 'manage-quotes.html'; }, 1000);
+    showToast(activeEditId ? 'Quote updated successfully!' : 'Quote created successfully!');
+    
+    setTimeout(() => { 
+      window.location.href = 'manage-quotes.html'; 
+    }, 800);
 
   } catch (error) {
-    console.error(error);
+    console.error('Publish error:', error);
     showToast('Failed to save: ' + (error.message || 'Unknown error'), true);
-    btn.disabled = false;
-    btn.innerHTML = 'Try Again';
+    if (btn) btn.disabled = false;
+    if (btnText) btnText.textContent = activeEditId ? 'Save Changes' : 'Try Again';
   }
 }
 
