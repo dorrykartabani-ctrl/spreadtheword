@@ -169,16 +169,25 @@
         </div>
 
         <!-- Background Image -->
-        <div class="form-card">
-          <div class="flex justify-between items-end mb-3">
-            <label class="form-label mb-0">Background Image</label>
-            <div class="flex gap-3">
-              <button type="button" onclick="openMediaLibrary()" class="text-xs font-bold text-primary flex items-center gap-1 hover:underline"><span class="material-symbols-outlined text-[14px]">photo_library</span> Select from Library</button>
-              <a href="manage-media.html" class="text-xs font-bold text-primary flex items-center gap-1 hover:underline"><span class="material-symbols-outlined text-[14px]">upload</span> Manage / Upload</a>
-            </div>
-          </div>
-          <input type="text" id="quoteBgUrl" class="form-input text-xs" placeholder="Paste image URL here or select from library..." oninput="updatePreview()">
-        </div>
+       <!-- Background Image Module -->
+<div class="form-card">
+  <div class="flex justify-between items-end mb-3">
+    <label class="form-label mb-0">Background Image</label>
+    <div class="flex gap-3">
+      <!-- Select from Library -->
+      <button type="button" onclick="openMediaLibrary()" class="text-xs font-bold text-primary flex items-center gap-1 hover:underline">
+        <span class="material-symbols-outlined text-[14px]">photo_library</span> Select from Library
+      </button>
+      
+      <!-- Direct Upload Button -->
+      <label class="text-xs font-bold text-primary flex items-center gap-1 hover:underline cursor-pointer">
+        <span class="material-symbols-outlined text-[14px]">upload</span> Upload Custom
+        <input type="file" id="customImgFileInput" accept="image/*" class="hidden" onchange="uploadCustomImageDirect(event)">
+      </label>
+    </div>
+  </div>
+  <input type="text" id="quoteBgUrl" class="form-input text-xs" placeholder="Paste image URL here or choose an option above..." oninput="updatePreview()">
+</div>
 
         <!-- Advanced Display -->
         <div class="form-card">
@@ -340,6 +349,9 @@ async function checkAuth() {
 // ==========================================
 // MEDIA LIBRARY (from Admin Media Manager)
 // ==========================================
+// ==========================================
+// MEDIA LIBRARY (Queries the 'media' table)
+// ==========================================
 function openMediaLibrary() {
   document.getElementById('mediaModal').classList.remove('hidden');
   const filter = document.getElementById('mediaFolderFilter');
@@ -360,38 +372,46 @@ async function loadMediaLibrary() {
 
   try {
     let query = supabaseClient
-      .from('media_library')
-      .select('id, name, url, category')
+      .from('media') // Exact table name confirmed!
+      .select('*')
       .order('created_at', { ascending: false });
 
-    if (folder) query = query.eq('category', folder);
+    if (folder) {
+      query = query.eq('category', folder);
+    }
 
     const { data, error } = await query;
+
     if (error) throw error;
 
     if (!data || !data.length) {
       grid.innerHTML = `
         <div class="col-span-full py-10 text-center text-slate-400 text-sm">
           No images in this folder yet.<br>
-          <span class="text-xs">Add some under <b>Media Manager</b>.</span>
+          <span class="text-xs">Add some in <b>Media Manager</b> under '${escapeHtml(folder)}'.</span>
         </div>`;
       return;
     }
 
     grid.innerHTML = data.map(m => {
-      const url = m.url || '';
+      // Map possible URL and Name column names
+      const url = m.url || m.public_url || m.file_url || m.image_url || '';
+      const name = m.name || m.title || m.filename || 'Untitled';
+
       if (!url) return '';
       const safeUrl = String(url).replace(/'/g, "\\'");
+
       return `
         <button type="button" onclick="selectMediaImage('${safeUrl}')" class="cursor-pointer group relative aspect-square bg-slate-100 rounded-xl overflow-hidden border border-slate-100 hover:border-primary transition-all">
-          <img src="${url}" alt="${escapeHtml(m.name || '')}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          <img src="${url}" alt="${escapeHtml(name)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
           <div class="absolute inset-x-0 bottom-0 bg-black/55 text-white text-[10px] font-semibold px-2 py-1 truncate opacity-0 group-hover:opacity-100 transition-opacity">
-            ${escapeHtml(m.name || 'Untitled')}
+            ${escapeHtml(name)}
           </div>
         </button>`;
     }).join('');
+
   } catch (err) {
-    console.error(err);
+    console.error('Media library error:', err);
     grid.innerHTML = `<div class="col-span-full py-10 text-center text-rose-500 text-sm">Failed to load media: ${escapeHtml(err.message || '')}</div>`;
   }
 }
@@ -400,9 +420,48 @@ function selectMediaImage(url) {
   document.getElementById('quoteBgUrl').value = url;
   updatePreview();
   closeMediaLibrary();
-  showToast('Background selected');
+  showToast('Background selected!');
 }
 
+window.openMediaLibrary = openMediaLibrary;
+window.closeMediaLibrary = closeMediaLibrary;
+window.loadMediaLibrary = loadMediaLibrary;
+window.selectMediaImage = selectMediaImage;
+
+async function uploadCustomImageDirect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  showToast('Uploading custom image...', false);
+
+  const fileExt = file.name.split('.').pop();
+  const fileName = `quote_bg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+
+  try {
+    // 1. Upload directly to Supabase Storage bucket 'media'
+    const { data: uploadData, error: uploadErr } = await supabaseClient.storage
+      .from('media')
+      .upload(fileName, file);
+
+    if (uploadErr) throw uploadErr;
+
+    // 2. Get the public URL
+    const { data: urlData } = supabaseClient.storage.from('media').getPublicUrl(fileName);
+    const publicUrl = urlData.publicUrl;
+
+    // 3. Set into quote form and trigger live preview
+    document.getElementById('quoteBgUrl').value = publicUrl;
+    updatePreview();
+    showToast('Image uploaded and set as background!');
+
+  } catch (err) {
+    console.error('Upload error:', err);
+    showToast('Upload failed: ' + err.message, true);
+  }
+}
+
+window.uploadCustomImageDirect = uploadCustomImageDirect;
+  
 // ==========================================
 // SCHEDULE CALENDAR
 // ==========================================
