@@ -292,10 +292,8 @@
         </div>
       </section> 
 
-      <section id="runwaySection">
-        <div class="skeleton h-24 w-full"></div>
-      </section>
-
+      <section id="runwaySection" class="hidden"></section>
+   
       <!-- DRAFTS SECTION (NEW) -->
       <section id="draftsSection" class="mb-6">
         <div class="flex items-center justify-between mb-3">
@@ -1097,20 +1095,68 @@ document.addEventListener('click', function() {
 // ARCHIVED TOGGLE
 // ════════════════════════════════════════════
 async function toggleArchived() {
-  showArchived = !showArchived
-  var section = document.getElementById('archivedSection')
-  var label = document.getElementById('archivedToggleLabel')
+  const section = document.getElementById('archivedSection');
+  const label = document.getElementById('archivedToggleLabel');
+  if (!section) return;
 
-  if (showArchived) {
-    section.classList.remove('hidden')
-    label.textContent = 'Hide Archived Quotes'
-    await loadArchived()
-  } else {
-    section.classList.add('hidden')
-    label.textContent = 'Show Archived Quotes'
+  const willShow = section.classList.contains('hidden');
+  section.classList.toggle('hidden', !willShow);
+
+  if (label) {
+    label.textContent = willShow ? 'Hide Archived Quotes' : 'Show Archived Quotes';
+  }
+
+  if (willShow && typeof loadArchived === 'function') {
+    await loadArchived();
+  }
+}
+window.toggleArchived = toggleArchived;
+// =====================================================
+// loadArchived — required by init() + toggleArchived()
+// =====================================================
+async function loadArchived() {
+  try {
+    // If archived quotes are already inside allQuotes:
+    const archived = (window.allQuotes || allQuotes || [])
+      .filter(q => (q.status || '') === 'archived');
+
+    const container = document.getElementById('archivedContainer');
+    const countEl = document.getElementById('archivedCount');
+
+    if (countEl) {
+      countEl.textContent = archived.length
+        ? `${archived.length} archived`
+        : '';
+    }
+
+    if (!container) return;
+
+    // Prefer your original card renderer if it exists
+    if (typeof renderQuoteCard === 'function') {
+      container.innerHTML = archived.length
+        ? archived.map(q => renderQuoteCard(q)).join('')
+        : `<div class="p-6 text-center text-sm text-on-surface-variant">No archived quotes.</div>`;
+    } else if (typeof window.quoteCardHTML === 'function') {
+      container.innerHTML = archived.length
+        ? archived.map(q => quoteCardHTML(q)).join('')
+        : `<div class="p-6 text-center text-sm text-on-surface-variant">No archived quotes.</div>`;
+    } else {
+      // Minimal safe fallback (won't break init)
+      container.innerHTML = archived.length
+        ? archived.map(q => `
+            <div class="bg-surface-cl border border-surface-c rounded-xl p-4">
+              <p class="text-sm">"${escapeHtml(q.text || '')}"</p>
+              <p class="text-xs text-on-surface-variant mt-1">${escapeHtml(q.source || '')}</p>
+            </div>
+          `).join('')
+        : `<div class="p-6 text-center text-sm text-on-surface-variant">No archived quotes.</div>`;
+    }
+  } catch (e) {
+    console.error('loadArchived error:', e);
   }
 }
 
+window.loadArchived = loadArchived;
 // ════════════════════════════════════════════
 // PREVIEW MODAL
 // ════════════════════════════════════════════
