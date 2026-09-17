@@ -168,7 +168,6 @@
           </div>
         </div>
 
-        <!-- Background Image -->
        <!-- Background Image Module -->
 <div class="form-card">
   <div class="flex justify-between items-end mb-3">
@@ -349,9 +348,16 @@ async function checkAuth() {
 // ==========================================
 // MEDIA LIBRARY (from Admin Media Manager)
 // ==========================================
+
 // ==========================================
-// MEDIA LIBRARY (Queries the 'media' table)
+// MEDIA LIBRARY — matches your working schema
+// table: media
+// columns: type, is_active, sort_order, url, thumbnail_url, label
 // ==========================================
+
+let backgroundImages = [];
+let selectedBgUrl = null;
+
 function openMediaLibrary() {
   document.getElementById('mediaModal').classList.remove('hidden');
   const filter = document.getElementById('mediaFolderFilter');
@@ -371,44 +377,80 @@ async function loadMediaLibrary() {
   grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400 text-sm">Loading images…</div>';
 
   try {
+    // EXACT query pattern from your working code
     let query = supabaseClient
-      .from('media') // Exact table name confirmed!
+      .from('media')
       .select('*')
-      .order('created_at', { ascending: false });
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
 
+    // Your old code used: .eq('type', 'background')
     if (folder) {
-      query = query.eq('category', folder);
+      query = query.eq('type', folder);
     }
 
     const { data, error } = await query;
-
     if (error) throw error;
 
-    if (!data || !data.length) {
+    backgroundImages = data || [];
+
+    if (!backgroundImages.length) {
       grid.innerHTML = `
         <div class="col-span-full py-10 text-center text-slate-400 text-sm">
-          No images in this folder yet.<br>
-          <span class="text-xs">Add some in <b>Media Manager</b> under '${escapeHtml(folder)}'.</span>
+          No active images in this folder.<br>
+          <span class="text-xs">Add some in Media Manager (type = <b>${escapeHtml(folder || 'any')}</b>).</span>
         </div>`;
       return;
     }
 
-    grid.innerHTML = data.map(m => {
-      // Map possible URL and Name column names
-      const url = m.url || m.public_url || m.file_url || m.image_url || '';
-      const name = m.name || m.title || m.filename || 'Untitled';
+    // Current selection from the form
+    selectedBgUrl = document.getElementById('quoteBgUrl')?.value || null;
 
-      if (!url) return '';
+    let html = '';
+
+    // "None" option
+    html += `
+      <button type="button" onclick="selectMediaImage(null)"
+        class="relative aspect-square rounded-xl border-2 ${!selectedBgUrl ? 'border-primary' : 'border-slate-200'} bg-slate-50 flex flex-col items-center justify-center gap-1 hover:border-primary transition-all">
+        <span class="material-symbols-outlined text-outline text-[22px]">block</span>
+        <span class="text-[10px] font-bold text-outline">None</span>
+        ${!selectedBgUrl ? '<span class="material-symbols-outlined filled text-primary absolute top-1 right-1 text-[18px]">check_circle</span>' : ''}
+      </button>`;
+
+    // Library images
+    backgroundImages.forEach(function (img) {
+      const url = img.url || '';
+      const thumb = img.thumbnail_url || img.url || '';
+      const label = img.label || img.name || 'Untitled';
+      if (!url) return;
+
+      const isSelected = selectedBgUrl === url;
       const safeUrl = String(url).replace(/'/g, "\\'");
 
-      return `
-        <button type="button" onclick="selectMediaImage('${safeUrl}')" class="cursor-pointer group relative aspect-square bg-slate-100 rounded-xl overflow-hidden border border-slate-100 hover:border-primary transition-all">
-          <img src="${url}" alt="${escapeHtml(name)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+      html += `
+        <button type="button" onclick="selectMediaImage('${safeUrl}')"
+          class="relative aspect-square rounded-xl overflow-hidden border-2 ${isSelected ? 'border-primary' : 'border-slate-200'} group hover:border-primary transition-all">
+          <img src="${thumb}" alt="${escapeHtml(label)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          ${isSelected ? '<span class="material-symbols-outlined filled text-primary absolute top-1 right-1 text-[18px] drop-shadow">check_circle</span>' : ''}
           <div class="absolute inset-x-0 bottom-0 bg-black/55 text-white text-[10px] font-semibold px-2 py-1 truncate opacity-0 group-hover:opacity-100 transition-opacity">
-            ${escapeHtml(name)}
+            ${escapeHtml(label)}
           </div>
         </button>`;
-    }).join('');
+    });
+
+    // If current URL is a custom upload not in the library, still show it
+    if (selectedBgUrl && !backgroundImages.find(function (i) { return i.url === selectedBgUrl; })) {
+      const safe = String(selectedBgUrl).replace(/'/g, "\\'");
+      html += `
+        <button type="button" onclick="selectMediaImage('${safe}')"
+          class="relative aspect-square rounded-xl overflow-hidden border-2 border-primary">
+          <img src="${selectedBgUrl}" alt="Custom" class="w-full h-full object-cover">
+          <span class="material-symbols-outlined filled text-primary absolute top-1 right-1 text-[18px] drop-shadow">check_circle</span>
+          <div class="absolute inset-x-0 bottom-0 bg-black/55 text-white text-[10px] font-semibold px-2 py-1">Custom</div>
+        </button>`;
+    }
+
+    grid.innerHTML = html;
 
   } catch (err) {
     console.error('Media library error:', err);
@@ -417,50 +459,24 @@ async function loadMediaLibrary() {
 }
 
 function selectMediaImage(url) {
-  document.getElementById('quoteBgUrl').value = url;
+  selectedBgUrl = url;
+  const input = document.getElementById('quoteBgUrl');
+  if (input) input.value = url || '';
   updatePreview();
-  closeMediaLibrary();
-  showToast('Background selected!');
+  // Re-render so selection checkmarks update
+  loadMediaLibrary();
+  if (url) {
+    closeMediaLibrary();
+    showToast('Background selected');
+  } else {
+    showToast('Background cleared');
+  }
 }
 
 window.openMediaLibrary = openMediaLibrary;
 window.closeMediaLibrary = closeMediaLibrary;
 window.loadMediaLibrary = loadMediaLibrary;
 window.selectMediaImage = selectMediaImage;
-
-async function uploadCustomImageDirect(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  showToast('Uploading custom image...', false);
-
-  const fileExt = file.name.split('.').pop();
-  const fileName = `quote_bg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-
-  try {
-    // 1. Upload directly to Supabase Storage bucket 'media'
-    const { data: uploadData, error: uploadErr } = await supabaseClient.storage
-      .from('media')
-      .upload(fileName, file);
-
-    if (uploadErr) throw uploadErr;
-
-    // 2. Get the public URL
-    const { data: urlData } = supabaseClient.storage.from('media').getPublicUrl(fileName);
-    const publicUrl = urlData.publicUrl;
-
-    // 3. Set into quote form and trigger live preview
-    document.getElementById('quoteBgUrl').value = publicUrl;
-    updatePreview();
-    showToast('Image uploaded and set as background!');
-
-  } catch (err) {
-    console.error('Upload error:', err);
-    showToast('Upload failed: ' + err.message, true);
-  }
-}
-
-window.uploadCustomImageDirect = uploadCustomImageDirect;
   
 // ==========================================
 // SCHEDULE CALENDAR
