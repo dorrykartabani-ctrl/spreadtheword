@@ -270,13 +270,44 @@ function toggleSidebar() { getEl('sidebar').classList.toggle('hidden'); getEl('s
 async function handleLogout() { await supabaseClient.auth.signOut(); window.location.href = 'login.html'; }
 
 var toastTimer;
-function showToast(msg, isErr=false) { 
-  var t = getEl('toast'); getEl('toastMsg').textContent = msg; 
-  var icon = getEl('toastIcon'); icon.textContent = isErr ? 'error' : 'check_circle'; 
-  icon.className = 'material-symbols-outlined ' + (isErr ? 'text-red-400' : 'text-green-400'); 
-  t.classList.remove('hidden'); t.classList.add('flex'); 
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.classList.add('hidden'); t.classList.remove('flex'); }, 3000); 
+// ==========================================
+// BULLETPROOF SHOW TOAST (Auto-creates element if missing)
+// ==========================================
+function showToast(msg, isError = false) {
+  let toast = document.getElementById('toast');
+  let toastMsg = document.getElementById('toastMsg');
+
+  // Auto-create toast element if missing from page DOM
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast';
+    toast.className = 'hidden fixed top-6 right-6 z-[200] bg-slate-900/90 text-white font-semibold px-5 py-3 rounded-full shadow-2xl items-center gap-2 text-sm backdrop-blur-md transition-all';
+    toast.innerHTML = `<span id="toastIcon" class="material-symbols-outlined text-emerald-400 text-lg">check_circle</span><span id="toastMsg"></span>`;
+    document.body.appendChild(toast);
+    toastMsg = document.getElementById('toastMsg');
+  }
+
+  if (toastMsg) {
+    toastMsg.textContent = msg;
+  }
+
+  const icon = document.getElementById('toastIcon');
+  if (icon) {
+    icon.textContent = isError ? 'error' : 'check_circle';
+    icon.className = `material-symbols-outlined text-lg ${isError ? 'text-rose-400' : 'text-emerald-400'}`;
+  }
+
+  toast.classList.remove('hidden');
+  toast.classList.add('flex');
+
+  if (window.toastTimer) clearTimeout(window.toastTimer);
+  window.toastTimer = setTimeout(() => {
+    toast.classList.add('hidden');
+    toast.classList.remove('flex');
+  }, 3000);
 }
+
+window.showToast = showToast;
 
 async function init() {
   var s = await supabaseClient.auth.getSession(); if (!s.data.session) return window.location.href = 'login.html'; currentUser = s.data.session.user;
@@ -329,7 +360,6 @@ function closeAvatarModal() {
   if (modal) modal.classList.add('hidden');
 }
 
-// Ensure all HTML onclick attributes can reach these functions
 window.closeAvatarModal = closeAvatarModal;
 window.editAvatar = typeof editAvatar !== 'undefined' ? editAvatar : window.editAvatar;
 window.saveAvatar = typeof saveAvatar !== 'undefined' ? saveAvatar : window.saveAvatar;
@@ -566,8 +596,7 @@ function editBadge(id) {
     getEl('badgeStatType').value = b.stat_type || 'shares'; 
     getEl('badgeStatTarget').value = b.stat_target || 0; 
   }
-  
-  // Render checklists first, then restore state from rule_config
+ 
   toggleBadgeRule();
   var config = b.rule_config || {};
   getEl('badgeAdminReferral').checked = !!config.admin_referral;
@@ -697,7 +726,6 @@ async function prepareAvatarImageSelects(selectedMale = '', selectedFemale = '')
   const maleSelect = document.getElementById('avatarImageMale');
   const femaleSelect = document.getElementById('avatarImageFemale');
 
-  // Preserve an existing image even if it is not currently in the media list.
   function selectImage(select, url) {
     if (!select) return;
 
@@ -820,88 +848,67 @@ window.closeAvatarModal = function () {
 
 
 // Create or update an avatar stage.
-window.saveAvatar = async function () {
-  const id = document.getElementById('avatarId').value.trim();
+async function saveAvatar() {
+  const id = document.getElementById('avatarId').value;
   const era = document.getElementById('avatarEra').value.trim();
   const journey = document.getElementById('avatarJourney').value.trim();
   const avatarTitle = document.getElementById('avatarName').value.trim();
+  const stageOrder = parseInt(document.getElementById('avatarOrder').value);
+  const mythicRequired = parseInt(document.getElementById('avatarReqValue').value) || 0;
 
-  const stageOrder = Number(
-    document.getElementById('avatarOrder').value
-  );
+  const maleEl = document.getElementById('avatarImageMale');
+  const femaleEl = document.getElementById('avatarImageFemale');
+  const imageMale = maleEl ? maleEl.value : null;
+  const imageFemale = femaleEl ? femaleEl.value : null;
 
-  const mythicRequired = Number(
-    document.getElementById('avatarReqValue').value || 0
-  );
-
-  const maleSelect = document.getElementById('avatarImageMale');
-  const femaleSelect = document.getElementById('avatarImageFemale');
-
-  if (!era || !journey || !avatarTitle) {
-    showToast('Please complete Era, Journey and Avatar Title', true);
-    return;
+  if (!era || !journey || !avatarTitle || isNaN(stageOrder)) {
+    return showToast('Please fill all required fields (Era, Journey, Title, Stage Order)', true);
   }
 
-  if (!Number.isInteger(stageOrder) || stageOrder < 1) {
-    showToast('Stage Order must be a whole number of 1 or greater', true);
-    return;
-  }
-
-  if (
-    !Number.isInteger(mythicRequired) ||
-    mythicRequired < 0
-  ) {
-    showToast('Mythic Trophies Required must be 0 or greater', true);
-    return;
-  }
-
-  const payload = {
-    era,
-    journey,
-    avatar_title: avatarTitle,
-    stage_order: stageOrder,
-    mythic_required: mythicRequired,
-    image_url_male: maleSelect?.value || null,
-    image_url_female: femaleSelect?.value || null
-  };
-
-  const button = document.getElementById('saveAvatarBtn');
-
-  if (button) {
-    button.disabled = true;
-    button.textContent = 'Saving...';
+  const btn = document.getElementById('saveAvatarBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
   }
 
   try {
-    let result;
+    const payload = {
+      era: era,
+      journey: journey,
+      avatar_title: avatarTitle,
+      stage_order: stageOrder,
+      mythic_required: mythicRequired,
+      image_url_male: imageMale || null,
+      image_url_female: imageFemale || null,
+      updated_at: new Date().toISOString()
+    };
 
+    let result;
     if (id) {
-      result = await supabaseClient
-        .from('avatar_stages')
-        .update(payload)
-        .eq('id', id);
+      result = await supabaseClient.from('avatar_stages').update(payload).eq('id', id);
     } else {
-      result = await supabaseClient
-        .from('avatar_stages')
-        .insert([payload]);
+      result = await supabaseClient.from('avatar_stages').insert([payload]);
     }
 
     if (result.error) throw result.error;
 
     showToast(id ? 'Avatar stage updated!' : 'Avatar stage created!');
-    window.closeAvatarModal();
+    
+    if (typeof closeAvatarModal === 'function') closeAvatarModal();
+    if (typeof loadData === 'function') await loadData();
 
-    // Reloading avoids relying on an unknown local data-loading function.
-    setTimeout(() => window.location.reload(), 300);
-  } catch (error) {
-    console.error('Save avatar error:', error);
-    showToast('Failed to save avatar stage: ' + error.message, true);
+  } catch (e) {
+    console.error('Save avatar error:', e);
+    showToast('Failed to save: ' + e.message, true);
   } finally {
-    if (button) {
-      button.disabled = false;
-      button.textContent = 'Save Stage';
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Save Stage';
     }
   }
+}
+
+window.saveAvatar = saveAvatar;
 };
 
 
