@@ -712,108 +712,48 @@ function editAvatar(id) {
   </div>
 </div>
 <script>
-// ============================================
-// AVATAR MEDIA LIBRARY LOADER
-// Populates the male/female image dropdowns
-// from the 'avatar' category of the media library
-// ============================================
-let avatarMediaCache = [];
-
-async function loadAvatarMedia() {
-  try {
-    // If already cached, skip re-fetching
-    if (avatarMediaCache.length) return avatarMediaCache;
-
-    const { data, error } = await supabaseClient
-      .from('media_library')
-      .select('id, name, url, category')
-      .eq('category', 'avatar')
-      .order('name', { ascending: true });
-
-    if (error) throw error;
-    avatarMediaCache = data || [];
-    return avatarMediaCache;
-  } catch (e) {
-    console.error('loadAvatarMedia error:', e);
-    showToast('Could not load avatar images', true);
-    return [];
-  }
-}
-
-async function populateAvatarImageDropdowns(selectedMale, selectedFemale) {
-  const media = await loadAvatarMedia();
-  const maleEl = document.getElementById('avatarImageMale');
-  const femaleEl = document.getElementById('avatarImageFemale');
-
-  const buildOptions = (selectedUrl) => {
-    let opts = '<option value="">— None —</option>';
-    media.forEach(m => {
-      const sel = (selectedUrl && selectedUrl === m.url) ? 'selected' : '';
-      opts += `<option value="${m.url}" ${sel}>${escapeHtml(m.name || 'Untitled')}</option>`;
-    });
-    return opts;
-  };
-
-  if (maleEl) maleEl.innerHTML = buildOptions(selectedMale);
-  if (femaleEl) femaleEl.innerHTML = buildOptions(selectedFemale);
-}
-
-// ============================================
-// OPEN / EDIT / CLOSE AVATAR MODAL
-// ============================================
-
-// Called from the "+ New Avatar Stage" button
-async function openAvatarModal() {
-  document.getElementById('avatarModalTitle').textContent = 'Add Avatar Stage';
-  document.getElementById('avatarId').value = '';
-  document.getElementById('avatarEra').value = '';
-  document.getElementById('avatarJourney').value = '';
-  document.getElementById('avatarOrder').value = (avatarStages ? avatarStages.length + 1 : 1);
-  document.getElementById('avatarName').value = '';
-  document.getElementById('avatarReqValue').value = 0;
-
-  await populateAvatarImageDropdowns('', '');
-
-  document.getElementById('avatarModal').classList.remove('hidden');
-}
-
-// Called when clicking an existing avatar card
 async function editAvatar(id) {
-  const stage = (avatarStages || []).find(s => String(s.id) === String(id));
-  if (!stage) return showToast('Avatar stage not found', true);
+  // 1. Try to find stage in the global array
+  let list = (typeof avatarStages !== 'undefined' && Array.isArray(avatarStages)) ? avatarStages : [];
+  let stage = list.find(s => String(s.id) === String(id));
 
+  // 2. Bulletproof Fallback: If not in memory, fetch directly from Supabase
+  if (!stage) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('avatar_stages')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (!error && data) {
+        stage = data;
+      }
+    } catch (e) {
+      console.error('Fetch avatar stage error:', e);
+    }
+  }
+
+  if (!stage) {
+    return showToast('Avatar stage not found', true);
+  }
+
+  // 3. Populate Modal Fields
   document.getElementById('avatarModalTitle').textContent = 'Edit Avatar Stage';
   document.getElementById('avatarId').value = stage.id;
   document.getElementById('avatarEra').value = stage.era || '';
   document.getElementById('avatarJourney').value = stage.journey || '';
   document.getElementById('avatarOrder').value = stage.stage_order ?? '';
-  document.getElementById('avatarName').value = stage.avatar_title || '';
-  document.getElementById('avatarReqValue').value = stage.mythic_required ?? 0;
+  document.getElementById('avatarName').value = stage.avatar_title || stage.journey_name || '';
+  document.getElementById('avatarReqValue').value = stage.mythic_required ?? stage.requirement_value ?? 0;
 
-  await populateAvatarImageDropdowns(stage.image_url_male, stage.image_url_female);
-
-  document.getElementById('avatarModal').classList.remove('hidden');
-}
-
-function closeAvatarModal() {
-  document.getElementById('avatarModal').classList.add('hidden');
-}
-
-// ============================================
-// DELETE AVATAR STAGE
-// ============================================
-async function deleteAvatarStage(id) {
-  if (!confirm('Delete this avatar stage? This cannot be undone.')) return;
-  try {
-    const { error } = await supabaseClient.from('avatar_stages').delete().eq('id', id);
-    if (error) throw error;
-    showToast('Avatar stage deleted');
-    closeAvatarModal();
-    await loadData();
-  } catch (e) {
-    console.error('deleteAvatarStage error:', e);
-    showToast('Failed to delete: ' + e.message, true);
+  // 4. Populate Media Dropdowns
+  if (typeof populateAvatarImageDropdowns === 'function') {
+    await populateAvatarImageDropdowns(stage.image_url_male, stage.image_url_female);
   }
+
+  // 5. Open Modal
+  document.getElementById('avatarModal').classList.remove('hidden');
 }
 init();
 </script>
