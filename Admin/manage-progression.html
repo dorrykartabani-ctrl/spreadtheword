@@ -655,8 +655,78 @@ function renderAvatars() {
   });
   list.innerHTML = html;
 }
+// ============================================
+// SAVE AVATAR FUNCTION
+// ============================================
+async function saveAvatar() {
+  const id = document.getElementById('avatarId').value;
+  const era = document.getElementById('avatarEra').value.trim();
+  const journey = document.getElementById('avatarJourney').value.trim();
+  const avatarTitle = document.getElementById('avatarName').value.trim();
+  const stageOrder = parseInt(document.getElementById('avatarOrder').value);
+  const mythicRequired = parseInt(document.getElementById('avatarReqValue').value) || 0;
 
-// Ensure you have an edit helper function to open the modal correctly:
+  const maleEl = document.getElementById('avatarImageMale');
+  const femaleEl = document.getElementById('avatarImageFemale');
+  const imageMale = maleEl ? maleEl.value : null;
+  const imageFemale = femaleEl ? femaleEl.value : null;
+
+  if (!era || !journey || !avatarTitle || isNaN(stageOrder)) {
+    return showToast('Please fill all required fields (Era, Journey, Stage Order, Title)', true);
+  }
+
+  const btn = document.getElementById('saveAvatarBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+  }
+
+  try {
+    const payload = {
+      era: era,
+      journey: journey,
+      avatar_title: avatarTitle,
+      stage_order: stageOrder,
+      mythic_required: mythicRequired,
+      image_url_male: imageMale || null,
+      image_url_female: imageFemale || null,
+      updated_at: new Date().toISOString()
+    };
+
+    let result;
+    if (id) {
+      // Update existing record
+      result = await supabaseClient.from('avatar_stages').update(payload).eq('id', id);
+    } else {
+      // Create new record
+      result = await supabaseClient.from('avatar_stages').insert([payload]);
+    }
+
+    if (result.error) throw result.error;
+
+    showToast(id ? 'Avatar stage updated!' : 'Avatar stage created!');
+    closeAvatarModal();
+
+    // Reload list
+    if (typeof loadData === 'function') {
+      await loadData();
+    } else if (typeof fetchProgressionData === 'function') {
+      await fetchProgressionData();
+    } else if (typeof init === 'function') {
+      await init();
+    }
+  } catch (e) {
+    console.error('Save avatar error:', e);
+    showToast('Failed to save: ' + e.message, true);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Save Stage';
+    }
+  }
+}
+window.saveAvatar = saveAvatar;
+  
 function editAvatar(id) {
   const stage = avatarStages.find(s => s.id === id);
   if (stage) {
@@ -667,9 +737,7 @@ function editAvatar(id) {
 }
 </script>
 
-<!-- PLACE ALL HTML MODALS SAFELY OUTSIDE THE SCRIPT TAG BELOW -->
-
-<div id="avatarModal" class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+  <div id="avatarModal" class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
   <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
     <div class="p-6 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10">
       <h3 class="font-headline font-bold text-xl" id="avatarModalTitle">Avatar Stage</h3>
@@ -733,11 +801,10 @@ function editAvatar(id) {
 </div>
 <script>
 async function editAvatar(id) {
-  // 1. Try to find stage in the global array
+ 
   let list = (typeof avatarStages !== 'undefined' && Array.isArray(avatarStages)) ? avatarStages : [];
   let stage = list.find(s => String(s.id) === String(id));
 
-  // 2. Bulletproof Fallback: If not in memory, fetch directly from Supabase
   if (!stage) {
     try {
       const { data, error } = await supabaseClient
@@ -766,6 +833,7 @@ async function editAvatar(id) {
   document.getElementById('avatarOrder').value = stage.stage_order ?? '';
   document.getElementById('avatarName').value = stage.avatar_title || stage.journey_name || '';
   document.getElementById('avatarReqValue').value = stage.mythic_required ?? stage.requirement_value ?? 0;
+ document.getElementById('deleteAvatarBtn').classList.remove('hidden');
 
   // 4. Populate Media Dropdowns
   if (typeof populateAvatarImageDropdowns === 'function') {
@@ -774,9 +842,9 @@ async function editAvatar(id) {
 
   // 5. Open Modal
   document.getElementById('avatarModal').classList.remove('hidden');
+  document.getElementById('deleteAvatarBtn').classList.add('hidden');
 }
 
- // Function to close the Avatar Modal
 function closeAvatarModal() {
   const modal = document.getElementById('avatarModal');
   if (modal) {
