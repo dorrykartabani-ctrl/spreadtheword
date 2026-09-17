@@ -590,134 +590,91 @@ function populateFilterDropdowns() {
 }
 
 function applyFilters() {
-  const status = document.getElementById('filterStatus')?.value || '';
+  const status   = document.getElementById('filterStatus')?.value || '';
   const campaign = document.getElementById('filterCampaign')?.value || '';
   const category = document.getElementById('filterCategory')?.value || '';
 
-  let filtered = [...allQuotes];
+  let filtered = [...(window.allQuotes || allQuotes || [])];
 
-  if (status) {
-    filtered = filtered.filter(q => (q.status || 'draft') === status);
-  }
-  if (campaign) {
-    filtered = filtered.filter(q => String(q.campaign_id || '') === String(campaign));
-  }
-  if (category) {
-    filtered = filtered.filter(q => (q.category || '') === category);
-  }
+  if (status)   filtered = filtered.filter(q => (q.status || 'draft') === status);
+  if (campaign) filtered = filtered.filter(q => String(q.campaign_id || '') === String(campaign));
+  if (category) filtered = filtered.filter(q => (q.category || '') === category);
 
-  // Split into buckets — LIVE always rendered first
-  const live = filtered.filter(q => (q.status || '') === 'published');
-  const drafts = filtered.filter(q => (q.status || 'draft') === 'draft');
-  const scheduled = filtered.filter(q => (q.status || '') === 'scheduled');
-  const archived = filtered.filter(q => (q.status || '') === 'archived');
-  const library = filtered.filter(q => (q.status || '') === 'library');
+  // Buckets
+  const live      = filtered.filter(q => q.status === 'published');
+  const scheduled = filtered.filter(q => q.status === 'scheduled');
+  const drafts    = filtered.filter(q => (q.status || 'draft') === 'draft');
+  const library   = filtered.filter(q => q.status === 'library');
+  const archived  = filtered.filter(q => q.status === 'archived');
 
-  // If you treat "library" as part of live list or its own section, adjust below.
-  renderQuoteSection('liveContainer', live, 'published');
-  renderQuoteSection('draftsContainer', drafts, 'draft');
-  renderQuoteSection('scheduledContainer', scheduled, 'scheduled');
-  renderQuoteSection('archivedContainer', archived, 'archived');
-
-  // Optional: if you have a library section container
+  // LIVE always first — use ORIGINAL renderer
+  renderInto('liveContainer', live, 'live');
+  renderInto('scheduledContainer', scheduled, 'scheduled');
+  renderInto('draftsContainer', drafts, 'draft');
   if (document.getElementById('libraryContainer')) {
-    renderQuoteSection('libraryContainer', library, 'library');
+    renderInto('libraryContainer', library, 'library');
   }
 
-  // Counts
-  setCount('draftsCount', drafts.length, 'draft');
-  setCount('scheduledCount', scheduled.length, 'scheduled');
-  setCount('archivedCount', archived.length, 'archived');
+  // counts
+  const dc = document.getElementById('draftsCount');
+  if (dc) dc.textContent = drafts.length ? `${drafts.length} draft${drafts.length === 1 ? '' : 's'}` : '';
+  const sc = document.getElementById('scheduledCount');
+  if (sc) sc.textContent = scheduled.length ? `${scheduled.length}` : '';
 
-  // Show/hide whole sections based on filter + content
-  toggleSection('draftsSection', !status || status === 'draft', drafts.length);
-  toggleSection('liveSection', !status || status === 'published', live.length);
-  toggleSection('scheduledSection', !status || status === 'scheduled', scheduled.length);
-  // archived stays behind its own toggle unless filtered to archived
-  if (status === 'archived') {
-    document.getElementById('archivedSection')?.classList.remove('hidden');
-  }
+  // section visibility when status filter is set
+  const show = (id, on) => document.getElementById(id)?.classList.toggle('hidden', !on);
+  show('liveSection',      !status || status === 'published');
+  show('scheduledSection', !status || status === 'scheduled');
+  show('draftsSection',    !status || status === 'draft');
 }
 
-function setCount(id, n, label) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = n ? `${n} ${label}${n === 1 ? '' : 's'}` : '';
-}
-
-function toggleSection(sectionId, allowedByFilter, count) {
-  const el = document.getElementById(sectionId);
+function renderInto(containerId, quotes, kind) {
+  const el = document.getElementById(containerId);
   if (!el) return;
-  // Hide if filter excludes it OR (optional) if empty — keep empty state visible if you prefer
-  if (!allowedByFilter) {
-    el.classList.add('hidden');
-  } else {
-    el.classList.remove('hidden');
-  }
-}
-
-function renderQuoteSection(containerId, quotes, statusType) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
 
   if (!quotes.length) {
-    container.innerHTML = `
-      <div class="p-6 text-center bg-surface-cl rounded-xl border border-dashed border-surface-c">
-        <p class="text-xs text-on-surface-variant font-body">No ${statusType} quotes.</p>
-      </div>`;
+    el.innerHTML = `<div class="p-6 text-center bg-surface-cl rounded-xl border border-dashed border-surface-c"><p class="text-xs text-on-surface-variant">No ${kind} quotes.</p></div>`;
     return;
   }
 
-  // Live always already isolated; within a section sort newest first
-  quotes = [...quotes].sort((a, b) =>
-    new Date(b.published_at || b.scheduled_for || b.updated_at || b.created_at) -
-    new Date(a.published_at || a.scheduled_for || a.updated_at || a.created_at)
-  );
-
-  container.innerHTML = quotes.map(q => quoteCardHTML(q)).join('');
+  // ★ Prefer your ORIGINAL card builders in this order:
+  if (typeof window.buildQuoteCard === 'function') {
+    el.innerHTML = quotes.map(q => buildQuoteCard(q)).join('');
+  } else if (typeof window.renderQuoteCard === 'function') {
+    el.innerHTML = quotes.map(q => renderQuoteCard(q)).join('');
+  } else if (typeof window.createQuoteCard === 'function') {
+    el.innerHTML = quotes.map(q => createQuoteCard(q)).join('');
+  } else if (typeof window.renderLiveQuotes === 'function' && kind === 'live') {
+    renderLiveQuotes(quotes); // some codebases pass the array in
+  } else {
+    // last resort only
+    el.innerHTML = quotes.map(q => fallbackCard(q)).join('');
+  }
 }
 
-function quoteCardHTML(q) {
-  const status = q.status || 'draft';
-  const badgeMap = {
-    published: 'bg-emerald-100 text-emerald-800',
-    scheduled: 'bg-amber-100 text-amber-800',
-    draft: 'bg-slate-100 text-slate-600',
-    library: 'bg-blue-100 text-blue-800',
-    archived: 'bg-slate-200 text-slate-500'
-  };
-  const badge = badgeMap[status] || badgeMap.draft;
-
+function fallbackCard(q) {
+  const img = q.background_url
+    ? `<div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-slate-200"><img src="${q.background_url}" class="w-full h-full object-cover" alt=""></div>`
+    : '';
   return `
-    <div class="bg-surface-cl border border-surface-c rounded-xl p-4 flex flex-col sm:flex-row gap-3 justify-between hover:shadow-sm transition-shadow">
+    <div class="bg-surface-cl border border-surface-c rounded-xl p-4 flex gap-3">
+      ${img}
       <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-2 mb-1 flex-wrap">
-          <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${badge}">${status}</span>
+        <div class="flex flex-wrap gap-2 mb-1">
+          <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-slate-100">${escapeHtml(q.status || 'draft')}</span>
           ${q.category ? `<span class="text-[10px] font-semibold text-on-surface-variant">${escapeHtml(q.category)}</span>` : ''}
-          <span class="text-[11px] text-outline">${new Date(q.updated_at || q.created_at).toLocaleDateString()}</span>
         </div>
-        <p class="text-sm font-body text-on-surface font-medium line-clamp-2">"${escapeHtml(q.text || '')}"</p>
-        ${q.source ? `<p class="text-xs text-on-surface-variant mt-0.5">— ${escapeHtml(q.source)}</p>` : ''}
+        <p class="text-sm font-medium line-clamp-2">"${escapeHtml(q.text || '')}"</p>
+        ${q.source ? `<p class="text-xs text-on-surface-variant">— ${escapeHtml(q.source)}</p>` : ''}
       </div>
-      <div class="flex items-center gap-2 flex-shrink-0">
-        <button type="button" onclick="recallDraft('${q.id}')" class="px-3 py-1.5 bg-primary/10 text-primary text-xs font-bold rounded-lg hover:bg-primary/20">Edit</button>
-        <button type="button" onclick="deleteQuote('${q.id}')" class="px-3 py-1.5 bg-error/10 text-error text-xs font-bold rounded-lg hover:bg-error/20">Delete</button>
+      <div class="flex flex-col gap-1">
+        <button type="button" class="text-xs font-bold text-primary" onclick="recallDraft('${q.id}')">Edit</button>
+        <button type="button" class="text-xs font-bold text-error" onclick="deleteQuote('${q.id}')">Delete</button>
       </div>
     </div>`;
 }
 
-function clearFilters() {
-  const ids = ['filterStatus', 'filterCampaign', 'filterCategory'];
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  applyFilters();
-}
-
 window.applyFilters = applyFilters;
-window.clearFilters = clearFilters;
-window.loadQuotes = loadQuotes;
-
 // ════════════════════════════════════════════
 // RUNWAY STATUS
 // ════════════════════════════════════════════
