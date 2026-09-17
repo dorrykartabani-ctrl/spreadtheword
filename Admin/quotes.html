@@ -452,11 +452,23 @@ function showToast(msg, isErr=false) {
 }
 
 async function init() {
-  await Promise.all([loadBackgrounds(), loadCampaigns()]);
-  renderCategories();
-  updatePreview(); 
-  var urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('edit')) loadEditData(urlParams.get('edit'));
+  if (typeof checkAdminAuth === 'function') {
+    const ok = await checkAdminAuth();
+    if (!ok) return;
+  }
+
+  // Load dropdown options (campaigns, categories)
+  if (typeof loadCampaigns === 'function') {
+    await loadCampaigns();
+  }
+
+  // Check URL query string for ?edit=ID
+  const urlParams = new URLSearchParams(window.location.search);
+  const editId = urlParams.get('edit');
+
+  if (editId) {
+    await loadEditData(editId);
+  }
 }
 
 async function loadBackgrounds() {
@@ -779,6 +791,53 @@ async function handlePublish(event) {
     if (btn) btn.disabled = false;
   }
 }
+// ============================================
+// LOAD QUOTE DATA FOR EDITING
+// ============================================
+async function loadEditData(quoteId) {
+  if (!quoteId) return;
+
+  try {
+    const { data: quote, error } = await supabaseClient
+      .from('quotes')
+      .select('*')
+      .eq('id', quoteId)
+      .single();
+
+    if (error) throw error;
+    if (!quote) throw new Error('Quote not found');
+
+    // 1. Populate text fields
+    if (document.getElementById('quoteText')) document.getElementById('quoteText').value = quote.text || '';
+    if (document.getElementById('quoteSource')) document.getElementById('quoteSource').value = quote.source || '';
+    if (document.getElementById('quoteCategory')) document.getElementById('quoteCategory').value = quote.category || '';
+    if (document.getElementById('quoteCampaign')) document.getElementById('quoteCampaign').value = quote.campaign_id || '';
+    if (document.getElementById('quoteContext')) document.getElementById('quoteContext').value = quote.context || '';
+    if (document.getElementById('quoteBgUrl')) document.getElementById('quoteBgUrl').value = quote.background_url || '';
+
+    // 2. Populate schedule date if available
+    if (quote.scheduled_for && document.getElementById('scheduleDate')) {
+      const d = new Date(quote.scheduled_for);
+      document.getElementById('scheduleDate').value = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    }
+
+    // 3. Highlight the correct mode card (live, scheduled, library, draft)
+    const activeMode = quote.status || 'draft';
+    if (typeof selectMode === 'function') {
+      selectMode(activeMode);
+    }
+
+    showToast('Quote loaded into editor');
+
+  } catch (err) {
+    console.error('Error loading edit data:', err);
+    showToast('Could not load quote for editing: ' + err.message, true);
+  }
+}
+
+window.loadEditData = loadEditData;
+
 
 init();
+  
 </script>
