@@ -612,19 +612,48 @@ function renderAvatars() {
     Object.keys(grouped[era]).sort().forEach(journey => {
       html += `<h4 class="font-headline font-semibold text-md text-slate-600 mb-3 px-4">${escapeHtml(journey)}</h4>`;
       html += `<div class="space-y-3 pl-4">`;
-      grouped[era][journey].sort((a,b) => a.stage_order - b.stage_order).forEach(a => {
-        html += `<div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="editAvatar('${a.id}')"><div class="flex -space-x-2"><div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-white">${a.image_url_male ? `<img src="${a.image_url_male}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300 text-sm">male</span>'}</div></div><div class="flex-1"><div class="flex items-center gap-2"><span class="bg-primary/10 text-primary text-[10px] font-black px-2 py-0.5 rounded-full">STAGE ${a.stage_order}</span><h4 class="font-headline font-bold text-slate-800">${escapeHtml(a.journey_name)}</h4></div><p class="text-[11px] text-slate-500 mt-1">Req: ${a.requirement_value} ${a.requirement_type}</p></div><span class="material-symbols-outlined text-slate-300">edit</span></div>`;
+           grouped[era][journey].sort((a,b) => a.stage_order - b.stage_order).forEach(a => {
+        html += `
+        <div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow bg-white p-4 rounded-xl border border-slate-100" onclick="editAvatar('${a.id}')">
+          <div class="flex -space-x-2">
+            <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-white">
+              ${a.image_url_male ? `<img src="${a.image_url_male}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300 text-sm">male</span>'}
+            </div>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2">
+              <span class="bg-blue-50 text-blue-600 text-[10px] font-black px-2 py-0.5 rounded-full">STAGE ${a.stage_order}</span>
+              <h4 class="font-headline font-bold text-slate-800">${escapeHtml(a.avatar_title || 'Untitled')}</h4>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-1">Req: ${a.mythic_required || 0} Mythic Trophies</p>
+          </div>
+          <span class="material-symbols-outlined text-slate-300">edit</span>
+        </div>`;
       });
       html += `</div>`;
     });
   });
   list.innerHTML = html;
 }
+
+// Ensure you have an edit helper function to open the modal correctly:
+function editAvatar(id) {
+  const stage = avatarStages.find(s => s.id === id);
+  if (stage) {
+    openAvatarModal(stage);
+  } else {
+    showToast('Stage not found', true);
+  }
+}
+</script>
+
+<!-- PLACE ALL HTML MODALS SAFELY OUTSIDE THE SCRIPT TAG BELOW -->
+
 <div id="avatarModal" class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
   <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
     <div class="p-6 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10">
       <h3 class="font-headline font-bold text-xl" id="avatarModalTitle">Avatar Stage</h3>
-      <button onclick="closeAvatarModal()" class="text-slate-400 hover:text-slate-600">
+      <button type="button" onclick="closeAvatarModal()" class="text-slate-400 hover:text-slate-600">
         <span class="material-symbols-outlined">close</span>
       </button>
     </div>
@@ -636,11 +665,11 @@ function renderAvatars() {
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Era *</label>
-          <input type="text" id="avatarEra" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="Era 1">
+          <input type="text" id="avatarEra" class="form-input w-full rounded-xl px-4 py-3 text-sm border border-slate-200" placeholder="Era 1">
         </div>
         <div>
           <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Journey *</label>
-          <input type="text" id="avatarJourney" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="The Beginning">
+          <input type="text" id="avatarJourney" class="form-input w-full rounded-xl px-4 py-3 text-sm border border-slate-200" placeholder="The Beginning">
         </div>
       </div>
 
@@ -648,93 +677,41 @@ function renderAvatars() {
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Stage Order *</label>
-          <input type="number" id="avatarOrder" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="1" min="1">
+          <input type="number" id="avatarOrder" class="form-input w-full rounded-xl px-4 py-3 text-sm border border-slate-200" placeholder="1" min="1">
         </div>
         <div>
           <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Avatar Title *</label>
-          <input type="text" id="avatarName" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="The Sower">
+          <input type="text" id="avatarName" class="form-input w-full rounded-xl px-4 py-3 text-sm border border-slate-200" placeholder="The Sower">
         </div>
       </div>
 
       <!-- Mythic Requirement -->
       <div>
         <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Mythic Trophies Required</label>
-        <input type="number" id="avatarReqValue" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="0" min="0">
-        <p class="text-[10px] text-slate-400 mt-1">How many mythic trophies needed to unlock this stage</p>
+        <input type="number" id="avatarReqValue" class="form-input w-full rounded-xl px-4 py-3 text-sm border border-slate-200" placeholder="0" min="0">
+        <p class="text-[10px] text-slate-400 mt-1">Number of mythic trophies a user must collect to unlock this stage.</p>
       </div>
 
       <!-- Avatar Images -->
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Male Avatar Image</label>
-          <select id="avatarImageMale" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select>
+          <select id="avatarImageMale" class="form-input w-full rounded-xl px-4 py-3 text-sm border border-slate-200"></select>
         </div>
         <div>
           <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Female Avatar Image</label>
-          <select id="avatarImageFemale" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select>
+          <select id="avatarImageFemale" class="form-input w-full rounded-xl px-4 py-3 text-sm border border-slate-200"></select>
         </div>
       </div>
     </div>
     
     <div class="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 sticky bottom-0">
-      <button onclick="closeAvatarModal()" class="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-200">Cancel</button>
-      <button onclick="saveAvatar()" id="saveAvatarBtn" class="signature-gradient text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md">Save Stage</button>
+      <button type="button" onclick="closeAvatarModal()" class="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-200 transition-colors">Cancel</button>
+      <button type="button" onclick="saveAvatar()" id="saveAvatarBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition-colors">Save Stage</button>
     </div>
   </div>
 </div>
 
-async function saveAvatar() {
-  var id = getEl('avatarId').value;
-  var era = getEl('avatarEra').value.trim();
-  var journey = getEl('avatarJourney').value.trim();
-  var avatarTitle = getEl('avatarName').value.trim();
-  var stageOrder = parseInt(getEl('avatarOrder').value);
-  var mythicRequired = parseInt(getEl('avatarReqValue').value) || 0;
-  var imageMale = getEl('avatarImageMale').value;
-  var imageFemale = getEl('avatarImageFemale').value;
-
-  if (!era || !journey || !avatarTitle || isNaN(stageOrder)) {
-    return showToast('Please fill all required fields', true);
-  }
-
-  var btn = getEl('saveAvatarBtn');
-  btn.disabled = true;
-  btn.textContent = 'Saving...';
-
-  try {
-    var payload = {
-      era: era,
-      journey: journey,
-      avatar_title: avatarTitle,  // Updated column name
-      stage_order: stageOrder,
-      mythic_required: mythicRequired,  // Updated column name
-      image_url_male: imageMale || null,
-      image_url_female: imageFemale || null,
-      updated_at: new Date().toISOString()
-    };
-
-    var result;
-    if (id) {
-      // Update existing
-      result = await supabaseClient.from('avatar_stages').update(payload).eq('id', id);
-    } else {
-      // Create new
-      result = await supabaseClient.from('avatar_stages').insert([payload]);
-    }
-
-    if (result.error) throw result.error;
-
-    showToast(id ? 'Avatar stage updated!' : 'Avatar stage created!');
-    closeAvatarModal();
-    await loadData();
-  } catch (e) {
-    console.error('Save avatar error:', e);
-    showToast('Failed to save: ' + e.message, true);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Save Stage';
-  }
-}
 
 init();
 </script>
