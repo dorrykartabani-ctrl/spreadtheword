@@ -655,203 +655,274 @@ function renderAvatars() {
   });
   list.innerHTML = html;
 }
-// ============================================
-// SAVE AVATAR FUNCTION
-// ============================================
-async function saveAvatar() {
-  const id = document.getElementById('avatarId').value;
-  const era = document.getElementById('avatarEra').value.trim();
-  const journey = document.getElementById('avatarJourney').value.trim();
-  const avatarTitle = document.getElementById('avatarName').value.trim();
-  const stageOrder = parseInt(document.getElementById('avatarOrder').value);
-  const mythicRequired = parseInt(document.getElementById('avatarReqValue').value) || 0;
 
-  const maleEl = document.getElementById('avatarImageMale');
-  const femaleEl = document.getElementById('avatarImageFemale');
-  const imageMale = maleEl ? maleEl.value : null;
-  const imageFemale = femaleEl ? femaleEl.value : null;
+  // =====================================================
+// GLOBAL AVATAR MODAL CONTROLLERS
+// =====================================================
 
-  if (!era || !journey || !avatarTitle || isNaN(stageOrder)) {
-    return showToast('Please fill all required fields (Era, Journey, Stage Order, Title)', true);
+async function prepareAvatarImageSelects(selectedMale = '', selectedFemale = '') {
+  /*
+   * Use the page's existing media-library dropdown loader.
+   * That loader should only include items from the Avatar media list.
+   */
+  if (typeof window.populateAvatarImageDropdowns === 'function') {
+    await window.populateAvatarImageDropdowns(selectedMale, selectedFemale);
   }
 
-  const btn = document.getElementById('saveAvatarBtn');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = 'Saving...';
+  const maleSelect = document.getElementById('avatarImageMale');
+  const femaleSelect = document.getElementById('avatarImageFemale');
+
+  // Preserve an existing image even if it is not currently in the media list.
+  function selectImage(select, url) {
+    if (!select) return;
+
+    if (!url) {
+      select.value = '';
+      return;
+    }
+
+    const exists = Array.from(select.options).some(
+      option => option.value === url
+    );
+
+    if (!exists) {
+      const filename = decodeURIComponent(url.split('/').pop() || 'Current image');
+      select.add(new Option(filename, url));
+    }
+
+    select.value = url;
+  }
+
+  selectImage(maleSelect, selectedMale);
+  selectImage(femaleSelect, selectedFemale);
+}
+
+window.openAvatarModal = async function () {
+  document.getElementById('avatarModalTitle').textContent = 'Add Avatar Stage';
+  document.getElementById('avatarId').value = '';
+  document.getElementById('avatarEra').value = '';
+  document.getElementById('avatarJourney').value = '';
+  document.getElementById('avatarName').value = '';
+  document.getElementById('avatarReqValue').value = 0;
+
+  // Work out the next stage number without relying on avatarStages.
+  let nextOrder = 1;
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('avatar_stages')
+      .select('stage_order')
+      .order('stage_order', { ascending: false })
+      .limit(1);
+
+    if (!error && data && data.length) {
+      nextOrder = Number(data[0].stage_order || 0) + 1;
+    }
+  } catch (error) {
+    console.warn('Could not calculate the next stage order:', error);
+  }
+
+  document.getElementById('avatarOrder').value = nextOrder;
+
+  const deleteButton = document.getElementById('deleteAvatarBtn');
+  if (deleteButton) deleteButton.classList.add('hidden');
+
+  await prepareAvatarImageSelects('', '');
+
+  document.getElementById('avatarModal').classList.remove('hidden');
+};
+
+window.editAvatar = async function (id) {
+  if (!id) {
+    showToast('Avatar stage ID is missing', true);
+    return;
   }
 
   try {
-    const payload = {
-      era: era,
-      journey: journey,
-      avatar_title: avatarTitle,
-      stage_order: stageOrder,
-      mythic_required: mythicRequired,
-      image_url_male: imageMale || null,
-      image_url_female: imageFemale || null,
-      updated_at: new Date().toISOString()
-    };
+    const { data: stage, error } = await supabaseClient
+      .from('avatar_stages')
+      .select(`
+        id,
+        era,
+        journey,
+        avatar_title,
+        stage_order,
+        mythic_required,
+        image_url_male,
+        image_url_female
+      `)
+      .eq('id', id)
+      .single();
 
+    if (error) throw error;
+    if (!stage) throw new Error('Avatar stage was not found');
+
+    document.getElementById('avatarModalTitle').textContent =
+      'Edit Avatar Stage';
+
+    document.getElementById('avatarId').value = stage.id;
+    document.getElementById('avatarEra').value = stage.era || '';
+    document.getElementById('avatarJourney').value = stage.journey || '';
+    document.getElementById('avatarOrder').value = stage.stage_order ?? '';
+    document.getElementById('avatarName').value = stage.avatar_title || '';
+    document.getElementById('avatarReqValue').value =
+      stage.mythic_required ?? 0;
+
+    await prepareAvatarImageSelects(
+      stage.image_url_male || '',
+      stage.image_url_female || ''
+    );
+
+    const deleteButton = document.getElementById('deleteAvatarBtn');
+    if (deleteButton) deleteButton.classList.remove('hidden');
+
+    document.getElementById('avatarModal').classList.remove('hidden');
+  } catch (error) {
+    console.error('Edit avatar error:', error);
+    showToast('Could not open avatar stage: ' + error.message, true);
+  }
+};
+
+
+// Close the avatar modal.
+window.closeAvatarModal = function () {
+  const modal = document.getElementById('avatarModal');
+
+  if (modal) {
+    modal.classList.add('hidden');
+  }
+};
+
+
+// Create or update an avatar stage.
+window.saveAvatar = async function () {
+  const id = document.getElementById('avatarId').value.trim();
+  const era = document.getElementById('avatarEra').value.trim();
+  const journey = document.getElementById('avatarJourney').value.trim();
+  const avatarTitle = document.getElementById('avatarName').value.trim();
+
+  const stageOrder = Number(
+    document.getElementById('avatarOrder').value
+  );
+
+  const mythicRequired = Number(
+    document.getElementById('avatarReqValue').value || 0
+  );
+
+  const maleSelect = document.getElementById('avatarImageMale');
+  const femaleSelect = document.getElementById('avatarImageFemale');
+
+  if (!era || !journey || !avatarTitle) {
+    showToast('Please complete Era, Journey and Avatar Title', true);
+    return;
+  }
+
+  if (!Number.isInteger(stageOrder) || stageOrder < 1) {
+    showToast('Stage Order must be a whole number of 1 or greater', true);
+    return;
+  }
+
+  if (
+    !Number.isInteger(mythicRequired) ||
+    mythicRequired < 0
+  ) {
+    showToast('Mythic Trophies Required must be 0 or greater', true);
+    return;
+  }
+
+  const payload = {
+    era,
+    journey,
+    avatar_title: avatarTitle,
+    stage_order: stageOrder,
+    mythic_required: mythicRequired,
+    image_url_male: maleSelect?.value || null,
+    image_url_female: femaleSelect?.value || null
+  };
+
+  const button = document.getElementById('saveAvatarBtn');
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Saving...';
+  }
+
+  try {
     let result;
+
     if (id) {
-      // Update existing record
-      result = await supabaseClient.from('avatar_stages').update(payload).eq('id', id);
+      result = await supabaseClient
+        .from('avatar_stages')
+        .update(payload)
+        .eq('id', id);
     } else {
-      // Create new record
-      result = await supabaseClient.from('avatar_stages').insert([payload]);
+      result = await supabaseClient
+        .from('avatar_stages')
+        .insert([payload]);
     }
 
     if (result.error) throw result.error;
 
     showToast(id ? 'Avatar stage updated!' : 'Avatar stage created!');
-    closeAvatarModal();
+    window.closeAvatarModal();
 
-    // Reload list
-    if (typeof loadData === 'function') {
-      await loadData();
-    } else if (typeof fetchProgressionData === 'function') {
-      await fetchProgressionData();
-    } else if (typeof init === 'function') {
-      await init();
-    }
-  } catch (e) {
-    console.error('Save avatar error:', e);
-    showToast('Failed to save: ' + e.message, true);
+    // Reloading avoids relying on an unknown local data-loading function.
+    setTimeout(() => window.location.reload(), 300);
+  } catch (error) {
+    console.error('Save avatar error:', error);
+    showToast('Failed to save avatar stage: ' + error.message, true);
   } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = 'Save Stage';
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Save Stage';
     }
   }
-}
-window.saveAvatar = saveAvatar;
-  
-function editAvatar(id) {
-  const stage = avatarStages.find(s => s.id === id);
-  if (stage) {
-    openAvatarModal(stage);
-  } else {
-    showToast('Stage not found', true);
+};
+
+
+// Delete an existing avatar stage.
+window.deleteAvatarStage = async function (id) {
+  if (!id) {
+    showToast('Save the stage before trying to delete it', true);
+    return;
   }
-}
-</script>
 
-  <div id="avatarModal" class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-    <div class="p-6 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10">
-      <h3 class="font-headline font-bold text-xl" id="avatarModalTitle">Avatar Stage</h3>
-      <button type="button" onclick="closeAvatarModal()" class="text-slate-400 hover:text-slate-600">
-        <span class="material-symbols-outlined">close</span>
-      </button>
-    </div>
-    
-    <div class="p-6 space-y-5">
-      <input type="hidden" id="avatarId">
-      
-      <!-- Era & Journey -->
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Era *</label>
-          <input type="text" id="avatarEra" class="form-input w-full rounded-xl px-4 py-3 text-sm border border-slate-200" placeholder="Era 1">
-        </div>
-        <div>
-          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Journey *</label>
-          <input type="text" id="avatarJourney" class="form-input w-full rounded-xl px-4 py-3 text-sm border border-slate-200" placeholder="The Beginning">
-        </div>
-      </div>
+  const confirmed = window.confirm(
+    'Delete this avatar stage? This cannot be undone.'
+  );
 
-      <!-- Stage Order & Avatar Title -->
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Stage Order *</label>
-          <input type="number" id="avatarOrder" class="form-input w-full rounded-xl px-4 py-3 text-sm border border-slate-200" placeholder="1" min="1">
-        </div>
-        <div>
-          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Avatar Title *</label>
-          <input type="text" id="avatarName" class="form-input w-full rounded-xl px-4 py-3 text-sm border border-slate-200" placeholder="The Sower">
-        </div>
-      </div>
+  if (!confirmed) return;
 
-      <!-- Mythic Requirement -->
-      <div>
-        <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Mythic Trophies Required</label>
-        <input type="number" id="avatarReqValue" class="form-input w-full rounded-xl px-4 py-3 text-sm border border-slate-200" placeholder="0" min="0">
-        <p class="text-[10px] text-slate-400 mt-1">Number of mythic trophies a user must collect to unlock this stage.</p>
-      </div>
+  const button = document.getElementById('deleteAvatarBtn');
 
-      <!-- Avatar Images -->
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Male Avatar Image</label>
-          <select id="avatarImageMale" class="form-input w-full rounded-xl px-4 py-3 text-sm border border-slate-200"></select>
-        </div>
-        <div>
-          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Female Avatar Image</label>
-          <select id="avatarImageFemale" class="form-input w-full rounded-xl px-4 py-3 text-sm border border-slate-200"></select>
-        </div>
-      </div>
-    </div>
-    
-    <div class="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 sticky bottom-0">
-      <button type="button" onclick="closeAvatarModal()" class="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-200 transition-colors">Cancel</button>
-      <button type="button" onclick="saveAvatar()" id="saveAvatarBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition-colors">Save Stage</button>
-    </div>
-  </div>
-</div>
-<script>
-async function editAvatar(id) {
- 
-  let list = (typeof avatarStages !== 'undefined' && Array.isArray(avatarStages)) ? avatarStages : [];
-  let stage = list.find(s => String(s.id) === String(id));
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Deleting...';
+  }
 
-  if (!stage) {
-    try {
-      const { data, error } = await supabaseClient
-        .from('avatar_stages')
-        .select('*')
-        .eq('id', id)
-        .single();
+  try {
+    const { error } = await supabaseClient
+      .from('avatar_stages')
+      .delete()
+      .eq('id', id);
 
-      if (!error && data) {
-        stage = data;
-      }
-    } catch (e) {
-      console.error('Fetch avatar stage error:', e);
+    if (error) throw error;
+
+    showToast('Avatar stage deleted');
+    window.closeAvatarModal();
+
+    setTimeout(() => window.location.reload(), 300);
+  } catch (error) {
+    console.error('Delete avatar error:', error);
+    showToast('Failed to delete avatar stage: ' + error.message, true);
+
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Delete';
     }
   }
+};
 
-  if (!stage) {
-    return showToast('Avatar stage not found', true);
-  }
-
-  // 3. Populate Modal Fields
-  document.getElementById('avatarModalTitle').textContent = 'Edit Avatar Stage';
-  document.getElementById('avatarId').value = stage.id;
-  document.getElementById('avatarEra').value = stage.era || '';
-  document.getElementById('avatarJourney').value = stage.journey || '';
-  document.getElementById('avatarOrder').value = stage.stage_order ?? '';
-  document.getElementById('avatarName').value = stage.avatar_title || stage.journey_name || '';
-  document.getElementById('avatarReqValue').value = stage.mythic_required ?? stage.requirement_value ?? 0;
- document.getElementById('deleteAvatarBtn').classList.remove('hidden');
-
-  // 4. Populate Media Dropdowns
-  if (typeof populateAvatarImageDropdowns === 'function') {
-    await populateAvatarImageDropdowns(stage.image_url_male, stage.image_url_female);
-  }
-
-  // 5. Open Modal
-  document.getElementById('avatarModal').classList.remove('hidden');
-  document.getElementById('deleteAvatarBtn').classList.add('hidden');
-}
-
-function closeAvatarModal() {
-  const modal = document.getElementById('avatarModal');
-  if (modal) {
-    modal.classList.add('hidden');
-  }
-}
-window.closeAvatarModal = closeAvatarModal; 
   
 init();
 </script>
