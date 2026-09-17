@@ -324,33 +324,39 @@
             </div>
           </div>
 
-          <!-- Publish Options -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-  <!-- FEATURE NOW -->
-  <div id="modeCard-now" onclick="selectPublishMode('now')" class="publish-mode-card cursor-pointer border rounded-xl p-4 text-center transition-all">
-    <span class="material-symbols-outlined text-2xl">bolt</span>
-    <p class="font-bold text-xs mt-1 uppercase">Feature Now</p>
+         <!-- PUBLISH OPTIONS -->
+<div class="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+  <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">When to Publish</h3>
+  
+  <!-- 4 Button Grid -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+    <div id="mode-live" onclick="selectMode('live')" class="publish-mode cursor-pointer rounded-xl border-2 border-primary bg-primary text-white p-4 text-center transition-all">
+      <span class="material-symbols-outlined text-[24px] mb-1">bolt</span>
+      <p class="text-[11px] font-bold uppercase tracking-wider">Feature Now</p>
+    </div>
+    
+    <div id="mode-scheduled" onclick="selectMode('scheduled')" class="publish-mode cursor-pointer rounded-xl border-2 border-slate-100 bg-white text-slate-500 hover:border-slate-200 p-4 text-center transition-all">
+      <span class="material-symbols-outlined text-[24px] mb-1">calendar_month</span>
+      <p class="text-[11px] font-bold uppercase tracking-wider">Schedule</p>
+    </div>
+
+    <div id="mode-library" onclick="selectMode('library')" class="publish-mode cursor-pointer rounded-xl border-2 border-slate-100 bg-white text-slate-500 hover:border-slate-200 p-4 text-center transition-all">
+      <span class="material-symbols-outlined text-[24px] mb-1">library_books</span>
+      <p class="text-[11px] font-bold uppercase tracking-wider">Library</p>
+    </div>
+
+    <div id="mode-draft" onclick="selectMode('draft')" class="publish-mode cursor-pointer rounded-xl border-2 border-slate-100 bg-white text-slate-500 hover:border-slate-200 p-4 text-center transition-all">
+      <span class="material-symbols-outlined text-[24px] mb-1">draft</span>
+      <p class="text-[11px] font-bold uppercase tracking-wider">Draft</p>
+    </div>
   </div>
 
-  <!-- SCHEDULE -->
-  <div id="modeCard-schedule" onclick="selectPublishMode('schedule')" class="publish-mode-card cursor-pointer border rounded-xl p-4 text-center transition-all">
-    <span class="material-symbols-outlined text-2xl">calendar_month</span>
-    <p class="font-bold text-xs mt-1 uppercase">Schedule</p>
-  </div>
-
-  <!-- ADD TO LIBRARY (NEW) -->
-  <div id="modeCard-library" onclick="selectPublishMode('library')" class="publish-mode-card cursor-pointer border rounded-xl p-4 text-center transition-all">
-    <span class="material-symbols-outlined text-2xl">library_books</span>
-    <p class="font-bold text-xs mt-1 uppercase">Add to Library</p>
-  </div>
-
-  <!-- DRAFT -->
-  <div id="modeCard-draft" onclick="selectPublishMode('draft')" class="publish-mode-card cursor-pointer border rounded-xl p-4 text-center transition-all">
-    <span class="material-symbols-outlined text-2xl">mail</span>
-    <p class="font-bold text-xs mt-1 uppercase">Draft</p>
+  <!-- Schedule Date Picker (Hidden by default) -->
+  <div id="scheduleContainer" class="hidden mb-5 p-4 bg-slate-50 rounded-xl border border-slate-100">
+    <label class="block text-xs font-bold text-slate-600 mb-2">Select Date & Time</label>
+    <input type="datetime-local" id="scheduleDate" class="form-input w-full md:w-1/2 rounded-lg px-3 py-2 text-sm border-slate-200">
   </div>
 </div>
-
             <div id="schedulePicker" class="hidden grid grid-cols-2 gap-3 mt-4">
               <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Date</label><input type="date" id="scheduleDate" class="form-input w-full rounded-lg px-3 py-2 text-sm"></div>
               <div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Time (AEST)</label><input type="time" id="scheduleTime" value="05:30" class="form-input w-full rounded-lg px-3 py-2 text-sm"></div>
@@ -640,43 +646,41 @@ async function handleBgUpload(input) {
   }
 }
 
-let selectedPublishMode = 'now';
+let publishMode = 'live';
 
-function selectPublishMode(mode) {
-  selectedPublishMode = mode;
-
-  // Reset all cards
-  document.querySelectorAll('.publish-mode-card').forEach(card => {
-    card.classList.remove('bg-primary', 'text-white', 'border-primary');
-    card.classList.add('bg-white', 'text-slate-600', 'border-slate-200');
+// Handles UI clicking of the 4 boxes
+function selectMode(mode) {
+  publishMode = mode;
+  
+  // Reset all boxes
+  document.querySelectorAll('.publish-mode').forEach(el => {
+    el.className = 'publish-mode cursor-pointer rounded-xl border-2 border-slate-100 bg-white text-slate-500 hover:border-slate-200 p-4 text-center transition-all';
   });
-
-  // Highlight active card
-  const activeCard = document.getElementById(`modeCard-${mode}`);
-  if (activeCard) {
-    activeCard.classList.add('bg-primary', 'text-white', 'border-primary');
-    activeCard.classList.remove('bg-white', 'text-slate-600', 'border-slate-200');
+  
+  // Highlight selected box
+  const active = document.getElementById('mode-' + mode);
+  if (active) {
+    active.className = 'publish-mode cursor-pointer rounded-xl border-2 border-primary bg-primary text-white p-4 text-center transition-all';
   }
 
-  // Show schedule picker only if scheduling
-  const schedulePicker = document.getElementById('schedulePickerContainer');
-  if (schedulePicker) {
-    schedulePicker.classList.toggle('hidden', mode !== 'schedule');
+  // Show/Hide Date Picker
+  const dateContainer = document.getElementById('scheduleContainer');
+  if (dateContainer) {
+    dateContainer.classList.toggle('hidden', mode !== 'scheduled');
   }
 
-  // Update main button label
-  const mainBtn = document.getElementById('submitQuoteBtn');
-  if (mainBtn) {
+  // Update Main Submit Button Text
+  const btn = document.getElementById('submitBtn'); // Ensure this ID matches your actual submit button!
+  if (btn) {
     const labels = {
-      now: '⚡ Feature on Homepage Now',
-      schedule: '📅 Schedule Quote',
-      library: '📚 Add to Library',
+      live: '⚡ Feature Live Now',
+      scheduled: '📅 Schedule Quote',
+      library: '📚 Save to Library',
       draft: '📝 Save as Draft'
     };
-    mainBtn.innerHTML = `<span class="flex items-center justify-center gap-2">${labels[mode]}</span>`;
+    btn.innerHTML = labels[mode] || 'Save Quote';
   }
 }
-
 function openLibraryModal() {
   var modal = getEl('libraryModal');
   var grid = getEl('libraryGrid');
@@ -703,171 +707,77 @@ function selectFromLibrary(url) {
   closeLibraryModal();
 }
   
-async function handlePublish(e) {
-  e.preventDefault();
-  var text = getEl('quoteText').value.trim(), source = getEl('quoteSource').value.trim();
-  var status = document.querySelector('input[name="publish_state"]:checked').value;
+async function handlePublish(event) {
+  if (event) event.preventDefault();
+
+  // Safely grab values using optional chaining (?.) so it doesn't crash if an element is missing
+  const text = document.getElementById('quoteText')?.value.trim();
+  const source = document.getElementById('quoteSource')?.value.trim();
+  const category = document.getElementById('quoteCategory')?.value;
+  const campaign = document.getElementById('quoteCampaign')?.value;
+  const context = document.getElementById('quoteContext')?.value.trim();
+  const bgUrl = document.getElementById('quoteBgUrl')?.value.trim();
+  const scheduleDate = document.getElementById('scheduleDate')?.value;
   
-  // FIX 1: Category cannot be null
-  var categoryToSave = currentCategory === 'None' ? 'None' : currentCategory;
+  // Assuming you extract quoteId from URL params (e.g. ?edit=123)
+  const urlParams = new URLSearchParams(window.location.search);
+  const quoteId = urlParams.get('edit');
 
-  // FIX 2: Map 'schedule' to 'scheduled' to satisfy database constraint
-  var dbStatus = status === 'now' ? 'live' : (status === 'schedule' ? 'scheduled' : 'draft');
-
-  var data = {
-    text: text, source: source, category: categoryToSave,
-    context: getEl('quoteContext').value.trim() || null,
-    campaign_id: getEl('quoteCampaign').value || null,
-    hashtags: hashtags, background_url: selectedBgUrl,
-    home_font_size: hSize, home_text_align: hAlign, 
-    home_text_color: getEl('homeTextColor').value,
-    home_font_family: hFont, home_font_weight: hWeight, home_text_shadow: hShadow,
-    status: dbStatus 
-  };
-
-  if (status === 'schedule') {
-    var d = getEl('scheduleDate').value, t = getEl('scheduleTime').value;
-    if(!d || !t) return showToast("Select date/time", true);
-    var dObj = new Date(d + 'T' + t + ':00');
-    data.scheduled_for = new Date(dObj.getTime() - (10 * 60 * 60 * 1000)).toISOString();
-  } else if (status === 'now') {
-    data.published_at = new Date().toISOString();
-  }
-
-  var btn = getEl('submitBtn'); btn.disabled = true; btn.innerHTML = '<span class="material-symbols-outlined spin text-lg">progress_activity</span> Saving...';
-  
-  try {
-    var res;
-    if(isEditMode) {
-      res = await supabaseClient.from('quotes').update(data).eq('id', editQuoteId);
-    } else {
-      res = await supabaseClient.from('quotes').insert([data]);
-    }
-    
-    if (res.error) {
-      console.error("Supabase Error:", res.error);
-      throw new Error(res.error.message);
-    }
-    
-    showToast("Quote saved successfully!");
-    setTimeout(() => { window.location.href = 'manage-quotes.html'; }, 1000);
-  } catch(err) {
-    console.error("Publish Error:", err);
-    showToast("Failed to save: " + err.message, true);
-    btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined text-lg">send</span> <span id="submitLabel">Publish Quote</span>';
-  }
-}
-async function handleQuoteSubmit() {
-  const modeToStatus = {
-    now: 'published',      // Live featured homepage quote
-    schedule: 'scheduled', // Future featured quote
-    library: 'library',    // Silently added to library only
-    draft: 'draft'         // Admin private
-  };
-
-  const targetStatus = modeToStatus[selectedPublishMode] || 'draft';
-  await saveQuoteWithStatus(targetStatus);
-}
-
-async function saveQuoteWithStatus(targetStatus) {
-  const text = (document.getElementById('quoteText')?.value || '').trim();
-  const source = (document.getElementById('quoteSource')?.value || '').trim();
-  const category = (document.getElementById('quoteCategory')?.value || '').trim();
-  const context = (document.getElementById('quoteContext')?.value || '').trim();
-  const scheduledForVal = document.getElementById('quoteScheduledFor')?.value;
-  const id = document.getElementById('quoteId')?.value;
-
-  if (!text) return showToast('Please enter quote text', true);
+  if (!text) return showToast('Please enter the quote text', true);
+  if (publishMode === 'scheduled' && !scheduleDate) return showToast('Please select a date/time', true);
 
   const payload = {
-    text,
+    text: text,
     source: source || null,
     category: category || null,
+    campaign_id: campaign || null,
     context: context || null,
-    status: targetStatus,
+    background_url: bgUrl || null,
+    status: publishMode,
     updated_at: new Date().toISOString()
   };
 
-  if (targetStatus === 'scheduled') {
-    if (!scheduledForVal) return showToast('Please select a date/time', true);
-    payload.scheduled_for = new Date(scheduledForVal).toISOString();
-    payload.published_at = null;
-  } else if (targetStatus === 'published') {
-    // ONLY this sets published_at, which the homepage reads
+  // Assign timestamps based on mode
+  if (publishMode === 'live') {
     payload.published_at = new Date().toISOString();
     payload.scheduled_for = null;
-  } else if (targetStatus === 'library') {
-    // Library: available to discover/share, but NOT featured on homepage
+  } else if (publishMode === 'scheduled') {
+    payload.scheduled_for = new Date(scheduleDate).toISOString();
     payload.published_at = null;
-    payload.scheduled_for = null;
   } else {
-    // draft
+    // Draft or Library
     payload.published_at = null;
     payload.scheduled_for = null;
+  }
+
+  // Change button state
+  const btn = document.getElementById('submitBtn'); // Make sure your HTML submit button has id="submitBtn"
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = 'Saving...';
   }
 
   try {
     let result;
-    if (id) {
-      result = await supabaseClient.from('quotes').update(payload).eq('id', id);
+    if (quoteId) {
+      result = await supabaseClient.from('quotes').update(payload).eq('id', quoteId);
     } else {
       result = await supabaseClient.from('quotes').insert([payload]);
     }
+
     if (result.error) throw result.error;
 
-    const messages = {
-      published: 'Now featured on the homepage!',
-      scheduled: 'Scheduled successfully!',
-      library: 'Added to Library — discoverable & shareable, homepage untouched.',
-      draft: 'Saved as private draft.'
-    };
-    showToast(messages[targetStatus]);
+    showToast('Quote saved successfully!');
+    setTimeout(() => {
+      window.location.href = 'manage-quotes.html';
+    }, 1500);
 
-    if (typeof clearQuoteComposer === 'function') clearQuoteComposer();
-    if (typeof loadQuotes === 'function') await loadQuotes();
-  } catch (e) {
-    console.error('Save error:', e);
-    showToast('Failed to save: ' + e.message, true);
+  } catch (error) {
+    console.error('Save error:', error);
+    showToast('Failed to save: ' + error.message, true);
+  } finally {
+    if (btn) btn.disabled = false;
   }
-}
-async function loadEditData(id) {
-  isEditMode = true; editQuoteId = id;
-  getEl('formTitle').textContent = 'Edit Quote';
-  var { data } = await supabaseClient.from('quotes').select('*').eq('id', id).single();
-  if(!data) return showToast('Quote not found', true);
-
-  getEl('quoteText').value = data.text;
-  getEl('quoteSource').value = data.source;
-  getEl('quoteContext').value = data.context || '';
-  
-  currentCategory = data.category || 'None';
-  if (!availableCategories.includes(currentCategory)) availableCategories.push(currentCategory);
-  renderCategories();
-
-  if(data.campaign_id) getEl('quoteCampaign').value = data.campaign_id;
-  
-  hashtags = data.hashtags || []; renderHashtags();
-  selectedBgUrl = data.background_url || null; renderBgs();
-
-  getEl('homeTextColor').value = data.home_text_color || '#ffffff';
-  hFont = data.home_font_family || 'Lora';
-  hWeight = data.home_font_weight || '600';
-  hSize = data.home_font_size || '26px';
-  hAlign = data.home_text_align || 'left';
-  hShadow = data.home_text_shadow || false;
-  
-  document.querySelectorAll('[data-weight]').forEach(b => b.classList.toggle('active', b.dataset.weight === hWeight));
-  document.querySelectorAll('[data-size]').forEach(b => b.classList.toggle('active', b.dataset.size === hSize));
-  document.querySelectorAll('[data-align]').forEach(b => b.classList.toggle('active', b.dataset.align === hAlign));
-  if (hShadow) getEl('shadowToggle').classList.add('on');
-  
-  updateCharCount();
-  updatePreview();
-
-  var dbStatus = data.status;
-  var radioVal = dbStatus === 'live' ? 'now' : (dbStatus === 'scheduled' ? 'schedule' : 'draft');
-  var sRad = document.querySelector(`input[name="publish_state"][value="${radioVal}"]`);
-  if(sRad) { sRad.checked = true; updatePubState(sRad); }
 }
 
 init();
