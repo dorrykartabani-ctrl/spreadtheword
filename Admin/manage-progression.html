@@ -621,45 +621,121 @@ function renderAvatars() {
   list.innerHTML = html;
 }
 
-function openAvatarModal() {
-  getEl('avatarId').value = ''; getEl('avatarEra').value = 'Era 1'; getEl('avatarJourney').value = 'The Beginning'; getEl('avatarOrder').value = allAvatars.length + 1; getEl('avatarName').value = ''; getEl('avatarReqType').value = 'mythic'; getEl('avatarReqValue').value = '0'; getEl('avatarReqBadge').value = ''; getEl('avatarImageMale').value = ''; getEl('avatarImageFemale').value = ''; getEl('avatarModalTitle').textContent = 'New Avatar Stage'; toggleAvatarReq(); getEl('avatarModal').classList.remove('hidden');
-}
+<!-- AVATAR MODAL -->
+<div id="avatarModal" class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+    <div class="p-6 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10">
+      <h3 class="font-headline font-bold text-xl" id="avatarModalTitle">Avatar Stage</h3>
+      <button onclick="closeAvatarModal()" class="text-slate-400 hover:text-slate-600">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    
+    <div class="p-6 space-y-5">
+      <input type="hidden" id="avatarId">
+      
+      <!-- Era & Journey -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Era *</label>
+          <input type="text" id="avatarEra" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="Era 1">
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Journey *</label>
+          <input type="text" id="avatarJourney" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="The Beginning">
+        </div>
+      </div>
 
-function editAvatar(id) {
-  var a = allAvatars.find(x => x.id === id); if (!a) return;
-  getEl('avatarId').value = a.id; getEl('avatarEra').value = a.era || ''; getEl('avatarJourney').value = a.journey || ''; 
-  getEl('avatarOrder').value = a.stage_order || 1; getEl('avatarName').value = a.journey_name || ''; 
-  getEl('avatarReqType').value = a.requirement_type || 'mythic'; 
-  getEl('avatarReqValue').value = a.requirement_value || 0; 
-  getEl('avatarReqBadge').value = a.requirement_badge_id || ''; 
-  getEl('avatarImageMale').value = a.image_url_male || ''; 
-  getEl('avatarImageFemale').value = a.image_url_female || ''; 
-  getEl('avatarModalTitle').textContent = 'Edit Avatar Stage'; 
-  toggleAvatarReq(); 
-  getEl('avatarModal').classList.remove('hidden');
-}
+      <!-- Stage Order & Avatar Title -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Stage Order *</label>
+          <input type="number" id="avatarOrder" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="1" min="1">
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Avatar Title *</label>
+          <input type="text" id="avatarName" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="The Sower">
+        </div>
+      </div>
 
-function closeAvatarModal() { getEl('avatarModal').classList.add('hidden'); }
+      <!-- Mythic Requirement -->
+      <div>
+        <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Mythic Trophies Required</label>
+        <input type="number" id="avatarReqValue" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="0" min="0">
+        <p class="text-[10px] text-slate-400 mt-1">How many mythic trophies needed to unlock this stage</p>
+      </div>
+
+      <!-- Avatar Images -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Male Avatar Image</label>
+          <select id="avatarImageMale" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select>
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Female Avatar Image</label>
+          <select id="avatarImageFemale" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select>
+        </div>
+      </div>
+    </div>
+    
+    <div class="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 sticky bottom-0">
+      <button onclick="closeAvatarModal()" class="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-200">Cancel</button>
+      <button onclick="saveAvatar()" id="saveAvatarBtn" class="signature-gradient text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md">Save Stage</button>
+    </div>
+  </div>
+</div>
 
 async function saveAvatar() {
-  var id = getEl('avatarId').value, era = getEl('avatarEra').value.trim(), journey = getEl('avatarJourney').value.trim(), name = getEl('avatarName').value.trim();
-  var order = parseInt(getEl('avatarOrder').value) || 1, reqType = getEl('avatarReqType').value;
-  if (!name) return showToast('Journey Name required', true);
+  var id = getEl('avatarId').value;
+  var era = getEl('avatarEra').value.trim();
+  var journey = getEl('avatarJourney').value.trim();
+  var avatarTitle = getEl('avatarName').value.trim();
+  var stageOrder = parseInt(getEl('avatarOrder').value);
+  var mythicRequired = parseInt(getEl('avatarReqValue').value) || 0;
+  var imageMale = getEl('avatarImageMale').value;
+  var imageFemale = getEl('avatarImageFemale').value;
 
-  var btn = getEl('saveAvatarBtn'); btn.disabled = true; btn.textContent = 'Saving...';
+  if (!era || !journey || !avatarTitle || isNaN(stageOrder)) {
+    return showToast('Please fill all required fields', true);
+  }
+
+  var btn = getEl('saveAvatarBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
   try {
-    var data = {
-      era, journey, stage_order: order, journey_name: name, requirement_type: reqType,
-      requirement_value: reqType === 'badge' ? 1 : (parseInt(getEl('avatarReqValue').value) || 0),
-      requirement_badge_id: reqType === 'badge' ? (getEl('avatarReqBadge').value || null) : null,
-      image_url_male: getEl('avatarImageMale').value || null,
-      image_url_female: getEl('avatarImageFemale').value || null
+    var payload = {
+      era: era,
+      journey: journey,
+      avatar_title: avatarTitle,  // Updated column name
+      stage_order: stageOrder,
+      mythic_required: mythicRequired,  // Updated column name
+      image_url_male: imageMale || null,
+      image_url_female: imageFemale || null,
+      updated_at: new Date().toISOString()
     };
-    var res = id ? await supabaseClient.from('avatar_stages').update(data).eq('id', id) : await supabaseClient.from('avatar_stages').insert([data]);
-    if (res.error) throw new Error(res.error.message);
-    showToast('Avatar stage saved!'); closeAvatarModal(); await loadData();
-  } catch(e) { showToast('Error: ' + e.message, true); }
-  btn.disabled = false; btn.textContent = 'Save Stage';
+
+    var result;
+    if (id) {
+      // Update existing
+      result = await supabaseClient.from('avatar_stages').update(payload).eq('id', id);
+    } else {
+      // Create new
+      result = await supabaseClient.from('avatar_stages').insert([payload]);
+    }
+
+    if (result.error) throw result.error;
+
+    showToast(id ? 'Avatar stage updated!' : 'Avatar stage created!');
+    closeAvatarModal();
+    await loadData();
+  } catch (e) {
+    console.error('Save avatar error:', e);
+    showToast('Failed to save: ' + e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Stage';
+  }
 }
 
 init();
