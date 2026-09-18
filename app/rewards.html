@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Rewards — Command Center</title>
+  <title>Rewards Cabinet — Command Center</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -32,7 +32,6 @@
   <style>
     body { font-family: 'Manrope', sans-serif; background: #f8fafc; color: #0f172a; }
     .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .font-quote { font-family: 'Lora', serif; }
     
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -45,38 +44,100 @@
       border: 1px solid #f1f5f9; 
     }
 
-    .reward-card {
+    /* Cabinet Item Styles */
+    .cabinet-item {
+      position: relative;
       background: white;
       border-radius: 20px;
       padding: 16px;
       border: 2px solid #f1f5f9;
-      transition: all 0.3s ease;
-      position: relative;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      cursor: pointer;
       overflow: hidden;
     }
 
-    .reward-card.locked {
+    .cabinet-item:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+    }
+
+    .cabinet-item.locked {
+      opacity: 0.4;
+      filter: grayscale(0.8);
+    }
+
+    .cabinet-item.locked:hover {
       opacity: 0.6;
       filter: grayscale(0.5);
+      transform: translateY(-2px);
     }
 
-    .reward-card.unlocked {
+    .cabinet-item.unlocked {
       border-color: #D4A24C;
-      box-shadow: 0 8px 24px rgba(212, 162, 76, 0.15);
     }
 
-    .reward-card.unlocked::before {
+    .cabinet-item.unlocked::before {
       content: '';
       position: absolute;
       top: 0;
-      left: 0;
       right: 0;
-      bottom: 0;
-      background: linear-gradient(135deg, rgba(212, 162, 76, 0.05) 0%, transparent 100%);
-      pointer-events: none;
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, rgba(212, 162, 76, 0.15) 0%, transparent 100%);
+      border-radius: 0 20px 0 100%;
     }
 
-    .tier-badge {
+    /* Badge specific styles */
+    .badge-showcase {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .badge-showcase img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+    }
+
+    .badge-showcase.locked img {
+      filter: grayscale(1) drop-shadow(0 2px 4px rgba(0,0,0,0.05));
+    }
+
+    /* Trophy specific styles */
+    .trophy-showcase {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 12px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .trophy-showcase.tier-common { background: linear-gradient(135deg, #94a3b8, #cbd5e1); }
+    .trophy-showcase.tier-uncommon { background: linear-gradient(135deg, #16a34a, #22c55e); }
+    .trophy-showcase.tier-rare { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+    .trophy-showcase.tier-epic { background: linear-gradient(135deg, #9333ea, #a855f7); }
+    .trophy-showcase.tier-mythic { 
+      background: linear-gradient(135deg, #d97706, #f59e0b);
+      box-shadow: 0 8px 16px rgba(217, 119, 6, 0.3);
+    }
+
+    .trophy-showcase .material-symbols-outlined {
+      font-size: 40px;
+      color: white;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    }
+
+    /* Stats pill */
+    .stat-pill {
       display: inline-flex;
       align-items: center;
       gap: 4px;
@@ -88,74 +149,133 @@
       letter-spacing: 0.05em;
     }
 
+    /* Shine effect for unlocked items */
+    @keyframes shine {
+      0% { background-position: -100%; }
+      100% { background-position: 200%; }
+    }
+
+    .cabinet-item.unlocked:hover::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+      background-size: 200% 100%;
+      animation: shine 1.5s ease-in-out;
+      pointer-events: none;
+    }
+
+    /* Filter buttons */
+    .filter-btn {
+      flex-shrink: 0;
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      background: white;
+      border: 2px solid #f1f5f9;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .filter-btn.active {
+      background: #3d6285;
+      color: white;
+      border-color: #3d6285;
+    }
+
+    /* Modal styles */
+    .modal-overlay {
+      backdrop-filter: blur(8px);
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-sheet {
+      animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .tier-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
     .tier-common { background: #94a3b8; color: white; }
     .tier-uncommon { background: #16a34a; color: white; }
     .tier-rare { background: #2563eb; color: white; }
     .tier-epic { background: #9333ea; color: white; }
     .tier-mythic { background: #d97706; color: white; }
-
-    .progress-ring {
-      transform: rotate(-90deg);
-    }
-
-    .progress-ring-circle {
-      transition: stroke-dashoffset 0.5s ease;
-    }
-
-    @keyframes shimmer {
-      0% { background-position: -1000px 0; }
-      100% { background-position: 1000px 0; }
-    }
-
-    .shimmer {
-      background: linear-gradient(90deg, transparent 0%, rgba(212, 162, 76, 0.3) 50%, transparent 100%);
-      background-size: 1000px 100%;
-      animation: shimmer 3s infinite;
-    }
   </style>
 </head>
 <body class="pb-32">
 
 <!-- HEADER -->
-<header class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
+<header class="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-slate-100" style="padding-top: env(safe-area-inset-top);">
   <div class="max-w-[430px] mx-auto px-6 py-4 flex justify-between items-center">
     <button onclick="window.location.href='impact.html'" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors">
       <span class="material-symbols-outlined text-[20px]">arrow_back</span>
     </button>
-    <h1 class="font-headline font-extrabold text-lg text-slate-900">Rewards</h1>
-    <div class="w-10"></div> <!-- Spacer for centering -->
+    <div class="text-center">
+      <h1 class="font-headline font-extrabold text-lg text-slate-900">Rewards Cabinet</h1>
+      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Your Achievements</p>
+    </div>
+    <div class="w-10"></div>
   </div>
 </header>
 
-<main class="pt-24 px-5 max-w-[430px] mx-auto space-y-6 pb-8">
+<main class="pt-28 px-5 max-w-[430px] mx-auto space-y-6 pb-8">
 
-  <!-- REWARDS SUMMARY CARD -->
+  <!-- SUMMARY CARD -->
   <section class="dash-card relative overflow-hidden">
     <div class="absolute top-0 right-0 w-40 h-40 bg-gold/10 rounded-full blur-3xl"></div>
     
     <div class="relative z-10">
       <div class="flex items-center gap-3 mb-4">
-        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-gold to-amber-600 flex items-center justify-center shimmer">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-gold to-amber-600 flex items-center justify-center">
           <span class="material-symbols-outlined text-white text-[28px] filled">workspace_premium</span>
         </div>
         <div>
-          <h2 class="font-headline font-black text-2xl text-slate-900">Your Rewards</h2>
-          <p class="text-xs text-slate-500 font-semibold">Keep going to unlock more!</p>
+          <h2 class="font-headline font-black text-2xl text-slate-900">Your Collection</h2>
+          <p class="text-xs text-slate-500 font-semibold">Tap to see how you earned each</p>
         </div>
       </div>
 
-      <div class="grid grid-cols-3 gap-3">
+      <div class="grid grid-cols-4 gap-3">
         <div class="text-center p-3 bg-slate-50 rounded-xl">
-          <p id="totalUnlocked" class="font-headline font-black text-2xl text-gold">0</p>
-          <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Unlocked</p>
+          <p id="totalBadges" class="font-headline font-black text-xl text-slate-900">0</p>
+          <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Badges</p>
         </div>
         <div class="text-center p-3 bg-slate-50 rounded-xl">
-          <p id="totalLocked" class="font-headline font-black text-2xl text-slate-400">0</p>
-          <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Locked</p>
+          <p id="totalTrophies" class="font-headline font-black text-xl text-slate-900">0</p>
+          <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Trophies</p>
         </div>
         <div class="text-center p-3 bg-gradient-to-br from-gold/10 to-amber-100 rounded-xl border border-gold/20">
-          <p id="nextRewardIn" class="font-headline font-black text-2xl text-amber-700">-</p>
-          <p class="text-[9px] font-bold text-amber-600 uppercase mt-1">Next In</p>
+          <p id="mythicCount" class="font-headline font-black text-xl text-amber-700">0</p>
+          <p class="text-[9px] font-bold text-amber-600 uppercase mt-1">Mythic</p>
+        </div>
+        <div class="text-center p-3 bg-slate-50 rounded-xl">
+          <p id="completionPercent" class="font-headline font-black text-xl text-primary">0%</p>
+          <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Complete</p>
         </div>
       </div>
     </div>
@@ -164,27 +284,40 @@
   <!-- FILTER TABS -->
   <section>
     <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-      <button class="filter-btn active" data-filter="all">All</button>
-      <button class="filter-btn" data-filter="unlocked">Unlocked</button>
-      <button class="filter-btn" data-filter="locked">Locked</button>
-      <button class="filter-btn" data-filter="mythic">Mythic</button>
-      <button class="filter-btn" data-filter="epic">Epic</button>
+      <button class="filter-btn active" data-category="all">All</button>
+      <button class="filter-btn" data-category="badges">Badges</button>
+      <button class="filter-btn" data-category="trophies">Trophies</button>
+      <button class="filter-btn" data-category="mythic">Mythic</button>
+      <button class="filter-btn" data-category="unlocked">Unlocked</button>
     </div>
   </section>
 
-  <!-- REWARDS GRID -->
-  <section id="rewardsContainer" class="space-y-4">
-    <!-- Rewards will be dynamically loaded here -->
-    <div class="text-center py-12">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-200 border-t-primary"></div>
-      <p class="text-sm text-slate-400 mt-3 font-semibold">Loading rewards...</p>
+  <!-- BADGES SECTION -->
+  <section id="badgesSection">
+    <h3 class="font-headline font-bold text-lg mb-4 px-1 flex items-center gap-2">
+      <span class="material-symbols-outlined text-gold">military_tech</span>
+      Badges
+    </h3>
+    <div id="badgesGrid" class="grid grid-cols-3 gap-4">
+      <!-- Badges will be injected here -->
+    </div>
+  </section>
+
+  <!-- TROPHIES SECTION -->
+  <section id="trophiesSection">
+    <h3 class="font-headline font-bold text-lg mb-4 px-1 flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary">emoji_events</span>
+      Trophies
+    </h3>
+    <div id="trophiesGrid" class="grid grid-cols-2 gap-4">
+      <!-- Trophies will be injected here -->
     </div>
   </section>
 
 </main>
 
 <!-- BOTTOM NAV -->
-<nav class="fixed bottom-0 inset-x-0 z-40 bg-white/80 backdrop-blur-[20px] border-t border-slate-100" style="padding-bottom: env(safe-area-inset-bottom);">
+<nav class="fixed bottom-0 inset-x-0 z-40 bg-white/90 backdrop-blur-[20px] border-t border-slate-100" style="padding-bottom: env(safe-area-inset-bottom);">
   <div class="max-w-lg mx-auto flex items-center justify-around h-16 px-2">
     <a href="index.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">home</span><span class="text-[10px] font-bold">Home</span></a>
     <a href="library.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">auto_stories</span><span class="text-[10px] font-bold">Library</span></a>
@@ -194,6 +327,15 @@
   </div>
 </nav>
 
+<!-- MODAL -->
+<div id="modalOverlay" class="fixed inset-0 bg-slate-900/60 z-[100] hidden modal-overlay" onclick="closeModal()">
+  <div id="modalSheet" class="absolute bottom-0 inset-x-0 bg-white rounded-t-[32px] p-8 max-w-lg mx-auto modal-sheet" onclick="event.stopPropagation()" style="max-height: 85vh; overflow-y: auto; padding-bottom: calc(2rem + env(safe-area-inset-bottom));">
+    <div class="w-12 h-1 bg-slate-200 mx-auto mb-6 rounded-full"></div>
+    <div id="modalContent"></div>
+    <button onclick="closeModal()" class="w-full mt-8 py-4 bg-slate-900 text-white font-headline font-bold rounded-2xl active:scale-95 transition-transform">Close</button>
+  </div>
+</div>
+
 <script>
 var supabaseClient = supabase.createClient(
   'https://nhymadutuhpjgkiurify.supabase.co',
@@ -201,134 +343,21 @@ var supabaseClient = supabase.createClient(
 );
 
 var currentUser = null;
+var userProfile = null;
+var userStats = { shares: 0, recruits: 0, nations: 0 };
+var allTrophyDefs = [];
 var userTrophies = [];
-var allRewards = [];
 var currentFilter = 'all';
 
-// Sample rewards data structure (you'll want to store this in Supabase eventually)
-var REWARDS_DATABASE = [
-  // Mythic Tier
+// SPECIAL BADGES CONFIG (You'll want this in a separate file or database eventually)
+var SPECIAL_BADGES = [
   {
-    id: 'myth_1',
-    title: 'First Mythic Trophy',
-    description: 'Achieve your first Mythic-tier trophy',
-    tier: 'mythic',
-    icon: 'military_tech',
-    requirement_type: 'mythic_count',
-    requirement_value: 1,
-    reward_type: 'badge',
-    reward_value: 'Mythic Pioneer'
-  },
-  {
-    id: 'myth_5',
-    title: 'Mythic Collector',
-    description: 'Earn 5 Mythic trophies',
-    tier: 'mythic',
-    icon: 'trophy',
-    requirement_type: 'mythic_count',
-    requirement_value: 5,
-    reward_type: 'title',
-    reward_value: 'Legend'
-  },
-  
-  // Epic Tier
-  {
-    id: 'epic_3',
-    title: 'Epic Achiever',
-    description: 'Unlock 3 Epic trophies',
-    tier: 'epic',
-    icon: 'stars',
-    requirement_type: 'epic_count',
-    requirement_value: 3,
-    reward_type: 'badge',
-    reward_value: 'Epic Warrior'
-  },
-  
-  // Rare Tier
-  {
-    id: 'rare_10',
-    title: 'Rare Collector',
-    description: 'Collect 10 Rare trophies',
-    tier: 'rare',
-    icon: 'collections_bookmark',
-    requirement_type: 'rare_count',
-    requirement_value: 10,
-    reward_type: 'badge',
-    reward_value: 'Rare Hunter'
-  },
-  
-  // Share-based
-  {
-    id: 'share_10',
-    title: 'First Shares',
-    description: 'Share the gospel 10 times',
-    tier: 'uncommon',
-    icon: 'share',
-    requirement_type: 'shares',
-    requirement_value: 10,
-    reward_type: 'badge',
-    reward_value: 'Voice of Truth'
-  },
-  {
-    id: 'share_100',
-    title: 'Century Sharer',
-    description: 'Share the gospel 100 times',
-    tier: 'rare',
-    icon: 'campaign',
-    requirement_type: 'shares',
-    requirement_value: 100,
-    reward_type: 'badge',
-    reward_value: 'Evangelist'
-  },
-  
-  // Recruit-based
-  {
-    id: 'recruit_1',
-    title: 'First Recruit',
-    description: 'Invite your first warrior',
-    tier: 'common',
-    icon: 'person_add',
-    requirement_type: 'recruits',
-    requirement_value: 1,
-    reward_type: 'badge',
-    reward_value: 'Recruiter'
-  },
-  {
-    id: 'recruit_10',
-    title: 'Squad Leader',
-    description: 'Recruit 10 warriors',
-    tier: 'epic',
-    icon: 'groups',
-    requirement_type: 'recruits',
-    requirement_value: 10,
-    reward_type: 'title',
-    reward_value: 'Captain'
-  },
-  
-  // Nations
-  {
-    id: 'nations_5',
-    title: 'Global Reach',
-    description: 'Reach warriors in 5 nations',
-    tier: 'rare',
-    icon: 'public',
-    requirement_type: 'nations',
-    requirement_value: 5,
-    reward_type: 'badge',
-    reward_value: 'Global Ambassador'
-  },
-  
-  // Total Trophies
-  {
-    id: 'trophy_25',
-    title: 'Trophy Hunter',
-    description: 'Earn 25 total trophies',
-    tier: 'epic',
-    icon: 'emoji_events',
-    requirement_type: 'total_trophies',
-    requirement_value: 25,
-    reward_type: 'title',
-    reward_value: 'Champion'
+    id: 'genesis_warrior',
+    name: 'Genesis Warrior',
+    description: 'One of the first to join the mission',
+    image: '/images/badges/genesis.png',
+    icon: 'auto_awesome',
+    requirement: 'Launch member'
   }
 ];
 
@@ -340,11 +369,11 @@ async function init() {
   }
   currentUser = s.data.session.user;
   
-  await loadRewardsData();
+  await loadData();
   setupFilters();
 }
 
-async function loadRewardsData() {
+async function loadData() {
   try {
     // Fetch user profile
     var { data: profile } = await supabaseClient
@@ -353,7 +382,17 @@ async function loadRewardsData() {
       .eq('id', currentUser.id)
       .single();
 
-    // Fetch user trophies
+    userProfile = profile || {};
+
+    // Fetch all trophy definitions
+    var { data: trophyDefs } = await supabaseClient
+      .from('trophy_definitions')
+      .select('*')
+      .eq('is_active', true);
+
+    allTrophyDefs = trophyDefs || [];
+
+    // Fetch user trophy progress
     var { data: trophies } = await supabaseClient
       .from('user_trophy_progress')
       .select('*')
@@ -361,146 +400,278 @@ async function loadRewardsData() {
 
     userTrophies = trophies || [];
 
-    // Fetch recruits count
-    var { count: recruitsCount } = await supabaseClient
+    // Fetch recruits
+    var { data: recruitsData, count: recruitsCount } = await supabaseClient
       .from('profiles')
-      .select('id', { count: 'exact', head: true })
+      .select('country', { count: 'exact' })
       .eq('referred_by', currentUser.id);
 
-    // Fetch nations count
-    var { data: nationsData } = await supabaseClient
-      .from('profiles')
-      .select('country')
-      .eq('referred_by', currentUser.id)
-      .not('country', 'is', null);
+    // Fetch nations
+    var nationsSet = new Set((recruitsData || []).map(r => r.country).filter(c => c));
 
-    var uniqueNations = new Set((nationsData || []).map(p => p.country)).size;
-
-    // Calculate trophy tier counts
-    var tierCounts = { common: 0, uncommon: 0, rare: 0, epic: 0, mythic: 0 };
-    var totalTrophies = 0;
-
-    userTrophies.forEach(t => {
-      var level = parseInt(t.current_tier_level || t.current_tier_id || 0);
-      if (level > 0) {
-        totalTrophies++;
-        if (level === 1) tierCounts.common++;
-        else if (level === 2) tierCounts.uncommon++;
-        else if (level === 3) tierCounts.rare++;
-        else if (level === 4) tierCounts.epic++;
-        else if (level === 5) tierCounts.mythic++;
-      }
-    });
-
-    // User stats for checking requirements
-    var userStats = {
-      shares: profile.total_shares || 0,
+    // Set user stats
+    userStats = {
+      shares: userProfile.total_shares || 0,
       recruits: recruitsCount || 0,
-      nations: uniqueNations,
-      total_trophies: totalTrophies,
-      common_count: tierCounts.common,
-      uncommon_count: tierCounts.uncommon,
-      rare_count: tierCounts.rare,
-      epic_count: tierCounts.epic,
-      mythic_count: tierCounts.mythic
+      nations: nationsSet.size
     };
 
-    // Process rewards
-    allRewards = REWARDS_DATABASE.map(reward => {
-      var userValue = userStats[reward.requirement_type] || 0;
-      var isUnlocked = userValue >= reward.requirement_value;
-      
-      return {
-        ...reward,
-        unlocked: isUnlocked,
-        progress: userValue,
-        progressPercent: Math.min(100, (userValue / reward.requirement_value) * 100)
-      };
-    });
-
-    // Update summary
-    var unlockedCount = allRewards.filter(r => r.unlocked).length;
-    var lockedCount = allRewards.length - unlockedCount;
-    
-    document.getElementById('totalUnlocked').textContent = unlockedCount;
-    document.getElementById('totalLocked').textContent = lockedCount;
-    
-    // Find next reward
-    var nextReward = allRewards
-      .filter(r => !r.unlocked)
-      .sort((a, b) => (a.requirement_value - a.progress) - (b.requirement_value - b.progress))[0];
-    
-    if (nextReward) {
-      var remaining = nextReward.requirement_value - nextReward.progress;
-      document.getElementById('nextRewardIn').textContent = remaining;
-    } else {
-      document.getElementById('nextRewardIn').textContent = '🎉';
-    }
-
-    renderRewards();
+    renderSummary();
+    renderBadges();
+    renderTrophies();
 
   } catch (err) {
-    console.error('Error loading rewards:', err);
+    console.error('Error loading data:', err);
   }
 }
 
-function renderRewards() {
-  var container = document.getElementById('rewardsContainer');
-  var filtered = allRewards.filter(r => {
-    if (currentFilter === 'all') return true;
-    if (currentFilter === 'unlocked') return r.unlocked;
-    if (currentFilter === 'locked') return !r.unlocked;
-    return r.tier === currentFilter;
+function renderSummary() {
+  var earnedBadges = (userProfile.badges || []).length;
+  
+  var earnedTrophies = 0;
+  var mythicCount = 0;
+  
+  userTrophies.forEach(t => {
+    var level = parseInt(t.current_tier_level || t.current_tier_id || 0);
+    if (level > 0) {
+      earnedTrophies++;
+      if (level === 5) mythicCount++;
+    }
   });
 
-  if (filtered.length === 0) {
-    container.innerHTML = `
-      <div class="text-center py-12">
-        <span class="material-symbols-outlined text-slate-300 text-[64px]">search_off</span>
-        <p class="text-sm text-slate-400 mt-3 font-semibold">No rewards found</p>
-      </div>
-    `;
+  var totalItems = SPECIAL_BADGES.length + allTrophyDefs.length;
+  var earnedItems = earnedBadges + earnedTrophies;
+  var completionPercent = totalItems > 0 ? Math.round((earnedItems / totalItems) * 100) : 0;
+
+  document.getElementById('totalBadges').textContent = earnedBadges;
+  document.getElementById('totalTrophies').textContent = earnedTrophies;
+  document.getElementById('mythicCount').textContent = mythicCount;
+  document.getElementById('completionPercent').textContent = completionPercent + '%';
+}
+
+function renderBadges() {
+  var container = document.getElementById('badgesGrid');
+  var earnedBadgeIds = userProfile.badges || [];
+
+  if (SPECIAL_BADGES.length === 0) {
+    container.innerHTML = `<div class="col-span-3 text-center py-8 text-slate-400 text-sm">No badges available yet</div>`;
     return;
   }
 
-  container.innerHTML = filtered.map(reward => `
-    <div class="reward-card ${reward.unlocked ? 'unlocked' : 'locked'}">
-      <div class="flex items-start gap-4">
-        <!-- Icon -->
-        <div class="flex-shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br ${getTierGradient(reward.tier)} flex items-center justify-center ${reward.unlocked ? '' : 'opacity-50'}">
-          <span class="material-symbols-outlined text-white text-[28px] ${reward.unlocked ? 'filled' : ''}">${reward.icon}</span>
+  container.innerHTML = SPECIAL_BADGES.map(badge => {
+    var isEarned = earnedBadgeIds.includes(badge.id);
+    return `
+      <div class="cabinet-item ${isEarned ? 'unlocked' : 'locked'}" onclick='openBadgeModal(${JSON.stringify(badge)}, ${isEarned})'>
+        <div class="badge-showcase ${isEarned ? '' : 'locked'}">
+          ${badge.image ? 
+            `<img src="${badge.image}" alt="${badge.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+             <div class="w-16 h-16 rounded-2xl bg-slate-100 items-center justify-center hidden">
+               <span class="material-symbols-outlined text-slate-400 text-3xl">${badge.icon}</span>
+             </div>` :
+            `<div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
+               <span class="material-symbols-outlined text-slate-400 text-3xl">${badge.icon}</span>
+             </div>`
+          }
         </div>
+        <p class="text-[11px] font-bold text-slate-800 text-center leading-tight mb-1">${badge.name}</p>
+        ${isEarned ? 
+          `<div class="flex items-center justify-center gap-1">
+             <span class="material-symbols-outlined text-gold text-[14px] filled">check_circle</span>
+             <span class="text-[9px] font-bold text-gold uppercase">Earned</span>
+           </div>` :
+          `<p class="text-[9px] text-slate-400 text-center uppercase font-bold">Locked</p>`
+        }
+      </div>
+    `;
+  }).join('');
+}
 
-        <!-- Content -->
-        <div class="flex-1 min-w-0">
-          <div class="flex items-start justify-between gap-2 mb-2">
-            <h3 class="font-headline font-bold text-base text-slate-900 leading-tight">${reward.title}</h3>
-            ${reward.unlocked ? '<span class="material-symbols-outlined text-gold text-[20px] filled flex-shrink-0">check_circle</span>' : ''}
-          </div>
-          
-          <p class="text-xs text-slate-500 mb-3">${reward.description}</p>
+function renderTrophies() {
+  var container = document.getElementById('trophiesGrid');
 
-          <!-- Progress Bar -->
-          <div class="space-y-1">
-            <div class="flex justify-between items-center text-[10px] font-bold">
-              <span class="tier-badge tier-${reward.tier}">${reward.tier}</span>
-              <span class="text-slate-400">${reward.progress}/${reward.requirement_value}</span>
-            </div>
-            <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div class="h-full ${getTierBgClass(reward.tier)} transition-all duration-500" style="width: ${reward.progressPercent}%"></div>
-            </div>
-          </div>
+  if (allTrophyDefs.length === 0) {
+    container.innerHTML = `<div class="col-span-2 text-center py-8 text-slate-400 text-sm">No trophies available yet</div>`;
+    return;
+  }
 
-          <!-- Reward Info -->
-          ${reward.unlocked ? `
-            <div class="mt-3 p-2 bg-gold/10 border border-gold/20 rounded-lg">
-              <p class="text-[10px] font-bold text-gold uppercase">Reward: ${reward.reward_value}</p>
-            </div>
-          ` : ''}
+  container.innerHTML = allTrophyDefs.map(trophy => {
+    var state = getTrophyState(trophy);
+    var isEarned = state.count > 0;
+    var rarity = state.activeTier.rarity;
+
+    return `
+      <div class="cabinet-item ${isEarned ? 'unlocked' : 'locked'}" onclick='openTrophyModal(${JSON.stringify(trophy)}, ${JSON.stringify(state)})'>
+        <div class="trophy-showcase tier-${rarity}">
+          <span class="material-symbols-outlined ${isEarned ? 'filled' : ''}">${trophy.icon}</span>
         </div>
+        <p class="text-[11px] font-bold text-slate-800 text-center leading-tight mb-2">${trophy.title}</p>
+        <div class="flex items-center justify-center gap-2">
+          <span class="tier-badge tier-${rarity} text-[9px] px-2 py-1">${rarity}</span>
+        </div>
+        ${isEarned ? 
+          `<p class="text-[9px] text-slate-500 text-center mt-2">${state.count}/${state.nextTier ? state.nextTier.req : state.activeTier.req}</p>` :
+          `<p class="text-[9px] text-slate-400 text-center mt-2 uppercase font-bold">Locked</p>`
+        }
+      </div>
+    `;
+  }).join('');
+}
+
+function getTrophyState(trophy) {
+  var userProgress = userTrophies.find(t => t.trophy_id === trophy.id);
+  var count = 0;
+
+  // Determine current count based on trophy type
+  if (trophy.type === 'shares') count = userStats.shares;
+  else if (trophy.type === 'recruits_paid') count = userStats.recruits;
+  else if (trophy.type === 'countries_paid') count = userStats.nations;
+
+  // Find active tier
+  var activeTier = trophy.tiers[0];
+  var nextTier = null;
+
+  for (var i = trophy.tiers.length - 1; i >= 0; i--) {
+    if (count >= trophy.tiers[i].req) {
+      activeTier = trophy.tiers[i];
+      nextTier = trophy.tiers[i + 1] || null;
+      break;
+    }
+  }
+
+  return { count, activeTier, nextTier };
+}
+
+function setupFilters() {
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      currentFilter = this.dataset.category;
+      filterItems();
+    });
+  });
+}
+
+function filterItems() {
+  var badgesSection = document.getElementById('badgesSection');
+  var trophiesSection = document.getElementById('trophiesSection');
+  
+  if (currentFilter === 'all') {
+    badgesSection.style.display = 'block';
+    trophiesSection.style.display = 'block';
+    return;
+  }
+  
+  if (currentFilter === 'badges') {
+    badgesSection.style.display = 'block';
+    trophiesSection.style.display = 'none';
+    return;
+  }
+  
+  if (currentFilter === 'trophies' || currentFilter === 'mythic') {
+    badgesSection.style.display = 'none';
+    trophiesSection.style.display = 'block';
+    
+    // Filter trophies by mythic if needed
+    var trophies = document.querySelectorAll('#trophiesGrid .cabinet-item');
+    trophies.forEach(t => {
+      if (currentFilter === 'mythic') {
+        var isMythic = t.innerHTML.includes('tier-mythic');
+        t.style.display = isMythic ? 'block' : 'none';
+      } else {
+        t.style.display = 'block';
+      }
+    });
+    return;
+  }
+  
+  if (currentFilter === 'unlocked') {
+    badgesSection.style.display = 'block';
+    trophiesSection.style.display = 'block';
+    
+    document.querySelectorAll('.cabinet-item').forEach(item => {
+      var isUnlocked = item.classList.contains('unlocked');
+      item.style.display = isUnlocked ? 'block' : 'none';
+    });
+  }
+}
+
+function openBadgeModal(badge, isEarned) {
+  var html = `
+    <div class="text-center mb-6">
+      ${badge.image ? 
+        `<img src="${badge.image}" alt="${badge.name}" class="w-32 h-32 mx-auto mb-4 object-contain ${isEarned ? '' : 'opacity-40 grayscale'}" onerror="this.style.display='none'">` :
+        `<div class="w-32 h-32 mx-auto mb-4 rounded-3xl bg-slate-100 flex items-center justify-center ${isEarned ? '' : 'opacity-40'}">
+           <span class="material-symbols-outlined text-slate-400 text-[64px]">${badge.icon}</span>
+         </div>`
+      }
+      <h2 class="font-headline font-black text-2xl text-slate-900 mb-2">${badge.name}</h2>
+      <p class="text-sm text-slate-500 px-4">${badge.description}</p>
+    </div>
+    
+    <div class="bg-slate-50 rounded-2xl p-5 mb-4">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">How to Earn</p>
+      <p class="text-sm text-slate-700 font-semibold">${badge.requirement}</p>
+    </div>
+
+    ${isEarned ? 
+      `<div class="bg-gradient-to-r from-gold/20 to-amber-100 border border-gold/30 rounded-2xl p-5 flex items-center justify-center gap-2">
+         <span class="material-symbols-outlined text-gold filled">check_circle</span>
+         <span class="font-headline font-bold text-gold">Badge Earned!</span>
+       </div>` :
+      `<div class="bg-slate-100 rounded-2xl p-5 flex items-center justify-center gap-2">
+         <span class="material-symbols-outlined text-slate-400">lock</span>
+         <span class="font-headline font-bold text-slate-500">Not Yet Earned</span>
+       </div>`
+    }
+  `;
+  openModal(html);
+}
+
+function openTrophyModal(trophy, state) {
+  var html = `
+    <div class="text-center mb-6">
+      <div class="w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br ${getTierGradient(state.activeTier.rarity)} flex items-center justify-center mb-4 shadow-lg">
+        <span class="material-symbols-outlined text-white text-[56px] filled">${trophy.icon}</span>
+      </div>
+      <h2 class="font-headline font-black text-2xl text-slate-900 mb-2">${trophy.title}</h2>
+      <p class="text-sm text-slate-500 px-4 mb-4">${trophy.description}</p>
+      <span class="tier-badge tier-${state.activeTier.rarity}">${state.activeTier.rarity}</span>
+    </div>
+
+    <div class="bg-slate-50 rounded-2xl p-5 mb-4">
+      <div class="flex justify-between items-center mb-3">
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Your Progress</p>
+        <p class="text-sm font-black text-slate-900">${state.count} / ${state.nextTier ? state.nextTier.req : state.activeTier.req}</p>
+      </div>
+      <div class="h-3 bg-slate-200 rounded-full overflow-hidden">
+        <div class="h-full ${getTierBgClass(state.activeTier.rarity)} transition-all duration-500" 
+             style="width: ${state.nextTier ? (state.count / state.nextTier.req * 100) : 100}%"></div>
       </div>
     </div>
-  `).join('');
+
+    <div class="space-y-3 mb-4">
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Trophy Tiers</p>
+      ${trophy.tiers.map(tier => {
+        var isAchieved = state.count >= tier.req;
+        var isCurrent = state.activeTier.req === tier.req;
+        return `
+          <div class="flex items-center gap-3 p-4 rounded-xl ${isAchieved ? 'bg-slate-50 border-2 border-slate-200' : isCurrent ? 'bg-primary/5 border-2 border-primary/20' : 'bg-white border border-slate-100 opacity-50'}">
+            <div class="w-3 h-3 rounded-full bg-${tier.rarity}"></div>
+            <div class="flex-1">
+              <p class="text-sm font-bold text-slate-800">${tier.name}</p>
+              <p class="text-[11px] text-slate-500">${tier.desc || ''}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-xs font-black ${isAchieved ? 'text-primary' : 'text-slate-400'}">${tier.req}</p>
+              ${isAchieved ? '<span class="material-symbols-outlined text-green-500 text-lg filled">check_circle</span>' : ''}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+  openModal(html);
 }
 
 function getTierGradient(tier) {
@@ -525,44 +696,19 @@ function getTierBgClass(tier) {
   return classes[tier] || classes.common;
 }
 
-function setupFilters() {
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-      currentFilter = this.dataset.filter;
-      renderRewards();
-    });
-  });
+function openModal(html) {
+  document.getElementById('modalContent').innerHTML = html;
+  var overlay = document.getElementById('modalOverlay');
+  overlay.classList.remove('hidden');
+}
+
+function closeModal() {
+  var overlay = document.getElementById('modalOverlay');
+  overlay.classList.add('hidden');
 }
 
 init();
 </script>
-
-<style>
-.filter-btn {
-  flex-shrink: 0;
-  padding: 8px 16px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #64748b;
-  background: white;
-  border: 2px solid #f1f5f9;
-  transition: all 0.2s;
-  cursor: pointer;
-}
-
-.filter-btn.active {
-  background: #3d6285;
-  color: white;
-  border-color: #3d6285;
-}
-
-.filter-btn:hover {
-  border-color: #cbd5e1;
-}
-</style>
 
 </body>
 </html>
