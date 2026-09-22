@@ -644,56 +644,69 @@ function setupListeners(){
     if(header) header.classList.toggle('header-scrolled',window.scrollY > 8)
   })
 }
-
 init()
 </script>
+
+<!-- Global Notification Badge Script -->
 <script>
-  // Add this to your profile.html (and any other page with bottom nav)
-  async function updateGlobalNotificationBadge() {
-    try {
-      var s = await supabase.auth.getSession()
-      if (!s.data.session) return;
-      var userId = s.data.session.user.id;
-      
-      // Get user tier
-      var p = await supabase.from('profiles').select('subscription_tier, tier, tier_id').eq('id', userId).single();
-      var userTier = p.data?.subscription_tier || p.data?.tier || p.data?.tier_id || 'free';
+async function updateNotificationBadges() {
+  try {
+    // Safely reference the Supabase client
+    var client = typeof supabaseClient !== 'undefined' ? supabaseClient : supabase;
+    if (!client) return;
 
-      // Get active broadcasts
-      var notifs = await supabase.from('app_notifications').select('id, target_audience').gt('expires_at', new Date().toISOString());
-      if (!notifs.data) return;
+    var s = await client.auth.getSession();
+    if (!s.data || !s.data.session) return;
+    var userId = s.data.session.user.id;
 
-      // Filter by tier
-      var validNotifs = notifs.data.filter(b => {
-        var aud = typeof b.target_audience === 'string' ? JSON.parse(b.target_audience) : b.target_audience;
-        if (aud && aud.type === 'tier' && aud.value !== userTier) return false;
-        return true;
-      });
+    // 1. Fetch user tier
+    var p = await client.from('profiles').select('subscription_tier, tier, tier_id').eq('id', userId).maybeSingle();
+    var userTier = p.data?.subscription_tier || p.data?.tier || p.data?.tier_id || 'free';
 
-      // Get read states
-      var reads = await supabase.from('notification_reads').select('notification_id').eq('user_id', userId).not('read_at', 'is', null);
-      var readIds = (reads.data || []).map(r => r.notification_id);
+    // 2. Fetch active broadcasts
+    var notifs = await client.from('app_notifications').select('id, target_audience, expires_at').gt('expires_at', new Date().toISOString());
+    var rawNotifs = notifs.data || [];
 
-      // Count unread
-      var unreadCount = validNotifs.filter(n => !readIds.includes(n.id)).length;
+    // Filter tier-targeted notifications
+    var validNotifs = rawNotifs.filter(b => {
+      var aud = typeof b.target_audience === 'string' ? JSON.parse(b.target_audience) : b.target_audience;
+      if (aud && aud.type === 'tier' && aud.value !== userTier) return false;
+      return true;
+    });
 
-      // Update Nav Icon (Assuming your bell icon has ID 'nav-notifications-icon')
-      var bellIcon = document.getElementById('nav-notifications-icon');
-      if (bellIcon) {
-        var existingBadge = document.getElementById('global-badge');
-        if (existingBadge) existingBadge.remove();
-        
-        if (unreadCount > 0) {
-          // Adds a beautiful little red dot
-          bellIcon.style.position = 'relative';
-          bellIcon.innerHTML += `<div id="global-badge" style="position:absolute;top:0;right:-4px;width:10px;height:10px;background:#ad332b;border:2px solid white;border-radius:50%;"></div>`;
-        }
+    // 3. Fetch user's read states
+    var reads = await client.from('notification_reads').select('notification_id').eq('user_id', userId).not('read_at', 'is', null);
+    var readIds = (reads.data || []).map(r => r.notification_id);
+
+    // Count unread
+    var unreadCount = validNotifs.filter(n => !readIds.includes(n.id)).length;
+
+    if (unreadCount > 0) {
+      // Add red dot to Bottom Nav Icon (id="nav-notifications-icon")
+      var bottomNavIcon = document.getElementById('nav-notifications-icon');
+      if (bottomNavIcon && !document.getElementById('badge-bottom-nav')) {
+        var dot1 = document.createElement('div');
+        dot1.id = 'badge-bottom-nav';
+        dot1.className = 'absolute -top-0.5 -right-1 w-2.5 h-2.5 bg-red-600 border-2 border-white rounded-full';
+        bottomNavIcon.appendChild(dot1);
       }
-    } catch(e) { console.log("Silent global badge check error", e) }
+
+      // Add red dot to Profile Menu Row Icon (id="profile-notifications-icon")
+      var profileMenuIcon = document.getElementById('profile-notifications-icon');
+      if (profileMenuIcon && !document.getElementById('badge-profile-menu')) {
+        var dot2 = document.createElement('div');
+        dot2.id = 'badge-profile-menu';
+        dot2.className = 'absolute top-0 right-0 w-3 h-3 bg-red-600 border-2 border-white rounded-full';
+        profileMenuIcon.appendChild(dot2);
+      }
+    }
+  } catch(e) {
+    console.error("Error updating notification badges:", e);
   }
-  
-  // Check immediately on load
-  updateGlobalNotificationBadge();
+}
+
+// Run check on page load
+updateNotificationBadges();
 </script>
 </body>
 </html>
