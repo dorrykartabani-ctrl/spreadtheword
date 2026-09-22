@@ -423,8 +423,8 @@
     getEl(`view-${tabId}`)?.classList.remove('hidden');
   }
 
-  // ==========================================
-  // BADGES: RENDER & SAFE MODAL
+ // ==========================================
+  // BADGES: RENDER
   // ==========================================
   function renderBadges() {
     const list = getEl('badgeList');
@@ -609,8 +609,8 @@
     }
   }
 
-  // ==========================================
-  // TROPHIES: RENDER & SAFE MODAL
+ // ==========================================
+  // TROPHIES: RENDER (WITH IMAGES)
   // ==========================================
   function renderTrophies() {
     const grid = getEl('trophyGrid');
@@ -622,20 +622,52 @@
     }
 
     allTrophies.forEach(t => {
+      // Prefer the highest-tier image that exists for this trophy
+      const trophyThresholds = allThresholds.filter(th => th.trophy_id === t.id && th.image_url);
+      let displayImage = null;
+
+      if (trophyThresholds.length > 0) {
+        // Sort by tier order if available, otherwise just take the last one with an image
+        const sorted = trophyThresholds.slice().sort((a, b) => {
+          const tierA = allTiers.find(ti => ti.id === a.tier_id);
+          const tierB = allTiers.find(ti => ti.id === b.tier_id);
+          return (tierA?.id || 0) - (tierB?.id || 0);
+        });
+        displayImage = sorted[sorted.length - 1].image_url;
+      }
+
+      // Fallback: first trophy media asset, or generic icon
+      if (!displayImage && trophyImages.length > 0) {
+        displayImage = trophyImages[0].url;
+      }
+
       const mythicTier = allTiers.find(ti => ti.name && ti.name.toLowerCase() === 'mythic');
-      const mythicVal = mythicTier ? (allThresholds.find(th => th.trophy_id === t.id && th.tier_id === mythicTier.id)?.value || '-') : '-';
+      const mythicVal = mythicTier
+        ? (allThresholds.find(th => th.trophy_id === t.id && th.tier_id === mythicTier.id)?.value || '-')
+        : '-';
+
+      const typeClass = t.type === 'stat'
+        ? 'bg-indigo-50 text-indigo-700'
+        : t.type === 'collection'
+          ? 'bg-rose-50 text-rose-700'
+          : 'bg-amber-50 text-amber-700';
 
       const card = document.createElement('div');
-      card.className = 'card flex flex-col justify-between hover:border-primary/40 cursor-pointer transition-all hover:shadow-md';
+      card.className = 'card flex flex-col justify-between hover:border-primary/40 cursor-pointer transition-all hover:shadow-md overflow-hidden';
       card.setAttribute('onclick', `window.openTrophyModal('${t.id}')`);
       card.innerHTML = `
         <div>
-          <div class="flex justify-between items-start mb-3">
-            <span class="material-symbols-outlined text-gold" style="font-size:32px;">emoji_events</span>
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${t.type === 'stat' ? 'bg-indigo-50 text-indigo-700' : 'bg-rose-50 text-rose-700'}">${escapeHtml(t.type || 'stat')}</span>
+          <div class="flex justify-between items-start mb-3 gap-3">
+            <div class="w-14 h-14 rounded-xl bg-surface-clow border border-surface-c flex items-center justify-center overflow-hidden flex-shrink-0">
+              ${displayImage
+                ? `<img src="${displayImage}" alt="${escapeHtml(t.name)}" class="w-full h-full object-contain p-1" onerror="this.parentElement.innerHTML='<span class=\\'material-symbols-outlined text-gold\\' style=\\'font-size:28px\\'>emoji_events</span>'">`
+                : `<span class="material-symbols-outlined text-gold" style="font-size:28px;">emoji_events</span>`
+              }
+            </div>
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${typeClass} flex-shrink-0">${escapeHtml(t.type || 'stat')}</span>
           </div>
           <h3 class="font-headline font-bold text-slate-800 text-lg leading-snug">${escapeHtml(t.name || 'Untitled Trophy')}</h3>
-          <p class="text-xs text-slate-400 mt-1 mb-4 line-clamp-2">${escapeHtml(t.description || "No description provided.")}</p>
+          <p class="text-xs text-slate-400 mt-1 mb-4 line-clamp-2">${escapeHtml(t.description || 'No description provided.')}</p>
         </div>
         <div class="border-t border-slate-100 pt-3 flex items-center justify-between text-xs font-semibold">
           <span class="text-slate-400 uppercase tracking-wide">Mythic Level Limit:</span>
@@ -839,8 +871,8 @@
     }
   }
 
-  // ==========================================
-  // AVATARS: RENDER & SAFE MODAL
+ // ==========================================
+  // AVATARS: RENDER (WITH IMAGES)
   // ==========================================
   function renderAvatars() {
     const list = getEl('avatarList');
@@ -852,22 +884,36 @@
     }
 
     allAvatars.forEach(a => {
+      const imgSrc = a.image_male || a.image_female || null;
+      const reqLabel = a.req_type
+        ? `${escapeHtml(a.req_type)} (${a.req_value || a.req_badge_id || 'unassigned'})`
+        : 'UNASSIGNED';
+
       const row = document.createElement('div');
-      row.className = 'flex items-center justify-between p-4 bg-white border border-surface-c rounded-2xl hover:border-gold cursor-pointer transition-all';
+      row.className = 'flex items-center justify-between p-4 bg-white border border-surface-c rounded-2xl hover:border-gold cursor-pointer transition-all gap-4';
       row.setAttribute('onclick', `window.openAvatarModal('${a.id}')`);
       row.innerHTML = `
-        <div class="flex items-center gap-4">
-          <div class="w-10 h-10 rounded-full signature-gradient text-white font-bold flex items-center justify-center text-xs">E${a.era?.replace(/\D/g, "") || "1"}</div>
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="text-[10px] bg-slate-100 font-bold text-slate-500 rounded px-1.5 uppercase">${escapeHtml(a.era)}</span>
-              <span class="text-xs text-slate-400 font-semibold">${escapeHtml(a.journey)}</span>
+        <div class="flex items-center gap-4 min-w-0 flex-1">
+          <div class="w-14 h-14 rounded-xl bg-surface-clow border border-surface-c flex items-center justify-center overflow-hidden flex-shrink-0">
+            ${imgSrc
+              ? `<img src="${imgSrc}" alt="${escapeHtml(a.journey_name || 'Avatar')}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full signature-gradient text-white font-bold flex items-center justify-center text-xs\\'>E${(a.era || '').replace(/\\D/g, '') || '1'}</div>'">`
+              : `<div class="w-full h-full signature-gradient text-white font-bold flex items-center justify-center text-xs">E${(a.era || '').replace(/\D/g, '') || '1'}</div>`
+            }
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-[10px] bg-slate-100 font-bold text-slate-500 rounded px-1.5 uppercase">${escapeHtml(a.era || 'Era')}</span>
+              <span class="text-xs text-slate-400 font-semibold truncate">${escapeHtml(a.journey || '')}</span>
             </div>
-            <h4 class="font-headline font-bold text-slate-800 text-sm mt-0.5">Stage ${a.stage_order}: ${escapeHtml(a.journey_name)}</h4>
+            <h4 class="font-headline font-bold text-slate-800 text-sm mt-0.5 truncate">
+              Stage ${a.stage_order ?? '?'}: ${escapeHtml(a.journey_name || 'Untitled')}
+            </h4>
           </div>
         </div>
-        <div class="text-right">
-          <span class="text-[11px] font-semibold text-slate-500 uppercase">Requires: <strong class="text-primary">${escapeHtml(a.req_type)} (${a.req_value || a.req_badge_id || 'unassigned'})</strong></span>
+        <div class="text-right flex-shrink-0 hidden sm:block">
+          <span class="text-[11px] font-semibold text-slate-500 uppercase">
+            Requires: <strong class="text-primary">${reqLabel}</strong>
+          </span>
         </div>
       `;
       list.appendChild(row);
