@@ -268,7 +268,6 @@
   let avatarImages = [];
   let badgeImages = [];
 
-  // Media column mapping (auto-detected after first load)
   let mediaUrlCol = 'url';
   let mediaNameCol = 'name';
 
@@ -324,48 +323,27 @@
   }
 
   // ==========================================
-  // ROBUST MEDIA LOADER (AUTO-DETECTS SCHEMA)
+  // MEDIA ASSETS LOADER
   // ==========================================
   async function loadMediaAssets() {
     try {
-      // Fetch ALL media rows without filters to discover the real schema
       const { data: raw, error } = await supabaseClient.from('media').select('*');
-      if (error) {
-        console.error("Media query error:", error);
-        return;
-      }
+      if (error) { console.error("Media query error:", error); return; }
 
       const rows = raw || [];
-      console.log("Media loaded:", rows.length, "rows");
-
       if (rows.length === 0) {
-        console.warn("Media table is empty or no rows returned.");
-        trophyImages = [];
-        badgeImages = [];
-        avatarImages = [];
-        return;
+        trophyImages = []; badgeImages = []; avatarImages = []; return;
       }
 
-      // --- Detect URL column ---
       const urlCandidates = ['url', 'file_url', 'media_url', 'src', 'path', 'file_path', 'image_url', 'storage_url', 'file'];
       mediaUrlCol = urlCandidates.find(col => col in rows[0]) || 'url';
-      console.log("Detected media URL column:", mediaUrlCol);
 
-      // --- Detect name column ---
       const nameCandidates = ['name', 'title', 'filename', 'file_name', 'label', 'display_name'];
       mediaNameCol = nameCandidates.find(col => col in rows[0]) || 'name';
-      console.log("Detected media name column:", mediaNameCol);
 
-      // --- Detect type column ---
       const typeCandidates = ['type', 'category', 'kind', 'media_type', 'group'];
       const typeCol = typeCandidates.find(col => col in rows[0]) || 'type';
-      console.log("Detected media type column:", typeCol);
 
-      // Collect all distinct type values for debugging
-      const typeValues = [...new Set(rows.map(r => String(r[typeCol] || '').toLowerCase().trim()))];
-      console.log("All media type values found:", typeValues);
-
-      // Normalize each row to a consistent shape
       const normalized = rows.map(r => ({
         ...r,
         _url: r[mediaUrlCol] || r.url || r.file_url || r.media_url || r.src || r.path || '',
@@ -373,7 +351,6 @@
         _type: String(r[typeCol] || r.type || '').toLowerCase().trim()
       }));
 
-      // Filter into three buckets (handle singular / plural / compound types)
       const trophyTypes  = ['trophy', 'trophies', 'trophy_image', 'trophy_image_url'];
       const badgeTypes   = ['badge', 'badges', 'badge_image', 'badge_image_url'];
       const avatarTypes  = ['avatar', 'avatars', 'avatar_image', 'avatar_image_url', 'character'];
@@ -382,16 +359,11 @@
       badgeImages  = normalized.filter(m => badgeTypes.includes(m._type));
       avatarImages = normalized.filter(m => avatarTypes.includes(m._type));
 
-      // Fallback: if strict matching found nothing but rows exist, assign ALL rows to all categories
-      // (useful if the type column has unexpected values)
       if (trophyImages.length === 0 && badgeImages.length === 0 && avatarImages.length === 0 && normalized.length > 0) {
-        console.warn("No type match found. Assigning all media to all categories as fallback.");
         trophyImages = normalized;
         badgeImages  = normalized;
         avatarImages = normalized;
       }
-
-      console.log(`Media split → Trophies: ${trophyImages.length} | Badges: ${badgeImages.length} | Avatars: ${avatarImages.length}`);
     } catch (e) {
       console.error("Media loading failed:", e);
     }
@@ -420,7 +392,6 @@
       allMissions = projRes.data || [];
       allCampaigns = campRes.data || [];
 
-      // Load media assets (auto-detect schema)
       await loadMediaAssets();
 
       renderTrophies();
@@ -435,7 +406,7 @@
   }
 
   // ==========================================
-  // POPULATE ALL IMAGE / DROPDOWN SELECTS
+  // DROPDOWNS & CHECKLISTS
   // ==========================================
   function buildMediaOptions(images, selectedUrl) {
     if (!images || !images.length) return '<option value="">-- No media assets found --</option>';
@@ -445,7 +416,6 @@
   }
 
   function populateDropdowns() {
-    // Badge requirement dropdown in Avatar modal
     const avBadgeSel = getEl('avatarReqBadge');
     if (avBadgeSel) {
       avBadgeSel.innerHTML = '<option value="">-- Choose Requirements Badge --</option>';
@@ -454,34 +424,27 @@
       });
     }
 
-    // Badge image dropdown in Badge modal
     const bImg = getEl('badgeImage');
     if (bImg) {
       bImg.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages);
     }
 
-    // Avatar male/female image dropdowns in Avatar modal
     const avMale = getEl('avatarImageMale');
     const avFemale = getEl('avatarImageFemale');
     if (avMale) avMale.innerHTML = '<option value="">-- Select Avatar Image --</option>' + buildMediaOptions(avatarImages);
     if (avFemale) avFemale.innerHTML = '<option value="">-- Select Avatar Image --</option>' + buildMediaOptions(avatarImages);
 
-    // Trophy base image dropdown in Trophy modal
     const tImg = getEl('trophyBaseImage');
     if (tImg) {
       tImg.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages);
     }
 
-    // Tier achievement icon dropdowns (built dynamically — rebuild if modal is open)
     document.querySelectorAll('#dynamicTiersContainer .tier-img').forEach(sel => {
       const currentVal = sel.value;
       sel.innerHTML = '<option value="">-- Choose System Asset --</option>' + buildMediaOptions(trophyImages, currentVal);
     });
   }
 
-  // ==========================================
-  // RENDER CHECKLISTS
-  // ==========================================
   function renderChecklists() {
     const trophyMc = getEl('missionChecklist');
     const trophyCc = getEl('campaignChecklist');
@@ -526,7 +489,6 @@
     }
 
     allTrophies.forEach(t => {
-      // Find best display image: highest-tier threshold image, or base image_url
       const threshWithImg = allThresholds.filter(th => th.trophy_id === t.id && th.image_url);
       let displayImage = t.image_url || t.image || null;
 
@@ -550,17 +512,20 @@
           ? 'bg-rose-50 text-rose-700'
           : 'bg-amber-50 text-amber-700';
 
+      const iconFallbackHtml = `<span class="material-symbols-outlined text-gold" style="font-size:28px;">emoji_events</span>`;
+      const trophyImgHtml = displayImage
+        ? `<img src="${escapeHtml(displayImage)}" alt="${escapeHtml(t.name)}" class="w-full h-full object-contain p-1 relative z-10" onerror="this.remove()">`
+        : '';
+
       const card = document.createElement('div');
       card.className = 'card flex flex-col justify-between hover:border-primary/40 cursor-pointer transition-all hover:shadow-md overflow-hidden';
       card.setAttribute('onclick', `window.openTrophyModal('${t.id}')`);
       card.innerHTML = `
         <div>
           <div class="flex justify-between items-start mb-3 gap-3">
-            <div class="w-14 h-14 rounded-xl bg-surface-clow border border-surface-c flex items-center justify-center overflow-hidden flex-shrink-0">
-              ${displayImage
-                ? `<img src="${displayImage}" alt="${escapeHtml(t.name)}" class="w-full h-full object-contain p-1" onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('afterbegin','<span class=\\'material-symbols-outlined text-gold\\' style=\\'font-size:28px\\'>emoji_events</span>')">`
-                : `<span class="material-symbols-outlined text-gold" style="font-size:28px;">emoji_events</span>`
-              }
+            <div class="w-14 h-14 rounded-xl bg-surface-clow border border-surface-c flex items-center justify-center overflow-hidden flex-shrink-0 relative">
+              ${iconFallbackHtml}
+              ${trophyImgHtml ? `<div class="absolute inset-0 flex items-center justify-center bg-surface-clow">${trophyImgHtml}</div>` : ''}
             </div>
             <span class="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${typeClass} flex-shrink-0">${escapeHtml(t.type || 'stat')}</span>
           </div>
@@ -595,7 +560,6 @@
       const val = existingThresh ? existingThresh.value : '';
       const imageSelected = existingThresh ? existingThresh.image_url : '';
 
-      // Build options from trophyImages using the auto-detected columns
       const imageOpts = trophyImages.map(img =>
         `<option value="${img._url}" ${imageSelected === img._url ? 'selected' : ''}>${escapeHtml(img._name)}</option>`
       ).join('');
@@ -646,7 +610,6 @@
         if (getEl('trophyStatType')) getEl('trophyStatType').value = t.stat_type || 'shares';
         if (getEl('trophyDesc')) getEl('trophyDesc').value = t.description || '';
 
-        // Populate trophy base image with current selection
         const tImg = getEl('trophyBaseImage');
         if (tImg) {
           tImg.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages, t.image_url || t.image || '');
@@ -754,7 +717,6 @@
     try {
       const savedTrophyId = await resilientTrophySave(payload);
 
-      // Sync tier thresholds
       const tierRows = document.querySelectorAll('#dynamicTiersContainer > div');
       const thresholdsPayload = [];
       tierRows.forEach(row => {
@@ -865,7 +827,6 @@
         if (getEl('badgeMissionPriority')) getEl('badgeMissionPriority').checked = Boolean(cfg.is_priority_mission);
         if (getEl('badgeTop10')) getEl('badgeTop10').checked = Boolean(b.is_top_10_eligible);
 
-        // Populate badge image dropdown with current selection
         const bImg = getEl('badgeImage');
         if (bImg) {
           bImg.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages, b.image_url || '');
@@ -1010,16 +971,21 @@
         ? `${escapeHtml(a.req_type)} (${a.req_value || a.req_badge_id || 'unassigned'})`
         : 'UNASSIGNED';
 
+      const eraNum = (a.era || '').replace(/\D/g, '') || '1';
+
+      const avatarBadgeHtml = `<div class="w-full h-full signature-gradient text-white font-bold flex items-center justify-center text-xs">E${eraNum}</div>`;
+      const avatarImgHtml = imgSrc
+        ? `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(jName)}" class="w-full h-full object-cover" onerror="this.remove()">`
+        : '';
+
       const row = document.createElement('div');
       row.className = 'flex items-center justify-between p-4 bg-white border border-surface-c rounded-2xl hover:border-gold cursor-pointer transition-all gap-4';
       row.setAttribute('onclick', `window.openAvatarModal('${a.id}')`);
       row.innerHTML = `
         <div class="flex items-center gap-4 min-w-0 flex-1">
-          <div class="w-14 h-14 rounded-xl bg-surface-clow border border-surface-c flex items-center justify-center overflow-hidden flex-shrink-0">
-            ${imgSrc
-              ? `<img src="${imgSrc}" alt="${escapeHtml(jName)}" class="w-full h-full object-cover" onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('afterbegin','<div class=\\'w-full h-full signature-gradient text-white font-bold flex items-center justify-center text-xs\\'>E${(a.era || \'\').replace(/\\\\D/g, \'\') || \\'1\\'}</div>')">`
-              : `<div class="w-full h-full signature-gradient text-white font-bold flex items-center justify-center text-xs">E${(a.era || '').replace(/\D/g, '') || '1'}</div>`
-            }
+          <div class="w-14 h-14 rounded-xl bg-surface-clow border border-surface-c flex items-center justify-center overflow-hidden flex-shrink-0 relative">
+            ${avatarBadgeHtml}
+            ${avatarImgHtml ? `<div class="absolute inset-0">${avatarImgHtml}</div>` : ''}
           </div>
           <div class="min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
@@ -1055,7 +1021,6 @@
         if (getEl('avatarReqValue')) getEl('avatarReqValue').value = a.req_value ?? '';
         if (getEl('avatarReqBadge')) getEl('avatarReqBadge').value = a.req_badge_id || '';
 
-        // Populate avatar image dropdowns with current selections
         const avMale = getEl('avatarImageMale');
         const avFemale = getEl('avatarImageFemale');
         if (avMale) avMale.innerHTML = '<option value="">-- Select Avatar Image --</option>' + buildMediaOptions(avatarImages, a.image_male || a.image_url || a.avatar_url || '');
@@ -1110,7 +1075,6 @@
     const reqVal = parseInt(getEl('avatarReqValue')?.value) || 0;
     const reqBadge = getEl('avatarReqBadge')?.value || null;
 
-    // Schema-adaptive: only include columns that exist in avatar_stages
     const sample = allAvatars[0] || null;
     const knownKeys = sample ? Object.keys(sample) : null;
 
@@ -1127,7 +1091,6 @@
       if (knownKeys.includes('req_value')) payload.req_value = reqVal;
       if (knownKeys.includes('req_badge_id')) payload.req_badge_id = reqBadge;
 
-      // Image columns — match what actually exists
       if (knownKeys.includes('image_male')) payload.image_male = maleImg;
       if (knownKeys.includes('image_female')) payload.image_female = femaleImg;
       if (knownKeys.includes('male_image')) payload.male_image = maleImg;
@@ -1192,7 +1155,7 @@
   }
 
   // ==========================================
-  // SIDEBAR & GLOBAL BINDINGS
+  // SIDEBAR & BINDINGS
   // ==========================================
   function toggleSidebar() {
     getEl('sidebar')?.classList.toggle('hidden');
