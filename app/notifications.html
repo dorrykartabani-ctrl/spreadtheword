@@ -176,10 +176,9 @@ var supabaseClient = supabase.createClient(
 var currentUser = null
 var userProfile = null
 var allNotifications = []
-var readMap = {}       // { notification_id: { read_at, dismissed_at } }
+var readMap = {}
 var currentFilter = 'all'
 
-// Category and Type configurations
 var categoryConfig = {
   broadcast: { icon:'campaign',           iconClass:'filled', bg:'bg-primary-container/20',   color:'text-primary',            label:'Announcement' },
   info:      { icon:'info',               iconClass:'filled', bg:'bg-blue-50',                color:'text-blue-600',           label:'Info' },
@@ -192,107 +191,74 @@ var categoryConfig = {
   system:    { icon:'settings',           iconClass:'',       bg:'bg-surface-chigh',          color:'text-on-surface-variant', label:'System' },
 }
 
-var prefMap = {
-  broadcast: 'notif_broadcasts',
-  info:      'notif_broadcasts',
-  success:   'notif_broadcasts',
-  warning:   'notif_broadcasts',
-  alert:     'notif_broadcasts',
-  milestone: 'notif_milestones',
-  recruit:   'notif_recruits',
-  mission:   'notif_missions',
-  system:    'notif_system'
-}
-
-var observer = new IntersectionObserver(function(entries) {
-  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible') })
-}, {threshold:0.1})
-
-// ════════════════════════════════════════════
-// INIT
-// ════════════════════════════════════════════
 async function init() {
   try {
     var s = await supabaseClient.auth.getSession()
     if (!s.data || !s.data.session) { window.location.href = 'login.html'; return }
     currentUser = s.data.session.user
 
-    var results = await Promise.allSettled([
-      supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single(),
-      // 1. Fetch active broadcasts from app_notifications
-      supabaseClient.from('app_notifications').select('*').gt('expires_at', new Date().toISOString()).order('created_at', {ascending:false}),
-      // 2. Fetch personal notifications (if any exist)
-      supabaseClient.from('notifications').select('*').eq('target_user_id', currentUser.id).order('created_at', {ascending:false}).limit(50),
-      // 3. Fetch user's read states
-      supabaseClient.from('notification_reads').select('*').eq('user_id', currentUser.id)
-    ])
-
-    userProfile = (results[0].status === 'fulfilled' && results[0].value.data) ? results[0].value.data : {}
-    var rawBroadcasts = (results[1].status === 'fulfilled' && results[1].value.data) ? results[1].value.data : []
-    var rawPersonal = (results[2].status === 'fulfilled' && results[2].value.data) ? results[2].value.data : []
-    var reads = (results[3].status === 'fulfilled' && results[3].value.data) ? results[3].value.data : []
-
-    // Build read map
-    reads.forEach(function(r) {
-      readMap[r.notification_id] = { read_at: r.read_at, dismissed_at: r.dismissed_at }
-    })
-
+    // 1. Fetch user profile
+    var profileRes = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).maybeSingle()
+    userProfile = profileRes.data || {}
     var userTier = userProfile.subscription_tier || userProfile.tier || userProfile.tier_id || 'free'
 
-    // Format broadcasts
-    var formattedBroadcasts = rawBroadcasts.map(function(b) {
+    // 2. Fetch read receipts
+    var readRes = await supabaseClient.from('notification_reads').select('*').eq('user_id', currentUser.id)
+    if (readRes.data) {
+      readRes.data.forEach(function(r) {
+        readMap[r.notification_id] = { read_at: r.read_at, dismissed_at: r.dismissed_at }
+      })
+    }
+
+    // 3. Fetch app_notifications directly without strict timestamp queries
+    var broadcastRes = await supabaseClient.from('app_notifications').select('*').order('created_at', { ascending: false })
+    var rawBroadcasts = broadcastRes.data || []
+
+    console.log('[DEBUG] Fetched raw broadcasts:', rawBroadcasts)
+
+    var now = new Date().getTime()
+
+    // 4. Normalize and filter broadcasts
+    allNotifications = rawBroadcasts.map(function(b) {
+      var audience = b.target_audience
+      if (typeof audience === 'string') {
+        try { audience = JSON.parse(audience) } catch(e) {}
+      }
+
       return {
         id: b.id,
-        title: b.title,
-        message: b.message,
-        type: b.type || 'broadcast',
+        title: b.title || 'Announcement',
+        message: b.message || '',
+        type: b.type || 'info',
         category: 'broadcast',
-        target_audience: b.target_audience,
+        target_audience: audience,
         action_label: b.action_label,
         action_url: b.action_url,
         expires_at: b.expires_at,
-        created_at: b.created_at
+        created_at: b.created_at || new Date().toISOString()
       }
-    })
+    }).filter(function(n) {
+      // Expiration check (only filter out if expires_at is explicitly set AND in the past)
+      if (n.expires_at) {
+        var expTime = new Date(n.expires_at).getTime()
+        if (!isNaN(expTime) && expTime < now) return false
+      }
 
-    var combined = formattedBroadcasts.concat(rawPersonal)
-
-    // Filter to relevant notifications
-    allNotifications = combined.filter(function(n) {
-      // Check expiration
-      if (n.expires_at && new Date(n.expires_at) < new Date()) return false
-
-      // Check audience targeting
-      if (n.target_audience && n.target_audience.type === 'tier') {
+      // Tier check (if targeted to a specific tier)
+      if (n.target_audience && n.target_audience.type === 'tier' && n.target_audience.value) {
         if (n.target_audience.value !== userTier) return false
       }
 
-      // Check dismissed state
-      var readState = readMap[n.id]
-      if (readState && readState.dismissed_at) return false
-
-      // Check user preferences
-      var category = n.category || n.type || 'broadcast'
-      var prefKey = prefMap[category]
-      if (prefKey && userProfile[prefKey] === false) return false
+      // Check if user dismissed this notification
+      if (readMap[n.id] && readMap[n.id].dismissed_at) return false
 
       return true
     })
 
-    // Sort newest first
-    allNotifications.sort(function(a, b) {
-      return new Date(b.created_at) - new Date(a.created_at)
-    })
-
-    await migrateLocalStorageReads()
+    console.log('[DEBUG] Final notifications ready to display:', allNotifications)
 
     renderNotifications()
     updateMarkAllButton()
-
-    setTimeout(function() {
-      document.querySelectorAll('.fade-up').forEach(function(el) { observer.observe(el) })
-    }, 50)
-
     setupListeners()
 
   } catch(e) {
@@ -301,39 +267,6 @@ async function init() {
   }
 }
 
-// ════════════════════════════════════════════
-// MIGRATE OLD LOCALSTORAGE READS
-// ════════════════════════════════════════════
-async function migrateLocalStorageReads() {
-  try {
-    var oldReads = JSON.parse(localStorage.getItem('gstw_read_notifs') || '[]')
-    if (oldReads.length === 0) return
-
-    var toInsert = []
-    oldReads.forEach(function(notifId) {
-      if (!readMap[notifId]) {
-        toInsert.push({
-          user_id: currentUser.id,
-          notification_id: notifId,
-          read_at: new Date().toISOString()
-        })
-        readMap[notifId] = { read_at: new Date().toISOString(), dismissed_at: null }
-      }
-    })
-
-    if (toInsert.length > 0) {
-      await supabaseClient.from('notification_reads').upsert(toInsert, { onConflict: 'user_id,notification_id' })
-    }
-
-    localStorage.removeItem('gstw_read_notifs')
-  } catch(e) {
-    console.error('Migration error:', e)
-  }
-}
-
-// ════════════════════════════════════════════
-// RENDER
-// ════════════════════════════════════════════
 function renderNotifications() {
   var container = document.getElementById('notifContainer')
   var emptyState = document.getElementById('emptyState')
@@ -345,32 +278,13 @@ function renderNotifications() {
   } else if (currentFilter !== 'all') {
     filtered = allNotifications.filter(function(n) {
       var cat = n.category || n.type || 'broadcast'
-      return cat === currentFilter
+      return cat === currentFilter || n.type === currentFilter
     })
   }
 
   if (filtered.length === 0) {
     container.innerHTML = ''
-    if (emptyState) {
-      emptyState.classList.remove('hidden')
-      var icon = document.getElementById('emptyIcon')
-      var title = document.getElementById('emptyTitle')
-      var msg = document.getElementById('emptyMsg')
-
-      if (currentFilter === 'unread') {
-        if (icon) icon.textContent = 'done_all'
-        if (title) title.textContent = "You're all caught up"
-        if (msg) msg.textContent = 'No unread notifications'
-      } else if (currentFilter !== 'all') {
-        if (icon) icon.textContent = 'filter_list_off'
-        if (title) title.textContent = 'Nothing here'
-        if (msg) msg.textContent = 'No ' + currentFilter + ' notifications'
-      } else {
-        if (icon) icon.textContent = 'notifications_off'
-        if (title) title.textContent = "You're all caught up"
-        if (msg) msg.textContent = 'No notifications to show'
-      }
-    }
+    if (emptyState) emptyState.classList.remove('hidden')
     return
   }
 
@@ -405,7 +319,7 @@ function groupByTime(notifs) {
 
   notifs.forEach(function(n) {
     var d = new Date(n.created_at)
-    if (d >= today) groups['Today'].push(n)
+    if (isNaN(d.getTime()) || d >= today) groups['Today'].push(n)
     else if (d >= weekAgo) groups['This Week'].push(n)
     else if (d >= monthAgo) groups['This Month'].push(n)
     else groups['Earlier'].push(n)
@@ -414,17 +328,14 @@ function groupByTime(notifs) {
   return groups
 }
 
-// ════════════════════════════════════════════
-// BUILD CARD
-// ════════════════════════════════════════════
 function buildNotifCard(notif) {
   var isRead = readMap[notif.id] && readMap[notif.id].read_at
   var typeKey = notif.type || notif.category || 'broadcast'
-  var config = categoryConfig[typeKey] || categoryConfig[notif.category] || categoryConfig['broadcast']
+  var config = categoryConfig[typeKey] || categoryConfig['broadcast']
   var timeStr = timeAgo(notif.created_at)
 
   var swipeContainer = document.createElement('div')
-  swipeContainer.className = 'notif-swipe-container fade-up'
+  swipeContainer.className = 'notif-swipe-container'
   swipeContainer.setAttribute('data-notif-id', notif.id)
 
   var dismissBg = document.createElement('div')
@@ -459,27 +370,13 @@ function buildNotifCard(notif) {
       + '</div>'
     + '</div>'
 
-  if (!isRead) {
-    var observerRead = new IntersectionObserver(function(entries) {
-      if (entries[0].isIntersecting) {
-        markAsRead(notif.id)
-        observerRead.disconnect()
-      }
-    }, { threshold: 0.5 })
-    setTimeout(function() { observerRead.observe(swipeContainer) }, 1000)
-  }
-
   swipeContainer.appendChild(dismissBg)
   swipeContainer.appendChild(content)
-
   setupSwipe(content, notif.id)
 
   return swipeContainer
 }
 
-// ════════════════════════════════════════════
-// SWIPE TO DISMISS
-// ════════════════════════════════════════════
 function setupSwipe(el, notifId) {
   var startX = 0, currentX = 0, isSwiping = false
 
@@ -501,36 +398,6 @@ function setupSwipe(el, notifId) {
   el.addEventListener('touchend', function() {
     isSwiping = false
     el.classList.remove('swiping')
-
-    if (currentX < -80) {
-      el.classList.add('dismissed')
-      setTimeout(function() {
-        dismissNotification(notifId)
-      }, 300)
-    } else {
-      el.style.transform = 'translateX(0)'
-    }
-  })
-
-  // Mouse drag support
-  el.addEventListener('mousedown', function(e) {
-    startX = e.clientX; currentX = 0; isSwiping = true
-    el.classList.add('swiping')
-    e.preventDefault()
-  })
-
-  document.addEventListener('mousemove', function(e) {
-    if (!isSwiping || !el.classList.contains('swiping')) return
-    currentX = e.clientX - startX
-    if (currentX > 0) currentX = 0
-    if (currentX < -120) currentX = -120
-    el.style.transform = 'translateX(' + currentX + 'px)'
-  })
-
-  document.addEventListener('mouseup', function() {
-    if (!isSwiping || !el.classList.contains('swiping')) return
-    isSwiping = false
-    el.classList.remove('swiping')
     if (currentX < -80) {
       el.classList.add('dismissed')
       setTimeout(function() { dismissNotification(notifId) }, 300)
@@ -540,12 +407,8 @@ function setupSwipe(el, notifId) {
   })
 }
 
-// ════════════════════════════════════════════
-// READ / DISMISS ACTIONS
-// ════════════════════════════════════════════
 async function markAsRead(notifId) {
   if (readMap[notifId] && readMap[notifId].read_at) return
-
   readMap[notifId] = readMap[notifId] || {}
   readMap[notifId].read_at = new Date().toISOString()
 
@@ -566,43 +429,31 @@ async function markAsRead(notifId) {
       notification_id: notifId,
       read_at: readMap[notifId].read_at
     }, { onConflict: 'user_id,notification_id' })
-  } catch(e) { console.error('markAsRead error:', e) }
+  } catch(e) {}
 }
 
 async function dismissNotification(notifId) {
   readMap[notifId] = readMap[notifId] || {}
   readMap[notifId].dismissed_at = new Date().toISOString()
-  if (!readMap[notifId].read_at) readMap[notifId].read_at = readMap[notifId].dismissed_at
-
   allNotifications = allNotifications.filter(function(n) { return n.id !== notifId })
 
   var container = document.querySelector('.notif-swipe-container[data-notif-id="' + notifId + '"]')
-  if (container) {
-    container.style.maxHeight = container.offsetHeight + 'px'
-    container.style.transition = 'max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease'
-    requestAnimationFrame(function() {
-      container.style.maxHeight = '0'
-      container.style.opacity = '0'
-      container.style.marginBottom = '0'
-      container.style.overflow = 'hidden'
-    })
-    setTimeout(function() {
-      if (container.parentNode) container.remove()
-      cleanupEmptyGroups()
-    }, 350)
-  }
+  if (container) container.remove()
 
   updateUnreadBadge()
   updateMarkAllButton()
+  if (allNotifications.length === 0) {
+    document.getElementById('emptyState').classList.remove('hidden')
+  }
 
   try {
     await supabaseClient.from('notification_reads').upsert({
       user_id: currentUser.id,
       notification_id: notifId,
-      read_at: readMap[notifId].read_at,
+      read_at: readMap[notifId].read_at || new Date().toISOString(),
       dismissed_at: readMap[notifId].dismissed_at
     }, { onConflict: 'user_id,notification_id' })
-  } catch(e) { console.error('dismissNotification error:', e) }
+  } catch(e) {}
 
   showToast('Notification dismissed')
 }
@@ -617,11 +468,7 @@ async function markAllRead() {
   unread.forEach(function(n) {
     readMap[n.id] = readMap[n.id] || {}
     readMap[n.id].read_at = now
-    toUpsert.push({
-      user_id: currentUser.id,
-      notification_id: n.id,
-      read_at: now
-    })
+    toUpsert.push({ user_id: currentUser.id, notification_id: n.id, read_at: now })
   })
 
   document.querySelectorAll('.notif-card.unread').forEach(function(card) {
@@ -637,24 +484,7 @@ async function markAllRead() {
 
   try {
     await supabaseClient.from('notification_reads').upsert(toUpsert, { onConflict: 'user_id,notification_id' })
-  } catch(e) { console.error('markAllRead error:', e) }
-}
-
-function cleanupEmptyGroups() {
-  var container = document.getElementById('notifContainer')
-  if (!container) return
-
-  var labels = container.querySelectorAll('.section-label')
-  labels.forEach(function(label) {
-    var next = label.nextElementSibling
-    if (!next || next.classList.contains('section-label')) {
-      label.remove()
-    }
-  })
-
-  if (container.children.length === 0) {
-    document.getElementById('emptyState').classList.remove('hidden')
-  }
+  } catch(e) {}
 }
 
 function setFilter(filter, btn) {
@@ -688,7 +518,7 @@ function timeAgo(dateStr) {
   var mins = Math.floor((now - then) / 60000)
   var hrs = Math.floor(mins / 60)
   var days = Math.floor(hrs / 24)
-  if (mins < 1) return 'Just now'
+  if (isNaN(mins) || mins < 1) return 'Just now'
   if (mins < 60) return mins + 'm ago'
   if (hrs < 24) return hrs + 'h ago'
   if (days < 7) return days + 'd ago'
