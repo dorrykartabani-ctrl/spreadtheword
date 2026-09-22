@@ -644,5 +644,53 @@ function setupListeners(){
 
 init()
 </script>
+<script>
+  // Add this to your profile.html (and any other page with bottom nav)
+  async function updateGlobalNotificationBadge() {
+    try {
+      var s = await supabase.auth.getSession()
+      if (!s.data.session) return;
+      var userId = s.data.session.user.id;
+      
+      // Get user tier
+      var p = await supabase.from('profiles').select('subscription_tier, tier, tier_id').eq('id', userId).single();
+      var userTier = p.data?.subscription_tier || p.data?.tier || p.data?.tier_id || 'free';
+
+      // Get active broadcasts
+      var notifs = await supabase.from('app_notifications').select('id, target_audience').gt('expires_at', new Date().toISOString());
+      if (!notifs.data) return;
+
+      // Filter by tier
+      var validNotifs = notifs.data.filter(b => {
+        var aud = typeof b.target_audience === 'string' ? JSON.parse(b.target_audience) : b.target_audience;
+        if (aud && aud.type === 'tier' && aud.value !== userTier) return false;
+        return true;
+      });
+
+      // Get read states
+      var reads = await supabase.from('notification_reads').select('notification_id').eq('user_id', userId).not('read_at', 'is', null);
+      var readIds = (reads.data || []).map(r => r.notification_id);
+
+      // Count unread
+      var unreadCount = validNotifs.filter(n => !readIds.includes(n.id)).length;
+
+      // Update Nav Icon (Assuming your bell icon has ID 'nav-notifications-icon')
+      var bellIcon = document.getElementById('nav-notifications-icon');
+      if (bellIcon) {
+        var existingBadge = document.getElementById('global-badge');
+        if (existingBadge) existingBadge.remove();
+        
+        if (unreadCount > 0) {
+          // Adds a beautiful little red dot
+          bellIcon.style.position = 'relative';
+          bellIcon.innerHTML += `<div id="global-badge" style="position:absolute;top:0;right:-4px;width:10px;height:10px;background:#ad332b;border:2px solid white;border-radius:50%;"></div>`;
+        }
+      }
+    } catch(e) { console.log("Silent global badge check error", e) }
+  }
+  
+  // Check immediately on load
+  updateGlobalNotificationBadge();
+</script>
 </body>
 </html>
