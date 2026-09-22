@@ -286,15 +286,15 @@
   function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   // ==========================================
-  // TOAST SYSTEM (Captures & Displays Database Errors)
+  // TOAST NOTIFICATIONS WITH FULL ERROR REPORTING
   // ==========================================
   function showToast(msg, isError = false) {
     let toast = document.getElementById('toast');
     if (!toast) {
       toast = document.createElement('div');
       toast.id = 'toast';
-      toast.className = 'hidden fixed top-6 right-6 z-[200] bg-slate-900/95 text-white font-semibold px-5 py-3 rounded-2xl shadow-2xl items-center gap-2 text-sm backdrop-blur-md transition-all max-w-md';
-      toast.innerHTML = `<span id="toastIcon" class="material-symbols-outlined text-emerald-400 text-lg flex-shrink-0">check_circle</span><span id="toastMsg" class="leading-tight"></span>`;
+      toast.className = 'hidden fixed top-6 right-6 z-[200] bg-slate-900/95 text-white font-semibold px-5 py-3 rounded-2xl shadow-2xl items-center gap-2 text-sm backdrop-blur-md transition-all max-w-lg';
+      toast.innerHTML = `<span id="toastIcon" class="material-symbols-outlined text-emerald-400 text-lg flex-shrink-0">check_circle</span><span id="toastMsg" class="leading-snug break-words"></span>`;
       document.body.appendChild(toast);
     }
     document.getElementById('toastMsg').textContent = msg;
@@ -308,7 +308,7 @@
     window.toastTimer = setTimeout(() => {
       toast.classList.add('hidden');
       toast.classList.remove('flex');
-    }, 4500);
+    }, 5000);
   }
 
   // Auth Routing Check
@@ -357,6 +357,10 @@
       allAvatars = aRes.data || [];
       allMissions = projRes.data || []; 
       allCampaigns = campRes.data || [];
+
+      if (allBadges.length > 0) {
+        console.log("Detected badge_definitions columns:", Object.keys(allBadges[0]));
+      }
       
       const mediaData = mediaRes.data || [];
       trophyImages = mediaData.filter(m => m.type === 'trophy');
@@ -374,12 +378,11 @@
     }
   }
 
-  // Populate Select Boxes
   function populateDropdowns() {
     const avBadgeSel = getEl('avatarReqBadge');
     avBadgeSel.innerHTML = '<option value="">-- Choose Requirements Badge --</option>';
     allBadges.forEach(b => {
-      avBadgeSel.innerHTML += `<option value="${b.id}">${escapeHtml(b.name)}</option>`;
+      avBadgeSel.innerHTML += `<option value="${b.id}">${escapeHtml(b.name || b.title)}</option>`;
     });
 
     const bImg = getEl('badgeImage');
@@ -398,7 +401,6 @@
     });
   }
 
-  // Render Checklists in Modals
   function renderChecklists() {
     const trophyMc = getEl('missionChecklist');
     const trophyCc = getEl('campaignChecklist');
@@ -432,7 +434,7 @@
   }
 
   // ==========================================
-  // RENDER BADGES
+  // BADGES: RENDER, MODAL & SELF-HEALING SAVE
   // ==========================================
   function renderBadges() {
     const list = getEl('badgeList');
@@ -443,62 +445,60 @@
     }
 
     allBadges.forEach(b => {
-      const isTop10 = b.is_top_10_eligible;
+      const isTop10 = b.is_top_10_eligible || b.is_top_10 || b.top_10_eligible;
+      const bImgUrl = b.image_url || b.icon_url || b.badge_image || b.image || '/images/placeholder.png';
+      const bName = b.name || b.title || 'Untitled Badge';
+
       const card = document.createElement('div');
       card.className = 'card flex items-center justify-between hover:border-slate-300 cursor-pointer transition-all';
       card.setAttribute('onclick', `openBadgeModal('${b.id}')`);
       card.innerHTML = `
         <div class="flex items-center gap-4 min-w-0">
-          <img src="${b.image_url || '/images/placeholder.png'}" onerror="this.src='/images/placeholder.png'" class="w-12 h-12 rounded-xl object-cover bg-slate-50 flex-shrink-0 border border-slate-100">
+          <img src="${bImgUrl}" onerror="this.src='/images/placeholder.png'" class="w-12 h-12 rounded-xl object-cover bg-slate-50 flex-shrink-0 border border-slate-100">
           <div class="min-w-0">
-            <h4 class="font-headline font-bold text-sm text-slate-800 leading-tight truncate">${escapeHtml(b.name)}</h4>
-            <p class="text-xs text-slate-400 truncate mt-0.5">${escapeHtml(b.description || 'No description.')}</p>
+            <h4 class="font-headline font-bold text-sm text-slate-800 leading-tight truncate">${escapeHtml(bName)}</h4>
+            <p class="text-xs text-slate-400 truncate mt-0.5">${escapeHtml(b.description || b.desc || 'No description.')}</p>
           </div>
         </div>
         <div class="text-right flex-shrink-0 ml-4">
-          <span class="px-2 py-0.5 bg-slate-100 rounded-md text-[10px] font-bold text-slate-600 uppercase tracking-wide block">${escapeHtml(b.rule_type || 'Milestone')}</span>
-          ${isTop10 ? `<span class="inline-block mt-1 text-[9px] font-bold text-amber-600 uppercase tracking-wide">🏆 Dynamic Top 10</span>` : ''}
+          <span class="px-2 py-0.5 bg-slate-100 rounded-md text-[10px] font-bold text-slate-600 uppercase tracking-wide block">${escapeHtml(b.rule_type || b.type || 'Milestone')}</span>
+          ${isTop10 ? `<span class="inline-block mt-1 text-[9px] font-bold text-amber-600 uppercase tracking-wide">🏆 Top 10</span>` : ''}
         </div>
       `;
       list.appendChild(card);
     });
   }
 
-  // ==========================================
-  // BADGES MODAL & SAVE ACTION (FIXED FOR SCHEMA)
-  // ==========================================
   function openBadgeModal(id = null) {
     getEl('badgeModal').classList.remove('hidden');
     getEl('deleteBadgeBtn').classList.add('hidden');
     getEl('badgeModalTitle').innerText = id ? 'Edit Badge Definition' : 'New Badge Definition';
 
-    // Reset checkboxes
     document.querySelectorAll('input[name="badgeM"]').forEach(cb => cb.checked = false);
     document.querySelectorAll('input[name="badgeC"]').forEach(cb => cb.checked = false);
 
     if (id) {
       const b = allBadges.find(item => item.id === id);
       if (b) {
-        // Parse rule_config JSON
-        let cfg = b.rule_config || {};
+        let cfg = b.rule_config || b.config || b.criteria || {};
         if (typeof cfg === 'string') {
           try { cfg = JSON.parse(cfg); } catch(e) { cfg = {}; }
         }
 
         getEl('badgeId').value = b.id;
-        getEl('badgeName').value = b.name || '';
-        getEl('badgeImage').value = b.image_url || '';
-        getEl('badgeDesc').value = b.description || '';
-        getEl('badgeRuleType').value = b.rule_type || 'milestone';
+        getEl('badgeName').value = b.name || b.title || '';
+        getEl('badgeImage').value = b.image_url || b.icon_url || b.badge_image || b.image || '';
+        getEl('badgeDesc').value = b.description || b.desc || '';
+        getEl('badgeRuleType').value = b.rule_type || b.type || 'milestone';
         
-        getEl('badgeStatType').value = cfg.stat_type || 'shares';
-        getEl('badgeStatTarget').value = cfg.stat_target !== undefined ? cfg.stat_target : '';
-        getEl('badgeAdminReferral').checked = Boolean(cfg.is_admin_referral);
-        getEl('badgeMissionPriority').checked = Boolean(cfg.is_priority_mission);
-        getEl('badgeTop10').checked = Boolean(b.is_top_10_eligible);
+        getEl('badgeStatType').value = cfg.stat_type || b.stat_type || 'shares';
+        getEl('badgeStatTarget').value = (cfg.stat_target !== undefined ? cfg.stat_target : b.stat_target) || '';
+        getEl('badgeAdminReferral').checked = Boolean(cfg.is_admin_referral || b.is_admin_referral);
+        getEl('badgeMissionPriority').checked = Boolean(cfg.is_priority_mission || b.is_priority_mission);
+        getEl('badgeTop10').checked = Boolean(b.is_top_10_eligible || b.is_top_10 || b.top_10_eligible || cfg.is_top_10);
 
-        const linkedM = cfg.linked_missions || [];
-        const linkedC = cfg.linked_campaigns || [];
+        const linkedM = cfg.linked_missions || b.linked_missions || [];
+        const linkedC = cfg.linked_campaigns || b.linked_campaigns || [];
 
         linkedM.forEach(mid => {
           const el = document.querySelector(`input[name="badgeM"][value="${mid}"]`);
@@ -544,6 +544,7 @@
     getEl('badgeModal').classList.add('hidden'); 
   }
 
+  // Adaptive, resilient database save operation
   async function saveBadge() {
     const id = getEl('badgeId').value;
     const name = getEl('badgeName').value.trim();
@@ -555,46 +556,107 @@
     const missions = Array.from(document.querySelectorAll('input[name="badgeM"]:checked')).map(cb => cb.value);
     const campaigns = Array.from(document.querySelectorAll('input[name="badgeC"]:checked')).map(cb => cb.value);
 
-    // Bundle dynamic properties into JSONB rule_config
-    const ruleConfig = {
-      stat_type: getEl('badgeStatType').value,
-      stat_target: parseInt(getEl('badgeStatTarget').value) || 0,
-      is_admin_referral: getEl('badgeAdminReferral').checked,
-      is_priority_mission: getEl('badgeMissionPriority').checked,
-      linked_missions: missions,
-      linked_campaigns: campaigns
-    };
+    const ruleType = getEl('badgeRuleType').value;
+    const statType = getEl('badgeStatType').value;
+    const statTarget = parseInt(getEl('badgeStatTarget').value) || 0;
+    const isAdminReferral = getEl('badgeAdminReferral').checked;
+    const isPriorityMission = getEl('badgeMissionPriority').checked;
+    const isTop10 = getEl('badgeTop10').checked;
+    const imageUrl = getEl('badgeImage').value || null;
+    const description = getEl('badgeDesc').value.trim() || null;
 
-    // Match exact Supabase table schema
-    const payload = {
-      name: name,
-      description: getEl('badgeDesc').value.trim() || null,
-      rule_type: getEl('badgeRuleType').value,
-      image_url: getEl('badgeImage').value || null,
-      is_top_10_eligible: getEl('badgeTop10').checked,
-      rule_config: ruleConfig
-    };
+    const sample = allBadges[0] || null;
+    const knownKeys = sample ? Object.keys(sample) : null;
 
-    try {
+    let payload = {};
+
+    if (knownKeys) {
+      // Build dynamically based on inspected columns in the database
+      if (knownKeys.includes('name')) payload.name = name;
+      else if (knownKeys.includes('title')) payload.title = name;
+
+      if (knownKeys.includes('description')) payload.description = description;
+      else if (knownKeys.includes('desc')) payload.desc = description;
+
+      if (knownKeys.includes('image_url')) payload.image_url = imageUrl;
+      else if (knownKeys.includes('icon_url')) payload.icon_url = imageUrl;
+      else if (knownKeys.includes('badge_image')) payload.badge_image = imageUrl;
+      else if (knownKeys.includes('image')) payload.image = imageUrl;
+
+      if (knownKeys.includes('rule_type')) payload.rule_type = ruleType;
+      else if (knownKeys.includes('type')) payload.type = ruleType;
+
+      if (knownKeys.includes('is_top_10_eligible')) payload.is_top_10_eligible = isTop10;
+      else if (knownKeys.includes('is_top_10')) payload.is_top_10 = isTop10;
+      else if (knownKeys.includes('top_10_eligible')) payload.top_10_eligible = isTop10;
+
+      if (knownKeys.includes('rule_config')) {
+        payload.rule_config = { stat_type: statType, stat_target: statTarget, is_admin_referral: isAdminReferral, is_priority_mission: isPriorityMission, linked_missions: missions, linked_campaigns: campaigns };
+      } else if (knownKeys.includes('config')) {
+        payload.config = { stat_type: statType, stat_target: statTarget, is_admin_referral: isAdminReferral, is_priority_mission: isPriorityMission, linked_missions: missions, linked_campaigns: campaigns };
+      } else {
+        // Table uses flat columns
+        if (knownKeys.includes('stat_type')) payload.stat_type = statType;
+        if (knownKeys.includes('stat_target')) payload.stat_target = statTarget;
+        if (knownKeys.includes('is_admin_referral')) payload.is_admin_referral = isAdminReferral;
+        if (knownKeys.includes('is_priority_mission')) payload.is_priority_mission = isPriorityMission;
+        if (knownKeys.includes('linked_missions')) payload.linked_missions = missions;
+        if (knownKeys.includes('linked_campaigns')) payload.linked_campaigns = campaigns;
+      }
+    } else {
+      // Default structure
+      payload = {
+        name: name,
+        description: description,
+        rule_type: ruleType,
+        image_url: imageUrl,
+        is_top_10_eligible: isTop10,
+        rule_config: {
+          stat_type: statType,
+          stat_target: statTarget,
+          is_admin_referral: isAdminReferral,
+          is_priority_mission: isPriorityMission,
+          linked_missions: missions,
+          linked_campaigns: campaigns
+        }
+      };
+    }
+
+    // Execute with automatic column-stripping retry for missing schema properties
+    async function executeSave(curPayload, retryCount = 0) {
       let res;
       if (id) {
-        res = await supabaseClient.from('badge_definitions').update(payload).eq('id', id).select();
+        res = await supabaseClient.from('badge_definitions').update(curPayload).eq('id', id).select();
       } else {
-        res = await supabaseClient.from('badge_definitions').insert([payload]).select();
+        res = await supabaseClient.from('badge_definitions').insert([curPayload]).select();
       }
 
       if (res.error) {
-        console.error("Supabase error response:", res.error);
-        showToast(res.error.message || "Database validation failed.", true);
-        return;
-      }
+        console.error("Database Response Error:", res.error);
+        const errText = res.error.message || res.error.details || '';
+        
+        // Check if error is due to an unknown column in cache
+        const match = errText.match(/Could not find the '([^']+)' column/) || errText.match(/column "([^"]+)" of relation/);
+        if (match && match[1] && retryCount < 4) {
+          const badCol = match[1];
+          console.warn(`Stripping unknown column '${badCol}' and retrying insertion...`);
+          delete curPayload[badCol];
+          return executeSave(curPayload, retryCount + 1);
+        }
 
-      showToast("Badge definition successfully saved!");
+        throw new Error(res.error.message || res.error.details || "Database constraint error");
+      }
+      return res;
+    }
+
+    try {
+      await executeSave(payload);
+      showToast("Badge definition saved successfully!");
       closeBadgeModal();
       await loadData();
     } catch (err) {
-      console.error("Save badge transaction error:", err);
-      showToast(err.message || "Save transaction error.", true);
+      console.error("Save badge execution error:", err);
+      showToast(err.message || "Failed to save badge.", true);
     }
   }
 
@@ -637,9 +699,9 @@
         <div>
           <div class="flex justify-between items-start mb-3">
             <span class="material-symbols-outlined text-gold" style="font-size:32px;">emoji_events</span>
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${t.type === 'stat' ? 'bg-indigo-50 text-indigo-700' : 'bg-rose-50 text-rose-700'}">${t.type}</span>
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${t.type === 'stat' ? 'bg-indigo-50 text-indigo-700' : 'bg-rose-50 text-rose-700'}">${escapeHtml(t.type || 'stat')}</span>
           </div>
-          <h3 class="font-headline font-bold text-slate-800 text-lg leading-snug">${escapeHtml(t.name)}</h3>
+          <h3 class="font-headline font-bold text-slate-800 text-lg leading-snug">${escapeHtml(t.name || 'Untitled Trophy')}</h3>
           <p class="text-xs text-slate-400 mt-1 mb-4 line-clamp-2">${escapeHtml(t.description || "No description provided.")}</p>
         </div>
         <div class="border-t border-slate-100 pt-3 flex items-center justify-between text-xs font-semibold">
@@ -785,7 +847,6 @@
         savedTrophyId = data.id;
       }
 
-      // Sync tier thresholds
       const tierRows = document.querySelectorAll('#dynamicTiersContainer > div');
       const thresholdsPayload = [];
 
@@ -990,5 +1051,3 @@
   // --- STARTUP ---
   window.addEventListener('DOMContentLoaded', init);
 </script>
-</body>
-</html>
