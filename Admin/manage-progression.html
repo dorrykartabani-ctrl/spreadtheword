@@ -264,13 +264,15 @@
   let avatarImages = [];
   let badgeImages = [];
 
+  // Media column mapping (auto-detected after first load)
+  let mediaUrlCol = 'url';
+  let mediaNameCol = 'name';
+
   function getEl(id) { return document.getElementById(id); }
   function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   function generateUUID() {
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-      return crypto.randomUUID();
-    }
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
       var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
       return v.toString(16);
@@ -290,7 +292,6 @@
     const icon = document.getElementById('toastIcon');
     icon.textContent = isError ? 'error' : 'check_circle';
     icon.className = `material-symbols-outlined text-lg flex-shrink-0 ${isError ? 'text-rose-400' : 'text-emerald-400'}`;
-    
     toast.classList.remove('hidden');
     toast.classList.add('flex');
     if (window.toastTimer) clearTimeout(window.toastTimer);
@@ -300,60 +301,127 @@
     }, 5000);
   }
 
-  // Auth Routing Check
+  // ==========================================
+  // AUTH
+  // ==========================================
   async function init() {
     try {
       const s = await supabaseClient.auth.getSession();
-      if (!s.data.session) {
-        window.location.href = 'login.html';
-        return;
-      }
+      if (!s.data.session) { window.location.href = 'login.html'; return; }
       currentUser = s.data.session.user;
-      
       const p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single();
-      if (!p.data || p.data.role !== 'admin') {
-        window.location.href = '../app/index.html';
-        return;
-      }
-
+      if (!p.data || p.data.role !== 'admin') { window.location.href = '../app/index.html'; return; }
       document.querySelectorAll('.admin-name').forEach(el => el.textContent = p.data.full_name || currentUser.email);
       document.querySelectorAll('.admin-initials').forEach(el => el.textContent = (p.data.full_name || 'AD').substring(0,2).toUpperCase());
-      
       await loadData();
     } catch (err) {
       console.error("Auth init error:", err);
     }
   }
 
+  // ==========================================
+  // ROBUST MEDIA LOADER (AUTO-DETECTS SCHEMA)
+  // ==========================================
+  async function loadMediaAssets() {
+    try {
+      // Fetch ALL media rows without filters to discover the real schema
+      const { data: raw, error } = await supabaseClient.from('media').select('*');
+      if (error) {
+        console.error("Media query error:", error);
+        return;
+      }
+
+      const rows = raw || [];
+      console.log("Media loaded:", rows.length, "rows");
+
+      if (rows.length === 0) {
+        console.warn("Media table is empty or no rows returned.");
+        trophyImages = [];
+        badgeImages = [];
+        avatarImages = [];
+        return;
+      }
+
+      // --- Detect URL column ---
+      const urlCandidates = ['url', 'file_url', 'media_url', 'src', 'path', 'file_path', 'image_url', 'storage_url', 'file'];
+      mediaUrlCol = urlCandidates.find(col => col in rows[0]) || 'url';
+      console.log("Detected media URL column:", mediaUrlCol);
+
+      // --- Detect name column ---
+      const nameCandidates = ['name', 'title', 'filename', 'file_name', 'label', 'display_name'];
+      mediaNameCol = nameCandidates.find(col => col in rows[0]) || 'name';
+      console.log("Detected media name column:", mediaNameCol);
+
+      // --- Detect type column ---
+      const typeCandidates = ['type', 'category', 'kind', 'media_type', 'group'];
+      const typeCol = typeCandidates.find(col => col in rows[0]) || 'type';
+      console.log("Detected media type column:", typeCol);
+
+      // Collect all distinct type values for debugging
+      const typeValues = [...new Set(rows.map(r => String(r[typeCol] || '').toLowerCase().trim()))];
+      console.log("All media type values found:", typeValues);
+
+      // Normalize each row to a consistent shape
+      const normalized = rows.map(r => ({
+        ...r,
+        _url: r[mediaUrlCol] || r.url || r.file_url || r.media_url || r.src || r.path || '',
+        _name: r[mediaNameCol] || r.name || r.title || r.filename || 'Unnamed',
+        _type: String(r[typeCol] || r.type || '').toLowerCase().trim()
+      }));
+
+      // Filter into three buckets (handle singular / plural / compound types)
+      const trophyTypes  = ['trophy', 'trophies', 'trophy_image', 'trophy_image_url'];
+      const badgeTypes   = ['badge', 'badges', 'badge_image', 'badge_image_url'];
+      const avatarTypes  = ['avatar', 'avatars', 'avatar_image', 'avatar_image_url', 'character'];
+
+      trophyImages = normalized.filter(m => trophyTypes.includes(m._type));
+      badgeImages  = normalized.filter(m => badgeTypes.includes(m._type));
+      avatarImages = normalized.filter(m => avatarTypes.includes(m._type));
+
+      // Fallback: if strict matching found nothing but rows exist, assign ALL rows to all categories
+      // (useful if the type column has unexpected values)
+      if (trophyImages.length === 0 && badgeImages.length === 0 && avatarImages.length === 0 && normalized.length > 0) {
+        console.warn("No type match found. Assigning all media to all categories as fallback.");
+        trophyImages = normalized;
+        badgeImages  = normalized;
+        avatarImages = normalized;
+      }
+
+      console.log(`Media split → Trophies: ${trophyImages.length} | Badges: ${badgeImages.length} | Avatars: ${avatarImages.length}`);
+    } catch (e) {
+      console.error("Media loading failed:", e);
+    }
+  }
+
+  // ==========================================
+  // LOAD ALL DATA
+  // ==========================================
   async function loadData() {
     try {
-      const [tierRes, tRes, threshRes, bRes, aRes, mediaRes, projRes, campRes] = await Promise.all([
+      const [tierRes, tRes, threshRes, bRes, aRes, projRes, campRes] = await Promise.all([
         supabaseClient.from('trophy_tiers').select('*').order('id'),
         supabaseClient.from('trophy_definitions').select('*').order('created_at', {ascending: false}),
         supabaseClient.from('trophy_thresholds').select('*'),
         supabaseClient.from('badge_definitions').select('*').order('created_at', {ascending: false}),
         supabaseClient.from('avatar_stages').select('*').order('stage_order'),
-        supabaseClient.from('media').select('*').in('type', ['trophy', 'avatar', 'badge']).eq('is_active', true),
         supabaseClient.from('projects').select('id, title, mission_ref').eq('status', 'active'),
         supabaseClient.from('campaigns').select('id, name').eq('status', 'active')
       ]);
 
-      allTiers = tierRes.data || []; 
-      allTrophies = tRes.data || []; 
-      allThresholds = threshRes.data || []; 
-      allBadges = bRes.data || []; 
+      allTiers = tierRes.data || [];
+      allTrophies = tRes.data || [];
+      allThresholds = threshRes.data || [];
+      allBadges = bRes.data || [];
       allAvatars = aRes.data || [];
-      allMissions = projRes.data || []; 
+      allMissions = projRes.data || [];
       allCampaigns = campRes.data || [];
-      
-      const mediaData = mediaRes.data || [];
-      trophyImages = mediaData.filter(m => m.type === 'trophy');
-      avatarImages = mediaData.filter(m => m.type === 'avatar');
-      badgeImages = mediaData.filter(m => m.type === 'badge');
 
-      renderTrophies(); 
-      renderBadges(); 
-      renderAvatars(); 
+      // Load media assets (auto-detect schema)
+      await loadMediaAssets();
+
+      renderTrophies();
+      renderBadges();
+      renderAvatars();
       populateDropdowns();
       renderChecklists();
     } catch (e) {
@@ -362,7 +430,18 @@
     }
   }
 
+  // ==========================================
+  // POPULATE ALL IMAGE / DROPDOWN SELECTS
+  // ==========================================
+  function buildMediaOptions(images, selectedUrl) {
+    if (!images || !images.length) return '<option value="">-- No media assets found --</option>';
+    return images.map(m => 
+      `<option value="${m._url}" ${selectedUrl === m._url ? 'selected' : ''}>${escapeHtml(m._name)}</option>`
+    ).join('');
+  }
+
   function populateDropdowns() {
+    // Badge requirement dropdown in Avatar modal
     const avBadgeSel = getEl('avatarReqBadge');
     if (avBadgeSel) {
       avBadgeSel.innerHTML = '<option value="">-- Choose Requirements Badge --</option>';
@@ -371,26 +450,34 @@
       });
     }
 
+    // Badge image dropdown in Badge modal
     const bImg = getEl('badgeImage');
     if (bImg) {
-      bImg.innerHTML = '<option value="">-- Select Badge Image --</option>';
-      badgeImages.forEach(m => {
-        bImg.innerHTML += `<option value="${m.url}">${escapeHtml(m.name)}</option>`;
-      });
+      bImg.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages);
     }
 
+    // Avatar male/female image dropdowns in Avatar modal
     const avMale = getEl('avatarImageMale');
     const avFemale = getEl('avatarImageFemale');
-    if (avMale && avFemale) {
-      avMale.innerHTML = avFemale.innerHTML = '<option value="">-- Select Avatar Image --</option>';
-      avatarImages.forEach(m => {
-        const option = `<option value="${m.url}">${escapeHtml(m.name)}</option>`;
-        avMale.innerHTML += option;
-        avFemale.innerHTML += option;
-      });
+    if (avMale) avMale.innerHTML = '<option value="">-- Select Avatar Image --</option>' + buildMediaOptions(avatarImages);
+    if (avFemale) avFemale.innerHTML = '<option value="">-- Select Avatar Image --</option>' + buildMediaOptions(avatarImages);
+
+    // Trophy base image dropdown in Trophy modal
+    const tImg = getEl('trophyBaseImage');
+    if (tImg) {
+      tImg.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages);
     }
+
+    // Tier achievement icon dropdowns (built dynamically — rebuild if modal is open)
+    document.querySelectorAll('#dynamicTiersContainer .tier-img').forEach(sel => {
+      const currentVal = sel.value;
+      sel.innerHTML = '<option value="">-- Choose System Asset --</option>' + buildMediaOptions(trophyImages, currentVal);
+    });
   }
 
+  // ==========================================
+  // RENDER CHECKLISTS
+  // ==========================================
   function renderChecklists() {
     const trophyMc = getEl('missionChecklist');
     const trophyCc = getEl('campaignChecklist');
@@ -416,201 +503,14 @@
   function switchTab(tabId) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     getEl(`tab-${tabId}`)?.classList.add('active');
-    
     getEl('view-trophies')?.classList.add('hidden');
     getEl('view-badges')?.classList.add('hidden');
     getEl('view-avatars')?.classList.add('hidden');
     getEl(`view-${tabId}`)?.classList.remove('hidden');
   }
 
- // ==========================================
-  // BADGES: RENDER
   // ==========================================
-  function renderBadges() {
-    const list = getEl('badgeList');
-    if (!list) return;
-    list.innerHTML = '';
-    if (!allBadges.length) {
-      list.innerHTML = `<p class="col-span-full text-center py-12 text-sm text-slate-400 font-semibold">No badges defined yet.</p>`;
-      return;
-    }
-
-    allBadges.forEach(b => {
-      const isTop10 = b.is_top_10_eligible;
-      const bImgUrl = b.image_url || '/images/placeholder.png';
-      const bName = b.name || 'Untitled Badge';
-
-      const card = document.createElement('div');
-      card.className = 'card flex items-center justify-between hover:border-slate-300 cursor-pointer transition-all';
-      card.setAttribute('onclick', `window.openBadgeModal('${b.id}')`);
-      card.innerHTML = `
-        <div class="flex items-center gap-4 min-w-0">
-          <img src="${bImgUrl}" onerror="this.src='/images/placeholder.png'" class="w-12 h-12 rounded-xl object-cover bg-slate-50 flex-shrink-0 border border-slate-100">
-          <div class="min-w-0">
-            <h4 class="font-headline font-bold text-sm text-slate-800 leading-tight truncate">${escapeHtml(bName)}</h4>
-            <p class="text-xs text-slate-400 truncate mt-0.5">${escapeHtml(b.description || 'No description.')}</p>
-          </div>
-        </div>
-        <div class="text-right flex-shrink-0 ml-4">
-          <span class="px-2 py-0.5 bg-slate-100 rounded-md text-[10px] font-bold text-slate-600 uppercase tracking-wide block">${escapeHtml(b.rule_type || 'Milestone')}</span>
-          ${isTop10 ? `<span class="inline-block mt-1 text-[9px] font-bold text-amber-600 uppercase tracking-wide">🏆 Top 10</span>` : ''}
-        </div>
-      `;
-      list.appendChild(card);
-    });
-  }
-
-  function openBadgeModal(id = null) {
-    getEl('badgeModal')?.classList.remove('hidden');
-    getEl('deleteBadgeBtn')?.classList.add('hidden');
-    const title = getEl('badgeModalTitle');
-    if (title) title.innerText = id ? 'Edit Badge Definition' : 'New Badge Definition';
-
-    document.querySelectorAll('input[name="badgeM"]').forEach(cb => cb.checked = false);
-    document.querySelectorAll('input[name="badgeC"]').forEach(cb => cb.checked = false);
-
-    if (id) {
-      const b = allBadges.find(item => item.id === id);
-      if (b) {
-        let cfg = b.rule_config || {};
-        if (typeof cfg === 'string') {
-          try { cfg = JSON.parse(cfg); } catch(e) { cfg = {}; }
-        }
-
-        if (getEl('badgeId')) getEl('badgeId').value = b.id;
-        if (getEl('badgeName')) getEl('badgeName').value = b.name || '';
-        if (getEl('badgeImage')) getEl('badgeImage').value = b.image_url || '';
-        if (getEl('badgeDesc')) getEl('badgeDesc').value = b.description || '';
-        if (getEl('badgeRuleType')) getEl('badgeRuleType').value = b.rule_type || 'milestone';
-        
-        if (getEl('badgeStatType')) getEl('badgeStatType').value = cfg.stat_type || 'shares';
-        if (getEl('badgeStatTarget')) getEl('badgeStatTarget').value = cfg.stat_target !== undefined ? cfg.stat_target : '';
-        if (getEl('badgeAdminReferral')) getEl('badgeAdminReferral').checked = Boolean(cfg.is_admin_referral);
-        if (getEl('badgeMissionPriority')) getEl('badgeMissionPriority').checked = Boolean(cfg.is_priority_mission);
-        if (getEl('badgeTop10')) getEl('badgeTop10').checked = Boolean(b.is_top_10_eligible);
-
-        const linkedM = cfg.linked_missions || [];
-        const linkedC = cfg.linked_campaigns || [];
-
-        linkedM.forEach(mid => {
-          const el = document.querySelector(`input[name="badgeM"][value="${mid}"]`);
-          if (el) el.checked = true;
-        });
-        linkedC.forEach(cid => {
-          const el = document.querySelector(`input[name="badgeC"][value="${cid}"]`);
-          if (el) el.checked = true;
-        });
-
-        getEl('deleteBadgeBtn')?.classList.remove('hidden');
-      }
-    } else {
-      if (getEl('badgeId')) getEl('badgeId').value = '';
-      if (getEl('badgeName')) getEl('badgeName').value = '';
-      if (getEl('badgeImage')) getEl('badgeImage').value = '';
-      if (getEl('badgeDesc')) getEl('badgeDesc').value = '';
-      if (getEl('badgeRuleType')) getEl('badgeRuleType').value = 'milestone';
-      if (getEl('badgeStatType')) getEl('badgeStatType').value = 'shares';
-      if (getEl('badgeStatTarget')) getEl('badgeStatTarget').value = '';
-      if (getEl('badgeAdminReferral')) getEl('badgeAdminReferral').checked = false;
-      if (getEl('badgeMissionPriority')) getEl('badgeMissionPriority').checked = false;
-      if (getEl('badgeTop10')) getEl('badgeTop10').checked = false;
-    }
-    toggleBadgeRule();
-  }
-
-  function toggleBadgeRule() {
-    const rType = getEl('badgeRuleType')?.value;
-    const mileContainer = getEl('badgeMilestoneContainer');
-    const partContainer = getEl('badgeParticipationContainer');
-    
-    if (rType === 'milestone') {
-      mileContainer?.classList.remove('hidden');
-      partContainer?.classList.add('hidden');
-    } else if (rType === 'participation') {
-      mileContainer?.classList.add('hidden');
-      partContainer?.classList.remove('hidden');
-    } else {
-      mileContainer?.classList.add('hidden');
-      partContainer?.classList.add('hidden');
-    }
-  }
-
-  function closeBadgeModal() { 
-    getEl('badgeModal')?.classList.add('hidden'); 
-  }
-
-  async function saveBadge() {
-    const id = getEl('badgeId')?.value;
-    const name = getEl('badgeName')?.value.trim();
-    if (!name) {
-      showToast("Please enter a badge name.", true);
-      return;
-    }
-
-    const missions = Array.from(document.querySelectorAll('input[name="badgeM"]:checked')).map(cb => cb.value);
-    const campaigns = Array.from(document.querySelectorAll('input[name="badgeC"]:checked')).map(cb => cb.value);
-
-    const ruleConfig = {
-      stat_type: getEl('badgeStatType')?.value || 'shares',
-      stat_target: parseInt(getEl('badgeStatTarget')?.value) || 0,
-      is_admin_referral: getEl('badgeAdminReferral')?.checked || false,
-      is_priority_mission: getEl('badgeMissionPriority')?.checked || false,
-      linked_missions: missions,
-      linked_campaigns: campaigns
-    };
-
-    const payload = {
-      name: name,
-      description: getEl('badgeDesc')?.value.trim() || null,
-      rule_type: getEl('badgeRuleType')?.value || 'milestone',
-      image_url: getEl('badgeImage')?.value || null,
-      is_top_10_eligible: Boolean(getEl('badgeTop10')?.checked),
-      rule_config: ruleConfig
-    };
-
-    try {
-      let res;
-      if (id) {
-        res = await supabaseClient.from('badge_definitions').update(payload).eq('id', id).select();
-      } else {
-        payload.id = generateUUID();
-        res = await supabaseClient.from('badge_definitions').insert([payload]).select();
-      }
-
-      if (res.error) {
-        console.error("Supabase error response:", res.error);
-        showToast(res.error.message || "Database validation failed.", true);
-        return;
-      }
-
-      showToast("Badge definition saved successfully!");
-      closeBadgeModal();
-      await loadData();
-    } catch (err) {
-      console.error("Save badge execution error:", err);
-      showToast(err.message || "Failed to save badge.", true);
-    }
-  }
-
-  async function deleteBadge() {
-    const id = getEl('badgeId')?.value;
-    if (!id) return;
-    if (confirm("Are you sure you want to delete this badge definition?")) {
-      try {
-        const { error } = await supabaseClient.from('badge_definitions').delete().eq('id', id);
-        if (error) throw error;
-        showToast("Badge definition removed.");
-        closeBadgeModal();
-        await loadData();
-      } catch (err) {
-        console.error("Delete badge error:", err);
-        showToast(err.message || "Deletion error.", true);
-      }
-    }
-  }
-
- // ==========================================
-  // TROPHIES: RENDER (WITH IMAGES)
+  // TROPHIES: RENDER & MODAL
   // ==========================================
   function renderTrophies() {
     const grid = getEl('trophyGrid');
@@ -622,23 +522,17 @@
     }
 
     allTrophies.forEach(t => {
-      // Prefer the highest-tier image that exists for this trophy
-      const trophyThresholds = allThresholds.filter(th => th.trophy_id === t.id && th.image_url);
-      let displayImage = null;
+      // Find best display image: highest-tier threshold image, or base image_url
+      const threshWithImg = allThresholds.filter(th => th.trophy_id === t.id && th.image_url);
+      let displayImage = t.image_url || t.image || null;
 
-      if (trophyThresholds.length > 0) {
-        // Sort by tier order if available, otherwise just take the last one with an image
-        const sorted = trophyThresholds.slice().sort((a, b) => {
+      if (!displayImage && threshWithImg.length > 0) {
+        const sorted = threshWithImg.slice().sort((a, b) => {
           const tierA = allTiers.find(ti => ti.id === a.tier_id);
           const tierB = allTiers.find(ti => ti.id === b.tier_id);
           return (tierA?.id || 0) - (tierB?.id || 0);
         });
         displayImage = sorted[sorted.length - 1].image_url;
-      }
-
-      // Fallback: first trophy media asset, or generic icon
-      if (!displayImage && trophyImages.length > 0) {
-        displayImage = trophyImages[0].url;
       }
 
       const mythicTier = allTiers.find(ti => ti.name && ti.name.toLowerCase() === 'mythic');
@@ -660,7 +554,7 @@
           <div class="flex justify-between items-start mb-3 gap-3">
             <div class="w-14 h-14 rounded-xl bg-surface-clow border border-surface-c flex items-center justify-center overflow-hidden flex-shrink-0">
               ${displayImage
-                ? `<img src="${displayImage}" alt="${escapeHtml(t.name)}" class="w-full h-full object-contain p-1" onerror="this.parentElement.innerHTML='<span class=\\'material-symbols-outlined text-gold\\' style=\\'font-size:28px\\'>emoji_events</span>'">`
+                ? `<img src="${displayImage}" alt="${escapeHtml(t.name)}" class="w-full h-full object-contain p-1" onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('afterbegin','<span class=\\'material-symbols-outlined text-gold\\' style=\\'font-size:28px\\'>emoji_events</span>')">`
                 : `<span class="material-symbols-outlined text-gold" style="font-size:28px;">emoji_events</span>`
               }
             </div>
@@ -697,8 +591,9 @@
       const val = existingThresh ? existingThresh.value : '';
       const imageSelected = existingThresh ? existingThresh.image_url : '';
 
-      const imageOpts = trophyImages.map(img => 
-        `<option value="${img.url}" ${imageSelected === img.url ? 'selected' : ''}>${escapeHtml(img.name)}</option>`
+      // Build options from trophyImages using the auto-detected columns
+      const imageOpts = trophyImages.map(img =>
+        `<option value="${img._url}" ${imageSelected === img._url ? 'selected' : ''}>${escapeHtml(img._name)}</option>`
       ).join('');
 
       const tierRow = document.createElement('div');
@@ -714,7 +609,7 @@
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Target Threshold Value</label>
-            <input type="number" class="tier-val form-input w-full rounded-xl px-3 py-2 text-sm" value="${val}" placeholder="Required count (e.g. 50)">
+            <input type="number" class="tier-val form-input w-full rounded-xl px-3 py-2 text-sm" value="${val}" placeholder="Required count">
           </div>
           <div>
             <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Tier Achievement Icon</label>
@@ -747,6 +642,12 @@
         if (getEl('trophyStatType')) getEl('trophyStatType').value = t.stat_type || 'shares';
         if (getEl('trophyDesc')) getEl('trophyDesc').value = t.description || '';
 
+        // Populate trophy base image with current selection
+        const tImg = getEl('trophyBaseImage');
+        if (tImg) {
+          tImg.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages, t.image_url || t.image || '');
+        }
+
         (t.linked_missions || []).forEach(mid => {
           const el = document.querySelector(`input[name="trophyM"][value="${mid}"]`);
           if (el) el.checked = true;
@@ -765,6 +666,10 @@
       if (getEl('trophyType')) getEl('trophyType').value = 'stat';
       if (getEl('trophyStatType')) getEl('trophyStatType').value = 'shares';
       if (getEl('trophyDesc')) getEl('trophyDesc').value = '';
+
+      const tImg = getEl('trophyBaseImage');
+      if (tImg) tImg.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages);
+
       buildDynamicTierFields(null);
     }
     toggleTrophyType();
@@ -774,7 +679,6 @@
     const type = getEl('trophyType')?.value || 'stat';
     const statCont = getEl('statTypeContainer');
     const partCont = getEl('participationContainer');
-    
     if (type === 'stat') {
       statCont?.classList.remove('hidden');
       partCont?.classList.add('hidden');
@@ -789,43 +693,70 @@
   async function saveTrophy() {
     const id = getEl('trophyId')?.value;
     const name = getEl('trophyName')?.value.trim();
-    if (!name) {
-      showToast("Please enter a trophy name.", true);
-      return;
-    }
+    if (!name) { showToast("Please enter a trophy name.", true); return; }
 
     const missions = Array.from(document.querySelectorAll('input[name="trophyM"]:checked')).map(cb => cb.value);
     const campaigns = Array.from(document.querySelectorAll('input[name="trophyC"]:checked')).map(cb => cb.value);
+    const baseImg = getEl('trophyBaseImage')?.value || null;
 
-    const payload = {
-      name: name,
-      type: getEl('trophyType')?.value || 'stat',
-      stat_type: getEl('trophyStatType')?.value || 'shares',
-      description: getEl('trophyDesc')?.value.trim() || null,
-      linked_missions: missions,
-      linked_campaigns: campaigns
-    };
+    const sample = allTrophies[0] || null;
+    const knownKeys = sample ? Object.keys(sample) : null;
+
+    let payload = {};
+    if (knownKeys) {
+      if (knownKeys.includes('name')) payload.name = name;
+      if (knownKeys.includes('type')) payload.type = getEl('trophyType')?.value || 'stat';
+      if (knownKeys.includes('stat_type')) payload.stat_type = getEl('trophyStatType')?.value || 'shares';
+      if (knownKeys.includes('description')) payload.description = getEl('trophyDesc')?.value.trim() || null;
+      if (knownKeys.includes('image_url')) payload.image_url = baseImg;
+      else if (knownKeys.includes('image')) payload.image = baseImg;
+      if (knownKeys.includes('linked_missions')) payload.linked_missions = missions;
+      if (knownKeys.includes('linked_campaigns')) payload.linked_campaigns = campaigns;
+    } else {
+      payload = {
+        name: name,
+        type: getEl('trophyType')?.value || 'stat',
+        stat_type: getEl('trophyStatType')?.value || 'shares',
+        description: getEl('trophyDesc')?.value.trim() || null,
+        image_url: baseImg,
+        linked_missions: missions,
+        linked_campaigns: campaigns
+      };
+    }
+
+    async function resilientTrophySave(curPayload, retries = 0) {
+      let res;
+      if (id) {
+        res = await supabaseClient.from('trophy_definitions').update(curPayload).eq('id', id);
+      } else {
+        const newId = generateUUID();
+        curPayload.id = newId;
+        res = await supabaseClient.from('trophy_definitions').insert([curPayload]);
+        if (!res.error) id = newId;
+      }
+      if (res.error) {
+        const errText = res.error.message || '';
+        const match = errText.match(/Could not find the '([^']+)' column/) || errText.match(/column "([^"]+)" of relation/);
+        if (match && match[1] && retries < 5) {
+          console.warn(`Stripping '${match[1]}' from trophy payload, retrying...`);
+          delete curPayload[match[1]];
+          return resilientTrophySave(curPayload, retries + 1);
+        }
+        throw new Error(res.error.message || "Trophy save failed.");
+      }
+      return id;
+    }
 
     try {
-      let savedTrophyId = id;
-      if (id) {
-        const { error } = await supabaseClient.from('trophy_definitions').update(payload).eq('id', id);
-        if (error) throw error;
-      } else {
-        savedTrophyId = generateUUID();
-        payload.id = savedTrophyId;
-        const { error } = await supabaseClient.from('trophy_definitions').insert([payload]);
-        if (error) throw error;
-      }
+      const savedTrophyId = await resilientTrophySave(payload);
 
+      // Sync tier thresholds
       const tierRows = document.querySelectorAll('#dynamicTiersContainer > div');
       const thresholdsPayload = [];
-
       tierRows.forEach(row => {
         const tierId = row.getAttribute('data-tier-id');
         const valInput = row.querySelector('.tier-val')?.value;
         const imgInput = row.querySelector('.tier-img')?.value;
-
         if (valInput !== '' && valInput !== undefined) {
           thresholdsPayload.push({
             id: generateUUID(),
@@ -838,7 +769,6 @@
       });
 
       await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', savedTrophyId);
-
       if (thresholdsPayload.length > 0) {
         const { error: thError } = await supabaseClient.from('trophy_thresholds').insert(thresholdsPayload);
         if (thError) throw thError;
@@ -856,23 +786,209 @@
   async function deleteTrophy() {
     const id = getEl('trophyId')?.value;
     if (!id) return;
-    if (confirm("Are you sure you want to delete this trophy? This will also remove all its tier thresholds.")) {
+    if (confirm("Delete this trophy and all its tier thresholds?")) {
       try {
         await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', id);
         const { error } = await supabaseClient.from('trophy_definitions').delete().eq('id', id);
         if (error) throw error;
-        showToast("Trophy definition deleted.");
+        showToast("Trophy deleted.");
         closeTrophyModal();
         await loadData();
       } catch (err) {
-        console.error("Delete trophy error:", err);
         showToast(err.message || "Deletion error.", true);
       }
     }
   }
 
- // ==========================================
-  // AVATARS: RENDER (WITH IMAGES)
+  // ==========================================
+  // BADGES: RENDER & MODAL
+  // ==========================================
+  function renderBadges() {
+    const list = getEl('badgeList');
+    if (!list) return;
+    list.innerHTML = '';
+    if (!allBadges.length) {
+      list.innerHTML = `<p class="col-span-full text-center py-12 text-sm text-slate-400 font-semibold">No badges defined yet.</p>`;
+      return;
+    }
+
+    allBadges.forEach(b => {
+      const isTop10 = b.is_top_10_eligible;
+      const bImgUrl = b.image_url || '/images/placeholder.png';
+
+      const card = document.createElement('div');
+      card.className = 'card flex items-center justify-between hover:border-slate-300 cursor-pointer transition-all';
+      card.setAttribute('onclick', `window.openBadgeModal('${b.id}')`);
+      card.innerHTML = `
+        <div class="flex items-center gap-4 min-w-0">
+          <img src="${bImgUrl}" onerror="this.src='/images/placeholder.png'" class="w-12 h-12 rounded-xl object-cover bg-slate-50 flex-shrink-0 border border-slate-100">
+          <div class="min-w-0">
+            <h4 class="font-headline font-bold text-sm text-slate-800 leading-tight truncate">${escapeHtml(b.name || 'Untitled')}</h4>
+            <p class="text-xs text-slate-400 truncate mt-0.5">${escapeHtml(b.description || 'No description.')}</p>
+          </div>
+        </div>
+        <div class="text-right flex-shrink-0 ml-4">
+          <span class="px-2 py-0.5 bg-slate-100 rounded-md text-[10px] font-bold text-slate-600 uppercase tracking-wide block">${escapeHtml(b.rule_type || 'Milestone')}</span>
+          ${isTop10 ? `<span class="inline-block mt-1 text-[9px] font-bold text-amber-600 uppercase tracking-wide">🏆 Top 10</span>` : ''}
+        </div>
+      `;
+      list.appendChild(card);
+    });
+  }
+
+  function openBadgeModal(id = null) {
+    getEl('badgeModal')?.classList.remove('hidden');
+    getEl('deleteBadgeBtn')?.classList.add('hidden');
+    const title = getEl('badgeModalTitle');
+    if (title) title.innerText = id ? 'Edit Badge Definition' : 'New Badge Definition';
+
+    document.querySelectorAll('input[name="badgeM"]').forEach(cb => cb.checked = false);
+    document.querySelectorAll('input[name="badgeC"]').forEach(cb => cb.checked = false);
+
+    if (id) {
+      const b = allBadges.find(item => item.id === id);
+      if (b) {
+        let cfg = b.rule_config || {};
+        if (typeof cfg === 'string') { try { cfg = JSON.parse(cfg); } catch(e) { cfg = {}; } }
+
+        if (getEl('badgeId')) getEl('badgeId').value = b.id;
+        if (getEl('badgeName')) getEl('badgeName').value = b.name || '';
+        if (getEl('badgeDesc')) getEl('badgeDesc').value = b.description || '';
+        if (getEl('badgeRuleType')) getEl('badgeRuleType').value = b.rule_type || 'milestone';
+        if (getEl('badgeStatType')) getEl('badgeStatType').value = cfg.stat_type || 'shares';
+        if (getEl('badgeStatTarget')) getEl('badgeStatTarget').value = cfg.stat_target ?? '';
+        if (getEl('badgeAdminReferral')) getEl('badgeAdminReferral').checked = Boolean(cfg.is_admin_referral);
+        if (getEl('badgeMissionPriority')) getEl('badgeMissionPriority').checked = Boolean(cfg.is_priority_mission);
+        if (getEl('badgeTop10')) getEl('badgeTop10').checked = Boolean(b.is_top_10_eligible);
+
+        // Populate badge image dropdown with current selection
+        const bImg = getEl('badgeImage');
+        if (bImg) {
+          bImg.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages, b.image_url || '');
+        }
+
+        (cfg.linked_missions || []).forEach(mid => {
+          const el = document.querySelector(`input[name="badgeM"][value="${mid}"]`);
+          if (el) el.checked = true;
+        });
+        (cfg.linked_campaigns || []).forEach(cid => {
+          const el = document.querySelector(`input[name="badgeC"][value="${cid}"]`);
+          if (el) el.checked = true;
+        });
+
+        getEl('deleteBadgeBtn')?.classList.remove('hidden');
+      }
+    } else {
+      if (getEl('badgeId')) getEl('badgeId').value = '';
+      if (getEl('badgeName')) getEl('badgeName').value = '';
+      if (getEl('badgeDesc')) getEl('badgeDesc').value = '';
+      if (getEl('badgeRuleType')) getEl('badgeRuleType').value = 'milestone';
+      if (getEl('badgeStatType')) getEl('badgeStatType').value = 'shares';
+      if (getEl('badgeStatTarget')) getEl('badgeStatTarget').value = '';
+      if (getEl('badgeAdminReferral')) getEl('badgeAdminReferral').checked = false;
+      if (getEl('badgeMissionPriority')) getEl('badgeMissionPriority').checked = false;
+      if (getEl('badgeTop10')) getEl('badgeTop10').checked = false;
+
+      const bImg = getEl('badgeImage');
+      if (bImg) bImg.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages);
+    }
+    toggleBadgeRule();
+  }
+
+  function toggleBadgeRule() {
+    const rType = getEl('badgeRuleType')?.value;
+    const mileContainer = getEl('badgeMilestoneContainer');
+    const partContainer = getEl('badgeParticipationContainer');
+    if (rType === 'milestone') {
+      mileContainer?.classList.remove('hidden');
+      partContainer?.classList.add('hidden');
+    } else if (rType === 'participation') {
+      mileContainer?.classList.add('hidden');
+      partContainer?.classList.remove('hidden');
+    } else {
+      mileContainer?.classList.add('hidden');
+      partContainer?.classList.add('hidden');
+    }
+  }
+
+  function closeBadgeModal() { getEl('badgeModal')?.classList.add('hidden'); }
+
+  async function saveBadge() {
+    const id = getEl('badgeId')?.value;
+    const name = getEl('badgeName')?.value.trim();
+    if (!name) { showToast("Please enter a badge name.", true); return; }
+
+    const missions = Array.from(document.querySelectorAll('input[name="badgeM"]:checked')).map(cb => cb.value);
+    const campaigns = Array.from(document.querySelectorAll('input[name="badgeC"]:checked')).map(cb => cb.value);
+
+    const ruleConfig = {
+      stat_type: getEl('badgeStatType')?.value || 'shares',
+      stat_target: parseInt(getEl('badgeStatTarget')?.value) || 0,
+      is_admin_referral: getEl('badgeAdminReferral')?.checked || false,
+      is_priority_mission: getEl('badgeMissionPriority')?.checked || false,
+      linked_missions: missions,
+      linked_campaigns: campaigns
+    };
+
+    const payload = {
+      name: name,
+      description: getEl('badgeDesc')?.value.trim() || null,
+      rule_type: getEl('badgeRuleType')?.value || 'milestone',
+      image_url: getEl('badgeImage')?.value || null,
+      is_top_10_eligible: Boolean(getEl('badgeTop10')?.checked),
+      rule_config: ruleConfig
+    };
+
+    async function resilientBadgeSave(curPayload, retries = 0) {
+      let res;
+      if (id) {
+        res = await supabaseClient.from('badge_definitions').update(curPayload).eq('id', id).select();
+      } else {
+        curPayload.id = generateUUID();
+        res = await supabaseClient.from('badge_definitions').insert([curPayload]).select();
+      }
+      if (res.error) {
+        const errText = res.error.message || '';
+        const match = errText.match(/Could not find the '([^']+)' column/) || errText.match(/column "([^"]+)" of relation/);
+        if (match && match[1] && retries < 5) {
+          console.warn(`Stripping '${match[1]}' from badge payload, retrying...`);
+          delete curPayload[match[1]];
+          return resilientBadgeSave(curPayload, retries + 1);
+        }
+        throw new Error(res.error.message || "Badge save failed.");
+      }
+      return res;
+    }
+
+    try {
+      await resilientBadgeSave(payload);
+      showToast("Badge definition saved successfully!");
+      closeBadgeModal();
+      await loadData();
+    } catch (err) {
+      console.error("Save badge error:", err);
+      showToast(err.message || "Failed to save badge.", true);
+    }
+  }
+
+  async function deleteBadge() {
+    const id = getEl('badgeId')?.value;
+    if (!id) return;
+    if (confirm("Delete this badge definition?")) {
+      try {
+        const { error } = await supabaseClient.from('badge_definitions').delete().eq('id', id);
+        if (error) throw error;
+        showToast("Badge removed.");
+        closeBadgeModal();
+        await loadData();
+      } catch (err) {
+        showToast(err.message || "Deletion error.", true);
+      }
+    }
+  }
+
+  // ==========================================
+  // AVATARS: RENDER & MODAL
   // ==========================================
   function renderAvatars() {
     const list = getEl('avatarList');
@@ -884,7 +1000,8 @@
     }
 
     allAvatars.forEach(a => {
-      const imgSrc = a.image_male || a.image_female || null;
+      const imgSrc = a.image_male || a.image_female || a.image_url || a.avatar_url || a.image || null;
+      const jName = a.journey_name || a.name || a.title || 'Untitled';
       const reqLabel = a.req_type
         ? `${escapeHtml(a.req_type)} (${a.req_value || a.req_badge_id || 'unassigned'})`
         : 'UNASSIGNED';
@@ -896,7 +1013,7 @@
         <div class="flex items-center gap-4 min-w-0 flex-1">
           <div class="w-14 h-14 rounded-xl bg-surface-clow border border-surface-c flex items-center justify-center overflow-hidden flex-shrink-0">
             ${imgSrc
-              ? `<img src="${imgSrc}" alt="${escapeHtml(a.journey_name || 'Avatar')}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full signature-gradient text-white font-bold flex items-center justify-center text-xs\\'>E${(a.era || '').replace(/\\D/g, '') || '1'}</div>'">`
+              ? `<img src="${imgSrc}" alt="${escapeHtml(jName)}" class="w-full h-full object-cover" onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('afterbegin','<div class=\\'w-full h-full signature-gradient text-white font-bold flex items-center justify-center text-xs\\'>E${(a.era || \'\').replace(/\\\\D/g, \'\') || \\'1\\'}</div>')">`
               : `<div class="w-full h-full signature-gradient text-white font-bold flex items-center justify-center text-xs">E${(a.era || '').replace(/\D/g, '') || '1'}</div>`
             }
           </div>
@@ -905,15 +1022,11 @@
               <span class="text-[10px] bg-slate-100 font-bold text-slate-500 rounded px-1.5 uppercase">${escapeHtml(a.era || 'Era')}</span>
               <span class="text-xs text-slate-400 font-semibold truncate">${escapeHtml(a.journey || '')}</span>
             </div>
-            <h4 class="font-headline font-bold text-slate-800 text-sm mt-0.5 truncate">
-              Stage ${a.stage_order ?? '?'}: ${escapeHtml(a.journey_name || 'Untitled')}
-            </h4>
+            <h4 class="font-headline font-bold text-slate-800 text-sm mt-0.5 truncate">Stage ${a.stage_order ?? a.order ?? '?'}: ${escapeHtml(jName)}</h4>
           </div>
         </div>
         <div class="text-right flex-shrink-0 hidden sm:block">
-          <span class="text-[11px] font-semibold text-slate-500 uppercase">
-            Requires: <strong class="text-primary">${reqLabel}</strong>
-          </span>
+          <span class="text-[11px] font-semibold text-slate-500 uppercase">Requires: <strong class="text-primary">${reqLabel}</strong></span>
         </div>
       `;
       list.appendChild(row);
@@ -932,13 +1045,17 @@
         if (getEl('avatarId')) getEl('avatarId').value = a.id;
         if (getEl('avatarEra')) getEl('avatarEra').value = a.era || '';
         if (getEl('avatarJourney')) getEl('avatarJourney').value = a.journey || '';
-        if (getEl('avatarOrder')) getEl('avatarOrder').value = a.stage_order || '';
-        if (getEl('avatarName')) getEl('avatarName').value = a.journey_name || '';
+        if (getEl('avatarOrder')) getEl('avatarOrder').value = a.stage_order ?? a.order ?? '';
+        if (getEl('avatarName')) getEl('avatarName').value = a.journey_name || a.name || a.title || '';
         if (getEl('avatarReqType')) getEl('avatarReqType').value = a.req_type || 'mythic';
-        if (getEl('avatarReqValue')) getEl('avatarReqValue').value = a.req_value !== undefined ? a.req_value : '';
+        if (getEl('avatarReqValue')) getEl('avatarReqValue').value = a.req_value ?? '';
         if (getEl('avatarReqBadge')) getEl('avatarReqBadge').value = a.req_badge_id || '';
-        if (getEl('avatarImageMale')) getEl('avatarImageMale').value = a.image_male || '';
-        if (getEl('avatarImageFemale')) getEl('avatarImageFemale').value = a.image_female || '';
+
+        // Populate avatar image dropdowns with current selections
+        const avMale = getEl('avatarImageMale');
+        const avFemale = getEl('avatarImageFemale');
+        if (avMale) avMale.innerHTML = '<option value="">-- Select Avatar Image --</option>' + buildMediaOptions(avatarImages, a.image_male || a.image_url || a.avatar_url || '');
+        if (avFemale) avFemale.innerHTML = '<option value="">-- Select Avatar Image --</option>' + buildMediaOptions(avatarImages, a.image_female || '');
 
         getEl('deleteAvatarBtn')?.classList.remove('hidden');
       }
@@ -951,8 +1068,11 @@
       if (getEl('avatarReqType')) getEl('avatarReqType').value = 'mythic';
       if (getEl('avatarReqValue')) getEl('avatarReqValue').value = '';
       if (getEl('avatarReqBadge')) getEl('avatarReqBadge').value = '';
-      if (getEl('avatarImageMale')) getEl('avatarImageMale').value = '';
-      if (getEl('avatarImageFemale')) getEl('avatarImageFemale').value = '';
+
+      const avMale = getEl('avatarImageMale');
+      const avFemale = getEl('avatarImageFemale');
+      if (avMale) avMale.innerHTML = '<option value="">-- Select Avatar Image --</option>' + buildMediaOptions(avatarImages);
+      if (avFemale) avFemale.innerHTML = '<option value="">-- Select Avatar Image --</option>' + buildMediaOptions(avatarImages);
     }
     toggleAvatarReq();
   }
@@ -961,7 +1081,6 @@
     const req = getEl('avatarReqType')?.value || 'mythic';
     const valContainer = getEl('avatarReqValueContainer');
     const badgeContainer = getEl('avatarReqBadgeContainer');
-    
     if (req === 'badge') {
       valContainer?.classList.add('hidden');
       badgeContainer?.classList.remove('hidden');
@@ -976,34 +1095,73 @@
   async function saveAvatar() {
     const id = getEl('avatarId')?.value;
     const journeyName = getEl('avatarName')?.value.trim();
-    if (!journeyName) {
-      showToast("Please enter a journey / stage name.", true);
-      return;
+    if (!journeyName) { showToast("Please enter a journey / stage name.", true); return; }
+
+    const maleImg = getEl('avatarImageMale')?.value || null;
+    const femaleImg = getEl('avatarImageFemale')?.value || null;
+    const era = getEl('avatarEra')?.value.trim() || 'Era 1';
+    const journey = getEl('avatarJourney')?.value.trim() || '';
+    const order = parseInt(getEl('avatarOrder')?.value) || 1;
+    const reqType = getEl('avatarReqType')?.value || 'mythic';
+    const reqVal = parseInt(getEl('avatarReqValue')?.value) || 0;
+    const reqBadge = getEl('avatarReqBadge')?.value || null;
+
+    // Schema-adaptive: only include columns that exist in avatar_stages
+    const sample = allAvatars[0] || null;
+    const knownKeys = sample ? Object.keys(sample) : null;
+
+    let payload = {};
+    if (knownKeys) {
+      if (knownKeys.includes('era')) payload.era = era;
+      if (knownKeys.includes('journey')) payload.journey = journey;
+      if (knownKeys.includes('stage_order')) payload.stage_order = order;
+      else if (knownKeys.includes('order')) payload.order = order;
+      if (knownKeys.includes('journey_name')) payload.journey_name = journeyName;
+      else if (knownKeys.includes('name')) payload.name = journeyName;
+      else if (knownKeys.includes('title')) payload.title = journeyName;
+      if (knownKeys.includes('req_type')) payload.req_type = reqType;
+      if (knownKeys.includes('req_value')) payload.req_value = reqVal;
+      if (knownKeys.includes('req_badge_id')) payload.req_badge_id = reqBadge;
+
+      // Image columns — match what actually exists
+      if (knownKeys.includes('image_male')) payload.image_male = maleImg;
+      if (knownKeys.includes('image_female')) payload.image_female = femaleImg;
+      if (knownKeys.includes('male_image')) payload.male_image = maleImg;
+      if (knownKeys.includes('female_image')) payload.female_image = femaleImg;
+      if (knownKeys.includes('image_url')) payload.image_url = maleImg || femaleImg;
+      if (knownKeys.includes('avatar_url')) payload.avatar_url = maleImg || femaleImg;
+      if (knownKeys.includes('image')) payload.image = maleImg || femaleImg;
+    } else {
+      payload = {
+        era: era, journey: journey, stage_order: order, journey_name: journeyName,
+        req_type: reqType, req_value: reqVal, req_badge_id: reqBadge,
+        image_male: maleImg, image_female: femaleImg
+      };
     }
 
-    const payload = {
-      era: getEl('avatarEra')?.value.trim() || 'Era 1',
-      journey: getEl('avatarJourney')?.value.trim() || '',
-      stage_order: parseInt(getEl('avatarOrder')?.value) || 1,
-      journey_name: journeyName,
-      req_type: getEl('avatarReqType')?.value || 'mythic',
-      req_value: parseInt(getEl('avatarReqValue')?.value) || 0,
-      req_badge_id: getEl('avatarReqBadge')?.value || null,
-      image_male: getEl('avatarImageMale')?.value || null,
-      image_female: getEl('avatarImageFemale')?.value || null
-    };
-
-    try {
+    async function resilientAvatarSave(curPayload, retries = 0) {
       let res;
       if (id) {
-        res = await supabaseClient.from('avatar_stages').update(payload).eq('id', id).select();
+        res = await supabaseClient.from('avatar_stages').update(curPayload).eq('id', id).select();
       } else {
-        payload.id = generateUUID();
-        res = await supabaseClient.from('avatar_stages').insert([payload]).select();
+        curPayload.id = generateUUID();
+        res = await supabaseClient.from('avatar_stages').insert([curPayload]).select();
       }
+      if (res.error) {
+        const errText = res.error.message || '';
+        const match = errText.match(/Could not find the '([^']+)' column/) || errText.match(/column "([^"]+)" of relation/);
+        if (match && match[1] && retries < 5) {
+          console.warn(`Stripping '${match[1]}' from avatar payload, retrying...`);
+          delete curPayload[match[1]];
+          return resilientAvatarSave(curPayload, retries + 1);
+        }
+        throw new Error(res.error.message || "Avatar save failed.");
+      }
+      return res;
+    }
 
-      if (res.error) throw res.error;
-
+    try {
+      await resilientAvatarSave(payload);
       showToast("Avatar stage saved!");
       closeAvatarModal();
       await loadData();
@@ -1016,7 +1174,7 @@
   async function deleteAvatarStage() {
     const id = getEl('avatarId')?.value;
     if (!id) return;
-    if (confirm("Are you sure you want to delete this avatar stage?")) {
+    if (confirm("Delete this avatar stage?")) {
       try {
         const { error } = await supabaseClient.from('avatar_stages').delete().eq('id', id);
         if (error) throw error;
@@ -1024,12 +1182,14 @@
         closeAvatarModal();
         await loadData();
       } catch (err) {
-        console.error("Delete avatar error:", err);
         showToast(err.message || "Deletion error.", true);
       }
     }
   }
 
+  // ==========================================
+  // SIDEBAR & GLOBAL BINDINGS
+  // ==========================================
   function toggleSidebar() {
     getEl('sidebar')?.classList.toggle('hidden');
     getEl('sidebarOverlay')?.classList.toggle('hidden');
@@ -1040,7 +1200,6 @@
     window.location.href = 'login.html';
   }
 
-  // Bind global functions to window for onclick handlers
   window.openTrophyModal = openTrophyModal;
   window.closeTrophyModal = closeTrophyModal;
   window.saveTrophy = saveTrophy;
@@ -1063,7 +1222,6 @@
   window.toggleSidebar = toggleSidebar;
   window.handleLogout = handleLogout;
 
-  // --- STARTUP ---
   window.addEventListener('DOMContentLoaded', init);
 </script>
 
