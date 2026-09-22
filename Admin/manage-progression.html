@@ -285,8 +285,19 @@
   function getEl(id) { return document.getElementById(id); }
   function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+  // UUID generator for tables without DEFAULT gen_random_uuid()
+  function generateUUID() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
   // ==========================================
-  // TOAST NOTIFICATIONS WITH FULL ERROR REPORTING
+  // TOAST NOTIFICATIONS
   // ==========================================
   function showToast(msg, isError = false) {
     let toast = document.getElementById('toast');
@@ -336,7 +347,7 @@
     }
   }
 
-  // Load and Map Database States
+  // Load Database State
   async function loadData() {
     try {
       const [tierRes, tRes, threshRes, bRes, aRes, mediaRes, projRes, campRes] = await Promise.all([
@@ -357,10 +368,6 @@
       allAvatars = aRes.data || [];
       allMissions = projRes.data || []; 
       allCampaigns = campRes.data || [];
-
-      if (allBadges.length > 0) {
-        console.log("Detected badge_definitions columns:", Object.keys(allBadges[0]));
-      }
       
       const mediaData = mediaRes.data || [];
       trophyImages = mediaData.filter(m => m.type === 'trophy');
@@ -434,7 +441,7 @@
   }
 
   // ==========================================
-  // BADGES: RENDER, MODAL & SELF-HEALING SAVE
+  // BADGES: RENDER, MODAL & SAVE
   // ==========================================
   function renderBadges() {
     const list = getEl('badgeList');
@@ -445,9 +452,9 @@
     }
 
     allBadges.forEach(b => {
-      const isTop10 = b.is_top_10_eligible || b.is_top_10 || b.top_10_eligible;
-      const bImgUrl = b.image_url || b.icon_url || b.badge_image || b.image || '/images/placeholder.png';
-      const bName = b.name || b.title || 'Untitled Badge';
+      const isTop10 = b.is_top_10_eligible;
+      const bImgUrl = b.image_url || '/images/placeholder.png';
+      const bName = b.name || 'Untitled Badge';
 
       const card = document.createElement('div');
       card.className = 'card flex items-center justify-between hover:border-slate-300 cursor-pointer transition-all';
@@ -457,11 +464,11 @@
           <img src="${bImgUrl}" onerror="this.src='/images/placeholder.png'" class="w-12 h-12 rounded-xl object-cover bg-slate-50 flex-shrink-0 border border-slate-100">
           <div class="min-w-0">
             <h4 class="font-headline font-bold text-sm text-slate-800 leading-tight truncate">${escapeHtml(bName)}</h4>
-            <p class="text-xs text-slate-400 truncate mt-0.5">${escapeHtml(b.description || b.desc || 'No description.')}</p>
+            <p class="text-xs text-slate-400 truncate mt-0.5">${escapeHtml(b.description || 'No description.')}</p>
           </div>
         </div>
         <div class="text-right flex-shrink-0 ml-4">
-          <span class="px-2 py-0.5 bg-slate-100 rounded-md text-[10px] font-bold text-slate-600 uppercase tracking-wide block">${escapeHtml(b.rule_type || b.type || 'Milestone')}</span>
+          <span class="px-2 py-0.5 bg-slate-100 rounded-md text-[10px] font-bold text-slate-600 uppercase tracking-wide block">${escapeHtml(b.rule_type || 'Milestone')}</span>
           ${isTop10 ? `<span class="inline-block mt-1 text-[9px] font-bold text-amber-600 uppercase tracking-wide">🏆 Top 10</span>` : ''}
         </div>
       `;
@@ -480,25 +487,25 @@
     if (id) {
       const b = allBadges.find(item => item.id === id);
       if (b) {
-        let cfg = b.rule_config || b.config || b.criteria || {};
+        let cfg = b.rule_config || {};
         if (typeof cfg === 'string') {
           try { cfg = JSON.parse(cfg); } catch(e) { cfg = {}; }
         }
 
         getEl('badgeId').value = b.id;
-        getEl('badgeName').value = b.name || b.title || '';
-        getEl('badgeImage').value = b.image_url || b.icon_url || b.badge_image || b.image || '';
-        getEl('badgeDesc').value = b.description || b.desc || '';
-        getEl('badgeRuleType').value = b.rule_type || b.type || 'milestone';
+        getEl('badgeName').value = b.name || '';
+        getEl('badgeImage').value = b.image_url || '';
+        getEl('badgeDesc').value = b.description || '';
+        getEl('badgeRuleType').value = b.rule_type || 'milestone';
         
-        getEl('badgeStatType').value = cfg.stat_type || b.stat_type || 'shares';
-        getEl('badgeStatTarget').value = (cfg.stat_target !== undefined ? cfg.stat_target : b.stat_target) || '';
-        getEl('badgeAdminReferral').checked = Boolean(cfg.is_admin_referral || b.is_admin_referral);
-        getEl('badgeMissionPriority').checked = Boolean(cfg.is_priority_mission || b.is_priority_mission);
-        getEl('badgeTop10').checked = Boolean(b.is_top_10_eligible || b.is_top_10 || b.top_10_eligible || cfg.is_top_10);
+        getEl('badgeStatType').value = cfg.stat_type || 'shares';
+        getEl('badgeStatTarget').value = cfg.stat_target !== undefined ? cfg.stat_target : '';
+        getEl('badgeAdminReferral').checked = Boolean(cfg.is_admin_referral);
+        getEl('badgeMissionPriority').checked = Boolean(cfg.is_priority_mission);
+        getEl('badgeTop10').checked = Boolean(b.is_top_10_eligible);
 
-        const linkedM = cfg.linked_missions || b.linked_missions || [];
-        const linkedC = cfg.linked_campaigns || b.linked_campaigns || [];
+        const linkedM = cfg.linked_missions || [];
+        const linkedC = cfg.linked_campaigns || [];
 
         linkedM.forEach(mid => {
           const el = document.querySelector(`input[name="badgeM"][value="${mid}"]`);
@@ -544,7 +551,6 @@
     getEl('badgeModal').classList.add('hidden'); 
   }
 
-  // Adaptive, resilient database save operation
   async function saveBadge() {
     const id = getEl('badgeId').value;
     const name = getEl('badgeName').value.trim();
@@ -556,101 +562,40 @@
     const missions = Array.from(document.querySelectorAll('input[name="badgeM"]:checked')).map(cb => cb.value);
     const campaigns = Array.from(document.querySelectorAll('input[name="badgeC"]:checked')).map(cb => cb.value);
 
-    const ruleType = getEl('badgeRuleType').value;
-    const statType = getEl('badgeStatType').value;
-    const statTarget = parseInt(getEl('badgeStatTarget').value) || 0;
-    const isAdminReferral = getEl('badgeAdminReferral').checked;
-    const isPriorityMission = getEl('badgeMissionPriority').checked;
-    const isTop10 = getEl('badgeTop10').checked;
-    const imageUrl = getEl('badgeImage').value || null;
-    const description = getEl('badgeDesc').value.trim() || null;
+    const ruleConfig = {
+      stat_type: getEl('badgeStatType').value,
+      stat_target: parseInt(getEl('badgeStatTarget').value) || 0,
+      is_admin_referral: getEl('badgeAdminReferral').checked,
+      is_priority_mission: getEl('badgeMissionPriority').checked,
+      linked_missions: missions,
+      linked_campaigns: campaigns
+    };
 
-    const sample = allBadges[0] || null;
-    const knownKeys = sample ? Object.keys(sample) : null;
+    const payload = {
+      name: name,
+      description: getEl('badgeDesc').value.trim() || null,
+      rule_type: getEl('badgeRuleType').value,
+      image_url: getEl('badgeImage').value || null,
+      is_top_10_eligible: getEl('badgeTop10').checked,
+      rule_config: ruleConfig
+    };
 
-    let payload = {};
-
-    if (knownKeys) {
-      // Build dynamically based on inspected columns in the database
-      if (knownKeys.includes('name')) payload.name = name;
-      else if (knownKeys.includes('title')) payload.title = name;
-
-      if (knownKeys.includes('description')) payload.description = description;
-      else if (knownKeys.includes('desc')) payload.desc = description;
-
-      if (knownKeys.includes('image_url')) payload.image_url = imageUrl;
-      else if (knownKeys.includes('icon_url')) payload.icon_url = imageUrl;
-      else if (knownKeys.includes('badge_image')) payload.badge_image = imageUrl;
-      else if (knownKeys.includes('image')) payload.image = imageUrl;
-
-      if (knownKeys.includes('rule_type')) payload.rule_type = ruleType;
-      else if (knownKeys.includes('type')) payload.type = ruleType;
-
-      if (knownKeys.includes('is_top_10_eligible')) payload.is_top_10_eligible = isTop10;
-      else if (knownKeys.includes('is_top_10')) payload.is_top_10 = isTop10;
-      else if (knownKeys.includes('top_10_eligible')) payload.top_10_eligible = isTop10;
-
-      if (knownKeys.includes('rule_config')) {
-        payload.rule_config = { stat_type: statType, stat_target: statTarget, is_admin_referral: isAdminReferral, is_priority_mission: isPriorityMission, linked_missions: missions, linked_campaigns: campaigns };
-      } else if (knownKeys.includes('config')) {
-        payload.config = { stat_type: statType, stat_target: statTarget, is_admin_referral: isAdminReferral, is_priority_mission: isPriorityMission, linked_missions: missions, linked_campaigns: campaigns };
-      } else {
-        // Table uses flat columns
-        if (knownKeys.includes('stat_type')) payload.stat_type = statType;
-        if (knownKeys.includes('stat_target')) payload.stat_target = statTarget;
-        if (knownKeys.includes('is_admin_referral')) payload.is_admin_referral = isAdminReferral;
-        if (knownKeys.includes('is_priority_mission')) payload.is_priority_mission = isPriorityMission;
-        if (knownKeys.includes('linked_missions')) payload.linked_missions = missions;
-        if (knownKeys.includes('linked_campaigns')) payload.linked_campaigns = campaigns;
-      }
-    } else {
-      // Default structure
-      payload = {
-        name: name,
-        description: description,
-        rule_type: ruleType,
-        image_url: imageUrl,
-        is_top_10_eligible: isTop10,
-        rule_config: {
-          stat_type: statType,
-          stat_target: statTarget,
-          is_admin_referral: isAdminReferral,
-          is_priority_mission: isPriorityMission,
-          linked_missions: missions,
-          linked_campaigns: campaigns
-        }
-      };
-    }
-
-    // Execute with automatic column-stripping retry for missing schema properties
-    async function executeSave(curPayload, retryCount = 0) {
+    try {
       let res;
       if (id) {
-        res = await supabaseClient.from('badge_definitions').update(curPayload).eq('id', id).select();
+        res = await supabaseClient.from('badge_definitions').update(payload).eq('id', id).select();
       } else {
-        res = await supabaseClient.from('badge_definitions').insert([curPayload]).select();
+        // Supply client-generated UUID for insertion
+        payload.id = generateUUID();
+        res = await supabaseClient.from('badge_definitions').insert([payload]).select();
       }
 
       if (res.error) {
-        console.error("Database Response Error:", res.error);
-        const errText = res.error.message || res.error.details || '';
-        
-        // Check if error is due to an unknown column in cache
-        const match = errText.match(/Could not find the '([^']+)' column/) || errText.match(/column "([^"]+)" of relation/);
-        if (match && match[1] && retryCount < 4) {
-          const badCol = match[1];
-          console.warn(`Stripping unknown column '${badCol}' and retrying insertion...`);
-          delete curPayload[badCol];
-          return executeSave(curPayload, retryCount + 1);
-        }
-
-        throw new Error(res.error.message || res.error.details || "Database constraint error");
+        console.error("Supabase error response:", res.error);
+        showToast(res.error.message || "Database validation failed.", true);
+        return;
       }
-      return res;
-    }
 
-    try {
-      await executeSave(payload);
       showToast("Badge definition saved successfully!");
       closeBadgeModal();
       await loadData();
@@ -842,9 +787,11 @@
         const { error } = await supabaseClient.from('trophy_definitions').update(payload).eq('id', id);
         if (error) throw error;
       } else {
-        const { data, error } = await supabaseClient.from('trophy_definitions').insert([payload]).select().single();
+        // Supply client-generated UUID for insertion
+        savedTrophyId = generateUUID();
+        payload.id = savedTrophyId;
+        const { error } = await supabaseClient.from('trophy_definitions').insert([payload]);
         if (error) throw error;
-        savedTrophyId = data.id;
       }
 
       const tierRows = document.querySelectorAll('#dynamicTiersContainer > div');
@@ -857,6 +804,7 @@
 
         if (valInput !== '') {
           thresholdsPayload.push({
+            id: generateUUID(),
             trophy_id: savedTrophyId,
             tier_id: tierId,
             value: parseInt(valInput) || 0,
@@ -1007,6 +955,7 @@
       if (id) {
         res = await supabaseClient.from('avatar_stages').update(payload).eq('id', id).select();
       } else {
+        payload.id = generateUUID();
         res = await supabaseClient.from('avatar_stages').insert([payload]).select();
       }
 
@@ -1050,4 +999,7 @@
 
   // --- STARTUP ---
   window.addEventListener('DOMContentLoaded', init);
+init();
 </script>
+</body>
+</html>
