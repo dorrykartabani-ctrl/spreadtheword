@@ -41,22 +41,13 @@
             'headline':['Plus Jakarta Sans','sans-serif'],
             'body':['Manrope','sans-serif'],
           },
-          boxShadow:{
-            'ambient':'0 20px 40px rgba(49,51,46,0.05)',
-            'ambient-sm':'0 8px 24px rgba(49,51,46,0.04)',
-            'float':'0 20px 40px rgba(49,51,46,0.08)',
-          },
-          borderRadius:{
-            'sm':'0.25rem','DEFAULT':'0.5rem','md':'0.75rem',
-            'lg':'1rem','xl':'1.5rem','2xl':'1.5rem','full':'9999px',
-          },
         },
       },
     }
   </script>
 
   <style>
-    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;-webkit-tap-highlight-color:transparent;min-height:100dvh;letter-spacing:-0.005em}
+    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;-webkit-tap-highlight-color:transparent;min-height:100dvh;letter-spacing:-0.005em;overscroll-behavior-y:contain}
     .font-headline{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
     .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
     .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
@@ -64,38 +55,89 @@
     body{-ms-overflow-style:none;scrollbar-width:none}
 
     .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
-    .glass-header{background:rgba(251,249,244,0.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);transition:box-shadow 0.2s ease}
-    .header-scrolled{box-shadow:0 8px 24px rgba(49,51,46,0.04)}
+    .glass-header{background:rgba(251,249,244,0.85);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);transition:box-shadow 0.2s ease}
+    .header-scrolled{box-shadow:0 8px 24px rgba(49,51,46,0.05)}
+
+    /* Header red dot */
+    .header-dot{
+      position:absolute;top:8px;right:8px;
+      min-width:16px;height:16px;padding:0 4px;
+      background:#ad332b;color:white;
+      border-radius:99px;font-size:10px;font-weight:800;
+      display:flex;align-items:center;justify-content:center;
+      border:2px solid #fbf9f4;
+      animation:dotPulse 2s ease-in-out infinite;
+    }
+    @keyframes dotPulse{
+      0%,100%{transform:scale(1)}
+      50%{transform:scale(1.15)}
+    }
 
     /* Filter tabs */
     .filter-tab{
       padding:7px 14px;border-radius:99px;font-size:12px;font-weight:700;
       color:#5e6059;background:#f5f4ed;transition:all 0.15s ease;
       white-space:nowrap;flex-shrink:0;-webkit-tap-highlight-color:transparent;
+      display:inline-flex;align-items:center;gap:6px;
     }
     .filter-tab.active{background:#3d6285;color:#f7f9ff}
+    .filter-tab .tab-count{
+      background:rgba(0,0,0,0.08);padding:1px 6px;border-radius:99px;
+      font-size:10px;font-weight:800;
+    }
+    .filter-tab.active .tab-count{background:rgba(255,255,255,0.25)}
 
     /* Notification card */
     .notif-card{
       position:relative;overflow:hidden;border-radius:16px;
-      background:#ffffff;transition:transform 0.15s ease;
+      background:#ffffff;transition:background 0.2s ease;
+      border-left:3px solid transparent;
     }
-    .notif-card.unread{background:#ffffff}
-    .notif-card.read{background:#f5f4ed}
+    .notif-card.unread{background:#ffffff;box-shadow:0 2px 8px rgba(49,51,46,0.03)}
+    .notif-card.read{background:#f5f4ed;opacity:0.85}
+    
+    /* Type-based left border colors */
+    .notif-card.type-info{border-left-color:#3b82f6}
+    .notif-card.type-success{border-left-color:#10b981}
+    .notif-card.type-warning{border-left-color:#f59e0b}
+    .notif-card.type-alert{border-left-color:#ad332b}
+    .notif-card.type-broadcast{border-left-color:#3d6285}
 
     /* Swipe layer */
-    .notif-swipe-container{position:relative;overflow:hidden;border-radius:16px}
-    .notif-dismiss-bg{
-      position:absolute;top:0;right:0;bottom:0;width:100px;
-      background:#ad332b;display:flex;align-items:center;justify-content:center;
-      border-radius:0 16px 16px 0;
+    .notif-swipe-container{
+      position:relative;overflow:hidden;border-radius:16px;
+      transition:max-height 0.35s ease, opacity 0.35s ease, margin 0.35s ease;
     }
+    .notif-action-bg{
+      position:absolute;top:0;bottom:0;
+      display:flex;align-items:center;justify-content:center;gap:6px;
+      color:white;font-weight:700;font-size:11px;letter-spacing:0.02em;
+      text-transform:uppercase;
+    }
+    .notif-action-bg.archive-bg{left:0;right:0;background:#0d9488;border-radius:16px;justify-content:flex-start;padding-left:24px}
+    .notif-action-bg.delete-bg{left:0;right:0;background:#ad332b;border-radius:16px;justify-content:flex-end;padding-right:24px}
     .notif-content{
       position:relative;z-index:1;background:inherit;border-radius:16px;
-      transition:transform 0.2s ease;touch-action:pan-y;
+      transition:transform 0.25s cubic-bezier(0.4,0,0.2,1);touch-action:pan-y;
+      cursor:grab;
     }
+    .notif-content:active{cursor:grabbing}
     .notif-content.swiping{transition:none}
-    .notif-content.dismissed{transform:translateX(-120%)!important;opacity:0;transition:transform 0.3s ease,opacity 0.3s ease}
+    .notif-content.dismissed{transform:translateX(-120%)!important;opacity:0}
+    .notif-content.archived-out{transform:translateX(120%)!important;opacity:0}
+
+    /* Selection mode */
+    .notif-content.selected{background:#e0edf9!important;border:2px solid #3d6285}
+    .selection-checkbox{
+      position:absolute;top:50%;left:12px;transform:translateY(-50%);
+      width:22px;height:22px;border-radius:50%;
+      border:2px solid #b2b2ab;background:white;
+      display:flex;align-items:center;justify-content:center;
+      opacity:0;transition:opacity 0.2s ease;z-index:5;
+    }
+    .selection-mode .selection-checkbox{opacity:1}
+    .selection-mode .notif-content{padding-left:38px}
+    .notif-content.selected .selection-checkbox{background:#3d6285;border-color:#3d6285;color:white}
 
     /* Unread dot */
     .unread-dot{width:8px;height:8px;border-radius:50%;background:#3d6285;flex-shrink:0}
@@ -104,15 +146,57 @@
     .notif-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 
     /* Section label */
-    .section-label{font-size:11px;font-weight:500;color:#7a7b75;padding:0 4px;margin-bottom:8px}
-
-    /* Fade */
-    .fade-up{opacity:0;transform:translateY(12px);transition:opacity 0.5s ease,transform 0.5s ease}
-    .fade-up.visible{opacity:1;transform:translateY(0)}
+    .section-label{font-size:11px;font-weight:600;color:#7a7b75;padding:0 4px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em}
 
     /* Skeleton */
     .skeleton{background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:16px}
     @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+    /* Undo toast */
+    .undo-toast{
+      position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120%);
+      background:#0e0e0c;color:white;padding:12px 16px;
+      border-radius:99px;display:flex;align-items:center;gap:12px;
+      box-shadow:0 20px 40px rgba(0,0,0,0.25);z-index:200;
+      transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);
+      max-width:calc(100% - 32px);
+    }
+    .undo-toast.visible{transform:translateX(-50%) translateY(0)}
+    .undo-btn{
+      background:#b0d5fe;color:#0e0e0c;padding:6px 14px;
+      border-radius:99px;font-weight:700;font-size:12px;
+      -webkit-tap-highlight-color:transparent;
+    }
+
+    /* Pull to refresh */
+    .refresh-indicator{
+      position:absolute;top:80px;left:50%;transform:translateX(-50%) scale(0);
+      width:36px;height:36px;background:white;border-radius:50%;
+      box-shadow:0 4px 12px rgba(0,0,0,0.1);
+      display:flex;align-items:center;justify-content:center;
+      transition:transform 0.2s ease;z-index:60;
+    }
+    .refresh-indicator.visible{transform:translateX(-50%) scale(1)}
+    .refresh-indicator.spinning span{animation:spin 0.8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Bulk action bar */
+    .bulk-bar{
+      position:fixed;bottom:0;left:0;right:0;
+      background:rgba(14,14,12,0.95);backdrop-filter:blur(20px);
+      padding:16px 20px;padding-bottom:calc(16px + env(safe-area-inset-bottom));
+      display:flex;justify-content:space-around;align-items:center;
+      transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);
+      z-index:100;box-shadow:0 -8px 24px rgba(0,0,0,0.15);
+    }
+    .bulk-bar.visible{transform:translateY(0)}
+    .bulk-action{
+      color:white;display:flex;flex-direction:column;align-items:center;gap:4px;
+      font-size:11px;font-weight:600;padding:8px 12px;border-radius:12px;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .bulk-action:active{background:rgba(255,255,255,0.1)}
+    .bulk-action.danger{color:#fca5a5}
   </style>
 </head>
 
@@ -121,31 +205,34 @@
 <!-- HEADER -->
 <header id="pageHeader" class="fixed top-0 w-full z-50 glass-header">
   <div class="max-w-[430px] mx-auto px-5 pt-10 pb-3 flex items-center justify-between">
-    <button onclick="goBack()" class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-clow active:scale-90 transition-all rounded-full">
+    <button onclick="goBack()" class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-clow active:scale-90 transition-all rounded-full relative">
       <span class="material-symbols-outlined text-[22px]">arrow_back</span>
     </button>
-    <h1 class="font-headline font-semibold text-on-surface" style="font-size:18px;line-height:28px;">Notifications</h1>
-    <button id="markAllBtn" onclick="markAllRead()" class="hidden w-10 h-10 flex items-center justify-center text-primary hover:bg-surface-clow active:scale-90 transition-all rounded-full" title="Mark all read">
-      <span class="material-symbols-outlined text-[20px]">done_all</span>
-    </button>
+    <h1 id="headerTitle" class="font-headline font-semibold text-on-surface" style="font-size:18px;line-height:28px;">Notifications</h1>
+    <div class="relative">
+      <button id="markAllBtn" onclick="markAllRead()" class="hidden w-10 h-10 flex items-center justify-center text-primary hover:bg-surface-clow active:scale-90 transition-all rounded-full" title="Mark all read">
+        <span class="material-symbols-outlined text-[20px]">done_all</span>
+      </button>
+    </div>
   </div>
 </header>
 
+<!-- REFRESH INDICATOR -->
+<div id="refreshIndicator" class="refresh-indicator">
+  <span class="material-symbols-outlined text-primary text-[20px]">refresh</span>
+</div>
+
 <!-- MAIN -->
-<main class="pt-28 pb-16 px-5 max-w-[430px] mx-auto">
+<main class="pt-28 pb-32 px-5 max-w-[430px] mx-auto">
 
   <!-- FILTER TABS -->
-  <section class="mb-5 fade-up" id="filterSection">
+  <section class="mb-5" id="filterSection">
     <div class="flex gap-2 overflow-x-auto pb-1" style="-ms-overflow-style:none;scrollbar-width:none">
-      <button onclick="setFilter('all',this)" class="filter-tab active">All</button>
-      <button onclick="setFilter('unread',this)" class="filter-tab">
-        Unread <span id="unreadBadge" class="hidden ml-1 bg-on-primary/20 text-on-primary px-1.5 py-0.5 rounded-full" style="font-size:10px;">0</span>
-      </button>
-      <button onclick="setFilter('broadcast',this)" class="filter-tab">Announcements</button>
-      <button onclick="setFilter('mission',this)" class="filter-tab">Missions</button>
-      <button onclick="setFilter('milestone',this)" class="filter-tab">Milestones</button>
-      <button onclick="setFilter('recruit',this)" class="filter-tab">Recruits</button>
-      <button onclick="setFilter('system',this)" class="filter-tab">System</button>
+      <button onclick="setFilter('all',this)" class="filter-tab active">All <span id="count-all" class="tab-count hidden">0</span></button>
+      <button onclick="setFilter('unread',this)" class="filter-tab">Unread <span id="count-unread" class="tab-count hidden">0</span></button>
+      <button onclick="setFilter('broadcast',this)" class="filter-tab">Broadcasts</button>
+      <button onclick="setFilter('alert',this)" class="filter-tab">Alerts</button>
+      <button onclick="setFilter('archived',this)" class="filter-tab">Archived <span id="count-archived" class="tab-count hidden">0</span></button>
     </div>
   </section>
 
@@ -167,6 +254,35 @@
 
 </main>
 
+<!-- BULK ACTION BAR -->
+<div id="bulkBar" class="bulk-bar">
+  <button class="bulk-action" onclick="exitSelectionMode()">
+    <span class="material-symbols-outlined text-[22px]">close</span>
+    Cancel
+  </button>
+  <div class="text-white font-headline font-bold text-sm">
+    <span id="bulkCount">0</span> selected
+  </div>
+  <button class="bulk-action" onclick="bulkMarkRead()">
+    <span class="material-symbols-outlined text-[22px]">done_all</span>
+    Read
+  </button>
+  <button class="bulk-action" onclick="bulkArchive()">
+    <span class="material-symbols-outlined text-[22px]">archive</span>
+    Archive
+  </button>
+  <button class="bulk-action danger" onclick="bulkDelete()">
+    <span class="material-symbols-outlined text-[22px]">delete</span>
+    Delete
+  </button>
+</div>
+
+<!-- UNDO TOAST -->
+<div id="undoToast" class="undo-toast">
+  <span id="undoMsg" class="font-body font-semibold text-sm">Notification deleted</span>
+  <button class="undo-btn" onclick="undoLastAction()">UNDO</button>
+</div>
+
 <script>
 var supabaseClient = supabase.createClient(
   'https://nhymadutuhpjgkiurify.supabase.co',
@@ -176,89 +292,35 @@ var supabaseClient = supabase.createClient(
 var currentUser = null
 var userProfile = null
 var allNotifications = []
+var archivedNotifications = []
 var readMap = {}
 var currentFilter = 'all'
+var selectionMode = false
+var selectedIds = new Set()
+var lastAction = null // for undo
+var undoTimer = null
+var realtimeChannel = null
 
 var categoryConfig = {
-  broadcast: { icon:'campaign',           iconClass:'filled', bg:'bg-primary-container/20',   color:'text-primary',            label:'Announcement' },
-  info:      { icon:'info',               iconClass:'filled', bg:'bg-blue-50',                color:'text-blue-600',           label:'Info' },
-  success:   { icon:'check_circle',       iconClass:'filled', bg:'bg-green-50',               color:'text-green-600',          label:'Update' },
-  warning:   { icon:'warning',            iconClass:'filled', bg:'bg-amber-50',               color:'text-amber-600',          label:'Warning' },
-  alert:     { icon:'campaign',           iconClass:'filled', bg:'bg-red-50',                 color:'text-red-600',            label:'Alert' },
-  milestone: { icon:'emoji_events',       iconClass:'filled', bg:'bg-secondary-container/20', color:'text-secondary',          label:'Milestone' },
-  recruit:   { icon:'group_add',          iconClass:'filled', bg:'bg-primary-container/20',   color:'text-primary',            label:'Recruit' },
-  mission:   { icon:'volunteer_activism', iconClass:'filled', bg:'bg-secondary-container/20', color:'text-secondary',          label:'Mission' },
-  system:    { icon:'settings',           iconClass:'',       bg:'bg-surface-chigh',          color:'text-on-surface-variant', label:'System' },
+  broadcast: { icon:'campaign',           iconClass:'filled', bg:'bg-primary-container/20',   color:'text-primary',            label:'Announcement', typeClass:'type-broadcast' },
+  info:      { icon:'info',               iconClass:'filled', bg:'bg-blue-50',                color:'text-blue-600',           label:'Info',         typeClass:'type-info' },
+  success:   { icon:'check_circle',       iconClass:'filled', bg:'bg-green-50',               color:'text-green-600',          label:'Update',       typeClass:'type-success' },
+  warning:   { icon:'warning',            iconClass:'filled', bg:'bg-amber-50',               color:'text-amber-600',          label:'Warning',      typeClass:'type-warning' },
+  alert:     { icon:'campaign',           iconClass:'filled', bg:'bg-red-50',                 color:'text-red-600',            label:'Alert',        typeClass:'type-alert' },
 }
 
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
 async function init() {
   try {
     var s = await supabaseClient.auth.getSession()
     if (!s.data || !s.data.session) { window.location.href = 'login.html'; return }
     currentUser = s.data.session.user
 
-    // 1. Fetch user profile
-    var profileRes = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).maybeSingle()
-    userProfile = profileRes.data || {}
-    var userTier = userProfile.subscription_tier || userProfile.tier || userProfile.tier_id || 'free'
-
-    // 2. Fetch read receipts
-    var readRes = await supabaseClient.from('notification_reads').select('*').eq('user_id', currentUser.id)
-    if (readRes.data) {
-      readRes.data.forEach(function(r) {
-        readMap[r.notification_id] = { read_at: r.read_at, dismissed_at: r.dismissed_at }
-      })
-    }
-
-    // 3. Fetch app_notifications directly without strict timestamp queries
-    var broadcastRes = await supabaseClient.from('app_notifications').select('*').order('created_at', { ascending: false })
-    var rawBroadcasts = broadcastRes.data || []
-
-    console.log('[DEBUG] Fetched raw broadcasts:', rawBroadcasts)
-
-    var now = new Date().getTime()
-
-    // 4. Normalize and filter broadcasts
-    allNotifications = rawBroadcasts.map(function(b) {
-      var audience = b.target_audience
-      if (typeof audience === 'string') {
-        try { audience = JSON.parse(audience) } catch(e) {}
-      }
-
-      return {
-        id: b.id,
-        title: b.title || 'Announcement',
-        message: b.message || '',
-        type: b.type || 'info',
-        category: 'broadcast',
-        target_audience: audience,
-        action_label: b.action_label,
-        action_url: b.action_url,
-        expires_at: b.expires_at,
-        created_at: b.created_at || new Date().toISOString()
-      }
-    }).filter(function(n) {
-      // Expiration check (only filter out if expires_at is explicitly set AND in the past)
-      if (n.expires_at) {
-        var expTime = new Date(n.expires_at).getTime()
-        if (!isNaN(expTime) && expTime < now) return false
-      }
-
-      // Tier check (if targeted to a specific tier)
-      if (n.target_audience && n.target_audience.type === 'tier' && n.target_audience.value) {
-        if (n.target_audience.value !== userTier) return false
-      }
-
-      // Check if user dismissed this notification
-      if (readMap[n.id] && readMap[n.id].dismissed_at) return false
-
-      return true
-    })
-
-    console.log('[DEBUG] Final notifications ready to display:', allNotifications)
-
-    renderNotifications()
-    updateMarkAllButton()
+    await loadData()
+    setupRealtimeListener()
+    setupPullToRefresh()
     setupListeners()
 
   } catch(e) {
@@ -267,24 +329,162 @@ async function init() {
   }
 }
 
+async function loadData() {
+  var profileRes = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).maybeSingle()
+  userProfile = profileRes.data || {}
+  var userTier = userProfile.subscription_tier || userProfile.tier || userProfile.tier_id || 'free'
+
+  readMap = {}
+  var readRes = await supabaseClient.from('notification_reads').select('*').eq('user_id', currentUser.id)
+  if (readRes.data) {
+    readRes.data.forEach(function(r) {
+      readMap[r.notification_id] = {
+        read_at: r.read_at,
+        dismissed_at: r.dismissed_at,
+        archived_at: r.archived_at
+      }
+    })
+  }
+
+  var broadcastRes = await supabaseClient.from('app_notifications').select('*').order('created_at', { ascending: false })
+  var rawBroadcasts = broadcastRes.data || []
+
+  var now = new Date().getTime()
+
+  var normalized = rawBroadcasts.map(function(b) {
+    var audience = b.target_audience
+    if (typeof audience === 'string') {
+      try { audience = JSON.parse(audience) } catch(e) {}
+    }
+    return {
+      id: b.id,
+      title: b.title || 'Announcement',
+      message: b.message || '',
+      type: b.type || 'info',
+      category: 'broadcast',
+      target_audience: audience,
+      action_label: b.action_label,
+      action_url: b.action_url,
+      expires_at: b.expires_at,
+      created_at: b.created_at || new Date().toISOString()
+    }
+  }).filter(function(n) {
+    if (n.expires_at) {
+      var expTime = new Date(n.expires_at).getTime()
+      if (!isNaN(expTime) && expTime < now) return false
+    }
+    if (n.target_audience && n.target_audience.type === 'tier' && n.target_audience.value) {
+      if (n.target_audience.value !== userTier) return false
+    }
+    if (readMap[n.id] && readMap[n.id].dismissed_at) return false
+    return true
+  })
+
+  // Split into active vs archived
+  allNotifications = normalized.filter(function(n) { return !(readMap[n.id] && readMap[n.id].archived_at) })
+  archivedNotifications = normalized.filter(function(n) { return readMap[n.id] && readMap[n.id].archived_at })
+
+  renderNotifications()
+  updateHeaderBadge()
+  updateTabCounts()
+  updateMarkAllButton()
+}
+
+// ════════════════════════════════════════════
+// REALTIME
+// ════════════════════════════════════════════
+function setupRealtimeListener() {
+  if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel)
+
+  realtimeChannel = supabaseClient
+    .channel('app_notifications_changes')
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'app_notifications'
+    }, function(payload) {
+      console.log('[Realtime] New notification:', payload.new)
+      handleNewNotification(payload.new)
+    })
+    .subscribe()
+}
+
+function handleNewNotification(raw) {
+  var userTier = userProfile.subscription_tier || userProfile.tier || userProfile.tier_id || 'free'
+  var audience = raw.target_audience
+  if (typeof audience === 'string') { try { audience = JSON.parse(audience) } catch(e) {} }
+
+  if (audience && audience.type === 'tier' && audience.value !== userTier) return
+
+  var notif = {
+    id: raw.id,
+    title: raw.title || 'Announcement',
+    message: raw.message || '',
+    type: raw.type || 'info',
+    category: 'broadcast',
+    target_audience: audience,
+    action_label: raw.action_label,
+    action_url: raw.action_url,
+    expires_at: raw.expires_at,
+    created_at: raw.created_at || new Date().toISOString()
+  }
+
+  allNotifications.unshift(notif)
+  renderNotifications()
+  updateHeaderBadge()
+  updateTabCounts()
+  updateMarkAllButton()
+
+  // Haptic feedback for new notification
+  if (navigator.vibrate) navigator.vibrate([50, 30, 50])
+  showToast('📬 New notification received')
+}
+
+// ════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════
 function renderNotifications() {
   var container = document.getElementById('notifContainer')
   var emptyState = document.getElementById('emptyState')
   if (!container) return
 
-  var filtered = allNotifications
+  var source = currentFilter === 'archived' ? archivedNotifications : allNotifications
+  var filtered = source
+
   if (currentFilter === 'unread') {
-    filtered = allNotifications.filter(function(n) { return !readMap[n.id] || !readMap[n.id].read_at })
-  } else if (currentFilter !== 'all') {
-    filtered = allNotifications.filter(function(n) {
-      var cat = n.category || n.type || 'broadcast'
-      return cat === currentFilter || n.type === currentFilter
+    filtered = source.filter(function(n) { return !readMap[n.id] || !readMap[n.id].read_at })
+  } else if (currentFilter !== 'all' && currentFilter !== 'archived') {
+    filtered = source.filter(function(n) {
+      return n.type === currentFilter || n.category === currentFilter
     })
   }
 
   if (filtered.length === 0) {
     container.innerHTML = ''
-    if (emptyState) emptyState.classList.remove('hidden')
+    if (emptyState) {
+      emptyState.classList.remove('hidden')
+      var icon = document.getElementById('emptyIcon')
+      var title = document.getElementById('emptyTitle')
+      var msg = document.getElementById('emptyMsg')
+
+      if (currentFilter === 'archived') {
+        icon.textContent = 'archive'
+        title.textContent = 'No archived notifications'
+        msg.textContent = 'Archive notifications to reference later'
+      } else if (currentFilter === 'unread') {
+        icon.textContent = 'done_all'
+        title.textContent = "You're all caught up"
+        msg.textContent = 'No unread notifications'
+      } else if (currentFilter !== 'all') {
+        icon.textContent = 'filter_list_off'
+        title.textContent = 'Nothing here'
+        msg.textContent = 'No ' + currentFilter + ' notifications'
+      } else {
+        icon.textContent = 'notifications_off'
+        title.textContent = "You're all caught up"
+        msg.textContent = 'No notifications to show'
+      }
+    }
     return
   }
 
@@ -292,21 +492,18 @@ function renderNotifications() {
 
   var groups = groupByTime(filtered)
   container.innerHTML = ''
+  container.className = 'space-y-2' + (selectionMode ? ' selection-mode' : '')
 
   Object.keys(groups).forEach(function(label) {
     if (groups[label].length === 0) return
-
     var sectionLabel = document.createElement('p')
     sectionLabel.className = 'section-label font-body mt-4 first:mt-0'
     sectionLabel.textContent = label
     container.appendChild(sectionLabel)
-
     groups[label].forEach(function(notif) {
       container.appendChild(buildNotifCard(notif))
     })
   })
-
-  updateUnreadBadge()
 }
 
 function groupByTime(notifs) {
@@ -316,7 +513,6 @@ function groupByTime(notifs) {
   var monthAgo = new Date(today); monthAgo.setDate(monthAgo.getDate() - 30)
 
   var groups = { 'Today': [], 'This Week': [], 'This Month': [], 'Earlier': [] }
-
   notifs.forEach(function(n) {
     var d = new Date(n.created_at)
     if (isNaN(d.getTime()) || d >= today) groups['Today'].push(n)
@@ -324,13 +520,16 @@ function groupByTime(notifs) {
     else if (d >= monthAgo) groups['This Month'].push(n)
     else groups['Earlier'].push(n)
   })
-
   return groups
 }
 
+// ════════════════════════════════════════════
+// BUILD CARD
+// ════════════════════════════════════════════
 function buildNotifCard(notif) {
   var isRead = readMap[notif.id] && readMap[notif.id].read_at
-  var typeKey = notif.type || notif.category || 'broadcast'
+  var isArchived = readMap[notif.id] && readMap[notif.id].archived_at
+  var typeKey = notif.type || 'info'
   var config = categoryConfig[typeKey] || categoryConfig['broadcast']
   var timeStr = timeAgo(notif.created_at)
 
@@ -338,20 +537,29 @@ function buildNotifCard(notif) {
   swipeContainer.className = 'notif-swipe-container'
   swipeContainer.setAttribute('data-notif-id', notif.id)
 
-  var dismissBg = document.createElement('div')
-  dismissBg.className = 'notif-dismiss-bg'
-  dismissBg.innerHTML = '<span class="material-symbols-outlined text-on-tertiary text-[22px]">delete</span>'
+  // Archive background (right swipe = archive)
+  var archiveBg = document.createElement('div')
+  archiveBg.className = 'notif-action-bg archive-bg'
+  archiveBg.innerHTML = '<span class="material-symbols-outlined text-[22px]">' + (isArchived ? 'unarchive' : 'archive') + '</span><span>' + (isArchived ? 'Restore' : 'Archive') + '</span>'
+
+  // Delete background (left swipe = delete)
+  var deleteBg = document.createElement('div')
+  deleteBg.className = 'notif-action-bg delete-bg'
+  deleteBg.innerHTML = '<span>Delete</span><span class="material-symbols-outlined text-[22px]">delete</span>'
 
   var actionBtnHtml = ''
   if (notif.action_label && notif.action_url) {
-    actionBtnHtml = '<a href="' + escapeHtml(notif.action_url) + '" class="inline-block mt-3 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-xs rounded-lg transition-colors">' + escapeHtml(notif.action_label) + '</a>'
+    actionBtnHtml = '<a href="' + escapeHtml(notif.action_url) + '" onclick="event.stopPropagation()" class="inline-block mt-3 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-xs rounded-lg transition-colors">' + escapeHtml(notif.action_label) + '</a>'
   }
 
   var content = document.createElement('div')
-  content.className = 'notif-content notif-card ' + (isRead ? 'read' : 'unread')
+  content.className = 'notif-content notif-card ' + config.typeClass + ' ' + (isRead ? 'read' : 'unread')
+  if (selectedIds.has(notif.id)) content.classList.add('selected')
   content.setAttribute('data-notif-id', notif.id)
 
-  content.innerHTML =
+  var checkboxHtml = '<div class="selection-checkbox"><span class="material-symbols-outlined" style="font-size:14px;">check</span></div>'
+
+  content.innerHTML = checkboxHtml +
     '<div class="p-4 flex items-start gap-3">'
       + '<div class="notif-icon ' + config.bg + '">'
         + '<span class="material-symbols-outlined ' + config.color + ' text-[20px] ' + config.iconClass + '">' + config.icon + '</span>'
@@ -366,47 +574,230 @@ function buildNotifCard(notif) {
         + '</div>'
         + '<p class="font-body text-on-surface-variant mt-1 leading-relaxed" style="font-size:12px;">' + escapeHtml(notif.message) + '</p>'
         + actionBtnHtml
-        + '<span class="font-body text-outline mt-2 block" style="font-size:10px;font-weight:500;">' + config.label + '</span>'
+        + '<span class="font-body text-outline mt-2 block" style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">' + config.label + '</span>'
       + '</div>'
     + '</div>'
 
-  swipeContainer.appendChild(dismissBg)
+  swipeContainer.appendChild(archiveBg)
+  swipeContainer.appendChild(deleteBg)
   swipeContainer.appendChild(content)
-  setupSwipe(content, notif.id)
+
+  setupInteractions(content, notif.id)
 
   return swipeContainer
 }
 
-function setupSwipe(el, notifId) {
-  var startX = 0, currentX = 0, isSwiping = false
+// ════════════════════════════════════════════
+// INTERACTIONS: SWIPE + LONG-PRESS + TAP
+// ════════════════════════════════════════════
+function setupInteractions(el, notifId) {
+  var startX = 0, startY = 0, currentX = 0
+  var isSwiping = false, isDragging = false, isLongPress = false
+  var longPressTimer = null
+  var direction = null // 'left' or 'right'
 
-  el.addEventListener('touchstart', function(e) {
-    startX = e.touches[0].clientX
+  function onStart(clientX, clientY) {
+    if (selectionMode) return
+    startX = clientX
+    startY = clientY
     currentX = 0
-    isSwiping = true
-    el.classList.add('swiping')
-  }, { passive: true })
+    direction = null
+    isDragging = false
+    isLongPress = false
 
-  el.addEventListener('touchmove', function(e) {
+    longPressTimer = setTimeout(function() {
+      isLongPress = true
+      if (navigator.vibrate) navigator.vibrate(30)
+      enterSelectionMode(notifId)
+    }, 500)
+  }
+
+  function onMove(clientX, clientY) {
+    if (selectionMode || isLongPress) {
+      clearTimeout(longPressTimer)
+      return
+    }
+    var dx = clientX - startX
+    var dy = clientY - startY
+
+    // Cancel long-press if moved
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) clearTimeout(longPressTimer)
+
+    // Detect if this is horizontal swipe
+    if (!isDragging && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
+      isDragging = true
+      isSwiping = true
+      el.classList.add('swiping')
+    }
+
     if (!isSwiping) return
-    currentX = e.touches[0].clientX - startX
-    if (currentX > 0) currentX = 0
-    if (currentX < -120) currentX = -120
-    el.style.transform = 'translateX(' + currentX + 'px)'
-  }, { passive: true })
 
-  el.addEventListener('touchend', function() {
+    currentX = dx
+    if (currentX < -140) currentX = -140
+    if (currentX > 140) currentX = 140
+    direction = currentX < 0 ? 'left' : 'right'
+    el.style.transform = 'translateX(' + currentX + 'px)'
+  }
+
+  function onEnd() {
+    clearTimeout(longPressTimer)
+    if (!isSwiping) {
+      // Tap
+      if (!isLongPress && !isDragging) handleTap(notifId)
+      return
+    }
+
     isSwiping = false
     el.classList.remove('swiping')
+
     if (currentX < -80) {
+      // Delete
+      if (navigator.vibrate) navigator.vibrate(40)
       el.classList.add('dismissed')
-      setTimeout(function() { dismissNotification(notifId) }, 300)
+      setTimeout(function() { deleteNotification(notifId) }, 250)
+    } else if (currentX > 80) {
+      // Archive
+      if (navigator.vibrate) navigator.vibrate(40)
+      el.classList.add('archived-out')
+      setTimeout(function() { toggleArchive(notifId) }, 250)
     } else {
       el.style.transform = 'translateX(0)'
     }
+  }
+
+  // Touch
+  el.addEventListener('touchstart', function(e) {
+    onStart(e.touches[0].clientX, e.touches[0].clientY)
+  }, { passive: true })
+  el.addEventListener('touchmove', function(e) {
+    onMove(e.touches[0].clientX, e.touches[0].clientY)
+  }, { passive: true })
+  el.addEventListener('touchend', onEnd)
+  el.addEventListener('touchcancel', function() {
+    clearTimeout(longPressTimer)
+    if (isSwiping) { el.style.transform = 'translateX(0)'; isSwiping = false; el.classList.remove('swiping') }
   })
+
+  // Mouse
+  el.addEventListener('mousedown', function(e) {
+    onStart(e.clientX, e.clientY)
+    e.preventDefault()
+  })
+  var mouseMoveHandler = function(e) {
+    if (startX === 0 && !isSwiping) return
+    onMove(e.clientX, e.clientY)
+  }
+  var mouseUpHandler = function() {
+    if (startX !== 0 || isSwiping) onEnd()
+    startX = 0
+  }
+  document.addEventListener('mousemove', mouseMoveHandler)
+  document.addEventListener('mouseup', mouseUpHandler)
 }
 
+function handleTap(notifId) {
+  if (selectionMode) {
+    toggleSelection(notifId)
+    return
+  }
+  var notif = allNotifications.find(function(n) { return n.id === notifId }) || archivedNotifications.find(function(n) { return n.id === notifId })
+  if (!notif) return
+
+  // Mark as read
+  if (!readMap[notifId] || !readMap[notifId].read_at) markAsRead(notifId)
+
+  // Navigate if has action URL
+  if (notif.action_url) window.location.href = notif.action_url
+}
+
+// ════════════════════════════════════════════
+// SELECTION MODE
+// ════════════════════════════════════════════
+function enterSelectionMode(initialId) {
+  selectionMode = true
+  selectedIds.clear()
+  if (initialId) selectedIds.add(initialId)
+  renderNotifications()
+  updateBulkBar()
+}
+
+function exitSelectionMode() {
+  selectionMode = false
+  selectedIds.clear()
+  renderNotifications()
+  updateBulkBar()
+}
+
+function toggleSelection(notifId) {
+  if (selectedIds.has(notifId)) selectedIds.delete(notifId)
+  else selectedIds.add(notifId)
+
+  if (selectedIds.size === 0) { exitSelectionMode(); return }
+
+  var card = document.querySelector('.notif-content[data-notif-id="' + notifId + '"]')
+  if (card) card.classList.toggle('selected', selectedIds.has(notifId))
+  updateBulkBar()
+}
+
+function updateBulkBar() {
+  var bar = document.getElementById('bulkBar')
+  var count = document.getElementById('bulkCount')
+  if (!bar) return
+  bar.classList.toggle('visible', selectionMode && selectedIds.size > 0)
+  if (count) count.textContent = selectedIds.size
+}
+
+// ════════════════════════════════════════════
+// BULK ACTIONS
+// ════════════════════════════════════════════
+async function bulkMarkRead() {
+  var ids = Array.from(selectedIds)
+  var now = new Date().toISOString()
+  var toUpsert = ids.map(function(id) {
+    readMap[id] = readMap[id] || {}
+    readMap[id].read_at = now
+    return { user_id: currentUser.id, notification_id: id, read_at: now }
+  })
+  try { await supabaseClient.from('notification_reads').upsert(toUpsert, { onConflict: 'user_id,notification_id' }) } catch(e) {}
+  exitSelectionMode()
+  updateHeaderBadge()
+  updateTabCounts()
+  showToast(ids.length + ' marked as read')
+}
+
+async function bulkArchive() {
+  var ids = Array.from(selectedIds)
+  for (var i = 0; i < ids.length; i++) await toggleArchive(ids[i], true)
+  exitSelectionMode()
+  showToast(ids.length + ' archived')
+}
+
+async function bulkDelete() {
+  var ids = Array.from(selectedIds)
+  lastAction = { type: 'bulk_delete', ids: ids, snapshot: {} }
+  ids.forEach(function(id) { lastAction.snapshot[id] = Object.assign({}, readMap[id] || {}) })
+
+  var now = new Date().toISOString()
+  var toUpsert = ids.map(function(id) {
+    readMap[id] = readMap[id] || {}
+    readMap[id].dismissed_at = now
+    return { user_id: currentUser.id, notification_id: id, dismissed_at: now, read_at: readMap[id].read_at || now }
+  })
+
+  allNotifications = allNotifications.filter(function(n) { return !ids.includes(n.id) })
+  archivedNotifications = archivedNotifications.filter(function(n) { return !ids.includes(n.id) })
+
+  try { await supabaseClient.from('notification_reads').upsert(toUpsert, { onConflict: 'user_id,notification_id' }) } catch(e) {}
+  exitSelectionMode()
+  renderNotifications()
+  updateHeaderBadge()
+  updateTabCounts()
+  showUndoToast(ids.length + ' notifications deleted')
+}
+
+// ════════════════════════════════════════════
+// SINGLE ACTIONS
+// ════════════════════════════════════════════
 async function markAsRead(notifId) {
   if (readMap[notifId] && readMap[notifId].read_at) return
   readMap[notifId] = readMap[notifId] || {}
@@ -420,42 +811,109 @@ async function markAsRead(notifId) {
     if (dot) dot.remove()
   }
 
-  updateUnreadBadge()
+  updateHeaderBadge()
+  updateTabCounts()
   updateMarkAllButton()
 
   try {
     await supabaseClient.from('notification_reads').upsert({
-      user_id: currentUser.id,
-      notification_id: notifId,
-      read_at: readMap[notifId].read_at
+      user_id: currentUser.id, notification_id: notifId, read_at: readMap[notifId].read_at
     }, { onConflict: 'user_id,notification_id' })
   } catch(e) {}
 }
 
-async function dismissNotification(notifId) {
+async function toggleArchive(notifId, skipToast) {
+  var wasArchived = readMap[notifId] && readMap[notifId].archived_at
   readMap[notifId] = readMap[notifId] || {}
-  readMap[notifId].dismissed_at = new Date().toISOString()
-  allNotifications = allNotifications.filter(function(n) { return n.id !== notifId })
-
-  var container = document.querySelector('.notif-swipe-container[data-notif-id="' + notifId + '"]')
-  if (container) container.remove()
-
-  updateUnreadBadge()
-  updateMarkAllButton()
-  if (allNotifications.length === 0) {
-    document.getElementById('emptyState').classList.remove('hidden')
+  
+  if (wasArchived) {
+    readMap[notifId].archived_at = null
+    var notif = archivedNotifications.find(function(n) { return n.id === notifId })
+    if (notif) {
+      archivedNotifications = archivedNotifications.filter(function(n) { return n.id !== notifId })
+      allNotifications.unshift(notif)
+    }
+  } else {
+    readMap[notifId].archived_at = new Date().toISOString()
+    var notif = allNotifications.find(function(n) { return n.id === notifId })
+    if (notif) {
+      allNotifications = allNotifications.filter(function(n) { return n.id !== notifId })
+      archivedNotifications.unshift(notif)
+    }
   }
 
   try {
     await supabaseClient.from('notification_reads').upsert({
-      user_id: currentUser.id,
-      notification_id: notifId,
+      user_id: currentUser.id, notification_id: notifId,
+      read_at: readMap[notifId].read_at || new Date().toISOString(),
+      archived_at: readMap[notifId].archived_at
+    }, { onConflict: 'user_id,notification_id' })
+  } catch(e) {}
+
+  renderNotifications()
+  updateHeaderBadge()
+  updateTabCounts()
+  if (!skipToast) showToast(wasArchived ? 'Restored' : 'Archived')
+}
+
+async function deleteNotification(notifId) {
+  lastAction = {
+    type: 'delete',
+    id: notifId,
+    snapshot: Object.assign({}, readMap[notifId] || {})
+  }
+
+  readMap[notifId] = readMap[notifId] || {}
+  readMap[notifId].dismissed_at = new Date().toISOString()
+
+  allNotifications = allNotifications.filter(function(n) { return n.id !== notifId })
+  archivedNotifications = archivedNotifications.filter(function(n) { return n.id !== notifId })
+
+  renderNotifications()
+  updateHeaderBadge()
+  updateTabCounts()
+
+  try {
+    await supabaseClient.from('notification_reads').upsert({
+      user_id: currentUser.id, notification_id: notifId,
       read_at: readMap[notifId].read_at || new Date().toISOString(),
       dismissed_at: readMap[notifId].dismissed_at
     }, { onConflict: 'user_id,notification_id' })
   } catch(e) {}
 
-  showToast('Notification dismissed')
+  showUndoToast('Notification deleted')
+}
+
+async function undoLastAction() {
+  if (!lastAction) return
+  hideUndoToast()
+
+  if (lastAction.type === 'delete') {
+    readMap[lastAction.id] = lastAction.snapshot
+    try {
+      await supabaseClient.from('notification_reads').upsert({
+        user_id: currentUser.id, notification_id: lastAction.id,
+        read_at: lastAction.snapshot.read_at || null,
+        dismissed_at: null,
+        archived_at: lastAction.snapshot.archived_at || null
+      }, { onConflict: 'user_id,notification_id' })
+    } catch(e) {}
+  } else if (lastAction.type === 'bulk_delete') {
+    var restorePromises = lastAction.ids.map(function(id) {
+      readMap[id] = lastAction.snapshot[id] || {}
+      return supabaseClient.from('notification_reads').upsert({
+        user_id: currentUser.id, notification_id: id,
+        read_at: readMap[id].read_at || null,
+        dismissed_at: null,
+        archived_at: readMap[id].archived_at || null
+      }, { onConflict: 'user_id,notification_id' })
+    })
+    try { await Promise.all(restorePromises) } catch(e) {}
+  }
+
+  lastAction = null
+  await loadData()
+  showToast('Restored')
 }
 
 async function markAllRead() {
@@ -463,12 +921,10 @@ async function markAllRead() {
   if (unread.length === 0) return
 
   var now = new Date().toISOString()
-  var toUpsert = []
-
-  unread.forEach(function(n) {
+  var toUpsert = unread.map(function(n) {
     readMap[n.id] = readMap[n.id] || {}
     readMap[n.id].read_at = now
-    toUpsert.push({ user_id: currentUser.id, notification_id: n.id, read_at: now })
+    return { user_id: currentUser.id, notification_id: n.id, read_at: now }
   })
 
   document.querySelectorAll('.notif-card.unread').forEach(function(card) {
@@ -478,15 +934,58 @@ async function markAllRead() {
     if (dot) dot.remove()
   })
 
-  updateUnreadBadge()
+  updateHeaderBadge()
+  updateTabCounts()
   updateMarkAllButton()
   showToast('All marked as read')
 
-  try {
-    await supabaseClient.from('notification_reads').upsert(toUpsert, { onConflict: 'user_id,notification_id' })
-  } catch(e) {}
+  try { await supabaseClient.from('notification_reads').upsert(toUpsert, { onConflict: 'user_id,notification_id' }) } catch(e) {}
 }
 
+// ════════════════════════════════════════════
+// PULL TO REFRESH
+// ════════════════════════════════════════════
+function setupPullToRefresh() {
+  var startY = 0, pullDistance = 0, isPulling = false
+  var indicator = document.getElementById('refreshIndicator')
+
+  document.addEventListener('touchstart', function(e) {
+    if (window.scrollY === 0) {
+      startY = e.touches[0].clientY
+      isPulling = true
+    }
+  }, { passive: true })
+
+  document.addEventListener('touchmove', function(e) {
+    if (!isPulling) return
+    pullDistance = e.touches[0].clientY - startY
+    if (pullDistance > 0 && pullDistance < 120) {
+      indicator.classList.add('visible')
+      indicator.style.transform = 'translateX(-50%) scale(' + Math.min(pullDistance / 80, 1) + ') rotate(' + (pullDistance * 3) + 'deg)'
+    }
+  }, { passive: true })
+
+  document.addEventListener('touchend', async function() {
+    if (isPulling && pullDistance > 80) {
+      indicator.classList.add('spinning')
+      if (navigator.vibrate) navigator.vibrate(30)
+      await loadData()
+      setTimeout(function() {
+        indicator.classList.remove('visible', 'spinning')
+        indicator.style.transform = 'translateX(-50%) scale(0)'
+      }, 500)
+    } else {
+      indicator.classList.remove('visible')
+      indicator.style.transform = 'translateX(-50%) scale(0)'
+    }
+    isPulling = false
+    pullDistance = 0
+  })
+}
+
+// ════════════════════════════════════════════
+// FILTER + UI UPDATES
+// ════════════════════════════════════════════
 function setFilter(filter, btn) {
   currentFilter = filter
   document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active') })
@@ -494,16 +993,45 @@ function setFilter(filter, btn) {
   renderNotifications()
 }
 
-function updateUnreadBadge() {
+function updateHeaderBadge() {
   var unreadCount = allNotifications.filter(function(n) { return !readMap[n.id] || !readMap[n.id].read_at }).length
-  var badge = document.getElementById('unreadBadge')
-  if (badge) {
-    if (unreadCount > 0) {
-      badge.textContent = unreadCount
-      badge.classList.remove('hidden')
-    } else {
-      badge.classList.add('hidden')
-    }
+  var title = document.getElementById('headerTitle')
+  if (!title) return
+
+  // Remove existing badge
+  var existingBadge = document.getElementById('headerBadge')
+  if (existingBadge) existingBadge.remove()
+
+  if (unreadCount > 0) {
+    var badge = document.createElement('span')
+    badge.id = 'headerBadge'
+    badge.className = 'header-dot'
+    badge.style.position = 'relative'
+    badge.style.top = '-2px'
+    badge.style.marginLeft = '8px'
+    badge.textContent = unreadCount > 99 ? '99+' : unreadCount
+    title.appendChild(badge)
+  }
+}
+
+function updateTabCounts() {
+  var totalCount = allNotifications.length
+  var unreadCount = allNotifications.filter(function(n) { return !readMap[n.id] || !readMap[n.id].read_at }).length
+  var archivedCount = archivedNotifications.length
+
+  updateCountBadge('count-all', totalCount)
+  updateCountBadge('count-unread', unreadCount)
+  updateCountBadge('count-archived', archivedCount)
+}
+
+function updateCountBadge(id, count) {
+  var el = document.getElementById(id)
+  if (!el) return
+  if (count > 0) {
+    el.textContent = count
+    el.classList.remove('hidden')
+  } else {
+    el.classList.add('hidden')
   }
 }
 
@@ -513,6 +1041,31 @@ function updateMarkAllButton() {
   if (btn) btn.classList.toggle('hidden', unreadCount === 0)
 }
 
+// ════════════════════════════════════════════
+// UNDO TOAST
+// ════════════════════════════════════════════
+function showUndoToast(msg) {
+  var toast = document.getElementById('undoToast')
+  var msgEl = document.getElementById('undoMsg')
+  if (msgEl) msgEl.textContent = msg
+  toast.classList.add('visible')
+
+  if (undoTimer) clearTimeout(undoTimer)
+  undoTimer = setTimeout(function() {
+    hideUndoToast()
+    lastAction = null
+  }, 5000)
+}
+
+function hideUndoToast() {
+  var toast = document.getElementById('undoToast')
+  toast.classList.remove('visible')
+  if (undoTimer) { clearTimeout(undoTimer); undoTimer = null }
+}
+
+// ════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════
 function timeAgo(dateStr) {
   var now = new Date(), then = new Date(dateStr)
   var mins = Math.floor((now - then) / 60000)
@@ -531,6 +1084,7 @@ function escapeHtml(str) {
 }
 
 function goBack() {
+  if (selectionMode) { exitSelectionMode(); return }
   if (window.history.length > 1) window.history.back()
   else window.location.href = 'profile.html'
 }
@@ -540,9 +1094,9 @@ function showToast(msg) {
   if (existing) existing.remove()
   var t = document.createElement('div')
   t.id = 'notifToast'
-  t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-2.5 rounded-full shadow-float whitespace-nowrap flex items-center gap-2'
+  t.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-2.5 rounded-full shadow-lg whitespace-nowrap flex items-center gap-2'
   t.style.fontSize = '13px'
-  t.innerHTML = '<span class="material-symbols-outlined text-primary-container text-[14px] filled">check_circle</span> ' + msg
+  t.textContent = msg
   document.body.appendChild(t)
   setTimeout(function() { if (t.parentNode) t.remove() }, 2200)
 }
@@ -551,6 +1105,11 @@ function setupListeners() {
   window.addEventListener('scroll', function() {
     var header = document.getElementById('pageHeader')
     if (header) header.classList.toggle('header-scrolled', window.scrollY > 8)
+  })
+
+  // Cleanup realtime on unload
+  window.addEventListener('beforeunload', function() {
+    if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel)
   })
 }
 
