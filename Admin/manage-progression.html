@@ -100,6 +100,7 @@
 </div>
 
 <!-- TROPHY MODAL -->
+<!-- TROPHY DEFINITION MODAL -->
 <div id="trophyModal" class="hidden fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
   <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto text-on-surface">
     <div class="p-6 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10">
@@ -122,32 +123,27 @@
       
       <div id="participationContainer" class="hidden space-y-3">
         <label class="text-[11px] font-bold text-slate-500 uppercase block">Link Active Missions (By Reference)</label>
-        <div id="missionChecklist" class="bg-surface-clow rounded-xl p-3 max-h-32 overflow-y-auto space-y-1"></div>
+        <div id="missionChecklist" class="bg-surface-clow rounded-xl p-3 max-h-36 overflow-y-auto space-y-1 border border-surface-c"></div>
         <label class="text-[11px] font-bold text-slate-500 uppercase block mt-2">Link Active Campaigns</label>
-        <div id="campaignChecklist" class="bg-surface-clow rounded-xl p-3 max-h-32 overflow-y-auto space-y-1"></div>
+        <div id="campaignChecklist" class="bg-surface-clow rounded-xl p-3 max-h-36 overflow-y-auto space-y-1 border border-surface-c"></div>
       </div>
 
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Base Trophy Image</label>
-          <select id="trophyBaseImage" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select>
+          <select id="trophyImage" class="form-input w-full rounded-xl px-4 py-3 text-sm"></select>
         </div>
         <div>
           <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Description</label>
           <textarea id="trophyDesc" rows="1" class="form-input w-full rounded-xl px-4 py-3 text-sm" placeholder="Describe the achievement path..."></textarea>
         </div>
       </div>
-       <div class="pt-5 border-t border-slate-100">
-        <h4 class="font-headline font-bold text-base mb-1">Fortnite Tier Progression</h4>
-        <p class="text-xs text-slate-400 mb-4">Set the target required to reach each rarity level.</p>
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <div><label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Common</label><input type="number" id="tierCommon" class="form-input w-full rounded-lg px-3 py-2 text-sm" placeholder="e.g. 1"></div>
-          <div><label class="text-[10px] font-bold text-green-600 uppercase block mb-1">Uncommon</label><input type="number" id="tierUncommon" class="form-input w-full rounded-lg px-3 py-2 text-sm" placeholder="e.g. 6"></div>
-          <div><label class="text-[10px] font-bold text-blue-500 uppercase block mb-1">Rare</label><input type="number" id="tierRare" class="form-input w-full rounded-lg px-3 py-2 text-sm" placeholder="e.g. 11"></div>
-          <div><label class="text-[10px] font-bold text-purple-500 uppercase block mb-1">Epic</label><input type="number" id="tierEpic" class="form-input w-full rounded-lg px-3 py-2 text-sm" placeholder="e.g. 21"></div>
-          <div><label class="text-[10px] font-bold text-orange-500 uppercase block mb-1">Legendary</label><input type="number" id="tierLegendary" class="form-input w-full rounded-lg px-3 py-2 text-sm" placeholder="e.g. 50"></div>
-          <div><label class="text-[10px] font-bold text-red-500 uppercase block mb-1">Mythic</label><input type="number" id="tierMythic" class="form-input w-full rounded-lg px-3 py-2 text-sm" placeholder="e.g. 100"></div>
-        </div>
+      
+      <!-- DYNAMIC TIER THRESHOLDS CONTAINER -->
+      <div class="pt-5 border-t border-slate-100">
+        <h4 class="font-headline font-bold text-base mb-1">Tier Threshold Targets</h4>
+        <p class="text-xs text-slate-400 mb-3">Configure active status and numerical target required per tier level.</p>
+        <div id="thresholdsContainer" class="space-y-2"></div>
       </div>
     </div>
     <div class="p-6 border-t border-slate-100 bg-slate-50 flex justify-between items-center sticky bottom-0">
@@ -266,10 +262,12 @@
   let allTiers = [], allTrophies = [], allThresholds = [], allBadges = [], allAvatars = [];
   let allMissions = [], allCampaigns = [];
   let trophyImages = [], avatarImages = [], badgeImages = [];
+  let campaignQuoteCounts = {};
 
   function getEl(id) { return document.getElementById(id); }
   function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  
+  function toggleSidebar() { getEl('sidebar')?.classList.toggle('hidden'); getEl('sidebarOverlay')?.classList.toggle('hidden'); }
+
   function generateUUID() {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -277,7 +275,7 @@
     });
   }
 
-  // Extracts readable title from media URL filename when database 'name' is missing
+  // Generates clean title from URL when DB 'label' is empty or 'Unnamed'
   function extractMediaTitle(url) {
     if (!url) return 'Media Asset';
     try {
@@ -299,83 +297,17 @@
     if (!toast) {
       toast = document.createElement('div');
       toast.id = 'toast';
-      toast.className = 'hidden fixed top-6 right-6 z-[200] bg-slate-900/95 text-white font-semibold px-5 py-3 rounded-2xl shadow-2xl items-center gap-2 text-sm backdrop-blur-md max-w-lg';
-      toast.innerHTML = `<span id="toastIcon" class="material-symbols-outlined text-lg flex-shrink-0">check_circle</span><span id="toastMsg" class="leading-snug break-words"></span>`;
+      toast.className = 'hidden fixed top-6 right-6 z-[200] bg-slate-900/90 text-white font-semibold px-5 py-3 rounded-full shadow-2xl items-center gap-2 text-sm backdrop-blur-md transition-all';
+      toast.innerHTML = `<span id="toastIcon" class="material-symbols-outlined text-emerald-400 text-lg">check_circle</span><span id="toastMsg"></span>`;
       document.body.appendChild(toast);
     }
     document.getElementById('toastMsg').textContent = msg;
     const icon = document.getElementById('toastIcon');
     icon.textContent = isError ? 'error' : 'check_circle';
-    icon.className = `material-symbols-outlined text-lg flex-shrink-0 ${isError ? 'text-rose-400' : 'text-emerald-400'}`;
+    icon.className = `material-symbols-outlined text-lg ${isError ? 'text-rose-400' : 'text-emerald-400'}`;
     toast.classList.remove('hidden'); toast.classList.add('flex');
     if (window.toastTimer) clearTimeout(window.toastTimer);
-    window.toastTimer = setTimeout(() => { toast.classList.add('hidden'); toast.classList.remove('flex'); }, 5000);
-  }
-
-  // ==========================================
-  // SCHEMA-SAFE ADAPTIVE SAVE HANDLER
-  // ==========================================
-  function extractErrorMessage(err) {
-    if (!err) return 'Unknown database error';
-    if (typeof err === 'string') return err;
-    return [err.message, err.details, err.hint].filter(Boolean).join(' | ') || JSON.stringify(err);
-  }
-
-  function filterPayloadBySample(sampleRow, payload) {
-    if (!sampleRow || typeof sampleRow !== 'object') return payload;
-    const validKeys = new Set(Object.keys(sampleRow));
-    const cleanPayload = {};
-    
-    Object.entries(payload).forEach(([k, v]) => {
-      if (validKeys.has(k)) {
-        cleanPayload[k] = v;
-      }
-    });
-
-    // Map common aliases if primary name is missing in database table
-    if (!cleanPayload.image_url && validKeys.has('image') && payload.image_url) cleanPayload.image = payload.image_url;
-    if (!cleanPayload.image_url && validKeys.has('icon_url') && payload.image_url) cleanPayload.icon_url = payload.image_url;
-    if (!cleanPayload.journey_name && validKeys.has('name') && payload.journey_name) cleanPayload.name = payload.journey_name;
-
-    return Object.keys(cleanPayload).length > 0 ? cleanPayload : payload;
-  }
-
-  async function resilientSave(tableName, sampleRow, id, rawPayload) {
-    let cur = filterPayloadBySample(sampleRow, rawPayload);
-
-    for (let attempt = 0; attempt < 6; attempt++) {
-      let res;
-      if (id) {
-        res = await supabaseClient.from(tableName).update(cur).eq('id', id).select();
-      } else {
-        if (!cur.id && sampleRow && ('id' in sampleRow)) cur.id = generateUUID();
-        res = await supabaseClient.from(tableName).insert([cur]).select();
-      }
-
-      if (!res.error) return res.data?.[0] || res.data || true;
-
-      const errText = extractErrorMessage(res.error);
-      console.warn(`[${tableName}] Save attempt ${attempt + 1} failed:`, errText);
-
-      // Auto-strip column if PostgREST reports column missing
-      const match = errText.match(/Could not find the '([^']+)' column/i) || 
-                    errText.match(/column "([^"]+)" of relation/i) ||
-                    errText.match(/column '([^']+)' does not exist/i);
-
-      if (match?.[1] && cur[match[1]] !== undefined) {
-        console.warn(`[${tableName}] Auto-stripping missing column '${match[1]}' and retrying...`);
-        delete cur[match[1]];
-        continue;
-      }
-
-      if (errText.toLowerCase().includes('invalid input syntax for type integer') && cur.id) {
-        delete cur.id;
-        continue;
-      }
-
-      throw new Error(errText);
-    }
-    throw new Error(`Could not save to ${tableName}. Please check table permissions.`);
+    window.toastTimer = setTimeout(() => { toast.classList.add('hidden'); toast.classList.remove('flex'); }, 3000);
   }
 
   // ==========================================
@@ -384,61 +316,37 @@
   async function init() {
     try {
       const s = await supabaseClient.auth.getSession();
-      if (!s.data.session) { window.location.href = 'login.html'; return; }
+      if (!s.data.session) return window.location.href = 'login.html';
       currentUser = s.data.session.user;
+
       const p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single();
-      if (!p.data || p.data.role !== 'admin') { window.location.href = '../app/index.html'; return; }
+      if (!p.data || p.data.role !== 'admin') return window.location.href = '../app/index.html';
+
       document.querySelectorAll('.admin-name').forEach(el => el.textContent = p.data.full_name || currentUser.email);
       document.querySelectorAll('.admin-initials').forEach(el => el.textContent = (p.data.full_name || 'AD').substring(0,2).toUpperCase());
+
       await loadData();
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error('Init error:', e);
+    }
   }
 
   // ==========================================
-  // MEDIA LOADER (FIXES UNNAMED IMAGES)
+  // LOAD DATA
   // ==========================================
-  async function loadMediaAssets() {
-    try {
-      const { data: raw, error } = await supabaseClient.from('media').select('*');
-      if (error || !raw?.length) { trophyImages = badgeImages = avatarImages = []; return; }
-      
-      const normalized = raw.map(r => {
-        const url = r.url || r.file_url || r.path || r.image_url || r.media_url || '';
-        const rawName = r.name || r.title || r.filename || r.label || '';
-        const displayName = (rawName && String(rawName).trim().toLowerCase() !== 'unnamed') 
-          ? String(rawName).trim() 
-          : extractMediaTitle(url);
-
-        return {
-          ...r,
-          _url: url,
-          _name: displayName,
-          _type: String(r.type || r.category || '').toLowerCase().trim()
-        };
-      }).filter(m => m._url); // Only keep media with valid URLs
-
-      trophyImages = normalized.filter(m => m._type.includes('troph'));
-      badgeImages  = normalized.filter(m => m._type.includes('badge'));
-      avatarImages = normalized.filter(m => m._type.includes('avatar') || m._type.includes('char'));
-
-      // Fallback: If category filtering yields nothing, use all valid media
-      if (!trophyImages.length) trophyImages = normalized;
-      if (!badgeImages.length) badgeImages = normalized;
-      if (!avatarImages.length) avatarImages = normalized;
-    } catch (e) { console.error('Media load failed', e); }
-  }
-
   async function loadData() {
     try {
-      const [tierRes, tRes, threshRes, bRes, aRes, projRes, campRes] = await Promise.all([
+      const [tierRes, tRes, threshRes, bRes, aRes, mediaRes, projRes, campRes] = await Promise.all([
         supabaseClient.from('trophy_tiers').select('*').order('id'),
         supabaseClient.from('trophy_definitions').select('*').order('created_at', { ascending: false }),
         supabaseClient.from('trophy_thresholds').select('*'),
         supabaseClient.from('badge_definitions').select('*').order('created_at', { ascending: false }),
         supabaseClient.from('avatar_stages').select('*').order('stage_order'),
+        supabaseClient.from('media').select('*').in('type', ['trophy', 'avatar', 'badge']).eq('is_active', true),
         supabaseClient.from('projects').select('id, title, mission_ref').eq('status', 'active'),
         supabaseClient.from('campaigns').select('id, name').eq('status', 'active')
       ]);
+
       allTiers = tierRes.data || [];
       allTrophies = tRes.data || [];
       allThresholds = threshRes.data || [];
@@ -446,262 +354,338 @@
       allAvatars = aRes.data || [];
       allMissions = projRes.data || [];
       allCampaigns = campRes.data || [];
-      
-      await loadMediaAssets();
-      renderTrophies(); renderBadges(); renderAvatars();
-      populateDropdowns(); renderChecklists();
+
+      // Calculate Quote Counts per Campaign
+      campaignQuoteCounts = {};
+      if (allCampaigns.length > 0) {
+        const qRes = await supabaseClient.from('quotes').select('campaign_id').in('campaign_id', allCampaigns.map(c => c.id));
+        (qRes.data || []).forEach(q => {
+          if (q.campaign_id) campaignQuoteCounts[q.campaign_id] = (campaignQuoteCounts[q.campaign_id] || 0) + 1;
+        });
+      }
+
+      // Filter Media Assets & Normalize Titles
+      const mediaData = (mediaRes.data || []).map(m => {
+        const rawLabel = m.label || m.name || m.title || '';
+        const cleanLabel = (rawLabel && String(rawLabel).trim().toLowerCase() !== 'unnamed')
+          ? String(rawLabel).trim()
+          : extractMediaTitle(m.url);
+        return { ...m, label: cleanLabel };
+      });
+
+      trophyImages = mediaData.filter(m => m.type === 'trophy');
+      avatarImages = mediaData.filter(m => m.type === 'avatar');
+      badgeImages  = mediaData.filter(m => m.type === 'badge');
+
+      renderTrophies();
+      renderBadges();
+      renderAvatars();
+      populateDropdowns();
     } catch (e) {
-      console.error(e);
+      console.error('Data load error:', e);
       showToast('Error loading progression data.', true);
     }
   }
 
+  // ==========================================
+  // DROPDOWNS & CHECKLISTS
+  // ==========================================
   function buildMediaOptions(images, selectedUrl) {
     if (!images?.length) return '<option value="">-- No media assets found --</option>';
     return images.map(m =>
-      `<option value="${m._url}" ${selectedUrl === m._url ? 'selected' : ''}>${escapeHtml(m._name)}</option>`
+      `<option value="${m.url}" ${selectedUrl === m.url ? 'selected' : ''}>${escapeHtml(m.label)}</option>`
     ).join('');
   }
 
   function populateDropdowns() {
-    const bImg = getEl('badgeImage');
-    if (bImg) bImg.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages);
+    const tSel = getEl('trophyImage') || getEl('trophyBaseImage');
+    if (tSel) {
+      tSel.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages);
+    }
 
-    const avMale = getEl('avatarImageMale');
-    const avFemale = getEl('avatarImageFemale');
-    if (avMale) avMale.innerHTML = '<option value="">-- Select Male Image --</option>' + buildMediaOptions(avatarImages);
-    if (avFemale) avFemale.innerHTML = '<option value="">-- Select Female Image --</option>' + buildMediaOptions(avatarImages);
+    const bSel = getEl('badgeImage');
+    if (bSel) {
+      bSel.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages);
+    }
 
-    const tImg = getEl('trophyBaseImage');
-    if (tImg) tImg.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages);
+    const amSel = getEl('avatarImageMale'), afSel = getEl('avatarImageFemale');
+    if (amSel && afSel) {
+      amSel.innerHTML = '<option value="">-- Select Male Image --</option>' + buildMediaOptions(avatarImages);
+      afSel.innerHTML = '<option value="">-- Select Female Image --</option>' + buildMediaOptions(avatarImages);
+    }
+
+    const reqBadgeSel = getEl('avatarReqBadge');
+    if (reqBadgeSel) {
+      reqBadgeSel.innerHTML = '<option value="">-- Select Required Badge --</option>';
+      allBadges.forEach(b => reqBadgeSel.innerHTML += `<option value="${b.id}">${escapeHtml(b.name)}</option>`);
+    }
   }
 
-  // Restored Mission Reference Numbers Display
-  function renderChecklists() {
-    const box = (prefix, items, isMission) => {
-      if (!items?.length) return '<p class="text-xs text-slate-400 p-2">No active items.</p>';
-      return items.map(item => {
-        const refDisplay = (isMission && item.mission_ref) ? `<span class="font-bold text-primary mr-1 hover:underline">[${escapeHtml(item.mission_ref)}]</span>` : '';
-        const titleDisplay = escapeHtml(item.title || item.name || 'Untitled');
+  function renderParticipationChecklists() {
+    const mc = getEl('missionChecklist');
+    if (mc) {
+      mc.innerHTML = allMissions.length ? allMissions.map(m => {
+        const ref = m.mission_ref || m.id;
         return `
-          <label class="flex items-center gap-2 p-1.5 hover:bg-slate-200/50 rounded cursor-pointer transition-colors">
-            <input type="checkbox" name="${prefix}" value="${item.id}" class="w-4 h-4 accent-primary flex-shrink-0">
-            <span class="text-xs font-semibold text-slate-700 truncate">${refDisplay}${titleDisplay}</span>
+          <label class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-c cursor-pointer">
+            <div class="flex items-center gap-2 min-w-0">
+              <input type="checkbox" value="${escapeHtml(ref)}" class="mission-cb flex-shrink-0">
+              <span class="text-xs font-semibold text-slate-700 truncate">${escapeHtml(m.title)}</span>
+            </div>
+            <span class="text-[10px] font-mono font-bold text-primary bg-white px-1.5 py-0.5 rounded border border-slate-200 flex-shrink-0 ml-2">${escapeHtml(m.mission_ref || 'NO-REF')}</span>
           </label>`;
-      }).join('');
-    };
-    
-    if (getEl('missionChecklist')) getEl('missionChecklist').innerHTML = box('trophyM', allMissions, true);
-    if (getEl('campaignChecklist')) getEl('campaignChecklist').innerHTML = box('trophyC', allCampaigns, false);
-    if (getEl('badgeMissionChecklist')) getEl('badgeMissionChecklist').innerHTML = box('badgeM', allMissions, true);
-    if (getEl('badgeCampaignChecklist')) getEl('badgeCampaignChecklist').innerHTML = box('badgeC', allCampaigns, false);
+      }).join('') : '<p class="text-xs text-slate-400 p-2">No active missions.</p>';
+    }
+
+    const cc = getEl('campaignChecklist');
+    if (cc) {
+      cc.innerHTML = allCampaigns.length ? allCampaigns.map(c => `
+        <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer">
+          <input type="checkbox" value="${c.id}" class="campaign-cb" onchange="window.updateCollectionThresholds()">
+          <span class="text-xs font-semibold text-slate-700 truncate">${escapeHtml(c.name)}</span>
+        </label>
+      `).join('') : '<p class="text-xs text-slate-400 p-2">No active campaigns.</p>';
+    }
   }
 
-  function switchTab(tabId) {
+  function updateCollectionThresholds() {
+    const type = getEl('trophyType')?.value;
+    if (type !== 'collection') return;
+
+    const checkedBoxes = document.querySelectorAll('#campaignChecklist .campaign-cb:checked');
+    let totalQuotes = 0;
+    checkedBoxes.forEach(cb => { totalQuotes += (campaignQuoteCounts[cb.value] || 0); });
+
+    if (totalQuotes > 0) {
+      const tiers = document.querySelectorAll('.tier-thresh');
+      if (tiers.length === 5) {
+        tiers[0].value = Math.ceil(totalQuotes * 0.2);
+        tiers[1].value = Math.ceil(totalQuotes * 0.4);
+        tiers[2].value = Math.ceil(totalQuotes * 0.6);
+        tiers[3].value = Math.ceil(totalQuotes * 0.8);
+        tiers[4].value = totalQuotes;
+      }
+    }
+  }
+
+  function switchTab(tab) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    getEl('tab-' + tabId)?.classList.add('active');
-    ['trophies','badges','avatars'].forEach(t => getEl('view-' + t)?.classList.add('hidden'));
-    getEl('view-' + tabId)?.classList.remove('hidden');
+    getEl('tab-' + tab)?.classList.add('active');
+    getEl('view-trophies')?.classList.toggle('hidden', tab !== 'trophies');
+    getEl('view-badges')?.classList.toggle('hidden', tab !== 'badges');
+    getEl('view-avatars')?.classList.toggle('hidden', tab !== 'avatars');
   }
 
   // ==========================================
-  // TROPHIES (CLEAR BACKGROUND & FORTNITE STATS)
+  // TROPHIES (CARD VIEW WITH THRESHOLD STATS)
   // ==========================================
-  function getTrophyThresholdVal(t, tierName) {
-    const matchedTier = allTiers.find(ti => String(ti.name || '').toLowerCase() === tierName.toLowerCase());
-    if (matchedTier) {
-      const rel = allThresholds.find(th => String(th.trophy_id) === String(t.id) && String(th.tier_id) === String(matchedTier.id));
-      if (rel && rel.value !== undefined && rel.value !== null) return rel.value;
-    }
-    let jsonTh = t.thresholds;
-    if (typeof jsonTh === 'string') { try { jsonTh = JSON.parse(jsonTh); } catch(e) {} }
-    if (jsonTh && typeof jsonTh === 'object') {
-      return jsonTh[tierName.toLowerCase()] ?? null;
-    }
-    return null;
-  }
-
   function renderTrophies() {
     const grid = getEl('trophyGrid');
     if (!grid) return;
     grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
-    grid.innerHTML = '';
+
     if (!allTrophies.length) {
-      grid.innerHTML = '<p class="col-span-full text-center py-12 text-sm text-slate-400 font-semibold">No trophies defined yet.</p>';
+      grid.innerHTML = '<div class="col-span-full text-center py-12 text-sm text-slate-400 font-semibold">No trophies created yet.</div>';
       return;
     }
 
-    allTrophies.forEach(t => {
-      const displayImage = t.image_url || t.image || null;
+    grid.innerHTML = allTrophies.map(t => {
+      const displayImage = t.image_url || null;
       const typeClass = t.type === 'stat' ? 'bg-indigo-50 text-indigo-700' : t.type === 'collection' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700';
-      let trackedStat = t.type === 'stat' ? (t.stat_type || 'Shares').toUpperCase() : 'Missions/Campaigns';
-      
-      const fortniteTiers = [
-        { name: 'Common', key: 'common', color: '#a3a3a3' },
-        { name: 'Uncommon', key: 'uncommon', color: '#22c55e' },
-        { name: 'Rare', key: 'rare', color: '#3b82f6' },
-        { name: 'Epic', key: 'epic', color: '#a855f7' },
-        { name: 'Legendary', key: 'legendary', color: '#eab308' },
-        { name: 'Mythic', key: 'mythic', color: '#ef4444' }
-      ];
+      const trackedStat = t.type === 'stat' ? (t.stat_type || 'Shares').toUpperCase() : 'Missions/Campaigns';
 
+      // Build stats from trophy_thresholds using 'threshold_value'
+      const trophyThreshs = allThresholds.filter(th => String(th.trophy_id) === String(t.id) && th.is_active !== false);
       let tierStatsHtml = '';
-      fortniteTiers.forEach(ft => {
-        const val = getTrophyThresholdVal(t, ft.key);
-        if (val !== null && val !== undefined && val !== '') {
-          tierStatsHtml += `
-            <div class="flex items-center gap-1.5 bg-surface px-2 py-0.5 rounded-md border border-surface-c shadow-sm" title="${ft.name}: ${val}">
-              <span class="w-2 h-2 rounded-full" style="background:${ft.color}"></span>
-              <span class="text-[10px] font-extrabold text-slate-700">${val}</span>
-            </div>`;
-        }
-      });
-      if (!tierStatsHtml) tierStatsHtml = '<span class="text-[10px] text-slate-400 italic py-1">No targets configured</span>';
 
-      const card = document.createElement('div');
-      card.className = 'card flex flex-col hover:border-primary/40 cursor-pointer transition-all hover:shadow-md overflow-hidden p-5 bg-white';
-      card.onclick = () => openTrophyModal(t.id);
-      
-      // Clean background for Trophy Card Image
-      card.innerHTML = `
-        <div class="flex justify-between items-start gap-3 mb-3">
-          <div class="w-12 h-12 flex items-center justify-center flex-shrink-0 relative">
-            ${displayImage 
-              ? `<img src="${escapeHtml(displayImage)}" alt="" class="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform" onerror="this.remove()">`
-              : `<span class="material-symbols-outlined text-slate-300" style="font-size:40px;">emoji_events</span>`
-            }
+      if (trophyThreshs.length > 0) {
+        trophyThreshs.sort((a,b) => a.tier_id - b.tier_id).forEach(th => {
+          const matchedTier = allTiers.find(ti => String(ti.id) === String(th.tier_id));
+          const color = matchedTier?.color_hex || matchedTier?.color || '#3d6285';
+          tierStatsHtml += `
+            <div class="flex items-center gap-1.5 bg-white px-2 py-0.5 rounded-md border border-slate-200 shadow-sm" title="${escapeHtml(matchedTier?.name || 'Tier')}: ${th.threshold_value}">
+              <span class="w-2 h-2 rounded-full" style="background:${color}"></span>
+              <span class="text-[10px] font-extrabold text-slate-700">${th.threshold_value}</span>
+            </div>`;
+        });
+      }
+
+      if (!tierStatsHtml) tierStatsHtml = '<span class="text-[10px] text-slate-400 italic py-0.5">No targets set</span>';
+
+      return `
+        <div class="card flex flex-col hover:border-primary/40 cursor-pointer transition-all hover:shadow-md p-5 bg-white" onclick="editTrophy('${t.id}')">
+          <div class="flex justify-between items-start gap-3 mb-3">
+            <div class="w-12 h-12 flex items-center justify-center flex-shrink-0 relative">
+              ${displayImage
+                ? `<img src="${escapeHtml(displayImage)}" class="max-w-full max-h-full object-contain" onerror="this.src='/images/placeholder.png'">`
+                : `<span class="material-symbols-outlined text-slate-300" style="font-size:40px;">emoji_events</span>`
+              }
+            </div>
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${typeClass} shadow-sm">${escapeHtml(t.type || 'stat')}</span>
           </div>
-          <span class="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${typeClass} flex-shrink-0 shadow-sm">${escapeHtml(t.type || 'stat')}</span>
+          <h3 class="font-headline font-bold text-slate-800 text-base leading-snug mb-1">${escapeHtml(t.name)}</h3>
+          <p class="text-xs text-slate-400 line-clamp-2 flex-1 mb-4">${escapeHtml(t.description || 'No description.')}</p>
+          <div class="border-t border-slate-100 pt-3 mt-auto">
+            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Target: ${escapeHtml(trackedStat)}</p>
+            <div class="flex flex-wrap gap-1.5">${tierStatsHtml}</div>
+          </div>
         </div>
-        <h3 class="font-headline font-bold text-slate-800 text-base leading-snug mb-1">${escapeHtml(t.name || 'Untitled')}</h3>
-        <p class="text-xs text-slate-400 line-clamp-2 flex-1 mb-4">${escapeHtml(t.description || 'No description.')}</p>
-        <div class="border-t border-slate-100 pt-3 mt-auto">
-          <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Target: ${escapeHtml(trackedStat)}</p>
-          <div class="flex flex-wrap gap-1.5">${tierStatsHtml}</div>
-        </div>`;
-      grid.appendChild(card);
-    });
+      `;
+    }).join('');
   }
 
-  function openTrophyModal(id = null) {
-    getEl('trophyModal')?.classList.remove('hidden');
-    getEl('deleteTrophyBtn')?.classList.add('hidden');
-    getEl('trophyModalTitle').innerText = id ? 'Edit Trophy' : 'Create Trophy';
-    document.querySelectorAll('input[name="trophyM"], input[name="trophyC"]').forEach(cb => cb.checked = false);
+  function addThresholdRow(tierId, name, color, val, isActive = true) {
+    const container = getEl('thresholdsContainer');
+    if (!container) return;
+    const div = document.createElement('div'); 
+    div.className = 'flex items-center gap-3 p-3 bg-surface-clow rounded-xl border border-surface-c';
+    div.innerHTML = `
+      <div class="w-4 h-4 rounded-full flex-shrink-0" style="background:${color || '#3d6285'}"></div>
+      <span class="text-xs font-bold text-slate-600 w-20 truncate">${escapeHtml(name)}</span>
+      <input type="number" placeholder="Threshold" value="${val}" class="tier-thresh form-input flex-1 rounded-lg px-3 py-2 text-sm" data-tier="${tierId}">
+      <label class="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" class="sr-only peer tier-toggle" data-tier="${tierId}" ${isActive ? 'checked' : ''}>
+        <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+      </label>`;
+    container.appendChild(div);
+  }
 
-    if (id) {
-      const t = allTrophies.find(x => x.id === id);
-      if (!t) return;
-      getEl('trophyId').value = t.id;
-      getEl('trophyName').value = t.name || '';
-      getEl('trophyType').value = t.type || 'stat';
-      getEl('trophyStatType').value = t.stat_type || 'shares';
-      getEl('trophyDesc').value = t.description || '';
-      
-      const tImg = getEl('trophyBaseImage');
-      if (tImg) tImg.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages, t.image_url || t.image || '');
-      
-      (t.linked_missions || []).forEach(mid => { const el = document.querySelector(`input[name="trophyM"][value="${mid}"]`); if (el) el.checked = true; });
-      (t.linked_campaigns || []).forEach(cid => { const el = document.querySelector(`input[name="trophyC"][value="${cid}"]`); if (el) el.checked = true; });
-      
-      const keys = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic'];
-      keys.forEach(k => {
-        const val = getTrophyThresholdVal(t, k);
-        const inputEl = getEl('tier' + k.charAt(0).toUpperCase() + k.slice(1));
-        if (inputEl) inputEl.value = val ?? '';
-      });
+  function openTrophyModal() {
+    if (getEl('trophyId')) getEl('trophyId').value = '';
+    if (getEl('trophyName')) getEl('trophyName').value = '';
+    if (getEl('trophyType')) getEl('trophyType').value = 'stat';
+    if (getEl('trophyStatType')) getEl('trophyStatType').value = 'shares';
+    if (getEl('trophyImage')) getEl('trophyImage').value = '';
+    if (getEl('trophyDesc')) getEl('trophyDesc').value = '';
+    if (getEl('trophyModalTitle')) getEl('trophyModalTitle').textContent = 'Create Trophy';
 
-      getEl('deleteTrophyBtn')?.classList.remove('hidden');
-    } else {
-      getEl('trophyId').value = '';
-      getEl('trophyName').value = '';
-      getEl('trophyType').value = 'stat';
-      getEl('trophyStatType').value = 'shares';
-      getEl('trophyDesc').value = '';
-      getEl('tierCommon').value = ''; getEl('tierUncommon').value = ''; getEl('tierRare').value = '';
-      getEl('tierEpic').value = ''; getEl('tierLegendary').value = ''; getEl('tierMythic').value = '';
-      
-      const tImg = getEl('trophyBaseImage');
-      if (tImg) tImg.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages);
-    }
     toggleTrophyType();
+    
+    const container = getEl('thresholdsContainer');
+    if (container) {
+      container.innerHTML = '';
+      allTiers.forEach((t, index) => {
+        const defaults = [1, 10, 50, 150, 500, 1000];
+        addThresholdRow(t.id, t.name, t.color_hex || t.color, defaults[index] || 0, true);
+      });
+    }
+
+    getEl('deleteTrophyBtn')?.classList.add('hidden');
+    getEl('trophyModal')?.classList.remove('hidden');
+  }
+
+  function editTrophy(id) {
+    const t = allTrophies.find(x => String(x.id) === String(id));
+    if (!t) return;
+
+    if (getEl('trophyId')) getEl('trophyId').value = t.id;
+    if (getEl('trophyName')) getEl('trophyName').value = t.name || '';
+    if (getEl('trophyType')) getEl('trophyType').value = t.type || 'stat';
+    if (getEl('trophyStatType')) getEl('trophyStatType').value = t.stat_type || 'shares';
+    
+    const tSel = getEl('trophyImage') || getEl('trophyBaseImage');
+    if (tSel) tSel.value = t.image_url || '';
+    
+    if (getEl('trophyDesc')) getEl('trophyDesc').value = t.description || '';
+    if (getEl('trophyModalTitle')) getEl('trophyModalTitle').textContent = 'Edit Trophy';
+
+    toggleTrophyType();
+
+    const linkedMissions = t.mission_refs || [];
+    const linkedCampaigns = t.campaign_ids || [];
+    document.querySelectorAll('#missionChecklist .mission-cb').forEach(cb => { cb.checked = linkedMissions.includes(cb.value); });
+    document.querySelectorAll('#campaignChecklist .campaign-cb').forEach(cb => { cb.checked = linkedCampaigns.includes(cb.value); });
+
+    const container = getEl('thresholdsContainer');
+    if (container) {
+      container.innerHTML = '';
+      allTiers.forEach(tier => {
+        const th = allThresholds.find(x => String(x.trophy_id) === String(id) && String(x.tier_id) === String(tier.id));
+        addThresholdRow(tier.id, tier.name, tier.color_hex || tier.color, th ? th.threshold_value : 0, th ? (th.is_active !== false) : true);
+      });
+    }
+
+    getEl('deleteTrophyBtn')?.classList.remove('hidden');
+    getEl('trophyModal')?.classList.remove('hidden');
   }
 
   function toggleTrophyType() {
     const type = getEl('trophyType')?.value || 'stat';
     getEl('statTypeContainer')?.classList.toggle('hidden', type !== 'stat');
-    getEl('participationContainer')?.classList.toggle('hidden', type === 'stat');
+    getEl('participationContainer')?.classList.toggle('hidden', type !== 'participation' && type !== 'collection');
+    if (type === 'participation' || type === 'collection') renderParticipationChecklists();
   }
+
   function closeTrophyModal() { getEl('trophyModal')?.classList.add('hidden'); }
 
+  // EXACT DATABASE COLUMNS USED HERE (mission_refs, campaign_ids, threshold_value)
   async function saveTrophy() {
     const id = getEl('trophyId')?.value;
     const name = getEl('trophyName')?.value.trim();
-    if (!name) return showToast('Enter a trophy name.', true);
-    
-    const missions = [...document.querySelectorAll('input[name="trophyM"]:checked')].map(c => c.value);
-    const campaigns = [...document.querySelectorAll('input[name="trophyC"]:checked')].map(c => c.value);
-    const baseImg = getEl('trophyBaseImage')?.value || null;
+    const type = getEl('trophyType')?.value || 'stat';
+    const statType = type === 'stat' ? getEl('trophyStatType')?.value : null;
+    const tSel = getEl('trophyImage') || getEl('trophyBaseImage');
+    const imgUrl = tSel ? (tSel.value || null) : null;
+    const desc = getEl('trophyDesc')?.value.trim();
 
-    const th = {
-      common: getEl('tierCommon')?.value || null,
-      uncommon: getEl('tierUncommon')?.value || null,
-      rare: getEl('tierRare')?.value || null,
-      epic: getEl('tierEpic')?.value || null,
-      legendary: getEl('tierLegendary')?.value || null,
-      mythic: getEl('tierMythic')?.value || null
-    };
+    if (!name) return showToast('Name required', true);
 
-    const payload = {
-      name, 
-      type: getEl('trophyType')?.value || 'stat', 
-      stat_type: getEl('trophyStatType')?.value || 'shares',
-      description: getEl('trophyDesc')?.value.trim() || null, 
-      image_url: baseImg, 
-      linked_missions: missions, 
-      linked_campaigns: campaigns,
-      thresholds: th
-    };
+    let missionRefs = [];
+    let campaignIds = [];
+    if (type === 'participation' || type === 'collection') {
+      document.querySelectorAll('#missionChecklist .mission-cb:checked').forEach(cb => missionRefs.push(cb.value));
+      document.querySelectorAll('#campaignChecklist .campaign-cb:checked').forEach(cb => campaignIds.push(cb.value));
+    }
+
+    const btn = getEl('saveTrophyBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
 
     try {
-      const sampleRow = allTrophies[0] || null;
-      const savedRes = await resilientSave('trophy_definitions', sampleRow, id, payload);
-      const savedId = id || savedRes?.id || payload.id;
+      const data = {
+        name,
+        type,
+        stat_type: statType,
+        image_url: imgUrl,
+        description: desc || null,
+        mission_refs: missionRefs,
+        campaign_ids: campaignIds
+      };
 
-      // Also sync relational trophy_thresholds table if present
-      if (allTiers.length > 0 && savedId) {
-        const fortniteKeys = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic'];
-        const thRows = [];
-        
-        fortniteKeys.forEach(k => {
-          const val = th[k];
-          if (val !== '' && val !== null && val !== undefined) {
-            const matchedTier = allTiers.find(ti => String(ti.name || '').toLowerCase() === k);
-            const tierId = matchedTier ? matchedTier.id : { common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5, mythic: 6 }[k];
-            if (tierId !== undefined) {
-              thRows.push({ trophy_id: savedId, tier_id: tierId, value: parseInt(val, 10) || 0 });
-            }
-          }
+      const res = id 
+        ? await supabaseClient.from('trophy_definitions').update(data).eq('id', id)
+        : await supabaseClient.from('trophy_definitions').insert([data]).select().single();
+
+      if (res.error) throw new Error(res.error.message);
+
+      const trophyId = id || (res.data ? res.data.id : null);
+
+      if (trophyId) {
+        const threshData = Array.from(document.querySelectorAll('.tier-thresh')).map(el => {
+          const tierId = parseInt(el.dataset.tier, 10);
+          const toggle = document.querySelector(`.tier-toggle[data-tier="${tierId}"]`);
+          return {
+            trophy_id: trophyId,
+            tier_id: tierId,
+            threshold_value: parseInt(el.value, 10) || 0, // 'threshold_value' matches database schema
+            is_active: toggle ? toggle.checked : true
+          };
         });
 
-        if (thRows.length > 0) {
-          try {
-            await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', savedId);
-            const thSample = allThresholds[0] || null;
-            const cleanRows = thRows.map(r => filterPayloadBySample(thSample, r));
-            await supabaseClient.from('trophy_thresholds').insert(cleanRows);
-          } catch(errTh) {
-            console.warn('Relational thresholds sync skipped:', errTh);
-          }
+        await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', trophyId);
+        if (threshData.length > 0) {
+          const tRes = await supabaseClient.from('trophy_thresholds').insert(threshData);
+          if (tRes.error) throw new Error(tRes.error.message);
         }
       }
 
       showToast('Trophy saved!');
       closeTrophyModal();
       await loadData();
-    } catch (e) { 
-      console.error('Save trophy error:', e); 
-      showToast(extractErrorMessage(e), true); 
+    } catch(e) {
+      console.error('Save trophy error:', e);
+      showToast('Error: ' + e.message, true);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Save Trophy'; }
     }
   }
 
@@ -712,8 +696,12 @@
       await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', id);
       const { error } = await supabaseClient.from('trophy_definitions').delete().eq('id', id);
       if (error) throw error;
-      showToast('Trophy deleted.'); closeTrophyModal(); await loadData();
-    } catch (e) { showToast(extractErrorMessage(e), true); }
+      showToast('Trophy deleted.');
+      closeTrophyModal();
+      await loadData();
+    } catch (e) {
+      showToast(e.message || 'Delete failed', true);
+    }
   }
 
   // ==========================================
@@ -723,74 +711,69 @@
     const list = getEl('badgeList');
     if (!list) return;
     list.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
-    list.innerHTML = '';
+
     if (!allBadges.length) {
-      list.innerHTML = '<p class="col-span-full text-center py-12 text-sm text-slate-400 font-semibold">No badges defined yet.</p>';
+      list.innerHTML = '<div class="col-span-full text-center py-12 text-sm text-slate-400 font-semibold">No badges created yet.</div>';
       return;
     }
-    allBadges.forEach(b => {
-      const img = b.image_url || '';
-      const card = document.createElement('div');
-      card.className = 'card flex flex-col hover:border-slate-300 cursor-pointer transition-all hover:shadow-md overflow-hidden group p-0 bg-white';
-      card.onclick = () => openBadgeModal(b.id);
-      card.innerHTML = `
+
+    list.innerHTML = allBadges.map(b => `
+      <div class="card flex flex-col hover:border-slate-300 cursor-pointer transition-all hover:shadow-md overflow-hidden p-0 bg-white" onclick="openBadgeModal('${b.id}')">
         <div class="aspect-[21/9] bg-slate-50/50 border-b border-surface-c flex items-center justify-center relative p-4">
-          <span class="material-symbols-outlined text-slate-200 absolute" style="font-size:64px;">workspace_premium</span>
-          ${img ? `<img src="${escapeHtml(img)}" alt="" class="relative z-10 max-h-full max-w-full object-contain group-hover:scale-105 transition-transform" onerror="this.src='/images/placeholder.png'">` : ''}
+          ${b.image_url
+            ? `<img src="${escapeHtml(b.image_url)}" class="max-h-full max-w-full object-contain" onerror="this.src='/images/placeholder.png'">`
+            : `<span class="material-symbols-outlined text-slate-200" style="font-size:64px;">workspace_premium</span>`
+          }
           ${b.is_top_10_eligible ? '<span class="absolute top-3 right-3 text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full shadow-sm">TOP 10</span>' : ''}
         </div>
         <div class="p-4 flex flex-col flex-1">
           <div class="flex items-start justify-between gap-2 mb-1">
-            <h3 class="font-headline font-bold text-slate-800 text-base leading-snug">${escapeHtml(b.name || 'Untitled')}</h3>
+            <h3 class="font-headline font-bold text-slate-800 text-base leading-snug">${escapeHtml(b.name)}</h3>
             <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-slate-100 text-slate-600 flex-shrink-0">${escapeHtml(b.rule_type || 'milestone')}</span>
           </div>
           <p class="text-xs text-slate-400 line-clamp-2">${escapeHtml(b.description || 'No description.')}</p>
-        </div>`;
-      list.appendChild(card);
-    });
+        </div>
+      </div>
+    `).join('');
   }
 
   function openBadgeModal(id = null) {
     getEl('badgeModal')?.classList.remove('hidden');
     getEl('deleteBadgeBtn')?.classList.add('hidden');
     getEl('badgeModalTitle').innerText = id ? 'Edit Badge' : 'New Badge';
-    document.querySelectorAll('input[name="badgeM"], input[name="badgeC"]').forEach(cb => cb.checked = false);
 
     if (id) {
-      const b = allBadges.find(x => x.id === id);
+      const b = allBadges.find(x => String(x.id) === String(id));
       if (!b) return;
       let cfg = b.rule_config || {};
-      if (typeof cfg === 'string') { try { cfg = JSON.parse(cfg); } catch { cfg = {}; } }
+      if (typeof cfg === 'string') { try { cfg = JSON.parse(cfg); } catch(e) { cfg = {}; } }
+
       getEl('badgeId').value = b.id;
       getEl('badgeName').value = b.name || '';
       getEl('badgeDesc').value = b.description || '';
       getEl('badgeRuleType').value = b.rule_type || 'milestone';
+      getEl('badgeImage').value = b.image_url || '';
       getEl('badgeStatType').value = cfg.stat_type || 'shares';
       getEl('badgeStatTarget').value = cfg.stat_target ?? '';
       getEl('badgeAdminReferral').checked = !!cfg.is_admin_referral;
       getEl('badgeMissionPriority').checked = !!cfg.is_priority_mission;
       getEl('badgeTop10').checked = !!b.is_top_10_eligible;
-      
-      const bImg = getEl('badgeImage');
-      if (bImg) bImg.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages, b.image_url || '');
-      
-      (cfg.linked_missions || []).forEach(mid => { const el = document.querySelector(`input[name="badgeM"][value="${mid}"]`); if (el) el.checked = true; });
-      (cfg.linked_campaigns || []).forEach(cid => { const el = document.querySelector(`input[name="badgeC"][value="${cid}"]`); if (el) el.checked = true; });
+
+      toggleBadgeRule();
       getEl('deleteBadgeBtn')?.classList.remove('hidden');
     } else {
       getEl('badgeId').value = '';
       getEl('badgeName').value = '';
       getEl('badgeDesc').value = '';
       getEl('badgeRuleType').value = 'milestone';
+      getEl('badgeImage').value = '';
       getEl('badgeStatType').value = 'shares';
       getEl('badgeStatTarget').value = '';
       getEl('badgeAdminReferral').checked = false;
       getEl('badgeMissionPriority').checked = false;
       getEl('badgeTop10').checked = false;
-      const bImg = getEl('badgeImage');
-      if (bImg) bImg.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages);
+      toggleBadgeRule();
     }
-    toggleBadgeRule();
   }
 
   function toggleBadgeRule() {
@@ -798,14 +781,14 @@
     getEl('badgeMilestoneContainer')?.classList.toggle('hidden', r !== 'milestone');
     getEl('badgeParticipationContainer')?.classList.toggle('hidden', r !== 'participation');
   }
+
   function closeBadgeModal() { getEl('badgeModal')?.classList.add('hidden'); }
 
   async function saveBadge() {
     const id = getEl('badgeId')?.value;
     const name = getEl('badgeName')?.value.trim();
     if (!name) return showToast('Enter a badge name.', true);
-    const missions = [...document.querySelectorAll('input[name="badgeM"]:checked')].map(c => c.value);
-    const campaigns = [...document.querySelectorAll('input[name="badgeC"]:checked')].map(c => c.value);
+
     const payload = {
       name,
       description: getEl('badgeDesc')?.value.trim() || null,
@@ -816,19 +799,25 @@
         stat_type: getEl('badgeStatType')?.value || 'shares',
         stat_target: parseInt(getEl('badgeStatTarget')?.value) || 0,
         is_admin_referral: !!getEl('badgeAdminReferral')?.checked,
-        is_priority_mission: !!getEl('badgeMissionPriority')?.checked,
-        linked_missions: missions,
-        linked_campaigns: campaigns
+        is_priority_mission: !!getEl('badgeMissionPriority')?.checked
       }
     };
 
     try {
-      const sampleRow = allBadges[0] || null;
-      await resilientSave('badge_definitions', sampleRow, id, payload);
-      showToast('Badge saved!'); closeBadgeModal(); await loadData();
-    } catch (e) { 
-      console.error('Save badge error:', e); 
-      showToast(extractErrorMessage(e), true); 
+      if (id) {
+        const { error } = await supabaseClient.from('badge_definitions').update(payload).eq('id', id);
+        if (error) throw error;
+      } else {
+        payload.id = generateUUID();
+        const { error } = await supabaseClient.from('badge_definitions').insert([payload]);
+        if (error) throw error;
+      }
+      showToast('Badge saved!');
+      closeBadgeModal();
+      await loadData();
+    } catch (e) {
+      console.error('Save badge failed:', e);
+      showToast(e.message || 'Save badge failed', true);
     }
   }
 
@@ -838,8 +827,12 @@
     try {
       const { error } = await supabaseClient.from('badge_definitions').delete().eq('id', id);
       if (error) throw error;
-      showToast('Badge deleted.'); closeBadgeModal(); await loadData();
-    } catch (e) { showToast(extractErrorMessage(e), true); }
+      showToast('Badge deleted.');
+      closeBadgeModal();
+      await loadData();
+    } catch (e) {
+      showToast(e.message || 'Delete failed', true);
+    }
   }
 
   // ==========================================
@@ -849,8 +842,9 @@
     const list = getEl('avatarList');
     if (!list) return;
     list.innerHTML = '';
+
     if (!allAvatars.length) {
-      list.innerHTML = '<p class="text-center py-12 text-sm text-slate-400 font-semibold">No avatar stages yet.</p>';
+      list.innerHTML = '<div class="text-center py-12 text-sm text-slate-400 font-semibold">No avatar stages created yet.</div>';
       return;
     }
 
@@ -913,19 +907,17 @@
         `;
 
         journeyObj.stages.forEach(a => {
-          const img = a.image_male || a.image_female || a.male_image || a.female_image || a.image_url || a.avatar_url || a.image || '';
-          const name = a.journey_name || a.name || a.title || 'Untitled';
+          const img = a.image_male || a.image_female || null;
+          const name = a.journey_name || 'Stage ' + stageNum(a);
           const order = stageNum(a);
-          const mythicNeed = a.req_value ?? a.req_val ?? 0;
+          const mythicNeed = a.req_value ?? 0;
 
           html += `
-            <div onclick="window.openAvatarModal('${a.id}')"
-                 class="card p-0 flex flex-col hover:border-gold cursor-pointer transition-all hover:shadow-md overflow-hidden group">
+            <div onclick="openAvatarModal('${a.id}')" class="card p-0 flex flex-col hover:border-gold cursor-pointer transition-all hover:shadow-md overflow-hidden group bg-white">
               <div class="aspect-[4/5] bg-surface-clow border-b border-surface-c flex items-center justify-center relative overflow-hidden">
-                <div class="absolute inset-0 signature-gradient opacity-[0.03]"></div>
                 <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-widest bg-white/90 text-indigo-700 shadow-sm z-20">S${order}</span>
                 ${img
-                  ? `<img src="${escapeHtml(img)}" alt="" class="relative z-10 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='/images/placeholder.png'">`
+                  ? `<img src="${escapeHtml(img)}" class="relative z-10 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='/images/placeholder.png'">`
                   : `<span class="material-symbols-outlined text-slate-200 relative z-10" style="font-size:48px;">person</span>`
                 }
               </div>
@@ -953,22 +945,18 @@
     getEl('avatarModalTitle').innerText = id ? 'Edit Avatar Stage' : 'Add Avatar Stage';
 
     if (id) {
-      const a = allAvatars.find(x => x.id === id);
+      const a = allAvatars.find(x => String(x.id) === String(id));
       if (!a) return;
       getEl('avatarId').value = a.id;
       getEl('avatarEra').value = a.era || '';
       getEl('avatarJourney').value = a.journey || '';
-      getEl('avatarOrder').value = a.stage_order ?? a.order ?? '';
-      getEl('avatarName').value = a.journey_name || a.name || a.title || '';
-      getEl('avatarReqValue').value = a.req_value ?? a.req_val ?? 0;
+      getEl('avatarOrder').value = a.stage_order ?? '';
+      getEl('avatarName').value = a.journey_name || '';
+      getEl('avatarReqValue').value = a.req_value ?? 0;
 
-      const avMale = getEl('avatarImageMale');
-      const avFemale = getEl('avatarImageFemale');
-      const maleVal = a.image_male || a.male_image || a.image_url || '';
-      const femaleVal = a.image_female || a.female_image || '';
+      if (getEl('avatarImageMale')) getEl('avatarImageMale').value = a.image_male || '';
+      if (getEl('avatarImageFemale')) getEl('avatarImageFemale').value = a.image_female || '';
 
-      if (avMale) avMale.innerHTML = '<option value="">-- Select Male Image --</option>' + buildMediaOptions(avatarImages, maleVal);
-      if (avFemale) avFemale.innerHTML = '<option value="">-- Select Female Image --</option>' + buildMediaOptions(avatarImages, femaleVal);
       getEl('deleteAvatarBtn')?.classList.remove('hidden');
     } else {
       getEl('avatarId').value = '';
@@ -977,11 +965,8 @@
       getEl('avatarOrder').value = '';
       getEl('avatarName').value = '';
       getEl('avatarReqValue').value = '0';
-      
-      const avMale = getEl('avatarImageMale');
-      const avFemale = getEl('avatarImageFemale');
-      if (avMale) avMale.innerHTML = '<option value="">-- Select Male Image --</option>' + buildMediaOptions(avatarImages);
-      if (avFemale) avFemale.innerHTML = '<option value="">-- Select Female Image --</option>' + buildMediaOptions(avatarImages);
+      if (getEl('avatarImageMale')) getEl('avatarImageMale').value = '';
+      if (getEl('avatarImageFemale')) getEl('avatarImageFemale').value = '';
     }
   }
 
@@ -990,39 +975,34 @@
   async function saveAvatar() {
     const id = getEl('avatarId')?.value;
     const journeyName = getEl('avatarName')?.value.trim();
-    if (!journeyName) return showToast('Enter a journey / stage name.', true);
-
-    const maleImg = getEl('avatarImageMale')?.value || null;
-    const femaleImg = getEl('avatarImageFemale')?.value || null;
-    const era = getEl('avatarEra')?.value.trim() || 'Era 1';
-    const journey = getEl('avatarJourney')?.value.trim() || '';
-    const order = parseInt(getEl('avatarOrder')?.value, 10) || 1;
-    const reqVal = parseInt(getEl('avatarReqValue')?.value, 10) || 0;
+    if (!journeyName) return showToast('Enter a journey name.', true);
 
     const payload = {
-      era: era,
-      journey: journey,
-      stage_order: order,
+      era: getEl('avatarEra')?.value.trim() || 'Era 1',
+      journey: getEl('avatarJourney')?.value.trim() || 'The Journey',
+      stage_order: parseInt(getEl('avatarOrder')?.value, 10) || 1,
       journey_name: journeyName,
       req_type: 'mythic',
-      req_value: reqVal,
-      image_male: maleImg,
-      image_female: femaleImg,
-      male_image: maleImg,
-      female_image: femaleImg,
-      image_url: maleImg || femaleImg,
-      avatar_url: maleImg || femaleImg
+      req_value: parseInt(getEl('avatarReqValue')?.value, 10) || 0,
+      image_male: getEl('avatarImageMale')?.value || null,
+      image_female: getEl('avatarImageFemale')?.value || null
     };
 
     try {
-      const sampleRow = allAvatars[0] || null;
-      await resilientSave('avatar_stages', sampleRow, id, payload);
-      showToast('Avatar stage saved!'); 
-      closeAvatarModal(); 
+      if (id) {
+        const { error } = await supabaseClient.from('avatar_stages').update(payload).eq('id', id);
+        if (error) throw error;
+      } else {
+        payload.id = generateUUID();
+        const { error } = await supabaseClient.from('avatar_stages').insert([payload]);
+        if (error) throw error;
+      }
+      showToast('Avatar stage saved!');
+      closeAvatarModal();
       await loadData();
-    } catch (e) { 
-      console.error('Save avatar error:', e); 
-      showToast(extractErrorMessage(e), true); 
+    } catch (e) {
+      console.error('Save avatar failed:', e);
+      showToast(e.message || 'Save avatar failed', true);
     }
   }
 
@@ -1032,27 +1012,22 @@
     try {
       const { error } = await supabaseClient.from('avatar_stages').delete().eq('id', id);
       if (error) throw error;
-      showToast('Stage deleted.'); closeAvatarModal(); await loadData();
-    } catch (e) { showToast(extractErrorMessage(e), true); }
+      showToast('Avatar stage deleted.');
+      closeAvatarModal();
+      await loadData();
+    } catch (e) {
+      showToast(e.message || 'Delete failed', true);
+    }
   }
 
-  // ==========================================
-  // SIDEBAR & BINDINGS
-  // ==========================================
-  function toggleSidebar() {
-    getEl('sidebar')?.classList.toggle('hidden');
-    getEl('sidebarOverlay')?.classList.toggle('hidden');
-  }
-  async function handleLogout() {
-    await supabaseClient.auth.signOut();
-    window.location.href = 'login.html';
-  }
-
+  // Bind controllers globally
   window.openTrophyModal = openTrophyModal;
+  window.editTrophy = editTrophy;
   window.closeTrophyModal = closeTrophyModal;
   window.saveTrophy = saveTrophy;
   window.deleteTrophy = deleteTrophy;
   window.toggleTrophyType = toggleTrophyType;
+  window.updateCollectionThresholds = updateCollectionThresholds;
 
   window.openBadgeModal = openBadgeModal;
   window.closeBadgeModal = closeBadgeModal;
