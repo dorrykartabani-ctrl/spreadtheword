@@ -265,7 +265,7 @@
   let campaignQuoteCounts = {};
 
   // ==========================================
-  // TOP-LEVEL UTILITIES (HOISTED FOR INLINE HTML)
+  // TOP-LEVEL UTILITIES
   // ==========================================
   function getEl(id) { return document.getElementById(id); }
   function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -291,6 +291,7 @@
     });
   }
 
+  // Generates clean title from URL filename when database 'label' is missing or "Unnamed"
   function extractMediaTitle(url) {
     if (!url) return 'Media Asset';
     try {
@@ -349,8 +350,42 @@
   }
 
   // ==========================================
-  // LOAD DATA
+  // MEDIA LOADER (UNIFIED FOR ALL REWARDS)
   // ==========================================
+  async function loadMediaAssets() {
+    try {
+      const { data: raw, error } = await supabaseClient.from('media').select('*');
+      if (error || !raw?.length) { 
+        trophyImages = badgeImages = avatarImages = []; 
+        return; 
+      }
+      
+      const normalized = raw.map(r => {
+        const url = r.url || r.file_url || r.path || r.image_url || r.media_url || '';
+        const rawLabel = r.label || r.name || r.title || '';
+        const displayName = (rawLabel && String(rawLabel).trim().toLowerCase() !== 'unnamed') 
+          ? String(rawLabel).trim() 
+          : extractMediaTitle(url);
+
+        return {
+          ...r,
+          url: url,
+          label: displayName,
+          type: String(r.type || r.category || '').toLowerCase().trim()
+        };
+      }).filter(m => m.url);
+
+      trophyImages = normalized.filter(m => m.type.includes('troph'));
+      badgeImages  = normalized.filter(m => m.type.includes('badge'));
+      avatarImages = normalized.filter(m => m.type.includes('avatar') || m.type.includes('char'));
+
+      // Fallback: If category filtering yields no rows, populate all options
+      if (!trophyImages.length) trophyImages = normalized;
+      if (!badgeImages.length) badgeImages = normalized;
+      if (!avatarImages.length) avatarImages = normalized;
+    } catch (e) { console.error('Media load failed:', e); }
+  }
+
   async function loadData() {
     try {
       const [tierRes, tRes, threshRes, bRes, aRes, mediaRes, projRes, campRes] = await Promise.all([
@@ -381,18 +416,7 @@
         });
       }
 
-      // Filter Media Assets & Normalize Titles
-      const mediaData = (mediaRes.data || []).map(m => {
-        const rawLabel = m.label || m.name || m.title || '';
-        const cleanLabel = (rawLabel && String(rawLabel).trim().toLowerCase() !== 'unnamed')
-          ? String(rawLabel).trim()
-          : extractMediaTitle(m.url);
-        return { ...m, label: cleanLabel };
-      });
-
-      trophyImages = mediaData.filter(m => m.type === 'trophy');
-      avatarImages = mediaData.filter(m => m.type === 'avatar');
-      badgeImages  = mediaData.filter(m => m.type === 'badge');
+      await loadMediaAssets();
 
       renderTrophies();
       renderBadges();
@@ -405,7 +429,7 @@
   }
 
   // ==========================================
-  // DROPDOWNS & CHECKLISTS
+  // UNIFIED DROPDOWN BUILDER
   // ==========================================
   function buildMediaOptions(images, selectedUrl) {
     if (!images?.length) return '<option value="">-- No media assets found --</option>';
@@ -416,24 +440,15 @@
 
   function populateDropdowns() {
     const tSel = getEl('trophyImage') || getEl('trophyBaseImage');
-    if (tSel) {
-      tSel.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages);
-    }
+    if (tSel) tSel.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages);
 
     const bSel = getEl('badgeImage');
-    if (bSel) {
-      bSel.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages);
-    }
+    if (bSel) bSel.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages);
 
     const amSel = getEl('avatarImageMale'), afSel = getEl('avatarImageFemale');
     if (amSel && afSel) {
-      amSel.innerHTML = '<option value="">-- Select Male Image --</option>';
-      afSel.innerHTML = '<option value="">-- Select Female Image --</option>';
-      avatarImages.forEach(m => {
-        const opt = `<option value="${m.url}">${escapeHtml(m.label)}</option>`;
-        amSel.innerHTML += opt;
-        afSel.innerHTML += opt;
-      });
+      amSel.innerHTML = '<option value="">-- Select Male Image --</option>' + buildMediaOptions(avatarImages);
+      afSel.innerHTML = '<option value="">-- Select Female Image --</option>' + buildMediaOptions(avatarImages);
     }
 
     const reqBadgeSel = getEl('avatarReqBadge');
@@ -499,7 +514,7 @@
   }
 
   // ==========================================
-  // TROPHIES (CARD VIEW WITH THRESHOLD STATS)
+  // TROPHIES
   // ==========================================
   function renderTrophies() {
     const grid = getEl('trophyGrid');
@@ -576,9 +591,11 @@
     if (getEl('trophyName')) getEl('trophyName').value = '';
     if (getEl('trophyType')) getEl('trophyType').value = 'stat';
     if (getEl('trophyStatType')) getEl('trophyStatType').value = 'shares';
-    if (getEl('trophyImage')) getEl('trophyImage').value = '';
     if (getEl('trophyDesc')) getEl('trophyDesc').value = '';
     if (getEl('trophyModalTitle')) getEl('trophyModalTitle').textContent = 'Create Trophy';
+
+    const tSel = getEl('trophyImage') || getEl('trophyBaseImage');
+    if (tSel) tSel.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages, '');
 
     toggleTrophyType();
     
@@ -605,7 +622,7 @@
     if (getEl('trophyStatType')) getEl('trophyStatType').value = t.stat_type || 'shares';
     
     const tSel = getEl('trophyImage') || getEl('trophyBaseImage');
-    if (tSel) tSel.value = t.image_url || '';
+    if (tSel) tSel.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages, t.image_url || '');
     
     if (getEl('trophyDesc')) getEl('trophyDesc').value = t.description || '';
     if (getEl('trophyModalTitle')) getEl('trophyModalTitle').textContent = 'Edit Trophy';
@@ -772,12 +789,14 @@
       getEl('badgeName').value = b.name || '';
       getEl('badgeDesc').value = b.description || '';
       getEl('badgeRuleType').value = b.rule_type || 'milestone';
-      getEl('badgeImage').value = b.image_url || '';
       getEl('badgeStatType').value = cfg.stat_type || 'shares';
       getEl('badgeStatTarget').value = cfg.stat_target ?? '';
       getEl('badgeAdminReferral').checked = !!cfg.is_admin_referral;
       getEl('badgeMissionPriority').checked = !!cfg.is_priority_mission;
       getEl('badgeTop10').checked = !!b.is_top_10_eligible;
+
+      const bSel = getEl('badgeImage');
+      if (bSel) bSel.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages, b.image_url || '');
 
       toggleBadgeRule();
       getEl('deleteBadgeBtn')?.classList.remove('hidden');
@@ -786,12 +805,15 @@
       getEl('badgeName').value = '';
       getEl('badgeDesc').value = '';
       getEl('badgeRuleType').value = 'milestone';
-      getEl('badgeImage').value = '';
       getEl('badgeStatType').value = 'shares';
       getEl('badgeStatTarget').value = '';
       getEl('badgeAdminReferral').checked = false;
       getEl('badgeMissionPriority').checked = false;
       getEl('badgeTop10').checked = false;
+
+      const bSel = getEl('badgeImage');
+      if (bSel) bSel.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages, '');
+
       toggleBadgeRule();
     }
   }
@@ -927,7 +949,7 @@
         `;
 
         journeyObj.stages.forEach(a => {
-          const img = a.image_male || a.image_female || null;
+          const img = a.image_male || a.image_female || a.male_image || a.female_image || a.image_url || null;
           const name = a.journey_name || 'Stage ' + stageNum(a);
           const order = stageNum(a);
           const mythicNeed = a.req_value ?? 0;
@@ -974,8 +996,10 @@
       getEl('avatarName').value = a.journey_name || '';
       getEl('avatarReqValue').value = a.req_value ?? 0;
 
-      if (getEl('avatarImageMale')) getEl('avatarImageMale').value = a.image_male || '';
-      if (getEl('avatarImageFemale')) getEl('avatarImageFemale').value = a.image_female || '';
+      const amSel = getEl('avatarImageMale');
+      const afSel = getEl('avatarImageFemale');
+      if (amSel) amSel.innerHTML = '<option value="">-- Select Male Image --</option>' + buildMediaOptions(avatarImages, a.image_male || a.male_image || '');
+      if (afSel) afSel.innerHTML = '<option value="">-- Select Female Image --</option>' + buildMediaOptions(avatarImages, a.image_female || a.female_image || '');
 
       getEl('deleteAvatarBtn')?.classList.remove('hidden');
     } else {
@@ -985,8 +1009,11 @@
       getEl('avatarOrder').value = '';
       getEl('avatarName').value = '';
       getEl('avatarReqValue').value = '0';
-      if (getEl('avatarImageMale')) getEl('avatarImageMale').value = '';
-      if (getEl('avatarImageFemale')) getEl('avatarImageFemale').value = '';
+      
+      const amSel = getEl('avatarImageMale');
+      const afSel = getEl('avatarImageFemale');
+      if (amSel) amSel.innerHTML = '<option value="">-- Select Male Image --</option>' + buildMediaOptions(avatarImages, '');
+      if (afSel) afSel.innerHTML = '<option value="">-- Select Female Image --</option>' + buildMediaOptions(avatarImages, '');
     }
   }
 
