@@ -253,699 +253,754 @@
   </div>
 </div>
 <script>
-var supabaseClient = supabase.createClient('https://nhymadutuhpjgkiurify.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM');
-var currentUser = null, allTiers = [], allTrophies = [], allThresholds = [], allCampaigns = [], allMissions = [], trophyImages = [], avatarImages = [], badgeImages = [], allAvatars = [], allBadges = [], campaignQuoteCounts = {};
+  const supabaseClient = supabase.createClient(
+    'https://nhymadutuhpjgkiurify.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+  );
 
-function getEl(id) { return document.getElementById(id); }
-function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function toggleSidebar() { getEl('sidebar').classList.toggle('hidden'); getEl('sidebar').classList.toggle('flex'); getEl('sidebarOverlay').classList.toggle('hidden'); }
-async function handleLogout() { await supabaseClient.auth.signOut(); window.location.href = 'login.html'; }
+  let currentUser = null;
+  let allTiers = [], allTrophies = [], allThresholds = [], allBadges = [], allAvatars = [];
+  let allMissions = [], allCampaigns = [];
+  let trophyImages = [], avatarImages = [], badgeImages = [];
+  let mediaUrlCol = 'url', mediaNameCol = 'name';
 
-var toastTimer;
-// ==========================================
-// BULLETPROOF SHOW TOAST (Auto-creates element if missing)
-// ==========================================
-function showToast(msg, isError = false) {
-  let toast = document.getElementById('toast');
-  let toastMsg = document.getElementById('toastMsg');
-
-  // Auto-create toast element if missing from page DOM
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.id = 'toast';
-    toast.className = 'hidden fixed top-6 right-6 z-[200] bg-slate-900/90 text-white font-semibold px-5 py-3 rounded-full shadow-2xl items-center gap-2 text-sm backdrop-blur-md transition-all';
-    toast.innerHTML = `<span id="toastIcon" class="material-symbols-outlined text-emerald-400 text-lg">check_circle</span><span id="toastMsg"></span>`;
-    document.body.appendChild(toast);
-    toastMsg = document.getElementById('toastMsg');
+  function getEl(id) { return document.getElementById(id); }
+  function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function generateUUID() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
   }
 
-  if (toastMsg) {
-    toastMsg.textContent = msg;
-  }
-
-  const icon = document.getElementById('toastIcon');
-  if (icon) {
+  function showToast(msg, isError = false) {
+    let toast = document.getElementById('toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'toast';
+      toast.className = 'hidden fixed top-6 right-6 z-[200] bg-slate-900/95 text-white font-semibold px-5 py-3 rounded-2xl shadow-2xl items-center gap-2 text-sm backdrop-blur-md max-w-lg';
+      toast.innerHTML = `<span id="toastIcon" class="material-symbols-outlined text-lg flex-shrink-0">check_circle</span><span id="toastMsg" class="leading-snug break-words"></span>`;
+      document.body.appendChild(toast);
+    }
+    document.getElementById('toastMsg').textContent = msg;
+    const icon = document.getElementById('toastIcon');
     icon.textContent = isError ? 'error' : 'check_circle';
-    icon.className = `material-symbols-outlined text-lg ${isError ? 'text-rose-400' : 'text-emerald-400'}`;
+    icon.className = `material-symbols-outlined text-lg flex-shrink-0 ${isError ? 'text-rose-400' : 'text-emerald-400'}`;
+    toast.classList.remove('hidden'); toast.classList.add('flex');
+    if (window.toastTimer) clearTimeout(window.toastTimer);
+    window.toastTimer = setTimeout(() => { toast.classList.add('hidden'); toast.classList.remove('flex'); }, 4500);
   }
 
-  toast.classList.remove('hidden');
-  toast.classList.add('flex');
-
-  if (window.toastTimer) clearTimeout(window.toastTimer);
-  window.toastTimer = setTimeout(() => {
-    toast.classList.add('hidden');
-    toast.classList.remove('flex');
-  }, 3000);
-}
-
-window.showToast = showToast;
-
-async function init() {
-  var s = await supabaseClient.auth.getSession(); if (!s.data.session) return window.location.href = 'login.html'; currentUser = s.data.session.user;
-  var p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single(); if (!p.data || p.data.role !== 'admin') return window.location.href = '../app/index.html';
-  document.querySelectorAll('.admin-name').forEach(el => el.textContent = p.data.full_name || currentUser.email); document.querySelectorAll('.admin-initials').forEach(el => el.textContent = (p.data.full_name || 'AD').substring(0,2).toUpperCase());
-  await loadData();
-}
-
-async function loadData() {
-  var [tierRes, tRes, threshRes, bRes, aRes, mediaRes, projRes, campRes] = await Promise.all([
-    supabaseClient.from('trophy_tiers').select('*').order('id'),
-    supabaseClient.from('trophy_definitions').select('*').order('created_at', {ascending: false}),
-    supabaseClient.from('trophy_thresholds').select('*'),
-    supabaseClient.from('badge_definitions').select('*').order('created_at', {ascending: false}),
-    supabaseClient.from('avatar_stages').select('*').order('stage_order'),
-    supabaseClient.from('media').select('*').in('type', ['trophy', 'avatar', 'badge']).eq('is_active', true),
-    supabaseClient.from('projects').select('id, title, mission_ref').eq('status', 'active'),
-    supabaseClient.from('campaigns').select('id, name').eq('status', 'active')
-  ]);
-
-  allTiers = tierRes.data || []; 
-  allTrophies = tRes.data || []; 
-  allThresholds = threshRes.data || []; 
-  allBadges = bRes.data || []; 
-  allAvatars = aRes.data || [];
-  allMissions = projRes.data || []; 
-  allCampaigns = campRes.data || [];
-  
-  campaignQuoteCounts = {};
-  if (allCampaigns.length > 0) {
-    var qRes = await supabaseClient.from('quotes').select('campaign_id').in('campaign_id', allCampaigns.map(c => c.id));
-    (qRes.data || []).forEach(q => {
-        if(q.campaign_id) campaignQuoteCounts[q.campaign_id] = (campaignQuoteCounts[q.campaign_id] || 0) + 1;
-    });
+  async function init() {
+    try {
+      const s = await supabaseClient.auth.getSession();
+      if (!s.data.session) { window.location.href = 'login.html'; return; }
+      currentUser = s.data.session.user;
+      const p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single();
+      if (!p.data || p.data.role !== 'admin') { window.location.href = '../app/index.html'; return; }
+      document.querySelectorAll('.admin-name').forEach(el => el.textContent = p.data.full_name || currentUser.email);
+      document.querySelectorAll('.admin-initials').forEach(el => el.textContent = (p.data.full_name || 'AD').substring(0,2).toUpperCase());
+      await loadData();
+    } catch (e) { console.error(e); }
   }
-  
-  var mediaData = mediaRes.data || [];
-  trophyImages = mediaData.filter(m => m.type === 'trophy');
-  avatarImages = mediaData.filter(m => m.type === 'avatar');
-  badgeImages = mediaData.filter(m => m.type === 'badge');
 
-  renderTrophies(); renderBadges(); renderAvatars(); populateDropdowns();
-}
-// ============================================
-// GLOBAL AVATAR MODAL CONTROLLERS
-// ============================================
+  async function loadMediaAssets() {
+    try {
+      const { data: raw, error } = await supabaseClient.from('media').select('*');
+      if (error || !raw?.length) { trophyImages = badgeImages = avatarImages = []; return; }
+      const urlCandidates = ['url','file_url','media_url','src','path','file_path','image_url','storage_url','file'];
+      const nameCandidates = ['name','title','filename','file_name','label','display_name'];
+      const typeCandidates = ['type','category','kind','media_type','group'];
+      mediaUrlCol = urlCandidates.find(c => c in raw[0]) || 'url';
+      mediaNameCol = nameCandidates.find(c => c in raw[0]) || 'name';
+      const typeCol = typeCandidates.find(c => c in raw[0]) || 'type';
 
-function closeAvatarModal() {
-  const modal = document.getElementById('avatarModal');
-  if (modal) modal.classList.add('hidden');
-}
+      const normalized = raw.map(r => ({
+        ...r,
+        _url: r[mediaUrlCol] || r.url || '',
+        _name: r[mediaNameCol] || r.name || r.title || 'Unnamed',
+        _type: String(r[typeCol] || '').toLowerCase().trim()
+      }));
 
-window.closeAvatarModal = closeAvatarModal;
-window.editAvatar = typeof editAvatar !== 'undefined' ? editAvatar : window.editAvatar;
-window.saveAvatar = typeof saveAvatar !== 'undefined' ? saveAvatar : window.saveAvatar;
-function populateDropdowns() {
-  var tSel = getEl('trophyImage');
-  if (tSel) {
-    tSel.innerHTML = '<option value="">-- Select Trophy Image --</option>';
-    trophyImages.forEach(m => tSel.innerHTML += `<option value="${m.url}">${escapeHtml(m.label)}</option>`);
+      trophyImages = normalized.filter(m => ['trophy','trophies','trophy_image'].includes(m._type));
+      badgeImages  = normalized.filter(m => ['badge','badges','badge_image'].includes(m._type));
+      avatarImages = normalized.filter(m => ['avatar','avatars','avatar_image','character'].includes(m._type));
+
+      if (!trophyImages.length && !badgeImages.length && !avatarImages.length) {
+        trophyImages = badgeImages = avatarImages = normalized;
+      }
+    } catch (e) { console.error('Media load failed', e); }
   }
-  var bSel = getEl('badgeImage');
-  if (bSel) {
-    bSel.innerHTML = '<option value="">-- Select Badge Image --</option>';
-    badgeImages.forEach(m => bSel.innerHTML += `<option value="${m.url}">${escapeHtml(m.label)}</option>`);
-  }
-  var amSel = getEl('avatarImageMale'), afSel = getEl('avatarImageFemale');
-  if (amSel && afSel) {
-    amSel.innerHTML = '<option value="">-- Select Male Image --</option>';
-    afSel.innerHTML = '<option value="">-- Select Female Image --</option>';
-    avatarImages.forEach(m => {
-      amSel.innerHTML += `<option value="${m.url}">${escapeHtml(m.label)}</option>`;
-      afSel.innerHTML += `<option value="${m.url}">${escapeHtml(m.label)}</option>`;
-    });
-  }
-  var reqBadgeSel = getEl('avatarReqBadge');
-  if (reqBadgeSel) {
-    reqBadgeSel.innerHTML = '<option value="">-- Select Required Badge --</option>';
-    allBadges.forEach(b => reqBadgeSel.innerHTML += `<option value="${b.id}">${escapeHtml(b.name)}</option>`);
-  }
-}
 
-function switchTab(tab) { 
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); 
-  getEl('tab-' + tab).classList.add('active'); 
-  getEl('view-trophies').classList.toggle('hidden', tab !== 'trophies'); 
-  getEl('view-badges').classList.toggle('hidden', tab !== 'badges'); 
-  getEl('view-avatars').classList.toggle('hidden', tab !== 'avatars'); 
-}
-
-// --- TROPHIES ---
-function renderTrophies() {
-  var grid = getEl('trophyGrid'); if(!grid) return;
-  if (allTrophies.length === 0) { grid.innerHTML = '<div class="col-span-3 text-center py-10 text-slate-400">No trophies created yet.</div>'; return; }
-  grid.innerHTML = allTrophies.map(t => `
-    <div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="editTrophy('${t.id}')">
-      <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden">
-        ${t.image_url ? `<img src="${t.image_url}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300">emoji_events</span>'}
-      </div>
-      <div>
-        <h4 class="font-headline font-bold text-slate-800">${escapeHtml(t.name)}</h4>
-        <p class="text-[10px] font-bold text-slate-400 uppercase">${t.type} · ${t.stat_type || 'Linked'}</p>
-      </div>
-    </div>
-  `).join('');
-}
-
-function toggleTrophyType() {
-  var type = getEl('trophyType').value;
-  getEl('statTypeContainer').classList.toggle('hidden', type !== 'stat');
-  getEl('participationContainer').classList.toggle('hidden', type !== 'participation' && type !== 'collection');
-  if(type === 'participation' || type === 'collection') renderParticipationChecklists();
-}
-
-function renderParticipationChecklists() {
-  getEl('missionChecklist').innerHTML = allMissions.length ? allMissions.map(m => {
-    var ref = m.mission_ref || m.id;
-    return `<label class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-c cursor-pointer">
-      <div class="flex items-center gap-2">
-        <input type="checkbox" value="${ref}" class="mission-cb">
-        <span class="text-sm font-semibold text-slate-700">${escapeHtml(m.title)}</span>
-      </div>
-      <span class="text-[10px] font-mono font-bold text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200">${m.mission_ref || 'NO-REF'}</span>
-    </label>`;
-  }).join('') : '<p class="text-xs text-slate-400 p-2">No active missions.</p>';
-  
-  getEl('campaignChecklist').innerHTML = allCampaigns.length ? allCampaigns.map(c => `
-    <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer">
-      <input type="checkbox" value="${c.id}" class="campaign-cb" onchange="updateCollectionThresholds()">
-      <span class="text-sm font-semibold text-slate-700">${escapeHtml(c.name)}</span>
-    </label>
-  `).join('') : '<p class="text-xs text-slate-400 p-2">No active campaigns.</p>';
-}
-
-function updateCollectionThresholds() {
-  var type = getEl('trophyType').value;
-  if (type !== 'collection') return;
-
-  var checkedBoxes = document.querySelectorAll('#campaignChecklist .campaign-cb:checked');
-  var totalQuotes = 0;
-  checkedBoxes.forEach(cb => { totalQuotes += (campaignQuoteCounts[cb.value] || 0); });
-
-  if (totalQuotes > 0) {
-    var tiers = document.querySelectorAll('.tier-thresh');
-    if (tiers.length === 5) {
-      tiers[0].value = Math.ceil(totalQuotes * 0.2);
-      tiers[1].value = Math.ceil(totalQuotes * 0.4);
-      tiers[2].value = Math.ceil(totalQuotes * 0.6);
-      tiers[3].value = Math.ceil(totalQuotes * 0.8);
-      tiers[4].value = totalQuotes;
+  async function loadData() {
+    try {
+      const [tierRes, tRes, threshRes, bRes, aRes, projRes, campRes] = await Promise.all([
+        supabaseClient.from('trophy_tiers').select('*').order('id'),
+        supabaseClient.from('trophy_definitions').select('*').order('created_at', { ascending: false }),
+        supabaseClient.from('trophy_thresholds').select('*'),
+        supabaseClient.from('badge_definitions').select('*').order('created_at', { ascending: false }),
+        supabaseClient.from('avatar_stages').select('*').order('stage_order'),
+        supabaseClient.from('projects').select('id, title, mission_ref').eq('status', 'active'),
+        supabaseClient.from('campaigns').select('id, name').eq('status', 'active')
+      ]);
+      allTiers = tierRes.data || [];
+      allTrophies = tRes.data || [];
+      allThresholds = threshRes.data || [];
+      allBadges = bRes.data || [];
+      allAvatars = aRes.data || [];
+      allMissions = projRes.data || [];
+      allCampaigns = campRes.data || [];
+      await loadMediaAssets();
+      renderTrophies(); renderBadges(); renderAvatars();
+      populateDropdowns(); renderChecklists();
+    } catch (e) {
+      console.error(e);
+      showToast('Error loading progression data.', true);
     }
   }
-}
 
-function openTrophyModal() {
-  getEl('trophyId').value = ''; getEl('trophyName').value = ''; getEl('trophyType').value = 'stat'; getEl('trophyStatType').value = 'shares'; getEl('trophyImage').value = ''; getEl('trophyDesc').value = ''; getEl('trophyModalTitle').textContent = 'Create Trophy'; 
-  toggleTrophyType();
-  var container = getEl('thresholdsContainer'); container.innerHTML = '';
-  allTiers.forEach(t => { var defaults = [1, 10, 50, 150, 500]; addThresholdRow(t.id, t.name, t.color_hex, defaults[t.id-1] || 0, true); });
-  getEl('trophyModal').classList.remove('hidden');
-}
-
-function editTrophy(id) {
-  var t = allTrophies.find(x => x.id === id); if (!t) return;
-  getEl('trophyId').value = t.id; getEl('trophyName').value = t.name; getEl('trophyType').value = t.type || 'stat'; getEl('trophyStatType').value = t.stat_type || 'shares'; getEl('trophyImage').value = t.image_url || ''; getEl('trophyDesc').value = t.description || ''; getEl('trophyModalTitle').textContent = 'Edit Trophy'; 
-  
-  // Render checklists first, then restore checked states
-  toggleTrophyType();
-  var linkedMissions = t.mission_refs || [];
-  var linkedCampaigns = t.campaign_ids || [];
-  document.querySelectorAll('#missionChecklist .mission-cb').forEach(cb => { cb.checked = linkedMissions.includes(cb.value); });
-  document.querySelectorAll('#campaignChecklist .campaign-cb').forEach(cb => { cb.checked = linkedCampaigns.includes(cb.value); });
-
-  var container = getEl('thresholdsContainer'); container.innerHTML = '';
-  allTiers.forEach(tier => { var th = allThresholds.find(x => x.trophy_id === id && x.tier_id === tier.id); addThresholdRow(tier.id, tier.name, tier.color_hex, th ? th.threshold_value : 0, th ? th.is_active : true); });
-  getEl('trophyModal').classList.remove('hidden');
-}
-
-function addThresholdRow(tierId, name, color, val, isActive = true) {
-  var container = getEl('thresholdsContainer');
-  var div = document.createElement('div'); div.className = 'flex items-center gap-3 p-3 bg-surface-clow rounded-xl';
-  div.innerHTML = `<div class="w-4 h-4 rounded-full flex-shrink-0" style="background:${color}"></div><span class="text-xs font-bold text-slate-600 w-20">${escapeHtml(name)}</span><input type="number" placeholder="Threshold" value="${val}" class="tier-thresh form-input flex-1 rounded-lg px-3 py-2 text-sm" data-tier="${tierId}"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer tier-toggle" data-tier="${tierId}" ${isActive ? 'checked' : ''}><div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div></label>`;
-  container.appendChild(div);
-}
-
-function closeTrophyModal() { getEl('trophyModal').classList.add('hidden'); }
-
-async function saveTrophy() {
-  var id = getEl('trophyId').value, name = getEl('trophyName').value.trim(), type = getEl('trophyType').value;
-  var statType = type === 'stat' ? getEl('trophyStatType').value : null, imgUrl = getEl('trophyImage').value || null, desc = getEl('trophyDesc').value.trim();
-  if (!name) return showToast('Name required', true);
-  
-  var missionRefs = [];
-  var campaignIds = [];
-  if (type === 'participation' || type === 'collection') {
-    document.querySelectorAll('#missionChecklist .mission-cb:checked').forEach(cb => missionRefs.push(cb.value));
-    document.querySelectorAll('#campaignChecklist .campaign-cb:checked').forEach(cb => campaignIds.push(cb.value));
+  function buildMediaOptions(images, selectedUrl) {
+    if (!images?.length) return '<option value="">-- No media assets found --</option>';
+    return images.map(m =>
+      `<option value="${m._url}" ${selectedUrl === m._url ? 'selected' : ''}>${escapeHtml(m._name)}</option>`
+    ).join('');
   }
 
-  var btn = getEl('saveTrophyBtn'); btn.disabled = true; btn.textContent = 'Saving...';
-  try {
-    var data = { 
-      name, type, stat_type: statType, image_url: imgUrl, description: desc,
-      mission_refs: missionRefs, campaign_ids: campaignIds
-    };
-    var res = id ? await supabaseClient.from('trophy_definitions').update(data).eq('id', id) : await supabaseClient.from('trophy_definitions').insert([data]).select().single();
-    if (res.error) throw new Error(res.error.message);
-    
-    var trophyId = id || res.data.id;
-    var threshData = Array.from(document.querySelectorAll('.tier-thresh')).map(el => { 
-      var tierId = parseInt(el.dataset.tier); 
-      var toggle = document.querySelector(`.tier-toggle[data-tier="${tierId}"]`); 
-      return { trophy_id: trophyId, tier_id: tierId, threshold_value: parseInt(el.value) || 0, is_active: toggle ? toggle.checked : true }; 
+  function populateDropdowns() {
+    const bImg = getEl('badgeImage');
+    if (bImg) bImg.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages);
+
+    const avMale = getEl('avatarImageMale');
+    const avFemale = getEl('avatarImageFemale');
+    if (avMale) avMale.innerHTML = '<option value="">-- Select Male Image --</option>' + buildMediaOptions(avatarImages);
+    if (avFemale) avFemale.innerHTML = '<option value="">-- Select Female Image --</option>' + buildMediaOptions(avatarImages);
+
+    const tImg = getEl('trophyBaseImage');
+    if (tImg) tImg.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages);
+
+    document.querySelectorAll('#dynamicTiersContainer .tier-img').forEach(sel => {
+      const v = sel.value;
+      sel.innerHTML = '<option value="">-- Choose System Asset --</option>' + buildMediaOptions(trophyImages, v);
     });
-    
-    await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', trophyId);
-    var tRes = await supabaseClient.from('trophy_thresholds').insert(threshData); 
-    if (tRes.error) throw new Error(tRes.error.message);
-    
-    showToast('Trophy saved!'); closeTrophyModal(); await loadData();
-  } catch(e) { showToast('Error: ' + e.message, true); }
-  btn.disabled = false; btn.textContent = 'Save Trophy';
-}
-
-// --- BADGES ---
-function renderBadges() {
-  var list = getEl('badgeList'); if(!list) return;
-  if (allBadges.length === 0) { list.innerHTML = '<div class="text-center py-10 text-slate-400">No badges created yet.</div>'; return; }
-  list.innerHTML = allBadges.map(b => `
-    <div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="editBadge('${b.id}')">
-      <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden">
-        ${b.image_url ? `<img src="${b.image_url}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300">emoji_events</span>'}
-      </div>
-      <div class="flex-1">
-        <h4 class="font-headline font-bold text-slate-800">${escapeHtml(b.name)}</h4>
-        <p class="text-[10px] font-bold text-slate-400 uppercase">${b.rule_type || 'milestone'} Rule ${b.is_top_10_eligible ? '· Top 10' : ''}</p>
-      </div>
-      <button onclick="event.stopPropagation(); deleteBadge('${b.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg"><span class="material-symbols-outlined">delete</span></button>
-    </div>
-  `).join('');
-}
-
-function toggleBadgeRule() {
-  var type = getEl('badgeRuleType').value;
-  getEl('badgeMilestoneContainer').classList.toggle('hidden', type !== 'milestone');
-  getEl('badgeParticipationContainer').classList.toggle('hidden', type !== 'participation');
-  if(type === 'participation') renderBadgeParticipationChecklists();
-}
-
-function renderBadgeParticipationChecklists() {
-  getEl('badgeMissionChecklist').innerHTML = allMissions.length ? allMissions.map(m => {
-    var ref = m.mission_ref || m.id;
-    return `<label class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-c cursor-pointer">
-      <div class="flex items-center gap-2">
-        <input type="checkbox" value="${ref}" class="badge-mission-cb">
-        <span class="text-sm font-semibold text-slate-700">${escapeHtml(m.title)}</span>
-      </div>
-      <span class="text-[10px] font-mono font-bold text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200">${m.mission_ref || 'NO-REF'}</span>
-    </label>`;
-  }).join('') : '<p class="text-xs text-slate-400 p-2">No active missions.</p>';
-  
-  getEl('badgeCampaignChecklist').innerHTML = allCampaigns.length ? allCampaigns.map(c => `
-    <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer">
-      <input type="checkbox" value="${c.id}" class="badge-campaign-cb">
-      <span class="text-sm font-semibold text-slate-700">${escapeHtml(c.name)}</span>
-    </label>
-  `).join('') : '<p class="text-xs text-slate-400 p-2">No active campaigns.</p>';
-}
-
-function openBadgeModal() {
-  getEl('badgeId').value = ''; getEl('badgeName').value = ''; getEl('badgeImage').value = ''; getEl('badgeDesc').value = ''; 
-  getEl('badgeRuleType').value = 'milestone'; getEl('badgeStatType').value = 'shares'; getEl('badgeStatTarget').value = '';
-  getEl('badgeAdminReferral').checked = false; getEl('badgeMissionPriority').checked = false; getEl('badgeTop10').checked = false;
-  getEl('badgeModalTitle').textContent = 'Create Badge'; getEl('deleteBadgeBtn').classList.add('hidden'); 
-  toggleBadgeRule();
-  getEl('badgeModal').classList.remove('hidden');
-}
-
-function editBadge(id) {
-  var b = allBadges.find(x => x.id === id); if (!b) return;
-  getEl('badgeId').value = b.id; getEl('badgeName').value = b.name || ''; getEl('badgeImage').value = b.image_url || ''; getEl('badgeDesc').value = b.description || ''; 
-  getEl('badgeRuleType').value = b.rule_type || 'milestone'; getEl('badgeModalTitle').textContent = 'Edit Badge'; 
-  getEl('deleteBadgeBtn').classList.remove('hidden'); getEl('badgeTop10').checked = b.is_top_10_eligible || false;
-  
-  if(b.rule_type === 'milestone') { 
-    getEl('badgeStatType').value = b.stat_type || 'shares'; 
-    getEl('badgeStatTarget').value = b.stat_target || 0; 
   }
- 
-  toggleBadgeRule();
-  var config = b.rule_config || {};
-  getEl('badgeAdminReferral').checked = !!config.admin_referral;
-  getEl('badgeMissionPriority').checked = !!config.mission_priority_donation;
-  
-  var linkedMissions = config.mission_refs || [];
-  var linkedCampaigns = config.campaign_ids || [];
-  document.querySelectorAll('#badgeMissionChecklist .badge-mission-cb').forEach(cb => { cb.checked = linkedMissions.includes(cb.value); });
-  document.querySelectorAll('#badgeCampaignChecklist .badge-campaign-cb').forEach(cb => { cb.checked = linkedCampaigns.includes(cb.value); });
 
-  getEl('badgeModal').classList.remove('hidden');
-}
-
-function closeBadgeModal() { getEl('badgeModal').classList.add('hidden'); }
-
-async function saveBadge() {
-  var id = getEl('badgeId').value, name = getEl('badgeName').value.trim(), desc = getEl('badgeDesc').value.trim(), ruleType = getEl('badgeRuleType').value;
-  if (!name) return showToast('Name required', true);
-  
-  var ruleConfig = {};
-  if (ruleType === 'participation') {
-    var mRefs = [], cIds = [];
-    document.querySelectorAll('#badgeMissionChecklist .badge-mission-cb:checked').forEach(cb => mRefs.push(cb.value));
-    document.querySelectorAll('#badgeCampaignChecklist .badge-campaign-cb:checked').forEach(cb => cIds.push(cb.value));
-    ruleConfig = {
-      admin_referral: getEl('badgeAdminReferral').checked,
-      mission_priority_donation: getEl('badgeMissionPriority').checked,
-      mission_refs: mRefs,
-      campaign_ids: cIds
+  function renderChecklists() {
+    const box = (prefix, items) => {
+      if (!items?.length) return '<p class="text-xs text-slate-400 p-2">No active items.</p>';
+      return items.map(item => `
+        <label class="flex items-center gap-2 p-1.5 hover:bg-slate-200/50 rounded cursor-pointer">
+          <input type="checkbox" name="${prefix}" value="${item.id}" class="w-4 h-4 accent-primary">
+          <span class="text-xs font-semibold truncate">${escapeHtml(item.title || item.name)}</span>
+        </label>`).join('');
     };
+    const mc = getEl('missionChecklist'), cc = getEl('campaignChecklist');
+    const bmc = getEl('badgeMissionChecklist'), bcc = getEl('badgeCampaignChecklist');
+    if (mc) mc.innerHTML = box('trophyM', allMissions);
+    if (cc) cc.innerHTML = box('trophyC', allCampaigns);
+    if (bmc) bmc.innerHTML = box('badgeM', allMissions);
+    if (bcc) bcc.innerHTML = box('badgeC', allCampaigns);
   }
 
-  var btn = getEl('saveBadgeBtn'); btn.disabled = true; btn.textContent = 'Saving...';
-  try {
-    var data = { 
-      name, description: desc, rule_type: ruleType, 
-      image_url: getEl('badgeImage').value || null, 
-      is_top_10_eligible: getEl('badgeTop10').checked,
-      rule_config: ruleConfig
-    };
-    if(ruleType === 'milestone') { 
-      data.stat_type = getEl('badgeStatType').value; 
-      data.stat_target = parseInt(getEl('badgeStatTarget').value) || 0; 
-    }
-    
-    var res = id ? await supabaseClient.from('badge_definitions').update(data).eq('id', id) : await supabaseClient.from('badge_definitions').insert([data]).select().single();
-    if (res.error) throw new Error(res.error.message);
-    showToast('Badge saved!'); closeBadgeModal(); await loadData();
-  } catch(e) { showToast('Error: ' + e.message, true); }
-  btn.disabled = false; btn.textContent = 'Save Badge';
-}
-
-async function deleteBadge(id) {
-  var badgeId = id || getEl('badgeId').value;
-  if (!badgeId) return;
-  if (!confirm('Are you sure you want to permanently delete this badge?')) return;
-  try {
-    var res = await supabaseClient.from('badge_definitions').delete().eq('id', badgeId);
-    if (res.error) throw new Error(res.error.message);
-    showToast('Badge deleted!'); closeBadgeModal(); await loadData();
-  } catch(e) { showToast('Error: ' + e.message, true); }
-}
-
-// --- AVATARS ---
-function toggleAvatarReq() {
-  var type = getEl('avatarReqType').value;
-  getEl('avatarReqNumberContainer').classList.toggle('hidden', type === 'badge');
-  getEl('avatarReqBadgeContainer').classList.toggle('hidden', type !== 'badge');
-}
-
-function renderAvatars() {
-  var list = getEl('avatarList'); if(!list) return;
-  if (allAvatars.length === 0) { list.innerHTML = '<div class="text-center py-10 text-slate-400">No avatar stages created yet.</div>'; return; }
-  
-  var grouped = {};
-  allAvatars.forEach(a => {
-    var era = a.era || 'Unassigned Era';
-    if (!grouped[era]) grouped[era] = {};
-    var journey = a.journey || 'Unassigned Journey';
-    if (!grouped[era][journey]) grouped[era][journey] = [];
-    grouped[era][journey].push(a);
-  });
-
-  var html = '';
-  Object.keys(grouped).sort().forEach(era => {
-    html += `<h3 class="font-headline font-bold text-lg text-slate-800 mt-6 mb-2 px-1">${escapeHtml(era)}</h3>`;
-    Object.keys(grouped[era]).sort().forEach(journey => {
-      html += `<h4 class="font-headline font-semibold text-md text-slate-600 mb-3 px-4">${escapeHtml(journey)}</h4>`;
-      html += `<div class="space-y-3 pl-4">`;
-           grouped[era][journey].sort((a,b) => a.stage_order - b.stage_order).forEach(a => {
-        html += `
-        <div class="card flex items-center gap-4 cursor-pointer hover:shadow-lg transition-shadow bg-white p-4 rounded-xl border border-slate-100" onclick="editAvatar('${a.id}')">
-          <div class="flex -space-x-2">
-            <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-white">
-              ${a.image_url_male ? `<img src="${a.image_url_male}" class="w-full h-full object-contain">` : '<span class="material-symbols-outlined text-slate-300 text-sm">male</span>'}
-            </div>
-          </div>
-          <div class="flex-1">
-            <div class="flex items-center gap-2">
-              <span class="bg-blue-50 text-blue-600 text-[10px] font-black px-2 py-0.5 rounded-full">STAGE ${a.stage_order}</span>
-              <h4 class="font-headline font-bold text-slate-800">${escapeHtml(a.avatar_title || 'Untitled')}</h4>
-            </div>
-            <p class="text-[11px] text-slate-500 mt-1">Req: ${a.mythic_required || 0} Mythic Trophies</p>
-          </div>
-          <span class="material-symbols-outlined text-slate-300">edit</span>
-        </div>`;
-      });
-      html += `</div>`;
-    });
-  });
-  list.innerHTML = html;
-}
-
-  // =====================================================
-// GLOBAL AVATAR MODAL CONTROLLERS
-// =====================================================
-
-async function prepareAvatarImageSelects(selectedMale = '', selectedFemale = '') {
-  /*
-   * Use the page's existing media-library dropdown loader.
-   * That loader should only include items from the Avatar media list.
-   */
-  if (typeof window.populateAvatarImageDropdowns === 'function') {
-    await window.populateAvatarImageDropdowns(selectedMale, selectedFemale);
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    getEl('tab-' + tabId)?.classList.add('active');
+    ['trophies','badges','avatars'].forEach(t => getEl('view-' + t)?.classList.add('hidden'));
+    getEl('view-' + tabId)?.classList.remove('hidden');
   }
 
-  const maleSelect = document.getElementById('avatarImageMale');
-  const femaleSelect = document.getElementById('avatarImageFemale');
-
-  function selectImage(select, url) {
-    if (!select) return;
-
-    if (!url) {
-      select.value = '';
+  // ========== TROPHIES (CARD GRID) ==========
+  function renderTrophies() {
+    const grid = getEl('trophyGrid');
+    if (!grid) return;
+    grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
+    grid.innerHTML = '';
+    if (!allTrophies.length) {
+      grid.innerHTML = '<p class="col-span-full text-center py-12 text-sm text-slate-400 font-semibold">No trophies defined yet.</p>';
       return;
     }
 
-    const exists = Array.from(select.options).some(
-      option => option.value === url
-    );
+    allTrophies.forEach(t => {
+      let displayImage = t.image_url || t.image || null;
+      const withImg = allThresholds.filter(th => th.trophy_id === t.id && th.image_url);
+      if (!displayImage && withImg.length) {
+        withImg.sort((a, b) => (a.tier_id || 0) - (b.tier_id || 0));
+        displayImage = withImg[withImg.length - 1].image_url;
+      }
+      const mythicTier = allTiers.find(ti => (ti.name || '').toLowerCase() === 'mythic');
+      const mythicVal = mythicTier
+        ? (allThresholds.find(th => th.trophy_id === t.id && th.tier_id === mythicTier.id)?.value ?? '—')
+        : '—';
+      const typeClass = t.type === 'stat' ? 'bg-indigo-50 text-indigo-700'
+        : t.type === 'collection' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700';
 
-    if (!exists) {
-      const filename = decodeURIComponent(url.split('/').pop() || 'Current image');
-      select.add(new Option(filename, url));
+      const card = document.createElement('div');
+      card.className = 'card flex flex-col hover:border-primary/40 cursor-pointer transition-all hover:shadow-md overflow-hidden group';
+      card.onclick = () => openTrophyModal(t.id);
+      card.innerHTML = `
+        <div class="aspect-[4/3] bg-surface-clow border-b border-surface-c flex items-center justify-center relative overflow-hidden">
+          <span class="material-symbols-outlined text-gold/40 absolute" style="font-size:64px;">emoji_events</span>
+          ${displayImage ? `<img src="${escapeHtml(displayImage)}" alt="" class="relative z-10 max-h-full max-w-full object-contain p-4 group-hover:scale-105 transition-transform" onerror="this.remove()">` : ''}
+          <span class="absolute top-3 right-3 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${typeClass}">${escapeHtml(t.type || 'stat')}</span>
+        </div>
+        <div class="p-4 flex flex-col flex-1">
+          <h3 class="font-headline font-bold text-slate-800 text-base leading-snug mb-1">${escapeHtml(t.name || 'Untitled')}</h3>
+          <p class="text-xs text-slate-400 line-clamp-2 flex-1 mb-3">${escapeHtml(t.description || 'No description.')}</p>
+          <div class="flex items-center justify-between text-[11px] font-semibold border-t border-slate-100 pt-3">
+            <span class="text-slate-400 uppercase tracking-wide">Mythic @</span>
+            <span class="text-slate-800 font-bold">${mythicVal}</span>
+          </div>
+        </div>`;
+      grid.appendChild(card);
+    });
+  }
+
+  function buildDynamicTierFields(trophyId = null) {
+    const container = getEl('dynamicTiersContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!allTiers.length) {
+      container.innerHTML = '<p class="text-xs text-rose-500">No tiers in trophy_tiers.</p>';
+      return;
+    }
+    allTiers.forEach(tier => {
+      const existing = trophyId ? allThresholds.find(th => th.trophy_id === trophyId && th.tier_id === tier.id) : null;
+      const val = existing?.value ?? '';
+      const imgSel = existing?.image_url ?? '';
+      const opts = trophyImages.map(img =>
+        `<option value="${img._url}" ${imgSel === img._url ? 'selected' : ''}>${escapeHtml(img._name)}</option>`
+      ).join('');
+      const row = document.createElement('div');
+      row.className = 'p-4 bg-surface-clow border border-surface-c rounded-xl space-y-3';
+      row.dataset.tierId = tier.id;
+      row.innerHTML = `
+        <div class="flex items-center gap-1.5 border-b border-slate-200/50 pb-2">
+          <span class="w-2.5 h-2.5 rounded-full" style="background:${tier.color || '#3d6285'}"></span>
+          <span class="text-xs font-extrabold uppercase tracking-widest text-slate-600">${escapeHtml(tier.name)}</span>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Threshold</label>
+            <input type="number" class="tier-val form-input w-full rounded-xl px-3 py-2 text-sm" value="${val}" placeholder="e.g. 50">
+          </div>
+          <div>
+            <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Icon</label>
+            <select class="tier-img form-input w-full rounded-xl px-3 py-2 text-sm">
+              <option value="">— Asset —</option>${opts}
+            </select>
+          </div>
+        </div>`;
+      container.appendChild(row);
+    });
+  }
+
+  function openTrophyModal(id = null) {
+    getEl('trophyModal')?.classList.remove('hidden');
+    getEl('deleteTrophyBtn')?.classList.add('hidden');
+    getEl('trophyModalTitle').innerText = id ? 'Edit Trophy' : 'Create Trophy';
+    document.querySelectorAll('input[name="trophyM"], input[name="trophyC"]').forEach(cb => cb.checked = false);
+
+    if (id) {
+      const t = allTrophies.find(x => x.id === id);
+      if (!t) return;
+      getEl('trophyId').value = t.id;
+      getEl('trophyName').value = t.name || '';
+      getEl('trophyType').value = t.type || 'stat';
+      getEl('trophyStatType').value = t.stat_type || 'shares';
+      getEl('trophyDesc').value = t.description || '';
+      const tImg = getEl('trophyBaseImage');
+      if (tImg) tImg.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages, t.image_url || t.image || '');
+      (t.linked_missions || []).forEach(mid => { const el = document.querySelector(`input[name="trophyM"][value="${mid}"]`); if (el) el.checked = true; });
+      (t.linked_campaigns || []).forEach(cid => { const el = document.querySelector(`input[name="trophyC"][value="${cid}"]`); if (el) el.checked = true; });
+      getEl('deleteTrophyBtn')?.classList.remove('hidden');
+      buildDynamicTierFields(t.id);
+    } else {
+      getEl('trophyId').value = '';
+      getEl('trophyName').value = '';
+      getEl('trophyType').value = 'stat';
+      getEl('trophyStatType').value = 'shares';
+      getEl('trophyDesc').value = '';
+      const tImg = getEl('trophyBaseImage');
+      if (tImg) tImg.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages);
+      buildDynamicTierFields(null);
+    }
+    toggleTrophyType();
+  }
+
+  function toggleTrophyType() {
+    const type = getEl('trophyType')?.value || 'stat';
+    getEl('statTypeContainer')?.classList.toggle('hidden', type !== 'stat');
+    getEl('participationContainer')?.classList.toggle('hidden', type === 'stat');
+  }
+  function closeTrophyModal() { getEl('trophyModal')?.classList.add('hidden'); }
+
+  async function saveTrophy() {
+    const id = getEl('trophyId')?.value;
+    const name = getEl('trophyName')?.value.trim();
+    if (!name) return showToast('Enter a trophy name.', true);
+    const missions = [...document.querySelectorAll('input[name="trophyM"]:checked')].map(c => c.value);
+    const campaigns = [...document.querySelectorAll('input[name="trophyC"]:checked')].map(c => c.value);
+    const baseImg = getEl('trophyBaseImage')?.value || null;
+    const keys = allTrophies[0] ? Object.keys(allTrophies[0]) : null;
+    let payload = {};
+    if (keys) {
+      if (keys.includes('name')) payload.name = name;
+      if (keys.includes('type')) payload.type = getEl('trophyType')?.value || 'stat';
+      if (keys.includes('stat_type')) payload.stat_type = getEl('trophyStatType')?.value || 'shares';
+      if (keys.includes('description')) payload.description = getEl('trophyDesc')?.value.trim() || null;
+      if (keys.includes('image_url')) payload.image_url = baseImg;
+      else if (keys.includes('image')) payload.image = baseImg;
+      if (keys.includes('linked_missions')) payload.linked_missions = missions;
+      if (keys.includes('linked_campaigns')) payload.linked_campaigns = campaigns;
+    } else {
+      payload = { name, type: getEl('trophyType')?.value || 'stat', stat_type: getEl('trophyStatType')?.value || 'shares',
+        description: getEl('trophyDesc')?.value.trim() || null, image_url: baseImg, linked_missions: missions, linked_campaigns: campaigns };
     }
 
-    select.value = url;
-  }
-
-  selectImage(maleSelect, selectedMale);
-  selectImage(femaleSelect, selectedFemale);
-}
-
-window.openAvatarModal = async function () {
-  document.getElementById('avatarModalTitle').textContent = 'Add Avatar Stage';
-  document.getElementById('avatarId').value = '';
-  document.getElementById('avatarEra').value = '';
-  document.getElementById('avatarJourney').value = '';
-  document.getElementById('avatarName').value = '';
-  document.getElementById('avatarReqValue').value = 0;
-
-  // Work out the next stage number without relying on avatarStages.
-  let nextOrder = 1;
-
-  try {
-    const { data, error } = await supabaseClient
-      .from('avatar_stages')
-      .select('stage_order')
-      .order('stage_order', { ascending: false })
-      .limit(1);
-
-    if (!error && data && data.length) {
-      nextOrder = Number(data[0].stage_order || 0) + 1;
+    async function go(p, n = 0) {
+      let res, savedId = id;
+      if (id) res = await supabaseClient.from('trophy_definitions').update(p).eq('id', id);
+      else {
+        savedId = generateUUID(); p.id = savedId;
+        res = await supabaseClient.from('trophy_definitions').insert([p]);
+      }
+      if (res.error) {
+        const m = (res.error.message || '').match(/Could not find the '([^']+)' column/) || (res.error.message || '').match(/column "([^"]+)" of relation/);
+        if (m?.[1] && n < 5) { delete p[m[1]]; return go(p, n + 1); }
+        throw new Error(res.error.message);
+      }
+      return savedId;
     }
-  } catch (error) {
-    console.warn('Could not calculate the next stage order:', error);
+
+    try {
+      const savedId = await go(payload);
+      const rows = [...document.querySelectorAll('#dynamicTiersContainer > div')];
+      const th = rows.map(row => {
+        const v = row.querySelector('.tier-val')?.value;
+        if (v === '' || v == null) return null;
+        return { id: generateUUID(), trophy_id: savedId, tier_id: row.dataset.tierId, value: parseInt(v) || 0, image_url: row.querySelector('.tier-img')?.value || null };
+      }).filter(Boolean);
+      await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', savedId);
+      if (th.length) {
+        const { error } = await supabaseClient.from('trophy_thresholds').insert(th);
+        if (error) throw error;
+      }
+      showToast('Trophy saved!');
+      closeTrophyModal();
+      await loadData();
+    } catch (e) { console.error(e); showToast(e.message || 'Save failed', true); }
   }
 
-  document.getElementById('avatarOrder').value = nextOrder;
-
-  const deleteButton = document.getElementById('deleteAvatarBtn');
-  if (deleteButton) deleteButton.classList.add('hidden');
-
-  await prepareAvatarImageSelects('', '');
-
-  document.getElementById('avatarModal').classList.remove('hidden');
-};
-
-window.editAvatar = async function (id) {
-  if (!id) {
-    showToast('Avatar stage ID is missing', true);
-    return;
+  async function deleteTrophy() {
+    const id = getEl('trophyId')?.value;
+    if (!id || !confirm('Delete this trophy and its thresholds?')) return;
+    try {
+      await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', id);
+      const { error } = await supabaseClient.from('trophy_definitions').delete().eq('id', id);
+      if (error) throw error;
+      showToast('Trophy deleted.'); closeTrophyModal(); await loadData();
+    } catch (e) { showToast(e.message || 'Delete failed', true); }
   }
 
-  try {
-    const { data: stage, error } = await supabaseClient
-      .from('avatar_stages')
-      .select(`
-        id,
-        era,
-        journey,
-        avatar_title,
-        stage_order,
-        mythic_required,
-        image_url_male,
-        image_url_female
-      `)
-      .eq('id', id)
-      .single();
-
-    if (error) throw error;
-    if (!stage) throw new Error('Avatar stage was not found');
-
-    document.getElementById('avatarModalTitle').textContent =
-      'Edit Avatar Stage';
-
-    document.getElementById('avatarId').value = stage.id;
-    document.getElementById('avatarEra').value = stage.era || '';
-    document.getElementById('avatarJourney').value = stage.journey || '';
-    document.getElementById('avatarOrder').value = stage.stage_order ?? '';
-    document.getElementById('avatarName').value = stage.avatar_title || '';
-    document.getElementById('avatarReqValue').value =
-      stage.mythic_required ?? 0;
-
-    await prepareAvatarImageSelects(
-      stage.image_url_male || '',
-      stage.image_url_female || ''
-    );
-
-    const deleteButton = document.getElementById('deleteAvatarBtn');
-    if (deleteButton) deleteButton.classList.remove('hidden');
-
-    document.getElementById('avatarModal').classList.remove('hidden');
-  } catch (error) {
-    console.error('Edit avatar error:', error);
-    showToast('Could not open avatar stage: ' + error.message, true);
-  }
-};
-
-
-// Close the avatar modal.
-window.closeAvatarModal = function () {
-  const modal = document.getElementById('avatarModal');
-
-  if (modal) {
-    modal.classList.add('hidden');
-  }
-};
-
-
-// Create or update an avatar stage.
-async function saveAvatar() {
-  const id = document.getElementById('avatarId').value;
-  const era = document.getElementById('avatarEra').value.trim();
-  const journey = document.getElementById('avatarJourney').value.trim();
-  const avatarTitle = document.getElementById('avatarName').value.trim();
-  const stageOrder = parseInt(document.getElementById('avatarOrder').value);
-  const mythicRequired = parseInt(document.getElementById('avatarReqValue').value) || 0;
-
-  const maleEl = document.getElementById('avatarImageMale');
-  const femaleEl = document.getElementById('avatarImageFemale');
-  const imageMale = maleEl ? maleEl.value : null;
-  const imageFemale = femaleEl ? femaleEl.value : null;
-
-  if (!era || !journey || !avatarTitle || isNaN(stageOrder)) {
-    return showToast('Please fill all required fields (Era, Journey, Title, Stage Order)', true);
+  // ========== BADGES (CARD GRID) ==========
+  function renderBadges() {
+    const list = getEl('badgeList');
+    if (!list) return;
+    list.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
+    list.innerHTML = '';
+    if (!allBadges.length) {
+      list.innerHTML = '<p class="col-span-full text-center py-12 text-sm text-slate-400 font-semibold">No badges defined yet.</p>';
+      return;
+    }
+    allBadges.forEach(b => {
+      const img = b.image_url || '';
+      const card = document.createElement('div');
+      card.className = 'card flex flex-col hover:border-slate-300 cursor-pointer transition-all hover:shadow-md overflow-hidden group';
+      card.onclick = () => openBadgeModal(b.id);
+      card.innerHTML = `
+        <div class="aspect-square bg-surface-clow border-b border-surface-c flex items-center justify-center relative p-6">
+          <span class="material-symbols-outlined text-slate-300 absolute" style="font-size:48px;">workspace_premium</span>
+          ${img ? `<img src="${escapeHtml(img)}" alt="" class="relative z-10 max-h-full max-w-full object-contain group-hover:scale-105 transition-transform" onerror="this.remove()">` : ''}
+          ${b.is_top_10_eligible ? '<span class="absolute top-3 right-3 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">TOP 10</span>' : ''}
+        </div>
+        <div class="p-4 flex flex-col flex-1">
+          <div class="flex items-start justify-between gap-2 mb-1">
+            <h3 class="font-headline font-bold text-slate-800 text-base leading-snug">${escapeHtml(b.name || 'Untitled')}</h3>
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-slate-100 text-slate-600 flex-shrink-0">${escapeHtml(b.rule_type || 'milestone')}</span>
+          </div>
+          <p class="text-xs text-slate-400 line-clamp-2">${escapeHtml(b.description || 'No description.')}</p>
+        </div>`;
+      list.appendChild(card);
+    });
   }
 
-  const btn = document.getElementById('saveAvatarBtn');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = 'Saving...';
+  function openBadgeModal(id = null) {
+    getEl('badgeModal')?.classList.remove('hidden');
+    getEl('deleteBadgeBtn')?.classList.add('hidden');
+    getEl('badgeModalTitle').innerText = id ? 'Edit Badge' : 'New Badge';
+    document.querySelectorAll('input[name="badgeM"], input[name="badgeC"]').forEach(cb => cb.checked = false);
+
+    if (id) {
+      const b = allBadges.find(x => x.id === id);
+      if (!b) return;
+      let cfg = b.rule_config || {};
+      if (typeof cfg === 'string') { try { cfg = JSON.parse(cfg); } catch { cfg = {}; } }
+      getEl('badgeId').value = b.id;
+      getEl('badgeName').value = b.name || '';
+      getEl('badgeDesc').value = b.description || '';
+      getEl('badgeRuleType').value = b.rule_type || 'milestone';
+      getEl('badgeStatType').value = cfg.stat_type || 'shares';
+      getEl('badgeStatTarget').value = cfg.stat_target ?? '';
+      getEl('badgeAdminReferral').checked = !!cfg.is_admin_referral;
+      getEl('badgeMissionPriority').checked = !!cfg.is_priority_mission;
+      getEl('badgeTop10').checked = !!b.is_top_10_eligible;
+      const bImg = getEl('badgeImage');
+      if (bImg) bImg.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages, b.image_url || '');
+      (cfg.linked_missions || []).forEach(mid => { const el = document.querySelector(`input[name="badgeM"][value="${mid}"]`); if (el) el.checked = true; });
+      (cfg.linked_campaigns || []).forEach(cid => { const el = document.querySelector(`input[name="badgeC"][value="${cid}"]`); if (el) el.checked = true; });
+      getEl('deleteBadgeBtn')?.classList.remove('hidden');
+    } else {
+      getEl('badgeId').value = '';
+      getEl('badgeName').value = '';
+      getEl('badgeDesc').value = '';
+      getEl('badgeRuleType').value = 'milestone';
+      getEl('badgeStatType').value = 'shares';
+      getEl('badgeStatTarget').value = '';
+      getEl('badgeAdminReferral').checked = false;
+      getEl('badgeMissionPriority').checked = false;
+      getEl('badgeTop10').checked = false;
+      const bImg = getEl('badgeImage');
+      if (bImg) bImg.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages);
+    }
+    toggleBadgeRule();
   }
 
-  try {
+  function toggleBadgeRule() {
+    const r = getEl('badgeRuleType')?.value;
+    getEl('badgeMilestoneContainer')?.classList.toggle('hidden', r !== 'milestone');
+    getEl('badgeParticipationContainer')?.classList.toggle('hidden', r !== 'participation');
+  }
+  function closeBadgeModal() { getEl('badgeModal')?.classList.add('hidden'); }
+
+  async function saveBadge() {
+    const id = getEl('badgeId')?.value;
+    const name = getEl('badgeName')?.value.trim();
+    if (!name) return showToast('Enter a badge name.', true);
+    const missions = [...document.querySelectorAll('input[name="badgeM"]:checked')].map(c => c.value);
+    const campaigns = [...document.querySelectorAll('input[name="badgeC"]:checked')].map(c => c.value);
     const payload = {
-      era: era,
-      journey: journey,
-      avatar_title: avatarTitle,
-      stage_order: stageOrder,
-      mythic_required: mythicRequired,
-      image_url_male: imageMale || null,
-      image_url_female: imageFemale || null,
+      name,
+      description: getEl('badgeDesc')?.value.trim() || null,
+      rule_type: getEl('badgeRuleType')?.value || 'milestone',
+      image_url: getEl('badgeImage')?.value || null,
+      is_top_10_eligible: !!getEl('badgeTop10')?.checked,
+      rule_config: {
+        stat_type: getEl('badgeStatType')?.value || 'shares',
+        stat_target: parseInt(getEl('badgeStatTarget')?.value) || 0,
+        is_admin_referral: !!getEl('badgeAdminReferral')?.checked,
+        is_priority_mission: !!getEl('badgeMissionPriority')?.checked,
+        linked_missions: missions,
+        linked_campaigns: campaigns
+      }
     };
 
-    let result;
+    async function go(p, n = 0) {
+      let res;
+      if (id) res = await supabaseClient.from('badge_definitions').update(p).eq('id', id).select();
+      else { p.id = generateUUID(); res = await supabaseClient.from('badge_definitions').insert([p]).select(); }
+      if (res.error) {
+        const m = (res.error.message || '').match(/Could not find the '([^']+)' column/) || (res.error.message || '').match(/column "([^"]+)" of relation/);
+        if (m?.[1] && n < 5) { delete p[m[1]]; return go(p, n + 1); }
+        throw new Error(res.error.message);
+      }
+    }
+
+    try {
+      await go(payload);
+      showToast('Badge saved!'); closeBadgeModal(); await loadData();
+    } catch (e) { console.error(e); showToast(e.message || 'Save failed', true); }
+  }
+
+  async function deleteBadge() {
+    const id = getEl('badgeId')?.value;
+    if (!id || !confirm('Delete this badge?')) return;
+    try {
+      const { error } = await supabaseClient.from('badge_definitions').delete().eq('id', id);
+      if (error) throw error;
+      showToast('Badge deleted.'); closeBadgeModal(); await loadData();
+    } catch (e) { showToast(e.message || 'Delete failed', true); }
+  }
+
+  // ========== AVATARS (CARD GRID, MYTHIC-ONLY) ==========
+   // ========== AVATARS (CARD GRID) ==========
+  // Order: ERA → STAGE → JOURNEY (never alphabetical journey names)
+  function renderAvatars() {
+    const list = getEl('avatarList');
+    if (!list) return;
+    list.innerHTML = '';
+    if (!allAvatars.length) {
+      list.innerHTML = '<p class="text-center py-12 text-sm text-slate-400 font-semibold">No avatar stages yet.</p>';
+      return;
+    }
+
+    // --- helpers for natural ordering ---
+    function eraSortKey(era) {
+      const s = String(era || 'Era 1');
+      const num = parseInt(s.replace(/\D/g, ''), 10);
+      return Number.isFinite(num) ? num : 9999;
+    }
+    function stageNum(a) {
+      const n = parseInt(a.stage_order ?? a.order ?? 0, 10);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    // 1. Master list sorted globally: Era → Stage → Journey name (tie-break only)
+    const sorted = allAvatars.slice().sort((a, b) => {
+      const ea = eraSortKey(a.era);
+      const eb = eraSortKey(b.era);
+      if (ea !== eb) return ea - eb;
+
+      const sa = stageNum(a);
+      const sb = stageNum(b);
+      if (sa !== sb) return sa - sb;
+
+      const ja = String(a.journey || '');
+      const jb = String(b.journey || '');
+      return ja.localeCompare(jb);
+    });
+
+    // 2. Group into Era → Journey, preserving encounter order (so journeys
+    //    appear in stage order, NOT alphabetically)
+    const eras = [];
+    const eraIndex = {};
+
+    sorted.forEach(a => {
+      const eraName = a.era || 'Era 1';
+      const journeyName = a.journey || 'Journey';
+
+      if (eraIndex[eraName] === undefined) {
+        eraIndex[eraName] = eras.length;
+        eras.push({ name: eraName, journeys: [], journeyIndex: {} });
+      }
+      const eraObj = eras[eraIndex[eraName]];
+
+      if (eraObj.journeyIndex[journeyName] === undefined) {
+        eraObj.journeyIndex[journeyName] = eraObj.journeys.length;
+        eraObj.journeys.push({ name: journeyName, stages: [] });
+      }
+      eraObj.journeys[eraObj.journeyIndex[journeyName]].stages.push(a);
+    });
+
+    // 3. Render
+    eras.forEach(eraObj => {
+      const section = document.createElement('div');
+      section.className = 'mb-10';
+
+      let html = `
+        <div class="mb-5 flex items-center gap-3">
+          <h3 class="font-headline font-extrabold text-2xl text-slate-900">${escapeHtml(eraObj.name)}</h3>
+          <div class="flex-1 h-px bg-surface-c"></div>
+        </div>
+      `;
+
+      eraObj.journeys.forEach(journeyObj => {
+        // stages already in stage_order from the master sort; keep stable
+        journeyObj.stages.sort((a, b) => stageNum(a) - stageNum(b));
+
+        html += `
+          <h4 class="font-headline font-bold text-sm text-slate-500 mb-3 tracking-wide uppercase">
+            ${escapeHtml(journeyObj.name)}
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        `;
+
+        journeyObj.stages.forEach(a => {
+          const img = a.image_male || a.image_female || a.image_url || a.avatar_url || a.image || '';
+          const name = a.journey_name || a.name || a.title || 'Untitled';
+          const order = stageNum(a);
+          const mythicNeed = a.req_value ?? 0;
+
+          html += `
+            <div onclick="window.openAvatarModal('${a.id}')"
+                 class="card flex flex-col hover:border-gold cursor-pointer transition-all hover:shadow-md overflow-hidden group">
+              <div class="aspect-[3/4] bg-surface-clow border-b border-surface-c flex items-center justify-center relative overflow-hidden">
+                <div class="absolute inset-0 signature-gradient opacity-10"></div>
+                <span class="absolute top-3 left-3 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/90 text-indigo-700 shadow-sm z-20">
+                  Stage ${order}
+                </span>
+                ${img
+                  ? `<img src="${escapeHtml(img)}" alt=""
+                          class="relative z-10 max-h-full max-w-full object-contain p-3 group-hover:scale-105 transition-transform"
+                          onerror="this.remove()">`
+                  : `<span class="material-symbols-outlined text-slate-300 relative z-10" style="font-size:56px;">person</span>`
+                }
+              </div>
+              <div class="p-4">
+                <h4 class="font-headline font-bold text-slate-800 text-base leading-tight mb-1 truncate">
+                  ${escapeHtml(name)}
+                </h4>
+                <p class="text-xs text-slate-500 font-medium flex items-center gap-1">
+                  <span class="material-symbols-outlined text-gold" style="font-size:14px;">emoji_events</span>
+                  Requires <strong class="text-slate-800">${mythicNeed}</strong>
+                  Mythic Troph${mythicNeed === 1 ? 'y' : 'ies'}
+                </p>
+              </div>
+            </div>
+          `;
+        });
+
+        html += `</div>`;
+      });
+
+      section.innerHTML = html;
+      list.appendChild(section);
+    });
+  }
+
+  function openAvatarModal(id = null) {
+    getEl('avatarModal')?.classList.remove('hidden');
+    getEl('deleteAvatarBtn')?.classList.add('hidden');
+    getEl('avatarModalTitle').innerText = id ? 'Edit Avatar Stage' : 'Add Avatar Stage';
+
+    // Ensure req type UI is gone / hidden if still in DOM
+    getEl('avatarReqType')?.closest('div')?.classList.add('hidden');
+    getEl('avatarReqBadgeContainer')?.classList.add('hidden');
+    getEl('avatarReqValueContainer')?.classList.remove('hidden');
+
     if (id) {
-      result = await supabaseClient.from('avatar_stages').update(payload).eq('id', id);
+      const a = allAvatars.find(x => x.id === id);
+      if (!a) return;
+      getEl('avatarId').value = a.id;
+      getEl('avatarEra').value = a.era || '';
+      getEl('avatarJourney').value = a.journey || '';
+      getEl('avatarOrder').value = a.stage_order ?? a.order ?? '';
+      getEl('avatarName').value = a.journey_name || a.name || a.title || '';
+      getEl('avatarReqValue').value = a.req_value ?? 0;
+      // Force mythic in case column still exists
+      if (getEl('avatarReqType')) getEl('avatarReqType').value = 'mythic';
+
+      const avMale = getEl('avatarImageMale');
+      const avFemale = getEl('avatarImageFemale');
+      if (avMale) avMale.innerHTML = '<option value="">-- Select Male Image --</option>' + buildMediaOptions(avatarImages, a.image_male || a.male_image || a.image_url || '');
+      if (avFemale) avFemale.innerHTML = '<option value="">-- Select Female Image --</option>' + buildMediaOptions(avatarImages, a.image_female || a.female_image || '');
+      getEl('deleteAvatarBtn')?.classList.remove('hidden');
     } else {
-      result = await supabaseClient.from('avatar_stages').insert([payload]);
-    }
-
-    if (result.error) throw result.error;
-
-    showToast(id ? 'Avatar stage updated!' : 'Avatar stage created!');
-    
-    if (typeof closeAvatarModal === 'function') closeAvatarModal();
-    if (typeof loadData === 'function') await loadData();
-
-  } catch (e) {
-    console.error('Save avatar error:', e);
-    showToast('Failed to save: ' + e.message, true);
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = 'Save Stage';
+      getEl('avatarId').value = '';
+      getEl('avatarEra').value = '';
+      getEl('avatarJourney').value = '';
+      getEl('avatarOrder').value = '';
+      getEl('avatarName').value = '';
+      getEl('avatarReqValue').value = '0';
+      if (getEl('avatarReqType')) getEl('avatarReqType').value = 'mythic';
+      const avMale = getEl('avatarImageMale');
+      const avFemale = getEl('avatarImageFemale');
+      if (avMale) avMale.innerHTML = '<option value="">-- Select Male Image --</option>' + buildMediaOptions(avatarImages);
+      if (avFemale) avFemale.innerHTML = '<option value="">-- Select Female Image --</option>' + buildMediaOptions(avatarImages);
     }
   }
-}
 
-window.saveAvatar = saveAvatar;
+  function closeAvatarModal() { getEl('avatarModal')?.classList.add('hidden'); }
 
-// Delete an existing avatar stage.
-window.deleteAvatarStage = async function (id) {
-  if (!id) {
-    showToast('Save the stage before trying to delete it', true);
-    return;
-  }
+  async function saveAvatar() {
+    const id = getEl('avatarId')?.value;
+    const journeyName = getEl('avatarName')?.value.trim();
+    if (!journeyName) return showToast('Enter a stage name.', true);
 
-  const confirmed = window.confirm(
-    'Delete this avatar stage? This cannot be undone.'
-  );
+    const maleImg = getEl('avatarImageMale')?.value || null;
+    const femaleImg = getEl('avatarImageFemale')?.value || null;
+    const era = getEl('avatarEra')?.value.trim() || 'Era 1';
+    const journey = getEl('avatarJourney')?.value.trim() || '';
+    const order = parseInt(getEl('avatarOrder')?.value) || 1;
+    const reqVal = parseInt(getEl('avatarReqValue')?.value) || 0;
 
-  if (!confirmed) return;
-
-  const button = document.getElementById('deleteAvatarBtn');
-
-  if (button) {
-    button.disabled = true;
-    button.textContent = 'Deleting...';
-  }
-
-  try {
-    const { error } = await supabaseClient
-      .from('avatar_stages')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
-
-    showToast('Avatar stage deleted');
-    window.closeAvatarModal();
-
-    setTimeout(() => window.location.reload(), 300);
-  } catch (error) {
-    console.error('Delete avatar error:', error);
-    showToast('Failed to delete avatar stage: ' + error.message, true);
-
-    if (button) {
-      button.disabled = false;
-      button.textContent = 'Delete';
+    const keys = allAvatars[0] ? Object.keys(allAvatars[0]) : null;
+    let payload = {};
+    if (keys) {
+      if (keys.includes('era')) payload.era = era;
+      if (keys.includes('journey')) payload.journey = journey;
+      if (keys.includes('stage_order')) payload.stage_order = order;
+      else if (keys.includes('order')) payload.order = order;
+      if (keys.includes('journey_name')) payload.journey_name = journeyName;
+      else if (keys.includes('name')) payload.name = journeyName;
+      else if (keys.includes('title')) payload.title = journeyName;
+      // Always mythic
+      if (keys.includes('req_type')) payload.req_type = 'mythic';
+      if (keys.includes('req_value')) payload.req_value = reqVal;
+      if (keys.includes('req_badge_id')) payload.req_badge_id = null;
+      if (keys.includes('image_male')) payload.image_male = maleImg;
+      if (keys.includes('image_female')) payload.image_female = femaleImg;
+      if (keys.includes('male_image')) payload.male_image = maleImg;
+      if (keys.includes('female_image')) payload.female_image = femaleImg;
+      if (keys.includes('image_url')) payload.image_url = maleImg || femaleImg;
+      if (keys.includes('avatar_url')) payload.avatar_url = maleImg || femaleImg;
+      if (keys.includes('image')) payload.image = maleImg || femaleImg;
+    } else {
+      payload = {
+        era, journey, stage_order: order, journey_name: journeyName,
+        req_type: 'mythic', req_value: reqVal, req_badge_id: null,
+        image_male: maleImg, image_female: femaleImg
+      };
     }
-  }
-};
 
-  
-init();
+    async function go(p, n = 0) {
+      let res;
+      if (id) res = await supabaseClient.from('avatar_stages').update(p).eq('id', id).select();
+      else { p.id = generateUUID(); res = await supabaseClient.from('avatar_stages').insert([p]).select(); }
+      if (res.error) {
+        const m = (res.error.message || '').match(/Could not find the '([^']+)' column/) || (res.error.message || '').match(/column "([^"]+)" of relation/);
+        if (m?.[1] && n < 5) { delete p[m[1]]; return go(p, n + 1); }
+        throw new Error(res.error.message);
+      }
+    }
+
+    try {
+      await go(payload);
+      showToast('Avatar stage saved!'); closeAvatarModal(); await loadData();
+    } catch (e) { console.error(e); showToast(e.message || 'Save failed', true); }
+  }
+
+  async function deleteAvatarStage() {
+    const id = getEl('avatarId')?.value;
+    if (!id || !confirm('Delete this avatar stage?')) return;
+    try {
+      const { error } = await supabaseClient.from('avatar_stages').delete().eq('id', id);
+      if (error) throw error;
+      showToast('Stage deleted.'); closeAvatarModal(); await loadData();
+    } catch (e) { showToast(e.message || 'Delete failed', true); }
+  }
+
+  function toggleSidebar() {
+    getEl('sidebar')?.classList.toggle('hidden');
+    getEl('sidebarOverlay')?.classList.toggle('hidden');
+  }
+  async function handleLogout() {
+    await supabaseClient.auth.signOut();
+    window.location.href = 'login.html';
+  }
+
+  // stubs kept so old HTML onchange hooks don't break
+  function toggleAvatarReq() { /* mythic-only: no-op */ }
+
+  window.openTrophyModal = openTrophyModal;
+  window.closeTrophyModal = closeTrophyModal;
+  window.saveTrophy = saveTrophy;
+  window.deleteTrophy = deleteTrophy;
+  window.toggleTrophyType = toggleTrophyType;
+  window.openBadgeModal = openBadgeModal;
+  window.closeBadgeModal = closeBadgeModal;
+  window.saveBadge = saveBadge;
+  window.deleteBadge = deleteBadge;
+  window.toggleBadgeRule = toggleBadgeRule;
+  window.openAvatarModal = openAvatarModal;
+  window.closeAvatarModal = closeAvatarModal;
+  window.saveAvatar = saveAvatar;
+  window.deleteAvatarStage = deleteAvatarStage;
+  window.toggleAvatarReq = toggleAvatarReq;
+  window.switchTab = switchTab;
+  window.toggleSidebar = toggleSidebar;
+  window.handleLogout = handleLogout;
+
+  window.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
