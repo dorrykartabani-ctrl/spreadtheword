@@ -249,26 +249,41 @@
         </div>
 
         <div class="flex flex-wrap gap-2">
+          <!-- JOINED / RECENCY FILTER (NEW vs OLD USERS) -->
+          <select id="filterJoined" onchange="applyFilters()" class="form-select font-bold text-primary">
+            <option value="all">All Joined Dates</option>
+            <option value="24h">Joined Last 24 Hours</option>
+            <option value="7d">Joined Last 7 Days</option>
+            <option value="30d">Joined Last 30 Days</option>
+            <option value="90d">Joined Last 90 Days</option>
+            <option value="older90d">Older than 90 Days</option>
+          </select>
+
           <select id="filterRole" onchange="applyFilters()" class="form-select">
             <option value="all">All Roles</option>
             <option value="user">User</option>
             <option value="admin">Admin</option>
           </select>
+
           <select id="filterTier" onchange="applyFilters()" class="form-select">
             <option value="all">All Tiers</option>
           </select>
+
           <select id="filterLevel" onchange="applyFilters()" class="form-select">
             <option value="all">All Avatar Levels</option>
           </select>
+
           <select id="filterCountry" onchange="applyFilters()" class="form-select">
             <option value="all">All Countries</option>
           </select>
+
           <select id="filterStatus" onchange="applyFilters()" class="form-select">
             <option value="active">Active</option>
             <option value="suspended">Suspended</option>
             <option value="deleted">Deleted</option>
             <option value="all">All Statuses</option>
           </select>
+
           <button onclick="resetFilters()" class="filter-chip">
             <span class="material-symbols-outlined" style="font-size:14px;">refresh</span>Reset
           </button>
@@ -733,6 +748,9 @@ function applyFilters() {
   var level = document.getElementById('filterLevel').value
   var country = document.getElementById('filterCountry').value
   var status = document.getElementById('filterStatus').value
+  var joined = document.getElementById('filterJoined').value
+
+  var now = new Date()
 
   filteredUsers = allUsers.filter(function(u) {
     if (status === 'active' && (u.deleted_at || u.is_suspended)) return false
@@ -746,6 +764,20 @@ function applyFilters() {
     if (tier !== 'all' && (u.subscription_tier || 'free') !== tier) return false
     if (level !== 'all' && getAvatarLevel(u) !== level) return false
     if (country !== 'all' && u.country !== country) return false
+
+    // NEW vs OLD USER FILTER (Date-based calculation)
+    if (joined !== 'all') {
+      if (!u.created_at) return false;
+      var createdDate = new Date(u.created_at);
+      var diffDays = (now - createdDate) / (1000 * 60 * 60 * 24);
+
+      if (joined === '24h' && diffDays > 1) return false;
+      if (joined === '7d' && diffDays > 7) return false;
+      if (joined === '30d' && diffDays > 30) return false;
+      if (joined === '90d' && diffDays > 90) return false;
+      if (joined === 'older90d' && diffDays <= 90) return false;
+    }
+
     return true
   })
 
