@@ -215,18 +215,17 @@
       <span class="material-symbols-outlined text-outline text-[18px]">chevron_right</span>
     </a>
 
-    <a href="notifications.html" class="nav-card relative">
-      <div class="w-10 h-10 rounded-xl bg-primary-container/20 flex items-center justify-center flex-shrink-0 relative">
-		<div id="profile-notifications-icon" class="relative w-9 h-9 rounded-xl bg-surface-clow flex items-center justify-center">
-        <span class="material-symbols-outlined text-primary text-[20px]">notifications</span>
-        <span id="notifDot" class="hidden notif-dot"></span>
-      </div>
-      <div class="flex-1 min-w-0">
-        <p class="font-headline font-semibold text-on-surface" style="font-size:14px;">Notifications</p>
-        <p id="notifHint" class="font-body text-on-surface-variant" style="font-size:11px;">Updates and announcements</p>
-      </div>
-      <span class="material-symbols-outlined text-outline text-[18px]">chevron_right</span>
-    </a>
+   <!-- Notifications Menu Item -->
+<a href="notifications.html" class="flex items-center justify-between p-4 bg-white rounded-2xl mb-2">
+  <div class="flex items-center gap-3">
+    <!-- IMPORTANT: Added 'relative' and 'inline-flex' here -->
+    <div id="profile-notifications-icon" class="relative inline-flex w-9 h-9 rounded-xl bg-surface-clow items-center justify-center">
+      <span class="material-symbols-outlined text-primary">notifications</span>
+    </div>
+    <span class="font-body font-semibold text-sm">Notifications</span>
+  </div>
+  <span class="material-symbols-outlined text-outline">chevron_right</span>
+</a>
 
 	  <a href="settings.html" class="nav-card">
       <div class="w-10 h-10 rounded-xl bg-surface-chigh flex items-center justify-center flex-shrink-0">
@@ -651,7 +650,6 @@ init()
 <script>
 async function updateNotificationBadges() {
   try {
-    // Safely reference the Supabase client
     var client = typeof supabaseClient !== 'undefined' ? supabaseClient : supabase;
     if (!client) return;
 
@@ -659,53 +657,48 @@ async function updateNotificationBadges() {
     if (!s.data || !s.data.session) return;
     var userId = s.data.session.user.id;
 
-    // 1. Fetch user tier
     var p = await client.from('profiles').select('subscription_tier, tier, tier_id').eq('id', userId).maybeSingle();
     var userTier = p.data?.subscription_tier || p.data?.tier || p.data?.tier_id || 'free';
 
-    // 2. Fetch active broadcasts
     var notifs = await client.from('app_notifications').select('id, target_audience, expires_at').gt('expires_at', new Date().toISOString());
     var rawNotifs = notifs.data || [];
 
-    // Filter tier-targeted notifications
     var validNotifs = rawNotifs.filter(b => {
       var aud = typeof b.target_audience === 'string' ? JSON.parse(b.target_audience) : b.target_audience;
       if (aud && aud.type === 'tier' && aud.value !== userTier) return false;
       return true;
     });
 
-    // 3. Fetch user's read states
     var reads = await client.from('notification_reads').select('notification_id').eq('user_id', userId).not('read_at', 'is', null);
     var readIds = (reads.data || []).map(r => r.notification_id);
 
-    // Count unread
     var unreadCount = validNotifs.filter(n => !readIds.includes(n.id)).length;
 
-    if (unreadCount > 0) {
-      // Add red dot to Bottom Nav Icon (id="nav-notifications-icon")
-      var bottomNavIcon = document.getElementById('nav-notifications-icon');
-      if (bottomNavIcon && !document.getElementById('badge-bottom-nav')) {
-        var dot1 = document.createElement('div');
-        dot1.id = 'badge-bottom-nav';
-        dot1.className = 'absolute -top-0.5 -right-1 w-2.5 h-2.5 bg-red-600 border-2 border-white rounded-full';
-        bottomNavIcon.appendChild(dot1);
-      }
-
-      // Add red dot to Profile Menu Row Icon (id="profile-notifications-icon")
-      var profileMenuIcon = document.getElementById('profile-notifications-icon');
-      if (profileMenuIcon && !document.getElementById('badge-profile-menu')) {
-        var dot2 = document.createElement('div');
-        dot2.id = 'badge-profile-menu';
-        dot2.className = 'absolute top-0 right-0 w-3 h-3 bg-red-600 border-2 border-white rounded-full';
-        profileMenuIcon.appendChild(dot2);
+    // Helper to safely add dot
+    function addDot(parentId, dotId, classes) {
+      var parent = document.getElementById(parentId);
+      if (parent && !document.getElementById(dotId)) {
+        var dot = document.createElement('div');
+        dot.id = dotId;
+        dot.className = classes;
+        parent.appendChild(dot);
       }
     }
-  } catch(e) {
-    console.error("Error updating notification badges:", e);
-  }
+
+    if (unreadCount > 0) {
+      // Dot for Bottom Nav (Ensure the span has class="relative")
+      addDot('nav-notifications-icon', 'badge-bottom-nav', 'absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-600 border-2 border-white rounded-full z-50');
+      
+      // Dot for Profile Menu Row
+      addDot('profile-notifications-icon', 'badge-profile-menu', 'absolute top-0 right-0 w-3 h-3 bg-red-600 border-2 border-white rounded-full z-50');
+    } else {
+      // Remove dots if read
+      var b1 = document.getElementById('badge-bottom-nav'); if(b1) b1.remove();
+      var b2 = document.getElementById('badge-profile-menu'); if(b2) b2.remove();
+    }
+  } catch(e) { console.error("Badge error:", e); }
 }
 
-// Run check on page load
 updateNotificationBadges();
 </script>
 </body>
