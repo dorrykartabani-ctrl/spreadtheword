@@ -264,9 +264,25 @@
   let trophyImages = [], avatarImages = [], badgeImages = [];
   let campaignQuoteCounts = {};
 
+  // ==========================================
+  // TOP-LEVEL UTILITIES (HOISTED FOR INLINE HTML)
+  // ==========================================
   function getEl(id) { return document.getElementById(id); }
   function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  function toggleSidebar() { getEl('sidebar')?.classList.toggle('hidden'); getEl('sidebarOverlay')?.classList.toggle('hidden'); }
+  
+  function toggleSidebar() {
+    const sb = getEl('sidebar');
+    const overlay = getEl('sidebarOverlay');
+    if (sb) sb.classList.toggle('hidden');
+    if (overlay) overlay.classList.toggle('hidden');
+  }
+
+  async function handleLogout() {
+    try {
+      await supabaseClient.auth.signOut();
+    } catch(e) {}
+    window.location.href = 'login.html';
+  }
 
   function generateUUID() {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -275,7 +291,6 @@
     });
   }
 
-  // Generates clean title from URL when DB 'label' is empty or 'Unnamed'
   function extractMediaTitle(url) {
     if (!url) return 'Media Asset';
     try {
@@ -303,8 +318,10 @@
     }
     document.getElementById('toastMsg').textContent = msg;
     const icon = document.getElementById('toastIcon');
-    icon.textContent = isError ? 'error' : 'check_circle';
-    icon.className = `material-symbols-outlined text-lg ${isError ? 'text-rose-400' : 'text-emerald-400'}`;
+    if (icon) {
+      icon.textContent = isError ? 'error' : 'check_circle';
+      icon.className = `material-symbols-outlined text-lg ${isError ? 'text-rose-400' : 'text-emerald-400'}`;
+    }
     toast.classList.remove('hidden'); toast.classList.add('flex');
     if (window.toastTimer) clearTimeout(window.toastTimer);
     window.toastTimer = setTimeout(() => { toast.classList.add('hidden'); toast.classList.remove('flex'); }, 3000);
@@ -410,8 +427,13 @@
 
     const amSel = getEl('avatarImageMale'), afSel = getEl('avatarImageFemale');
     if (amSel && afSel) {
-      amSel.innerHTML = '<option value="">-- Select Male Image --</option>' + buildMediaOptions(avatarImages);
-      afSel.innerHTML = '<option value="">-- Select Female Image --</option>' + buildMediaOptions(avatarImages);
+      amSel.innerHTML = '<option value="">-- Select Male Image --</option>';
+      afSel.innerHTML = '<option value="">-- Select Female Image --</option>';
+      avatarImages.forEach(m => {
+        const opt = `<option value="${m.url}">${escapeHtml(m.label)}</option>`;
+        amSel.innerHTML += opt;
+        afSel.innerHTML += opt;
+      });
     }
 
     const reqBadgeSel = getEl('avatarReqBadge');
@@ -441,7 +463,7 @@
     if (cc) {
       cc.innerHTML = allCampaigns.length ? allCampaigns.map(c => `
         <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer">
-          <input type="checkbox" value="${c.id}" class="campaign-cb" onchange="window.updateCollectionThresholds()">
+          <input type="checkbox" value="${c.id}" class="campaign-cb" onchange="updateCollectionThresholds()">
           <span class="text-xs font-semibold text-slate-700 truncate">${escapeHtml(c.name)}</span>
         </label>
       `).join('') : '<p class="text-xs text-slate-400 p-2">No active campaigns.</p>';
@@ -494,7 +516,6 @@
       const typeClass = t.type === 'stat' ? 'bg-indigo-50 text-indigo-700' : t.type === 'collection' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700';
       const trackedStat = t.type === 'stat' ? (t.stat_type || 'Shares').toUpperCase() : 'Missions/Campaigns';
 
-      // Build stats from trophy_thresholds using 'threshold_value'
       const trophyThreshs = allThresholds.filter(th => String(th.trophy_id) === String(t.id) && th.is_active !== false);
       let tierStatsHtml = '';
 
@@ -618,7 +639,6 @@
 
   function closeTrophyModal() { getEl('trophyModal')?.classList.add('hidden'); }
 
-  // EXACT DATABASE COLUMNS USED HERE (mission_refs, campaign_ids, threshold_value)
   async function saveTrophy() {
     const id = getEl('trophyId')?.value;
     const name = getEl('trophyName')?.value.trim();
@@ -666,7 +686,7 @@
           return {
             trophy_id: trophyId,
             tier_id: tierId,
-            threshold_value: parseInt(el.value, 10) || 0, // 'threshold_value' matches database schema
+            threshold_value: parseInt(el.value, 10) || 0,
             is_active: toggle ? toggle.checked : true
           };
         });
@@ -681,7 +701,7 @@
       showToast('Trophy saved!');
       closeTrophyModal();
       await loadData();
-    } catch(e) {
+    } catch (e) {
       console.error('Save trophy error:', e);
       showToast('Error: ' + e.message, true);
     } finally {
@@ -1020,7 +1040,9 @@
     }
   }
 
-  // Bind controllers globally
+  // Explicit global bindings
+  window.handleLogout = handleLogout;
+  window.toggleSidebar = toggleSidebar;
   window.openTrophyModal = openTrophyModal;
   window.editTrophy = editTrophy;
   window.closeTrophyModal = closeTrophyModal;
@@ -1041,8 +1063,6 @@
   window.deleteAvatarStage = deleteAvatarStage;
 
   window.switchTab = switchTab;
-  window.toggleSidebar = toggleSidebar;
-  window.handleLogout = handleLogout;
 
   window.addEventListener('DOMContentLoaded', init);
 </script>      
