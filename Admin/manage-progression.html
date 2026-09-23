@@ -291,7 +291,7 @@
     });
   }
 
-  // Generates clean title from URL filename when database 'label' is missing or "Unnamed"
+  // Generates clean title from URL filename when DB 'label' / 'name' is missing or "Unnamed"
   function extractMediaTitle(url) {
     if (!url) return 'Media Asset';
     try {
@@ -350,42 +350,8 @@
   }
 
   // ==========================================
-  // MEDIA LOADER (UNIFIED FOR ALL REWARDS)
+  // LOAD DATA
   // ==========================================
-  async function loadMediaAssets() {
-    try {
-      const { data: raw, error } = await supabaseClient.from('media').select('*');
-      if (error || !raw?.length) { 
-        trophyImages = badgeImages = avatarImages = []; 
-        return; 
-      }
-      
-      const normalized = raw.map(r => {
-        const url = r.url || r.file_url || r.path || r.image_url || r.media_url || '';
-        const rawLabel = r.label || r.name || r.title || '';
-        const displayName = (rawLabel && String(rawLabel).trim().toLowerCase() !== 'unnamed') 
-          ? String(rawLabel).trim() 
-          : extractMediaTitle(url);
-
-        return {
-          ...r,
-          url: url,
-          label: displayName,
-          type: String(r.type || r.category || '').toLowerCase().trim()
-        };
-      }).filter(m => m.url);
-
-      trophyImages = normalized.filter(m => m.type.includes('troph'));
-      badgeImages  = normalized.filter(m => m.type.includes('badge'));
-      avatarImages = normalized.filter(m => m.type.includes('avatar') || m.type.includes('char'));
-
-      // Fallback: If category filtering yields no rows, populate all options
-      if (!trophyImages.length) trophyImages = normalized;
-      if (!badgeImages.length) badgeImages = normalized;
-      if (!avatarImages.length) avatarImages = normalized;
-    } catch (e) { console.error('Media load failed:', e); }
-  }
-
   async function loadData() {
     try {
       const [tierRes, tRes, threshRes, bRes, aRes, mediaRes, projRes, campRes] = await Promise.all([
@@ -416,7 +382,25 @@
         });
       }
 
-      await loadMediaAssets();
+      // Filter Media Assets & Extract Real Titles from label / name / filename
+      const mediaData = (mediaRes.data || []).map(m => {
+        const url = m.url || '';
+        const rawLabel = m.label || m.name || '';
+        const cleanLabel = (rawLabel && String(rawLabel).trim().toLowerCase() !== 'unnamed') 
+          ? String(rawLabel).trim() 
+          : extractMediaTitle(url);
+
+        return { ...m, url, label: cleanLabel, type: String(m.type || '').toLowerCase().trim() };
+      }).filter(m => m.url);
+
+      trophyImages = mediaData.filter(m => m.type.includes('troph'));
+      avatarImages = mediaData.filter(m => m.type.includes('avatar') || m.type.includes('char'));
+      badgeImages  = mediaData.filter(m => m.type.includes('badge'));
+
+      // Fallback if category tag isn't strictly formatted
+      if (!trophyImages.length) trophyImages = mediaData;
+      if (!badgeImages.length) badgeImages = mediaData;
+      if (!avatarImages.length) avatarImages = mediaData;
 
       renderTrophies();
       renderBadges();
@@ -429,7 +413,7 @@
   }
 
   // ==========================================
-  // UNIFIED DROPDOWN BUILDER
+  // DROPDOWNS & CHECKLISTS
   // ==========================================
   function buildMediaOptions(images, selectedUrl) {
     if (!images?.length) return '<option value="">-- No media assets found --</option>';
@@ -454,7 +438,7 @@
     const reqBadgeSel = getEl('avatarReqBadge');
     if (reqBadgeSel) {
       reqBadgeSel.innerHTML = '<option value="">-- Select Required Badge --</option>';
-      allBadges.forEach(b => reqBadgeSel.innerHTML += `<option value="${b.id}">${escapeHtml(b.name)}</option>`);
+      allBadges.forEach(b => reqBadgeSel.innerHTML += `<option value="${b.id}">${escapeHtml(b.name || b.title)}</option>`);
     }
   }
 
@@ -514,7 +498,7 @@
   }
 
   // ==========================================
-  // TROPHIES
+  // TROPHIES (CARD VIEW WITH THRESHOLD STATS)
   // ==========================================
   function renderTrophies() {
     const grid = getEl('trophyGrid');
@@ -595,7 +579,7 @@
     if (getEl('trophyModalTitle')) getEl('trophyModalTitle').textContent = 'Create Trophy';
 
     const tSel = getEl('trophyImage') || getEl('trophyBaseImage');
-    if (tSel) tSel.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages, '');
+    if (tSel) tSel.value = '';
 
     toggleTrophyType();
     
@@ -622,7 +606,7 @@
     if (getEl('trophyStatType')) getEl('trophyStatType').value = t.stat_type || 'shares';
     
     const tSel = getEl('trophyImage') || getEl('trophyBaseImage');
-    if (tSel) tSel.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages, t.image_url || '');
+    if (tSel) tSel.value = t.image_url || '';
     
     if (getEl('trophyDesc')) getEl('trophyDesc').value = t.description || '';
     if (getEl('trophyModalTitle')) getEl('trophyModalTitle').textContent = 'Edit Trophy';
@@ -656,6 +640,7 @@
 
   function closeTrophyModal() { getEl('trophyModal')?.classList.add('hidden'); }
 
+  // EXACT MATCH FOR trophy_definitions & trophy_thresholds SCHEMA
   async function saveTrophy() {
     const id = getEl('trophyId')?.value;
     const name = getEl('trophyName')?.value.trim();
@@ -678,37 +663,45 @@
     if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
 
     try {
-      const data = {
+      // Payload strictly matching trophy_definitions schema
+      const payload = {
         name,
         type,
         stat_type: statType,
         image_url: imgUrl,
         description: desc || null,
-        mission_refs: missionRefs,
-        campaign_ids: campaignIds
+        mission_refs: missionRefs || [], // MUST BE ARRAY (NON-NULLABLE IN SCHEMA)
+        campaign_ids: campaignIds || []
       };
 
-      const res = id 
-        ? await supabaseClient.from('trophy_definitions').update(data).eq('id', id)
-        : await supabaseClient.from('trophy_definitions').insert([data]).select().single();
+      let savedTrophyId = id;
 
-      if (res.error) throw new Error(res.error.message);
+      if (id) {
+        const res = await supabaseClient.from('trophy_definitions').update(payload).eq('id', id);
+        if (res.error) throw new Error(res.error.message);
+      } else {
+        payload.id = generateUUID();
+        const res = await supabaseClient.from('trophy_definitions').insert([payload]).select().single();
+        if (res.error) throw new Error(res.error.message);
+        savedTrophyId = res.data ? res.data.id : payload.id;
+      }
 
-      const trophyId = id || (res.data ? res.data.id : null);
+      // Save relational thresholds to trophy_thresholds table
+      if (allTiers.length > 0 && savedTrophyId) {
+        await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', savedTrophyId);
 
-      if (trophyId) {
         const threshData = Array.from(document.querySelectorAll('.tier-thresh')).map(el => {
           const tierId = parseInt(el.dataset.tier, 10);
           const toggle = document.querySelector(`.tier-toggle[data-tier="${tierId}"]`);
           return {
-            trophy_id: trophyId,
+            id: generateUUID(),
+            trophy_id: savedTrophyId,
             tier_id: tierId,
-            threshold_value: parseInt(el.value, 10) || 0,
+            threshold_value: parseInt(el.value, 10) || 0, // NON-NULLABLE IN SCHEMA
             is_active: toggle ? toggle.checked : true
           };
         });
 
-        await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', trophyId);
         if (threshData.length > 0) {
           const tRes = await supabaseClient.from('trophy_thresholds').insert(threshData);
           if (tRes.error) throw new Error(tRes.error.message);
@@ -765,7 +758,7 @@
         </div>
         <div class="p-4 flex flex-col flex-1">
           <div class="flex items-start justify-between gap-2 mb-1">
-            <h3 class="font-headline font-bold text-slate-800 text-base leading-snug">${escapeHtml(b.name)}</h3>
+            <h3 class="font-headline font-bold text-slate-800 text-base leading-snug">${escapeHtml(b.name || b.title)}</h3>
             <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-slate-100 text-slate-600 flex-shrink-0">${escapeHtml(b.rule_type || 'milestone')}</span>
           </div>
           <p class="text-xs text-slate-400 line-clamp-2">${escapeHtml(b.description || 'No description.')}</p>
@@ -786,17 +779,15 @@
       if (typeof cfg === 'string') { try { cfg = JSON.parse(cfg); } catch(e) { cfg = {}; } }
 
       getEl('badgeId').value = b.id;
-      getEl('badgeName').value = b.name || '';
+      getEl('badgeName').value = b.name || b.title || '';
       getEl('badgeDesc').value = b.description || '';
       getEl('badgeRuleType').value = b.rule_type || 'milestone';
-      getEl('badgeStatType').value = cfg.stat_type || 'shares';
-      getEl('badgeStatTarget').value = cfg.stat_target ?? '';
+      getEl('badgeImage').value = b.image_url || '';
+      getEl('badgeStatType').value = cfg.stat_type || b.stat_type || 'shares';
+      getEl('badgeStatTarget').value = cfg.stat_target ?? b.stat_target ?? '';
       getEl('badgeAdminReferral').checked = !!cfg.is_admin_referral;
       getEl('badgeMissionPriority').checked = !!cfg.is_priority_mission;
       getEl('badgeTop10').checked = !!b.is_top_10_eligible;
-
-      const bSel = getEl('badgeImage');
-      if (bSel) bSel.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages, b.image_url || '');
 
       toggleBadgeRule();
       getEl('deleteBadgeBtn')?.classList.remove('hidden');
@@ -805,15 +796,12 @@
       getEl('badgeName').value = '';
       getEl('badgeDesc').value = '';
       getEl('badgeRuleType').value = 'milestone';
+      getEl('badgeImage').value = '';
       getEl('badgeStatType').value = 'shares';
       getEl('badgeStatTarget').value = '';
       getEl('badgeAdminReferral').checked = false;
       getEl('badgeMissionPriority').checked = false;
       getEl('badgeTop10').checked = false;
-
-      const bSel = getEl('badgeImage');
-      if (bSel) bSel.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages, '');
-
       toggleBadgeRule();
     }
   }
@@ -832,10 +820,13 @@
     if (!name) return showToast('Enter a badge name.', true);
 
     const payload = {
-      name,
+      name: name,
+      title: name,
       description: getEl('badgeDesc')?.value.trim() || null,
       rule_type: getEl('badgeRuleType')?.value || 'milestone',
       image_url: getEl('badgeImage')?.value || null,
+      stat_type: getEl('badgeStatType')?.value || 'shares',
+      stat_target: parseInt(getEl('badgeStatTarget')?.value) || 0,
       is_top_10_eligible: !!getEl('badgeTop10')?.checked,
       rule_config: {
         stat_type: getEl('badgeStatType')?.value || 'shares',
@@ -878,7 +869,7 @@
   }
 
   // ==========================================
-  // AVATARS (COLLAPSIBLE ERAS, COMPACT CARDS)
+  // AVATARS (EXACT SCHEMA MATCH FOR avatar_stages)
   // ==========================================
   function renderAvatars() {
     const list = getEl('avatarList');
@@ -895,7 +886,7 @@
       return Number.isFinite(num) ? num : 9999;
     }
     function stageNum(a) {
-      const n = parseInt(a.stage_order ?? a.order ?? 0, 10);
+      const n = parseInt(a.stage_order ?? 0, 10);
       return Number.isFinite(n) ? n : 0;
     }
 
@@ -949,10 +940,10 @@
         `;
 
         journeyObj.stages.forEach(a => {
-          const img = a.image_male || a.image_female || a.male_image || a.female_image || a.image_url || null;
-          const name = a.journey_name || 'Stage ' + stageNum(a);
+          const img = a.image_url_male || a.image_url_female || null;
+          const name = a.avatar_title || 'Stage ' + stageNum(a);
           const order = stageNum(a);
-          const mythicNeed = a.req_value ?? 0;
+          const mythicNeed = a.mythic_required ?? a.req_value ?? 0;
 
           html += `
             <div onclick="openAvatarModal('${a.id}')" class="card p-0 flex flex-col hover:border-gold cursor-pointer transition-all hover:shadow-md overflow-hidden group bg-white">
@@ -993,13 +984,13 @@
       getEl('avatarEra').value = a.era || '';
       getEl('avatarJourney').value = a.journey || '';
       getEl('avatarOrder').value = a.stage_order ?? '';
-      getEl('avatarName').value = a.journey_name || '';
-      getEl('avatarReqValue').value = a.req_value ?? 0;
+      getEl('avatarName').value = a.avatar_title || '';
+      getEl('avatarReqValue').value = a.mythic_required ?? a.req_value ?? 0;
 
       const amSel = getEl('avatarImageMale');
       const afSel = getEl('avatarImageFemale');
-      if (amSel) amSel.innerHTML = '<option value="">-- Select Male Image --</option>' + buildMediaOptions(avatarImages, a.image_male || a.male_image || '');
-      if (afSel) afSel.innerHTML = '<option value="">-- Select Female Image --</option>' + buildMediaOptions(avatarImages, a.image_female || a.female_image || '');
+      if (amSel) amSel.value = a.image_url_male || '';
+      if (afSel) afSel.value = a.image_url_female || '';
 
       getEl('deleteAvatarBtn')?.classList.remove('hidden');
     } else {
@@ -1009,30 +1000,31 @@
       getEl('avatarOrder').value = '';
       getEl('avatarName').value = '';
       getEl('avatarReqValue').value = '0';
-      
-      const amSel = getEl('avatarImageMale');
-      const afSel = getEl('avatarImageFemale');
-      if (amSel) amSel.innerHTML = '<option value="">-- Select Male Image --</option>' + buildMediaOptions(avatarImages, '');
-      if (afSel) afSel.innerHTML = '<option value="">-- Select Female Image --</option>' + buildMediaOptions(avatarImages, '');
+      if (getEl('avatarImageMale')) getEl('avatarImageMale').value = '';
+      if (getEl('avatarImageFemale')) getEl('avatarImageFemale').value = '';
     }
   }
 
   function closeAvatarModal() { getEl('avatarModal')?.classList.add('hidden'); }
 
+  // STRICT SAVE PAYLOAD MATCHING YOUR avatar_stages COLUMNS
   async function saveAvatar() {
     const id = getEl('avatarId')?.value;
-    const journeyName = getEl('avatarName')?.value.trim();
-    if (!journeyName) return showToast('Enter a journey name.', true);
+    const title = getEl('avatarName')?.value.trim();
+    if (!title) return showToast('Enter an avatar title.', true);
+
+    const reqVal = parseInt(getEl('avatarReqValue')?.value, 10) || 0;
 
     const payload = {
       era: getEl('avatarEra')?.value.trim() || 'Era 1',
       journey: getEl('avatarJourney')?.value.trim() || 'The Journey',
       stage_order: parseInt(getEl('avatarOrder')?.value, 10) || 1,
-      journey_name: journeyName,
+      avatar_title: title,
+      image_url_male: getEl('avatarImageMale')?.value || null,
+      image_url_female: getEl('avatarImageFemale')?.value || null,
+      mythic_required: reqVal,
       req_type: 'mythic',
-      req_value: parseInt(getEl('avatarReqValue')?.value, 10) || 0,
-      image_male: getEl('avatarImageMale')?.value || null,
-      image_female: getEl('avatarImageFemale')?.value || null
+      req_value: reqVal
     };
 
     try {
