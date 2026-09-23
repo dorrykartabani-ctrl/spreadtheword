@@ -21,6 +21,7 @@
             'surface-c':'#efeee7',
             'on-surface':'#31332e','on-surface-variant':'#5e6059',
             'outline':'#7a7b75','primary':'#3d6285','on-primary':'#f7f9ff',
+            'inverse-surface':'#0e0e0c',
           },
           fontFamily:{
             'headline':['Plus Jakarta Sans','sans-serif'],
@@ -69,6 +70,10 @@
     .type-success { border-left-color: #10b981; }
     .type-warning { border-left-color: #f59e0b; }
     .type-alert { border-left-color: #ef4444; }
+
+    /* Spinner */
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* Skeleton */
     .skeleton{background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:12px;}
@@ -155,17 +160,43 @@
             </div>
             <select id="audienceTier" class="hidden w-full form-input bg-surface-clow px-4 py-3 rounded-xl text-sm font-semibold">
               <option value="free">Free Users</option>
-              <!-- JS Populated -->
             </select>
           </div>
 
-          <!-- Personal Targeting -->
-          <div id="target-personal" class="hidden">
-            <select id="audienceUser" required class="w-full form-input bg-surface-clow px-4 py-3 rounded-xl text-sm font-semibold">
-              <option value="">Select a user...</option>
-              <!-- JS Populated -->
-            </select>
-            <p class="text-[10px] text-outline mt-2">Only this specific user will see the message.</p>
+          <!-- Personal Targeting (Live Search) -->
+          <div id="target-personal" class="hidden relative space-y-2">
+            
+            <!-- Selected User Badge -->
+            <div id="selectedUserBadge" class="hidden flex items-center justify-between p-3 bg-surface-clow rounded-xl border border-primary/20">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center text-white font-bold text-xs">
+                  <span class="material-symbols-outlined text-lg">person</span>
+                </div>
+                <div>
+                  <p id="selectedUserName" class="font-headline font-bold text-sm text-on-surface">User Name</p>
+                  <p id="selectedUserSub" class="text-xs text-outline">user@email.com</p>
+                </div>
+              </div>
+              <button type="button" onclick="clearSelectedUser()" class="w-8 h-8 rounded-lg hover:bg-red-50 text-outline hover:text-red-500 flex items-center justify-center transition-colors">
+                <span class="material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+
+            <!-- Search Wrapper -->
+            <div id="userSearchWrapper" class="relative">
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-3.5 top-3.5 text-outline text-lg">search</span>
+                <input type="text" id="userSearchInput" oninput="onUserSearchInput()" placeholder="Type name or email to search..." autocomplete="off" class="w-full form-input bg-surface-clow pl-10 pr-4 py-3 rounded-xl text-sm font-semibold">
+              </div>
+              
+              <input type="hidden" id="audienceUser">
+
+              <!-- Live Search Dropdown -->
+              <div id="userSearchResults" class="hidden absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-surface-c max-h-60 overflow-y-auto z-50 divide-y divide-surface-c">
+              </div>
+              
+              <p class="text-[10px] text-outline mt-2">Type at least 2 characters to search users.</p>
+            </div>
           </div>
         </div>
 
@@ -238,7 +269,6 @@
         
         <div class="bg-surface-c p-6 rounded-[2rem] border-4 border-white/50 shadow-inner flex flex-col justify-center min-h-[200px]">
           
-          <!-- Exact replica of user side card -->
           <div id="previewCard" class="preview-card type-info p-4 transition-all w-full">
             <div class="flex gap-3">
               <div id="previewIconBg" class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-blue-50">
@@ -283,9 +313,10 @@ var supabaseClient = supabase.createClient(
 );
 
 var currentUser = null;
-var currentMode = 'broadcast'; // 'broadcast' or 'personal'
+var currentMode = 'broadcast';
+var searchDebounceTimer = null;
 
-// Design tokens exact match with user app
+// Design tokens (1:1 with user app)
 var typeConfig = {
   info:    { class: 'type-info',    bg: 'bg-blue-50',  color: 'text-blue-600',  icon: 'info' },
   success: { class: 'type-success', bg: 'bg-green-50', color: 'text-green-600', icon: 'check_circle' },
@@ -293,6 +324,9 @@ var typeConfig = {
   alert:   { class: 'type-alert',   bg: 'bg-red-50',   color: 'text-red-600',   icon: 'campaign' }
 };
 
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
 async function init() {
   var s = await supabaseClient.auth.getSession();
   if (!s.data.session) return window.location.href = 'login.html';
@@ -302,9 +336,26 @@ async function init() {
   var d = new Date(); d.setDate(d.getDate() + 7);
   document.getElementById('expiresAt').value = d.toISOString().slice(0, 16);
 
-  await Promise.all([loadTiers(), loadUsers(), loadHistory()]);
+  await Promise.all([loadTiers(), loadHistory()]);
+
+  // Handle deep-link from Users/Warriors page
+  // e.g. notifications.html?mode=personal&userId=123-abc
+  var params = new URLSearchParams(window.location.search);
+  var modeParam = params.get('mode');
+  var userIdParam = params.get('userId') || params.get('to') || params.get('id');
+
+  if (modeParam === 'personal' || userIdParam) {
+    setMode('personal');
+    if (userIdParam) {
+      await loadSingleUser(userIdParam);
+      document.getElementById('msgTitle')?.focus();
+    }
+  }
 }
 
+// ════════════════════════════════════════════
+// MODE / TARGETING
+// ════════════════════════════════════════════
 function setMode(mode) {
   currentMode = mode;
   document.getElementById('mode-broadcast').classList.toggle('active', mode === 'broadcast');
@@ -312,9 +363,6 @@ function setMode(mode) {
   
   document.getElementById('target-broadcast').classList.toggle('hidden', mode !== 'broadcast');
   document.getElementById('target-personal').classList.toggle('hidden', mode !== 'personal');
-
-  // Adjust audience selection required state
-  document.getElementById('audienceUser').required = (mode === 'personal');
 }
 
 function toggleTargetFields() {
@@ -322,9 +370,100 @@ function toggleTargetFields() {
   document.getElementById('audienceTier').classList.toggle('hidden', !isTier);
 }
 
+// ════════════════════════════════════════════
+// LIVE USER SEARCH (Scales to millions)
+// ════════════════════════════════════════════
+function onUserSearchInput() {
+  clearTimeout(searchDebounceTimer);
+  var query = document.getElementById('userSearchInput').value.trim();
+  var resultsBox = document.getElementById('userSearchResults');
+  
+  if (query.length < 2) {
+    resultsBox.classList.add('hidden');
+    return;
+  }
+
+  // Debounce: search after 300ms pause
+  searchDebounceTimer = setTimeout(async function() {
+    resultsBox.innerHTML = '<div class="p-3 text-xs text-outline font-semibold text-center">Searching...</div>';
+    resultsBox.classList.remove('hidden');
+
+    var { data, error } = await supabaseClient
+      .from('profiles')
+      .select('*')
+      .or('display_name.ilike.%' + query + '%,email.ilike.%' + query + '%')
+      .limit(10);
+
+    if (error) {
+      console.error("Search error:", error);
+      resultsBox.innerHTML = '<div class="p-3 text-xs text-red-500 font-semibold text-center">Error: ' + escapeHtml(error.message) + '</div>';
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      resultsBox.innerHTML = '<div class="p-3 text-xs text-outline font-semibold text-center">No matching users found</div>';
+      return;
+    }
+
+    resultsBox.innerHTML = '';
+    data.forEach(function(u) {
+      var name = u.display_name || u.full_name || u.name || u.email || ('User ' + u.id.slice(0, 8));
+      var email = u.email || '';
+      
+      var row = document.createElement('div');
+      row.className = 'p-3 hover:bg-surface-clow cursor-pointer flex items-center justify-between transition-colors';
+      row.onclick = function() { selectUser(u.id, name, email); };
+      row.innerHTML = 
+        '<div class="min-w-0">'
+        + '<p class="font-headline font-bold text-xs text-on-surface truncate">' + escapeHtml(name) + '</p>'
+        + '<p class="text-[10px] text-outline truncate">' + escapeHtml(email) + '</p>'
+        + '</div>'
+        + '<span class="material-symbols-outlined text-outline text-sm flex-shrink-0 ml-2">add_circle</span>';
+      resultsBox.appendChild(row);
+    });
+  }, 300);
+}
+
+function selectUser(id, name, email) {
+  document.getElementById('audienceUser').value = id;
+  document.getElementById('selectedUserName').textContent = name;
+  document.getElementById('selectedUserSub').textContent = email;
+
+  document.getElementById('selectedUserBadge').classList.remove('hidden');
+  document.getElementById('userSearchWrapper').classList.add('hidden');
+  document.getElementById('userSearchResults').classList.add('hidden');
+}
+
+function clearSelectedUser() {
+  document.getElementById('audienceUser').value = '';
+  document.getElementById('userSearchInput').value = '';
+  document.getElementById('selectedUserBadge').classList.add('hidden');
+  document.getElementById('userSearchWrapper').classList.remove('hidden');
+  document.getElementById('userSearchInput').focus();
+}
+
+// Fetch 1 specific user by ID (used for deep-links from Users panel)
+async function loadSingleUser(userId) {
+  var { data, error } = await supabaseClient.from('profiles').select('*').eq('id', userId).maybeSingle();
+  if (error) {
+    console.error("Deep-link user load error:", error);
+    showToast("Could not find user");
+    return;
+  }
+  if (data) {
+    var name = data.display_name || data.full_name || data.name || data.email || ('User ' + data.id.slice(0, 8));
+    selectUser(data.id, name, data.email || '');
+  } else {
+    showToast("User not found");
+  }
+}
+
+// ════════════════════════════════════════════
+// MESSAGE TYPE + PREVIEW
+// ════════════════════════════════════════════
 function setType(type, btn) {
   document.getElementById('msgType').value = type;
-  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.type-btn').forEach(function(b) { b.classList.remove('active'); });
   btn.classList.add('active');
   updatePreview();
 }
@@ -340,13 +479,13 @@ function updatePreview() {
   document.getElementById('previewBody').textContent = body;
   
   var card = document.getElementById('previewCard');
-  card.className = `preview-card ${theme.class} p-4 transition-all w-full`;
+  card.className = 'preview-card ' + theme.class + ' p-4 transition-all w-full';
   
   var iconBg = document.getElementById('previewIconBg');
-  iconBg.className = `w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${theme.bg}`;
+  iconBg.className = 'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ' + theme.bg;
   
   var icon = document.getElementById('previewIcon');
-  icon.className = `material-symbols-outlined ${theme.color} filled`;
+  icon.className = 'material-symbols-outlined ' + theme.color + ' filled';
   icon.textContent = theme.icon;
 
   var actionArea = document.getElementById('previewActionArea');
@@ -359,29 +498,34 @@ function updatePreview() {
   }
 }
 
+// ════════════════════════════════════════════
+// DROPDOWNS
+// ════════════════════════════════════════════
 async function loadTiers() {
   var { data } = await supabaseClient.from('subscription_tiers').select('id, name').order('sort_order');
   if (data) {
     var sel = document.getElementById('audienceTier');
-    data.forEach(t => { if(t.id !== 'free') sel.innerHTML += `<option value="${t.id}">${t.name} Tier</option>`; });
-  }
-}
-
-async function loadUsers() {
-  var { data } = await supabaseClient.from('profiles').select('id, display_name, email').limit(1000);
-  if (data) {
-    var sel = document.getElementById('audienceUser');
-    data.forEach(u => {
-      var name = u.display_name || u.email || 'Unknown User';
-      sel.innerHTML += `<option value="${u.id}">${name}</option>`;
+    data.forEach(function(t) {
+      if(t.id !== 'free') sel.innerHTML += '<option value="' + t.id + '">' + escapeHtml(t.name) + ' Tier</option>';
     });
   }
 }
 
+// ════════════════════════════════════════════
+// SEND MESSAGE
+// ════════════════════════════════════════════
 async function sendMessage(e) {
   e.preventDefault();
+
+  // Validate personal mode has user selected
+  if (currentMode === 'personal') {
+    var uid = document.getElementById('audienceUser').value;
+    if (!uid) return showToast("Please select a user first");
+  }
+
   var btn = document.getElementById('submitBtn');
-  btn.disabled = true; btn.innerHTML = '<span class="material-symbols-outlined spin">progress_activity</span> Deploying...';
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined spin">progress_activity</span> Deploying...';
 
   var data = {
     title: document.getElementById('msgTitle').value.trim(),
@@ -397,74 +541,88 @@ async function sendMessage(e) {
 
   if (currentMode === 'broadcast') {
     var audType = document.querySelector('input[name="audience"]:checked').value;
-    data.target_audience = audType === 'tier' ? { type: 'tier', value: document.getElementById('audienceTier').value } : { type: 'all' };
+    data.target_audience = audType === 'tier' 
+      ? { type: 'tier', value: document.getElementById('audienceTier').value } 
+      : { type: 'all' };
     var res = await supabaseClient.from('app_notifications').insert([data]);
     error = res.error;
   } else {
     data.target_user_id = document.getElementById('audienceUser').value;
-    // Note: ensure notifications table exists with these columns!
     var res = await supabaseClient.from('notifications').insert([data]);
     error = res.error;
   }
 
-  btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined">send</span> Deploy Message';
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-symbols-outlined">send</span> Deploy Message';
 
   if (error) return showToast("Error: " + error.message);
 
   showToast(currentMode === 'broadcast' ? "Broadcast deployed!" : "Personal message sent!");
   document.getElementById('composeForm').reset();
+  clearSelectedUser();
+  
+  // Reset expiration to 7 days
+  var d = new Date(); d.setDate(d.getDate() + 7);
+  document.getElementById('expiresAt').value = d.toISOString().slice(0, 16);
+  
   updatePreview();
   await loadHistory();
 }
 
+// ════════════════════════════════════════════
+// HISTORY
+// ════════════════════════════════════════════
 async function loadHistory() {
   var list = document.getElementById('historyList');
   list.innerHTML = '<div class="skeleton h-20 w-full"></div>';
 
   var now = new Date().toISOString();
   
-  // Fetch active Broadcasts
   var bRes = await supabaseClient.from('app_notifications').select('*').gt('expires_at', now).order('created_at', { ascending: false });
-  // Fetch active Personal notes
   var pRes = await supabaseClient.from('notifications').select('*').gt('expires_at', now).order('created_at', { ascending: false });
   
-  var broadcasts = (bRes.data || []).map(x => ({ ...x, _mode: 'broadcast' }));
-  var personal = (pRes.data || []).map(x => ({ ...x, _mode: 'personal' }));
+  var broadcasts = (bRes.data || []).map(function(x) { return Object.assign({}, x, { _mode: 'broadcast' }); });
+  var personal = (pRes.data || []).map(function(x) { return Object.assign({}, x, { _mode: 'personal' }); });
   
-  var combined = [...broadcasts, ...personal].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  var combined = broadcasts.concat(personal).sort(function(a,b) { 
+    return new Date(b.created_at) - new Date(a.created_at); 
+  });
 
   if (combined.length === 0) {
-    list.innerHTML = `<div class="bg-white rounded-xl p-5 text-center border border-surface-c text-outline text-xs font-bold">No active messages.</div>`;
+    list.innerHTML = '<div class="bg-white rounded-xl p-5 text-center border border-surface-c text-outline text-xs font-bold">No active messages.</div>';
     return;
   }
 
   list.innerHTML = '';
-  combined.forEach(n => {
+  combined.forEach(function(n) {
     var tConfig = typeConfig[n.type || 'info'];
     var modeBadge = n._mode === 'broadcast' 
       ? '<span class="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[9px] font-bold uppercase">Broadcast</span>'
       : '<span class="bg-purple-50 text-purple-600 px-2 py-0.5 rounded text-[9px] font-bold uppercase">Personal</span>';
     
-    var audText = n._mode === 'broadcast' 
-      ? (n.target_audience.type === 'all' ? 'All Users' : 'Tier: ' + n.target_audience.value)
-      : '1 User';
+    var audText = '';
+    if (n._mode === 'broadcast') {
+      var aud = typeof n.target_audience === 'string' ? JSON.parse(n.target_audience) : n.target_audience;
+      audText = aud && aud.type === 'all' ? 'All Users' : 'Tier: ' + (aud?.value || '?');
+    } else {
+      audText = '1 User';
+    }
 
-    list.innerHTML += `
-      <div class="bg-white rounded-xl p-4 border border-surface-c shadow-sm relative group">
-        <div class="flex items-center gap-2 mb-2">
-          ${modeBadge}
-          <h4 class="font-headline font-bold text-sm text-on-surface truncate flex-1 ml-1">${escapeHtml(n.title)}</h4>
-          <button onclick="endEarly('${n.id}', '${n._mode}')" title="End Early" class="text-outline hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-            <span class="material-symbols-outlined text-lg">cancel</span>
-          </button>
-        </div>
-        <p class="text-xs text-on-surface-variant line-clamp-1 mb-3">${escapeHtml(n.message)}</p>
-        <div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-outline">
-          <span class="flex items-center gap-1"><span class="material-symbols-outlined text-[13px] ${tConfig.color}">${tConfig.icon}</span> ${audText}</span>
-          <span>Ends: ${new Date(n.expires_at).toLocaleDateString()}</span>
-        </div>
-      </div>
-    `;
+    list.innerHTML += 
+      '<div class="bg-white rounded-xl p-4 border border-surface-c shadow-sm relative group">'
+      + '<div class="flex items-center gap-2 mb-2">'
+      + modeBadge
+      + '<h4 class="font-headline font-bold text-sm text-on-surface truncate flex-1 ml-1">' + escapeHtml(n.title) + '</h4>'
+      + '<button onclick="endEarly(\'' + n.id + '\', \'' + n._mode + '\')" title="End Early" class="text-outline hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">'
+      + '<span class="material-symbols-outlined text-lg">cancel</span>'
+      + '</button>'
+      + '</div>'
+      + '<p class="text-xs text-on-surface-variant line-clamp-1 mb-3">' + escapeHtml(n.message) + '</p>'
+      + '<div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-outline">'
+      + '<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[13px] ' + tConfig.color + '">' + tConfig.icon + '</span> ' + audText + '</span>'
+      + '<span>Ends: ' + new Date(n.expires_at).toLocaleDateString() + '</span>'
+      + '</div>'
+      + '</div>';
   });
 }
 
@@ -476,13 +634,23 @@ async function endEarly(id, mode) {
   loadHistory();
 }
 
+// ════════════════════════════════════════════
+// UTILITIES
+// ════════════════════════════════════════════
 function showToast(msg) {
   var t = document.getElementById('toast');
   document.getElementById('toastMsg').textContent = msg;
-  t.classList.remove('hidden'); t.classList.add('flex');
-  setTimeout(() => { t.classList.add('hidden'); t.classList.remove('flex'); }, 3000);
+  t.classList.remove('hidden');
+  t.classList.add('flex');
+  setTimeout(function() { 
+    t.classList.add('hidden');
+    t.classList.remove('flex');
+  }, 3000);
 }
-function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function escapeHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
 
 init();
 </script>
