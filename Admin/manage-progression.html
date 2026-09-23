@@ -254,20 +254,23 @@
   </div>
 </div>
       
-   
 <script>
+  // ==========================================
+  // INITIALIZE SUPABASE CLIENT
+  // ==========================================
   const supabaseClient = supabase.createClient(
     'https://nhymadutuhpjgkiurify.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
   );
 
   let currentUser = null;
-  let allTrophies = [], allBadges = [], allAvatars = [];
+  let allTiers = [], allTrophies = [], allThresholds = [], allBadges = [], allAvatars = [];
   let allMissions = [], allCampaigns = [];
   let trophyImages = [], avatarImages = [], badgeImages = [];
 
   function getEl(id) { return document.getElementById(id); }
   function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  
   function generateUUID() {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -293,6 +296,49 @@
     window.toastTimer = setTimeout(() => { toast.classList.add('hidden'); toast.classList.remove('flex'); }, 4500);
   }
 
+  // ==========================================
+  // ADAPTIVE DATABASE SAVE HANDLER
+  // ==========================================
+  async function resilientSave(tableName, id, payload) {
+    let curPayload = { ...payload };
+    let retries = 0;
+
+    while (retries < 6) {
+      let res;
+      if (id) {
+        res = await supabaseClient.from(tableName).update(curPayload).eq('id', id).select();
+      } else {
+        if (!curPayload.id) curPayload.id = generateUUID();
+        res = await supabaseClient.from(tableName).insert([curPayload]).select();
+      }
+
+      if (!res.error) {
+        return res.data;
+      }
+
+      console.warn(`[${tableName}] Save attempt ${retries + 1} failed:`, res.error);
+      const errText = res.error.message || res.error.details || '';
+
+      // Match unknown column error messages from PostgREST / Postgres
+      const match = errText.match(/Could not find the '([^']+)' column/) || 
+                    errText.match(/column "([^"]+)" of relation/) ||
+                    errText.match(/column '([^']+)' of relation/);
+
+      if (match && match[1]) {
+        const badCol = match[1];
+        console.warn(`[${tableName}] Auto-stripping non-existent column '${badCol}' and retrying...`);
+        delete curPayload[badCol];
+        retries++;
+      } else {
+        throw new Error(res.error.message || res.error.details || "Database constraint error");
+      }
+    }
+    throw new Error(`Failed to save to ${tableName} after column stripping retries.`);
+  }
+
+  // ==========================================
+  // AUTH & INIT
+  // ==========================================
   async function init() {
     try {
       const s = await supabaseClient.auth.getSession();
@@ -307,7 +353,7 @@
   }
 
   // ==========================================
-  // MEDIA LOADER (Broadened Match)
+  // MEDIA LOADER (ALL FILES INCLUDED)
   // ==========================================
   async function loadMediaAssets() {
     try {
@@ -321,12 +367,12 @@
         _type: String(r.type || r.category || '').toLowerCase().trim()
       }));
 
-      // Broad match
+      // Categorize
       trophyImages = normalized.filter(m => m._type.includes('troph'));
       badgeImages  = normalized.filter(m => m._type.includes('badge'));
       avatarImages = normalized.filter(m => m._type.includes('avatar') || m._type.includes('char'));
 
-      // Failsafe: if nothing matches, put ALL images in the dropdowns so you aren't blocked
+      // Fallback: If type tagging is missing, include ALL uploaded media in selectors
       if (!trophyImages.length) trophyImages = normalized;
       if (!badgeImages.length) badgeImages = normalized;
       if (!avatarImages.length) avatarImages = normalized;
@@ -335,14 +381,18 @@
 
   async function loadData() {
     try {
-      const [tRes, bRes, aRes, projRes, campRes] = await Promise.all([
+      const [tierRes, tRes, threshRes, bRes, aRes, projRes, campRes] = await Promise.all([
+        supabaseClient.from('trophy_tiers').select('*').order('id'),
         supabaseClient.from('trophy_definitions').select('*').order('created_at', { ascending: false }),
+        supabaseClient.from('trophy_thresholds').select('*'),
         supabaseClient.from('badge_definitions').select('*').order('created_at', { ascending: false }),
         supabaseClient.from('avatar_stages').select('*').order('stage_order'),
         supabaseClient.from('projects').select('id, title, mission_ref').eq('status', 'active'),
         supabaseClient.from('campaigns').select('id, name').eq('status', 'active')
       ]);
+      allTiers = tierRes.data || [];
       allTrophies = tRes.data || [];
+      allThresholds = threshRes.data || [];
       allBadges = bRes.data || [];
       allAvatars = aRes.data || [];
       allMissions = projRes.data || [];
@@ -402,8 +452,24 @@
   }
 
   // ==========================================
-  // TROPHIES
+  // TROPHIES (CARD VIEW WITH FORTNITE TIER STATS)
   // ==========================================
+  function getTrophyThresholdVal(t, tierName) {
+    // 1. Check relational thresholds table
+    const matchedTier = allTiers.find(ti => String(ti.name || '').toLowerCase() === tierName.toLowerCase());
+    if (matchedTier) {
+      const rel = allThresholds.find(th => String(th.trophy_id) === String(t.id) && String(th.tier_id) === String(matchedTier.id));
+      if (rel && rel.value !== undefined && rel.value !== null) return rel.value;
+    }
+    // 2. Check JSON thresholds on trophy definition
+    let jsonTh = t.thresholds;
+    if (typeof jsonTh === 'string') { try { jsonTh = JSON.parse(jsonTh); } catch(e) {} }
+    if (jsonTh && typeof jsonTh === 'object') {
+      return jsonTh[tierName.toLowerCase()] ?? null;
+    }
+    return null;
+  }
+
   function renderTrophies() {
     const grid = getEl('trophyGrid');
     if (!grid) return;
@@ -419,29 +485,33 @@
       const typeClass = t.type === 'stat' ? 'bg-indigo-50 text-indigo-700' : t.type === 'collection' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700';
       let trackedStat = t.type === 'stat' ? (t.stat_type || 'Shares').toUpperCase() : 'Missions/Campaigns';
       
-      // Parse JSON thresholds
-      let th = {};
-      try { th = (typeof t.thresholds === 'string') ? JSON.parse(t.thresholds) : (t.thresholds || {}); } catch(e) {}
-      
+      const fortniteTiers = [
+        { name: 'Common', key: 'common', color: '#a3a3a3' },
+        { name: 'Uncommon', key: 'uncommon', color: '#22c55e' },
+        { name: 'Rare', key: 'rare', color: '#3b82f6' },
+        { name: 'Epic', key: 'epic', color: '#a855f7' },
+        { name: 'Legendary', key: 'legendary', color: '#eab308' },
+        { name: 'Mythic', key: 'mythic', color: '#ef4444' }
+      ];
+
       let tierStatsHtml = '';
-      const tierColors = { common: '#a3a3a3', uncommon: '#22c55e', rare: '#3b82f6', epic: '#a855f7', legendary: '#eab308', mythic: '#ef4444' };
-      
-      Object.keys(tierColors).forEach(tierKey => {
-        if (th[tierKey] !== undefined && th[tierKey] !== null && th[tierKey] !== '') {
+      fortniteTiers.forEach(ft => {
+        const val = getTrophyThresholdVal(t, ft.key);
+        if (val !== null && val !== undefined && val !== '') {
           tierStatsHtml += `
-            <div class="flex items-center gap-1.5 bg-surface px-2 py-1 rounded-md border border-surface-c shadow-sm">
-              <span class="w-2 h-2 rounded-full" style="background:${tierColors[tierKey]}"></span>
-              <span class="text-[10px] font-extrabold text-slate-700">${th[tierKey]}</span>
+            <div class="flex items-center gap-1.5 bg-white px-2 py-0.5 rounded-md border border-slate-200 shadow-sm" title="${ft.name}: ${val}">
+              <span class="w-2 h-2 rounded-full" style="background:${ft.color}"></span>
+              <span class="text-[10px] font-extrabold text-slate-700">${val}</span>
             </div>`;
         }
       });
-      if (!tierStatsHtml) tierStatsHtml = '<span class="text-[10px] text-slate-400 italic py-1">No tier targets set</span>';
+      if (!tierStatsHtml) tierStatsHtml = '<span class="text-[10px] text-slate-400 italic py-1">No targets configured</span>';
 
       const card = document.createElement('div');
       card.className = 'card flex flex-col hover:border-primary/40 cursor-pointer transition-all hover:shadow-md overflow-hidden p-0 group';
       card.onclick = () => openTrophyModal(t.id);
       
-      // Neutral background added for the image container (bg-slate-50/50)
+      // Clear neutral background (bg-slate-50/50)
       card.innerHTML = `
         <div class="aspect-[21/9] bg-slate-50/50 border-b border-surface-c flex items-center justify-center relative overflow-hidden">
           <span class="material-symbols-outlined text-slate-200 absolute" style="font-size:80px;">emoji_events</span>
@@ -481,14 +551,12 @@
       (t.linked_missions || []).forEach(mid => { const el = document.querySelector(`input[name="trophyM"][value="${mid}"]`); if (el) el.checked = true; });
       (t.linked_campaigns || []).forEach(cid => { const el = document.querySelector(`input[name="trophyC"][value="${cid}"]`); if (el) el.checked = true; });
       
-      let th = {};
-      try { th = (typeof t.thresholds === 'string') ? JSON.parse(t.thresholds) : (t.thresholds || {}); } catch(e) {}
-      getEl('tierCommon').value = th.common ?? '';
-      getEl('tierUncommon').value = th.uncommon ?? '';
-      getEl('tierRare').value = th.rare ?? '';
-      getEl('tierEpic').value = th.epic ?? '';
-      getEl('tierLegendary').value = th.legendary ?? '';
-      getEl('tierMythic').value = th.mythic ?? '';
+      const keys = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic'];
+      keys.forEach(k => {
+        const val = getTrophyThresholdVal(t, k);
+        const inputEl = getEl('tier' + k.charAt(0).toUpperCase() + k.slice(1));
+        if (inputEl) inputEl.value = val ?? '';
+      });
 
       getEl('deleteTrophyBtn')?.classList.remove('hidden');
     } else {
@@ -543,12 +611,30 @@
     };
 
     try {
-      if (id) {
-        await supabaseClient.from('trophy_definitions').update(payload).eq('id', id);
-      } else {
-        payload.id = generateUUID();
-        await supabaseClient.from('trophy_definitions').insert([payload]);
+      await resilientSave('trophy_definitions', id, payload);
+
+      // Save to relational trophy_thresholds table if present
+      if (allTiers.length > 0) {
+        const savedId = id || payload.id;
+        const fortniteKeys = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic'];
+        const thRows = [];
+        
+        fortniteKeys.forEach(k => {
+          const val = th[k];
+          if (val !== '' && val !== null && val !== undefined) {
+            const matchedTier = allTiers.find(ti => String(ti.name || '').toLowerCase() === k);
+            if (matchedTier) {
+              thRows.push({ id: generateUUID(), trophy_id: savedId, tier_id: matchedTier.id, value: parseInt(val) || 0 });
+            }
+          }
+        });
+
+        await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', savedId);
+        if (thRows.length > 0) {
+          await supabaseClient.from('trophy_thresholds').insert(thRows);
+        }
       }
+
       showToast('Trophy saved!');
       closeTrophyModal();
       await loadData();
@@ -562,6 +648,7 @@
     const id = getEl('trophyId')?.value;
     if (!id || !confirm('Delete this trophy?')) return;
     try {
+      await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', id);
       const { error } = await supabaseClient.from('trophy_definitions').delete().eq('id', id);
       if (error) throw error;
       showToast('Trophy deleted.'); closeTrophyModal(); await loadData();
@@ -675,12 +762,7 @@
     };
 
     try {
-      if (id) {
-        await supabaseClient.from('badge_definitions').update(payload).eq('id', id);
-      } else {
-        payload.id = generateUUID();
-        await supabaseClient.from('badge_definitions').insert([payload]);
-      }
+      await resilientSave('badge_definitions', id, payload);
       showToast('Badge saved!'); closeBadgeModal(); await loadData();
     } catch (e) { console.error(e); showToast(e.message || 'Save failed', true); }
   }
@@ -766,10 +848,10 @@
         `;
 
         journeyObj.stages.forEach(a => {
-          const img = a.image_male || a.image_female || a.image_url || a.avatar_url || a.image || '';
+          const img = a.image_male || a.image_female || a.male_image || a.female_image || a.image_url || a.avatar_url || a.image || '';
           const name = a.journey_name || a.name || a.title || 'Untitled';
           const order = stageNum(a);
-          const mythicNeed = a.req_value ?? 0;
+          const mythicNeed = a.req_value ?? a.req_val ?? 0;
 
           html += `
             <div onclick="window.openAvatarModal('${a.id}')"
@@ -813,12 +895,15 @@
       getEl('avatarJourney').value = a.journey || '';
       getEl('avatarOrder').value = a.stage_order ?? a.order ?? '';
       getEl('avatarName').value = a.journey_name || a.name || a.title || '';
-      getEl('avatarReqValue').value = a.req_value ?? 0;
+      getEl('avatarReqValue').value = a.req_value ?? a.req_val ?? 0;
 
       const avMale = getEl('avatarImageMale');
       const avFemale = getEl('avatarImageFemale');
-      if (avMale) avMale.innerHTML = '<option value="">-- Select Male Image --</option>' + buildMediaOptions(avatarImages, a.image_male || a.male_image || a.image_url || '');
-      if (avFemale) avFemale.innerHTML = '<option value="">-- Select Female Image --</option>' + buildMediaOptions(avatarImages, a.image_female || a.female_image || '');
+      const maleVal = a.image_male || a.male_image || a.image_url || '';
+      const femaleVal = a.image_female || a.female_image || '';
+
+      if (avMale) avMale.innerHTML = '<option value="">-- Select Male Image --</option>' + buildMediaOptions(avatarImages, maleVal);
+      if (avFemale) avFemale.innerHTML = '<option value="">-- Select Female Image --</option>' + buildMediaOptions(avatarImages, femaleVal);
       getEl('deleteAvatarBtn')?.classList.remove('hidden');
     } else {
       getEl('avatarId').value = '';
@@ -837,37 +922,41 @@
 
   function closeAvatarModal() { getEl('avatarModal')?.classList.add('hidden'); }
 
-  // Strict Payload Saving for Avatars (No auto-stripping to prevent deleting images)
   async function saveAvatar() {
     const id = getEl('avatarId')?.value;
     const journeyName = getEl('avatarName')?.value.trim();
     if (!journeyName) return showToast('Enter a journey / stage name.', true);
 
+    const maleImg = getEl('avatarImageMale')?.value || null;
+    const femaleImg = getEl('avatarImageFemale')?.value || null;
+    const era = getEl('avatarEra')?.value.trim() || 'Era 1';
+    const journey = getEl('avatarJourney')?.value.trim() || '';
+    const order = parseInt(getEl('avatarOrder')?.value) || 1;
+    const reqVal = parseInt(getEl('avatarReqValue')?.value) || 0;
+
     const payload = {
-      era: getEl('avatarEra')?.value.trim() || 'Era 1',
-      journey: getEl('avatarJourney')?.value.trim() || '',
-      stage_order: parseInt(getEl('avatarOrder')?.value) || 1,
+      era: era,
+      journey: journey,
+      stage_order: order,
       journey_name: journeyName,
       req_type: 'mythic',
-      req_value: parseInt(getEl('avatarReqValue')?.value) || 0,
-      req_badge_id: null,
-      image_male: getEl('avatarImageMale')?.value || null,
-      image_female: getEl('avatarImageFemale')?.value || null
+      req_value: reqVal,
+      image_male: maleImg,
+      image_female: femaleImg,
+      male_image: maleImg,
+      female_image: femaleImg,
+      image_url: maleImg || femaleImg,
+      avatar_url: maleImg || femaleImg
     };
 
     try {
-      if (id) {
-        const { error } = await supabaseClient.from('avatar_stages').update(payload).eq('id', id);
-        if (error) throw error;
-      } else {
-        payload.id = generateUUID();
-        const { error } = await supabaseClient.from('avatar_stages').insert([payload]);
-        if (error) throw error;
-      }
-      showToast('Avatar stage saved!'); closeAvatarModal(); await loadData();
+      await resilientSave('avatar_stages', id, payload);
+      showToast('Avatar stage saved!'); 
+      closeAvatarModal(); 
+      await loadData();
     } catch (e) { 
       console.error(e); 
-      showToast(e.message || 'Save failed - check database column names.', true); 
+      showToast(e.message || 'Save failed', true); 
     }
   }
 
@@ -881,6 +970,9 @@
     } catch (e) { showToast(e.message || 'Delete failed', true); }
   }
 
+  // ==========================================
+  // SIDEBAR & BINDINGS
+  // ==========================================
   function toggleSidebar() {
     getEl('sidebar')?.classList.toggle('hidden');
     getEl('sidebarOverlay')?.classList.toggle('hidden');
@@ -895,15 +987,18 @@
   window.saveTrophy = saveTrophy;
   window.deleteTrophy = deleteTrophy;
   window.toggleTrophyType = toggleTrophyType;
+
   window.openBadgeModal = openBadgeModal;
   window.closeBadgeModal = closeBadgeModal;
   window.saveBadge = saveBadge;
   window.deleteBadge = deleteBadge;
   window.toggleBadgeRule = toggleBadgeRule;
+
   window.openAvatarModal = openAvatarModal;
   window.closeAvatarModal = closeAvatarModal;
   window.saveAvatar = saveAvatar;
   window.deleteAvatarStage = deleteAvatarStage;
+
   window.switchTab = switchTab;
   window.toggleSidebar = toggleSidebar;
   window.handleLogout = handleLogout;
