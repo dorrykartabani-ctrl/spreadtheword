@@ -253,7 +253,6 @@
     </div>
   </div>
 </div>
-      
 <script>
   // ==========================================
   // INITIALIZE SUPABASE CLIENT
@@ -278,6 +277,23 @@
     });
   }
 
+  // Extracts readable title from media URL filename when database 'name' is missing
+  function extractMediaTitle(url) {
+    if (!url) return 'Media Asset';
+    try {
+      const cleanPath = url.split('?')[0].split('#')[0];
+      const filename = cleanPath.substring(cleanPath.lastIndexOf('/') + 1);
+      if (filename) {
+        const nameNoExt = filename.substring(0, filename.lastIndexOf('.')) || filename;
+        const readable = nameNoExt.replace(/[-_]/g, ' ').trim();
+        if (readable) {
+          return readable.replace(/\b\w/g, c => c.toUpperCase());
+        }
+      }
+    } catch(e) {}
+    return 'Media Asset';
+  }
+
   function showToast(msg, isError = false) {
     let toast = document.getElementById('toast');
     if (!toast) {
@@ -297,79 +313,69 @@
   }
 
   // ==========================================
-  // ADAPTIVE DATABASE SAVE HANDLERS
+  // SCHEMA-SAFE ADAPTIVE SAVE HANDLER
   // ==========================================
-  async function resilientSave(tableName, id, payload) {
-    let cur = { ...payload };
-    for (let attempt = 0; attempt < 8; attempt++) {
+  function extractErrorMessage(err) {
+    if (!err) return 'Unknown database error';
+    if (typeof err === 'string') return err;
+    return [err.message, err.details, err.hint].filter(Boolean).join(' | ') || JSON.stringify(err);
+  }
+
+  function filterPayloadBySample(sampleRow, payload) {
+    if (!sampleRow || typeof sampleRow !== 'object') return payload;
+    const validKeys = new Set(Object.keys(sampleRow));
+    const cleanPayload = {};
+    
+    Object.entries(payload).forEach(([k, v]) => {
+      if (validKeys.has(k)) {
+        cleanPayload[k] = v;
+      }
+    });
+
+    // Map common aliases if primary name is missing in database table
+    if (!cleanPayload.image_url && validKeys.has('image') && payload.image_url) cleanPayload.image = payload.image_url;
+    if (!cleanPayload.image_url && validKeys.has('icon_url') && payload.image_url) cleanPayload.icon_url = payload.image_url;
+    if (!cleanPayload.journey_name && validKeys.has('name') && payload.journey_name) cleanPayload.name = payload.journey_name;
+
+    return Object.keys(cleanPayload).length > 0 ? cleanPayload : payload;
+  }
+
+  async function resilientSave(tableName, sampleRow, id, rawPayload) {
+    let cur = filterPayloadBySample(sampleRow, rawPayload);
+
+    for (let attempt = 0; attempt < 6; attempt++) {
       let res;
       if (id) {
         res = await supabaseClient.from(tableName).update(cur).eq('id', id).select();
       } else {
-        if (!cur.id) cur.id = generateUUID();
+        if (!cur.id && sampleRow && ('id' in sampleRow)) cur.id = generateUUID();
         res = await supabaseClient.from(tableName).insert([cur]).select();
       }
 
-      if (!res.error) return res.data?.[0] || res.data;
+      if (!res.error) return res.data?.[0] || res.data || true;
 
-      const err = res.error;
-      console.warn(`[${tableName}] Save attempt ${attempt + 1} failed:`, err);
-      const msg = err.message || err.details || err.hint || JSON.stringify(err);
+      const errText = extractErrorMessage(res.error);
+      console.warn(`[${tableName}] Save attempt ${attempt + 1} failed:`, errText);
 
-      // Strip missing columns
-      const match = msg.match(/Could not find the '([^']+)' column/i) || 
-                    msg.match(/column "([^"]+)" of relation/i) ||
-                    msg.match(/column '([^']+)' does not exist/i);
+      // Auto-strip column if PostgREST reports column missing
+      const match = errText.match(/Could not find the '([^']+)' column/i) || 
+                    errText.match(/column "([^"]+)" of relation/i) ||
+                    errText.match(/column '([^']+)' does not exist/i);
 
       if (match?.[1] && cur[match[1]] !== undefined) {
-        console.warn(`[${tableName}] Auto-stripping column '${match[1]}' and retrying...`);
+        console.warn(`[${tableName}] Auto-stripping missing column '${match[1]}' and retrying...`);
         delete cur[match[1]];
         continue;
       }
 
-      // Handle Integer ID mismatch on primary keys
-      if (msg.includes('invalid input syntax for type integer') && cur.id) {
-        console.warn(`[${tableName}] Integer ID required. Stripping string ID...`);
+      if (errText.toLowerCase().includes('invalid input syntax for type integer') && cur.id) {
         delete cur.id;
         continue;
       }
 
-      throw new Error(msg);
+      throw new Error(errText);
     }
-    throw new Error(`Failed to save to ${tableName}`);
-  }
-
-  async function resilientInsertBatch(tableName, rows) {
-    if (!rows || !rows.length) return;
-    let curRows = rows.map(r => ({ ...r }));
-
-    for (let attempt = 0; attempt < 6; attempt++) {
-      const res = await supabaseClient.from(tableName).insert(curRows).select();
-      if (!res.error) return res.data;
-
-      console.warn(`[${tableName}] Batch insert attempt ${attempt + 1} failed:`, res.error);
-      const err = res.error;
-      const msg = err.message || err.details || err.hint || JSON.stringify(err);
-
-      const match = msg.match(/Could not find the '([^']+)' column/i) || 
-                    msg.match(/column "([^"]+)" of relation/i) ||
-                    msg.match(/column '([^']+)' does not exist/i);
-
-      if (match?.[1]) {
-        const badCol = match[1];
-        console.warn(`[${tableName}] Auto-stripping column '${badCol}' from batch...`);
-        curRows = curRows.map(r => { const newR = { ...r }; delete newR[badCol]; return newR; });
-        continue;
-      }
-
-      if (msg.includes('invalid input syntax for type integer') && curRows[0]?.id) {
-        console.warn(`[${tableName}] Stripping string 'id' from batch...`);
-        curRows = curRows.map(r => { const newR = { ...r }; delete newR.id; return newR; });
-        continue;
-      }
-
-      throw new Error(msg);
-    }
+    throw new Error(`Could not save to ${tableName}. Please check table permissions.`);
   }
 
   // ==========================================
@@ -389,24 +395,33 @@
   }
 
   // ==========================================
-  // MEDIA LOADER
+  // MEDIA LOADER (FIXES UNNAMED IMAGES)
   // ==========================================
   async function loadMediaAssets() {
     try {
       const { data: raw, error } = await supabaseClient.from('media').select('*');
       if (error || !raw?.length) { trophyImages = badgeImages = avatarImages = []; return; }
       
-      const normalized = raw.map(r => ({
-        ...r,
-        _url: r.url || r.file_url || r.path || r.image_url || '',
-        _name: r.name || r.title || r.filename || 'Unnamed',
-        _type: String(r.type || r.category || '').toLowerCase().trim()
-      }));
+      const normalized = raw.map(r => {
+        const url = r.url || r.file_url || r.path || r.image_url || r.media_url || '';
+        const rawName = r.name || r.title || r.filename || r.label || '';
+        const displayName = (rawName && String(rawName).trim().toLowerCase() !== 'unnamed') 
+          ? String(rawName).trim() 
+          : extractMediaTitle(url);
+
+        return {
+          ...r,
+          _url: url,
+          _name: displayName,
+          _type: String(r.type || r.category || '').toLowerCase().trim()
+        };
+      }).filter(m => m._url); // Only keep media with valid URLs
 
       trophyImages = normalized.filter(m => m._type.includes('troph'));
       badgeImages  = normalized.filter(m => m._type.includes('badge'));
       avatarImages = normalized.filter(m => m._type.includes('avatar') || m._type.includes('char'));
 
+      // Fallback: If category filtering yields nothing, use all valid media
       if (!trophyImages.length) trophyImages = normalized;
       if (!badgeImages.length) badgeImages = normalized;
       if (!avatarImages.length) avatarImages = normalized;
@@ -419,7 +434,7 @@
         supabaseClient.from('trophy_tiers').select('*').order('id'),
         supabaseClient.from('trophy_definitions').select('*').order('created_at', { ascending: false }),
         supabaseClient.from('trophy_thresholds').select('*'),
-        supabaseClient.from('badge_definitions').select('*').order('created_at', {ascending: false }),
+        supabaseClient.from('badge_definitions').select('*').order('created_at', { ascending: false }),
         supabaseClient.from('avatar_stages').select('*').order('stage_order'),
         supabaseClient.from('projects').select('id, title, mission_ref').eq('status', 'active'),
         supabaseClient.from('campaigns').select('id, name').eq('status', 'active')
@@ -432,14 +447,6 @@
       allMissions = projRes.data || [];
       allCampaigns = campRes.data || [];
       
-      // Auto-Log Schema Columns to Console for Easy Inspection
-      console.log('=== GSTW SCHEMA DIAGNOSTICS ===');
-      console.log('trophy_definitions columns:', allTrophies[0] ? Object.keys(allTrophies[0]) : 'Empty');
-      console.log('avatar_stages columns:', allAvatars[0] ? Object.keys(allAvatars[0]) : 'Empty');
-      console.log('badge_definitions columns:', allBadges[0] ? Object.keys(allBadges[0]) : 'Empty');
-      console.log('trophy_thresholds sample:', allThresholds[0] || 'Empty');
-      console.log('trophy_tiers:', allTiers);
-
       await loadMediaAssets();
       renderTrophies(); renderBadges(); renderAvatars();
       populateDropdowns(); renderChecklists();
@@ -474,12 +481,12 @@
     const box = (prefix, items, isMission) => {
       if (!items?.length) return '<p class="text-xs text-slate-400 p-2">No active items.</p>';
       return items.map(item => {
-        const refDisplay = (isMission && item.mission_ref) ? `<span class="font-bold text-primary mr-1">[${escapeHtml(item.mission_ref)}]</span>` : '';
+        const refDisplay = (isMission && item.mission_ref) ? `<span class="font-bold text-primary mr-1 hover:underline">[${escapeHtml(item.mission_ref)}]</span>` : '';
         const titleDisplay = escapeHtml(item.title || item.name || 'Untitled');
         return `
-          <label class="flex items-center gap-2 p-1.5 hover:bg-slate-200/50 rounded cursor-pointer">
+          <label class="flex items-center gap-2 p-1.5 hover:bg-slate-200/50 rounded cursor-pointer transition-colors">
             <input type="checkbox" name="${prefix}" value="${item.id}" class="w-4 h-4 accent-primary flex-shrink-0">
-            <span class="text-xs font-semibold truncate">${refDisplay}${titleDisplay}</span>
+            <span class="text-xs font-semibold text-slate-700 truncate">${refDisplay}${titleDisplay}</span>
           </label>`;
       }).join('');
     };
@@ -498,7 +505,7 @@
   }
 
   // ==========================================
-  // TROPHIES (CLEAR IMAGE BACKGROUND)
+  // TROPHIES (CLEAR BACKGROUND & FORTNITE STATS)
   // ==========================================
   function getTrophyThresholdVal(t, tierName) {
     const matchedTier = allTiers.find(ti => String(ti.name || '').toLowerCase() === tierName.toLowerCase());
@@ -552,10 +559,10 @@
       if (!tierStatsHtml) tierStatsHtml = '<span class="text-[10px] text-slate-400 italic py-1">No targets configured</span>';
 
       const card = document.createElement('div');
-      card.className = 'card flex flex-col hover:border-primary/40 cursor-pointer transition-all hover:shadow-md overflow-hidden group p-5';
+      card.className = 'card flex flex-col hover:border-primary/40 cursor-pointer transition-all hover:shadow-md overflow-hidden p-5 bg-white';
       card.onclick = () => openTrophyModal(t.id);
       
-      // Completely Clear Image Display (No gray split box background)
+      // Clean background for Trophy Card Image
       card.innerHTML = `
         <div class="flex justify-between items-start gap-3 mb-3">
           <div class="w-12 h-12 flex items-center justify-center flex-shrink-0 relative">
@@ -657,35 +664,44 @@
     };
 
     try {
-      const savedRes = await resilientSave('trophy_definitions', id, payload);
+      const sampleRow = allTrophies[0] || null;
+      const savedRes = await resilientSave('trophy_definitions', sampleRow, id, payload);
       const savedId = id || savedRes?.id || payload.id;
 
-      // Save to relational trophy_thresholds table safely
-      const fortniteKeys = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic'];
-      const thRows = [];
-      
-      fortniteKeys.forEach(k => {
-        const val = th[k];
-        if (val !== '' && val !== null && val !== undefined) {
-          const matchedTier = allTiers.find(ti => String(ti.name || '').toLowerCase() === k);
-          const tierId = matchedTier ? matchedTier.id : { common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5, mythic: 6 }[k];
-          if (tierId !== undefined) {
-            thRows.push({ trophy_id: savedId, tier_id: tierId, value: parseInt(val, 10) || 0 });
+      // Also sync relational trophy_thresholds table if present
+      if (allTiers.length > 0 && savedId) {
+        const fortniteKeys = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic'];
+        const thRows = [];
+        
+        fortniteKeys.forEach(k => {
+          const val = th[k];
+          if (val !== '' && val !== null && val !== undefined) {
+            const matchedTier = allTiers.find(ti => String(ti.name || '').toLowerCase() === k);
+            const tierId = matchedTier ? matchedTier.id : { common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5, mythic: 6 }[k];
+            if (tierId !== undefined) {
+              thRows.push({ trophy_id: savedId, tier_id: tierId, value: parseInt(val, 10) || 0 });
+            }
+          }
+        });
+
+        if (thRows.length > 0) {
+          try {
+            await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', savedId);
+            const thSample = allThresholds[0] || null;
+            const cleanRows = thRows.map(r => filterPayloadBySample(thSample, r));
+            await supabaseClient.from('trophy_thresholds').insert(cleanRows);
+          } catch(errTh) {
+            console.warn('Relational thresholds sync skipped:', errTh);
           }
         }
-      });
-
-      if (thRows.length > 0) {
-        await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', savedId);
-        await resilientInsertBatch('trophy_thresholds', thRows);
       }
 
       showToast('Trophy saved!');
       closeTrophyModal();
       await loadData();
     } catch (e) { 
-      console.error(e); 
-      showToast(e.message || 'Save failed', true); 
+      console.error('Save trophy error:', e); 
+      showToast(extractErrorMessage(e), true); 
     }
   }
 
@@ -697,7 +713,7 @@
       const { error } = await supabaseClient.from('trophy_definitions').delete().eq('id', id);
       if (error) throw error;
       showToast('Trophy deleted.'); closeTrophyModal(); await loadData();
-    } catch (e) { showToast(e.message || 'Delete failed', true); }
+    } catch (e) { showToast(extractErrorMessage(e), true); }
   }
 
   // ==========================================
@@ -715,7 +731,7 @@
     allBadges.forEach(b => {
       const img = b.image_url || '';
       const card = document.createElement('div');
-      card.className = 'card flex flex-col hover:border-slate-300 cursor-pointer transition-all hover:shadow-md overflow-hidden group p-0';
+      card.className = 'card flex flex-col hover:border-slate-300 cursor-pointer transition-all hover:shadow-md overflow-hidden group p-0 bg-white';
       card.onclick = () => openBadgeModal(b.id);
       card.innerHTML = `
         <div class="aspect-[21/9] bg-slate-50/50 border-b border-surface-c flex items-center justify-center relative p-4">
@@ -807,9 +823,13 @@
     };
 
     try {
-      await resilientSave('badge_definitions', id, payload);
+      const sampleRow = allBadges[0] || null;
+      await resilientSave('badge_definitions', sampleRow, id, payload);
       showToast('Badge saved!'); closeBadgeModal(); await loadData();
-    } catch (e) { console.error(e); showToast(e.message || 'Save failed', true); }
+    } catch (e) { 
+      console.error('Save badge error:', e); 
+      showToast(extractErrorMessage(e), true); 
+    }
   }
 
   async function deleteBadge() {
@@ -819,11 +839,11 @@
       const { error } = await supabaseClient.from('badge_definitions').delete().eq('id', id);
       if (error) throw error;
       showToast('Badge deleted.'); closeBadgeModal(); await loadData();
-    } catch (e) { showToast(e.message || 'Delete failed', true); }
+    } catch (e) { showToast(extractErrorMessage(e), true); }
   }
 
   // ==========================================
-  // AVATARS
+  // AVATARS (COLLAPSIBLE ERAS, COMPACT CARDS)
   // ==========================================
   function renderAvatars() {
     const list = getEl('avatarList');
@@ -995,13 +1015,14 @@
     };
 
     try {
-      await resilientSave('avatar_stages', id, payload);
+      const sampleRow = allAvatars[0] || null;
+      await resilientSave('avatar_stages', sampleRow, id, payload);
       showToast('Avatar stage saved!'); 
       closeAvatarModal(); 
       await loadData();
     } catch (e) { 
-      console.error(e); 
-      showToast(e.message || 'Save failed', true); 
+      console.error('Save avatar error:', e); 
+      showToast(extractErrorMessage(e), true); 
     }
   }
 
@@ -1012,7 +1033,7 @@
       const { error } = await supabaseClient.from('avatar_stages').delete().eq('id', id);
       if (error) throw error;
       showToast('Stage deleted.'); closeAvatarModal(); await loadData();
-    } catch (e) { showToast(e.message || 'Delete failed', true); }
+    } catch (e) { showToast(extractErrorMessage(e), true); }
   }
 
   // ==========================================
@@ -1049,6 +1070,7 @@
   window.handleLogout = handleLogout;
 
   window.addEventListener('DOMContentLoaded', init);
-</script>
+</script>      
+
 </body>
 </html>
