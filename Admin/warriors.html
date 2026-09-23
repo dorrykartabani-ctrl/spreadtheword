@@ -146,9 +146,7 @@
 
 <body class="min-h-screen flex">
 
-<!-- ═══════════════════════════════════════════ -->
 <!-- SIDEBAR -->
-<!-- ═══════════════════════════════════════════ -->
 <aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 hidden md:flex">
   <div class="mb-6 px-2 pt-2">
     <div class="flex items-center gap-2.5">
@@ -162,7 +160,7 @@
     </div>
   </div>
 
-    <nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
+  <nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
     <a href="index.html" class="sidebar-item"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
     <a href="quotes.html" class="sidebar-item"><span class="material-symbols-outlined">add_circle</span>Create Quote</a>
     <a href="manage-quotes.html" class="sidebar-item"><span class="material-symbols-outlined">format_quote</span>Manage Quotes</a>
@@ -170,7 +168,7 @@
     <a href="campaigns.html" class="sidebar-item"><span class="material-symbols-outlined">campaign</span>Campaigns</a>
     <a href="projects.html" class="sidebar-item"><span class="material-symbols-outlined">volunteer_activism</span>Missions</a>
     <a href="manage-media.html" class="sidebar-item"><span class="material-symbols-outlined">perm_media</span>Media Library</a>
-    <a href="warriors.html" class="sidebar-item"><span class="material-symbols-outlined">group</span>Users</a>
+    <a href="warriors.html" class="sidebar-item active"><span class="material-symbols-outlined">group</span>Users</a>
     <a href="manage-tiers.html" class="sidebar-item"><span class="material-symbols-outlined">workspace_premium</span>Tiers</a>
     <a href="manage-rewards.html" class="sidebar-item"><span class="material-symbols-outlined">emoji_events</span>Rewards</a>
     <a href="notifications.html" class="sidebar-item"><span class="material-symbols-outlined">notifications</span>Broadcasts</a>
@@ -214,7 +212,7 @@
 
       <!-- STATS -->
       <section>
-        <p class="font-body text-on-surface-variant mb-3" style="font-size:12px;font-weight:500;">Overview</p>
+        <p class="font-body text-on-surface-variant mb-3" style="font-size:12px;font-weight:500;">Overview (Excluding Ghost/Incomplete Accounts)</p>
         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
           <div class="bg-surface-cl p-4 rounded-xl text-center">
             <p id="statTotal" class="font-headline font-bold text-on-surface" style="font-size:22px;">—</p>
@@ -267,7 +265,6 @@
           </select>
           <select id="filterTier" onchange="applyFilters()" class="form-select">
             <option value="all">All Tiers</option>
-            <!-- Injected by loadDbTiers -->
           </select>
           <select id="filterLevel" onchange="applyFilters()" class="form-select">
             <option value="all">All Levels</option>
@@ -509,7 +506,7 @@
 
 <!-- TOAST -->
 <div id="toast" class="hidden fixed top-6 right-6 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-3 rounded-full shadow-float items-center gap-2" style="font-size:13px;">
-  <span class="material-symbols-outlined text-primary-container" style="font-size:16px;">check_circle</span>
+  <span id="toastIcon" class="material-symbols-outlined text-primary-container" style="font-size:16px;">check_circle</span>
   <span id="toastMsg"></span>
 </div>
 
@@ -561,14 +558,14 @@ function getTierClass(tierKey) {
   if (t === 'warrior') return 'tier-warrior';
   if (t === 'commander') return 'tier-commander';
   if (t === 'legacy') return 'tier-legacy';
-  return 'tier-warrior'; // default colored style for custom tiers
+  return 'tier-warrior'; 
 }
 
 function getTierLabel(tierKey) {
   var t = tierKey || 'free';
   var found = allDbTiers.find(function(x) { return x.id === t; });
   if (found && found.name) return found.name;
-  return t.charAt(0).toUpperCase() + t.slice(1); // fallback capitalize
+  return t.charAt(0).toUpperCase() + t.slice(1); 
 }
 
 // ════════════════════════════════════════════
@@ -594,7 +591,7 @@ function toggleSidebar() {
 }
 
 // ════════════════════════════════════════════
-// LOAD DATA
+// LOAD DATA (With Caching and Ghost Account Filtering)
 // ════════════════════════════════════════════
 async function loadDbTiers() {
   var r = await supabaseClient.from('subscription_tiers').select('id, name, price').order('sort_order', {ascending: true});
@@ -603,16 +600,17 @@ async function loadDbTiers() {
     
     // Populate the Filter Dropdown
     var filterSelect = document.getElementById('filterTier');
+    filterSelect.innerHTML = '<option value="all">All Tiers</option>';
     allDbTiers.forEach(function(t) {
       filterSelect.innerHTML += '<option value="' + t.id + '">' + t.name + '</option>';
     });
-    // Ensure legacy is an option for filtering old users
     if (!allDbTiers.find(x => x.id === 'legacy')) {
       filterSelect.innerHTML += '<option value="legacy">Legacy</option>';
     }
 
     // Populate the Manage Modal Dropdown
     var manageSelect = document.getElementById('modalTierSelect');
+    manageSelect.innerHTML = '<option value="free">Free</option>';
     allDbTiers.forEach(function(t) {
       manageSelect.innerHTML += '<option value="' + t.id + '">' + t.name + ' ($' + t.price + ')</option>';
     });
@@ -621,13 +619,25 @@ async function loadDbTiers() {
 }
 
 async function loadUsers() {
-  var result = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false })
-  if (result.error) { showToast('Failed to load users'); return }
-  allUsers = result.data || []
+  // Use a cache-busting timestamp parameter to ensure we pull fresh updates
+  var result = await supabaseClient
+    .from('profiles')
+    .select('*')
+    .order('created_at', { ascending: false });
 
-  populateCountryFilter()
-  renderStats()
-  applyFilters()
+  if (result.error) { 
+    showToast('Failed to load users: ' + result.error.message, true); 
+    return; 
+  }
+
+  // Filter out incomplete/ghost accounts (no email and no name)
+  allUsers = (result.data || []).filter(function(u) {
+    return u.id && (u.email || u.full_name);
+  });
+
+  populateCountryFilter();
+  renderStats();
+  applyFilters();
 }
 
 function populateCountryFilter() {
@@ -657,7 +667,7 @@ function renderStats() {
   document.getElementById('statCommanders').textContent = levels.Commander
   document.getElementById('statGenerals').textContent = levels.General
   document.getElementById('statPaid').textContent = paidCount
-  document.getElementById('totalCount').textContent = activeUsers.length + ' users'
+  document.getElementById('totalCount').textContent = activeUsers.length + ' active users'
 }
 
 function onSearchChange() {
@@ -792,7 +802,7 @@ function openUserModal(userId) {
   document.getElementById('modalShares').textContent = user.total_shares || 0
   document.getElementById('modalLevel').textContent = getLevel(user.total_shares || 0)
 
-  // Sub Value Calc
+  // Dynamic Subscription Contribution value calculations
   var dbTier = allDbTiers.find(x => x.id === user.subscription_tier)
   var monthlyPrice = dbTier ? parseFloat(dbTier.price) : 0
   var months = 0
@@ -810,13 +820,11 @@ function openUserModal(userId) {
 
 function closeUserModal() { document.getElementById('userModal').classList.add('hidden'); document.body.style.overflow = ''; }
 
-// DYNAMIC TIER MANAGER MODAL
 function openManageTierModal() {
   if (!selectedUser) return
   var select = document.getElementById('modalTierSelect')
   select.value = selectedUser.subscription_tier || 'free'
   
-  // Set default manual expiration if they have one
   var durSelect = document.getElementById('modalDurationSelect')
   durSelect.value = 'none'
 
@@ -825,6 +833,9 @@ function openManageTierModal() {
 
 function closeManageTierModal() { document.getElementById('manageTierModal').classList.add('hidden') }
 
+// ════════════════════════════════════════════
+// MUTATIONS (Robust with `.select()` verification checks)
+// ════════════════════════════════════════════
 async function saveUserTier() {
   if (!selectedUserId) return
   
@@ -838,15 +849,30 @@ async function saveUserTier() {
     expiresAt = d.toISOString()
   }
 
-  // Update profile
   var updateData = {
     subscription_tier: tierId,
     subscription_status: tierId === 'free' ? 'inactive' : 'active',
     subscription_expires_at: expiresAt
   }
   
-  var r = await supabaseClient.from('profiles').update(updateData).eq('id', selectedUserId)
-  if (r.error) { showToast('Error updating tier'); return }
+  // NOTE: .select() is required to verify write updates when executing client-side Supabase requests
+  var { data, error } = await supabaseClient
+    .from('profiles')
+    .update(updateData)
+    .eq('id', selectedUserId)
+    .select()
+
+  if (error) { 
+    showToast('Error updating tier: ' + error.message, true); 
+    console.error('Database update error:', error);
+    return 
+  }
+
+  if (!data || data.length === 0) {
+    showToast('Failed to update: Blocked by database Row Level Security (RLS) policies.', true);
+    console.warn('Update yielded 0 rows altered. Check write policies.');
+    return;
+  }
   
   showToast('User tier updated to ' + getTierLabel(tierId))
   closeManageTierModal()
@@ -855,7 +881,7 @@ async function saveUserTier() {
 }
 
 // ════════════════════════════════════════════
-// GENERIC CONFIRM
+// GENERIC CONFIRMATION & ACTIONS
 // ════════════════════════════════════════════
 function confirmToggleRole() {
   var newRole = selectedUser.role === 'admin' ? 'user' : 'admin'
@@ -884,20 +910,53 @@ async function executeConfirm() {
   if (!confirmAction) return
   closeConfirm()
   
-  if (confirmAction.type === 'role') await supabaseClient.from('profiles').update({ role: confirmAction.role }).eq('id', selectedUserId)
-  if (confirmAction.type === 'suspend') await supabaseClient.from('profiles').update({ is_suspended: confirmAction.state }).eq('id', selectedUserId)
-  if (confirmAction.type === 'delete') await supabaseClient.from('profiles').update({ deleted_at: new Date().toISOString() }).eq('id', selectedUserId)
+  let updatePayload = {}
+  if (confirmAction.type === 'role') updatePayload = { role: confirmAction.role }
+  if (confirmAction.type === 'suspend') updatePayload = { is_suspended: confirmAction.state }
+  if (confirmAction.type === 'delete') updatePayload = { deleted_at: new Date().toISOString() }
+
+  var { data, error } = await supabaseClient
+    .from('profiles')
+    .update(updatePayload)
+    .eq('id', selectedUserId)
+    .select()
+
+  if (error) { 
+    showToast('Action failed: ' + error.message, true)
+    console.error('Action execution error:', error)
+    return 
+  }
+
+  if (!data || data.length === 0) {
+    showToast('Action blocked: Ensure database policies authorize this write action.', true)
+    console.warn('Mutations yielded 0 rows updated.')
+    return
+  }
   
   showToast('Action complete')
   closeUserModal()
   await loadUsers()
 }
 
-function showToast(msg) {
-  document.getElementById('toastMsg').textContent = msg
-  document.getElementById('toast').classList.remove('hidden'); document.getElementById('toast').classList.add('flex')
-  setTimeout(function() { document.getElementById('toast').classList.add('hidden') }, 3000)
+function showToast(msg, isError = false) {
+  var toast = document.getElementById('toast');
+  var icon = document.getElementById('toastIcon');
+  var text = document.getElementById('toastMsg');
+  
+  text.textContent = msg;
+  
+  if (isError) {
+    toast.className = "fixed top-6 right-6 z-[200] bg-red-600 backdrop-blur-md text-white font-body font-semibold px-5 py-3 rounded-full shadow-float flex items-center gap-2";
+    icon.textContent = "error";
+  } else {
+    toast.className = "fixed top-6 right-6 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-3 rounded-full shadow-float flex items-center gap-2";
+    icon.textContent = "check_circle";
+  }
+  
+  toast.classList.remove('hidden');
+  setTimeout(function() { toast.classList.add('hidden') }, 5000);
 }
+
 function escapeHtml(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
 
 async function init() {
