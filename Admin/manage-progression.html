@@ -299,41 +299,45 @@
   // ==========================================
   // ADAPTIVE DATABASE SAVE HANDLER
   // ==========================================
+  /** Only keep fields that exist on an example row from the table */
+  function pickExistingColumns(sampleRow, desired) {
+    if (!sampleRow) return { ...desired }; // first record ever — send all, strip on error
+    const keys = new Set(Object.keys(sampleRow));
+    const out = {};
+    Object.entries(desired).forEach(([k, v]) => {
+      if (keys.has(k)) out[k] = v;
+    });
+    return out;
+  }
+
   async function resilientSave(tableName, id, payload) {
-    let curPayload = { ...payload };
-    let retries = 0;
+    let cur = { ...payload };
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const res = id
+        ? await supabaseClient.from(tableName).update(cur).eq('id', id).select()
+        : await supabaseClient.from(tableName).insert([{ ...cur, id: cur.id || generateUUID() }]).select();
 
-    while (retries < 6) {
-      let res;
-      if (id) {
-        res = await supabaseClient.from(tableName).update(curPayload).eq('id', id).select();
-      } else {
-        if (!curPayload.id) curPayload.id = generateUUID();
-        res = await supabaseClient.from(tableName).insert([curPayload]).select();
+      if (!res.error) return res.data?.[0] || res.data;
+
+      const err = res.error;
+      console.error(`[${tableName}] save error:`, err);
+
+      const msg = err.message || err.details || err.hint || JSON.stringify(err);
+      const match =
+        msg.match(/Could not find the '([^']+)' column/i) ||
+        msg.match(/column "([^"]+)" of relation/i) ||
+        msg.match(/column '([^']+)' does not exist/i);
+
+      if (match?.[1] && cur[match[1]] !== undefined) {
+        console.warn(`[${tableName}] stripping column: ${match[1]}`);
+        delete cur[match[1]];
+        continue;
       }
 
-      if (!res.error) {
-        return res.data;
-      }
-
-      console.warn(`[${tableName}] Save attempt ${retries + 1} failed:`, res.error);
-      const errText = res.error.message || res.error.details || '';
-
-      // Match unknown column error messages from PostgREST / Postgres
-      const match = errText.match(/Could not find the '([^']+)' column/) || 
-                    errText.match(/column "([^"]+)" of relation/) ||
-                    errText.match(/column '([^']+)' of relation/);
-
-      if (match && match[1]) {
-        const badCol = match[1];
-        console.warn(`[${tableName}] Auto-stripping non-existent column '${badCol}' and retrying...`);
-        delete curPayload[badCol];
-        retries++;
-      } else {
-        throw new Error(res.error.message || res.error.details || "Database constraint error");
-      }
+      // Surface the REAL error (constraint, RLS, type, etc.)
+      throw new Error(msg);
     }
-    throw new Error(`Failed to save to ${tableName} after column stripping retries.`);
+    throw new Error(`Could not save ${tableName} after retries`);
   }
 
   // ==========================================
@@ -428,20 +432,23 @@
   }
 
   function renderChecklists() {
-    const box = (prefix, items) => {
+    const box = (prefix, items, isMission) => {
       if (!items?.length) return '<p class="text-xs text-slate-400 p-2">No active items.</p>';
-      return items.map(item => `
-        <label class="flex items-center gap-2 p-1.5 hover:bg-slate-200/50 rounded cursor-pointer">
-          <input type="checkbox" name="${prefix}" value="${item.id}" class="w-4 h-4 accent-primary">
-          <span class="text-xs font-semibold truncate">${escapeHtml(item.title || item.name)}</span>
-        </label>`).join('');
+      return items.map(item => {
+        const label = isMission
+          ? `${item.mission_ref ? item.mission_ref + ' — ' : ''}${item.title || item.name || 'Untitled'}`
+          : (item.title || item.name || 'Untitled');
+        return `
+          <label class="flex items-center gap-2 p-1.5 hover:bg-slate-200/50 rounded cursor-pointer">
+            <input type="checkbox" name="${prefix}" value="${item.id}" class="w-4 h-4 accent-primary flex-shrink-0">
+            <span class="text-xs font-semibold truncate">${escapeHtml(label)}</span>
+          </label>`;
+      }).join('');
     };
-    const mc = getEl('missionChecklist'), cc = getEl('campaignChecklist');
-    const bmc = getEl('badgeMissionChecklist'), bcc = getEl('badgeCampaignChecklist');
-    if (mc) mc.innerHTML = box('trophyM', allMissions);
-    if (cc) cc.innerHTML = box('trophyC', allCampaigns);
-    if (bmc) bmc.innerHTML = box('badgeM', allMissions);
-    if (bcc) bcc.innerHTML = box('badgeC', allCampaigns);
+    if (getEl('missionChecklist')) getEl('missionChecklist').innerHTML = box('trophyM', allMissions, true);
+    if (getEl('campaignChecklist')) getEl('campaignChecklist').innerHTML = box('trophyC', allCampaigns, false);
+    if (getEl('badgeMissionChecklist')) getEl('badgeMissionChecklist').innerHTML = box('badgeM', allMissions, true);
+    if (getEl('badgeCampaignChecklist')) getEl('badgeCampaignChecklist').innerHTML = box('badgeC', allCampaigns, false);
   }
 
   function switchTab(tabId) {
@@ -581,66 +588,85 @@
   }
   function closeTrophyModal() { getEl('trophyModal')?.classList.add('hidden'); }
 
-  async function saveTrophy() {
-    const id = getEl('trophyId')?.value;
+   async function saveTrophy() {
+    const id = getEl('trophyId')?.value || null;
     const name = getEl('trophyName')?.value.trim();
     if (!name) return showToast('Enter a trophy name.', true);
-    
+
     const missions = [...document.querySelectorAll('input[name="trophyM"]:checked')].map(c => c.value);
     const campaigns = [...document.querySelectorAll('input[name="trophyC"]:checked')].map(c => c.value);
     const baseImg = getEl('trophyBaseImage')?.value || null;
 
-    const th = {
-      common: getEl('tierCommon')?.value || null,
-      uncommon: getEl('tierUncommon')?.value || null,
-      rare: getEl('tierRare')?.value || null,
-      epic: getEl('tierEpic')?.value || null,
-      legendary: getEl('tierLegendary')?.value || null,
-      mythic: getEl('tierMythic')?.value || null
+    const fortnite = {
+      common: getEl('tierCommon')?.value,
+      uncommon: getEl('tierUncommon')?.value,
+      rare: getEl('tierRare')?.value,
+      epic: getEl('tierEpic')?.value,
+      legendary: getEl('tierLegendary')?.value,
+      mythic: getEl('tierMythic')?.value
     };
 
-    const payload = {
-      name, 
-      type: getEl('trophyType')?.value || 'stat', 
+    // Desired fields — pickExistingColumns will drop ones your table doesn't have
+    const desired = {
+      name,
+      type: getEl('trophyType')?.value || 'stat',
       stat_type: getEl('trophyStatType')?.value || 'shares',
-      description: getEl('trophyDesc')?.value.trim() || null, 
-      image_url: baseImg, 
-      linked_missions: missions, 
+      description: getEl('trophyDesc')?.value.trim() || null,
+      image_url: baseImg,
+      image: baseImg,
+      linked_missions: missions,
       linked_campaigns: campaigns,
-      thresholds: th
+      thresholds: fortnite // only kept if column exists
     };
+
+    const sample = allTrophies[0] || null;
+    const payload = pickExistingColumns(sample, desired);
 
     try {
-      await resilientSave('trophy_definitions', id, payload);
+      const saved = await resilientSave('trophy_definitions', id, payload);
+      const savedId = id || saved?.id || payload.id;
+      if (!savedId) throw new Error('No trophy id returned');
 
-      // Save to relational trophy_thresholds table if present
-      if (allTiers.length > 0) {
-        const savedId = id || payload.id;
-        const fortniteKeys = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic'];
-        const thRows = [];
-        
-        fortniteKeys.forEach(k => {
-          const val = th[k];
-          if (val !== '' && val !== null && val !== undefined) {
-            const matchedTier = allTiers.find(ti => String(ti.name || '').toLowerCase() === k);
-            if (matchedTier) {
-              thRows.push({ id: generateUUID(), trophy_id: savedId, tier_id: matchedTier.id, value: parseInt(val) || 0 });
-            }
+      // Relational thresholds (your original design)
+      if (allTiers.length) {
+        await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', savedId);
+
+        const rows = [];
+        Object.entries(fortnite).forEach(([key, val]) => {
+          if (val === '' || val == null) return;
+          const tier = allTiers.find(ti =>
+            String(ti.name || '').toLowerCase() === key ||
+            String(ti.slug || '').toLowerCase() === key ||
+            String(ti.code || '').toLowerCase() === key
+          );
+          if (!tier) {
+            console.warn('No trophy_tiers row matching', key, '— add tiers named Common/Uncommon/Rare/Epic/Legendary/Mythic');
+            return;
           }
+          rows.push({
+            id: generateUUID(),
+            trophy_id: savedId,
+            tier_id: tier.id,
+            value: parseInt(val, 10) || 0,
+            image_url: baseImg || null
+          });
         });
 
-        await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', savedId);
-        if (thRows.length > 0) {
-          await supabaseClient.from('trophy_thresholds').insert(thRows);
+        if (rows.length) {
+          // strip unknown cols on thresholds too
+          const thSample = allThresholds[0];
+          const cleanRows = rows.map(r => pickExistingColumns(thSample || r, r));
+          const { error: thErr } = await supabaseClient.from('trophy_thresholds').insert(cleanRows);
+          if (thErr) console.warn('threshold insert:', thErr);
         }
       }
 
       showToast('Trophy saved!');
       closeTrophyModal();
       await loadData();
-    } catch (e) { 
-      console.error(e); 
-      showToast(e.message || 'Save failed', true); 
+    } catch (e) {
+      console.error(e);
+      showToast(e.message || 'Trophy save failed', true);
     }
   }
 
@@ -923,40 +949,42 @@
   function closeAvatarModal() { getEl('avatarModal')?.classList.add('hidden'); }
 
   async function saveAvatar() {
-    const id = getEl('avatarId')?.value;
+    const id = getEl('avatarId')?.value || null;
     const journeyName = getEl('avatarName')?.value.trim();
-    if (!journeyName) return showToast('Enter a journey / stage name.', true);
+    if (!journeyName) return showToast('Enter a stage / journey name.', true);
 
     const maleImg = getEl('avatarImageMale')?.value || null;
     const femaleImg = getEl('avatarImageFemale')?.value || null;
-    const era = getEl('avatarEra')?.value.trim() || 'Era 1';
-    const journey = getEl('avatarJourney')?.value.trim() || '';
-    const order = parseInt(getEl('avatarOrder')?.value) || 1;
-    const reqVal = parseInt(getEl('avatarReqValue')?.value) || 0;
 
-    const payload = {
-      era: era,
-      journey: journey,
-      stage_order: order,
+    const desired = {
+      era: getEl('avatarEra')?.value.trim() || 'Era 1',
+      journey: getEl('avatarJourney')?.value.trim() || '',
+      stage_order: parseInt(getEl('avatarOrder')?.value, 10) || 1,
+      order: parseInt(getEl('avatarOrder')?.value, 10) || 1,
       journey_name: journeyName,
+      name: journeyName,
+      title: journeyName,
       req_type: 'mythic',
-      req_value: reqVal,
+      req_value: parseInt(getEl('avatarReqValue')?.value, 10) || 0,
       image_male: maleImg,
       image_female: femaleImg,
       male_image: maleImg,
       female_image: femaleImg,
       image_url: maleImg || femaleImg,
-      avatar_url: maleImg || femaleImg
+      avatar_url: maleImg || femaleImg,
+      image: maleImg || femaleImg
     };
+
+    const payload = pickExistingColumns(allAvatars[0] || null, desired);
 
     try {
       await resilientSave('avatar_stages', id, payload);
-      showToast('Avatar stage saved!'); 
-      closeAvatarModal(); 
+      showToast('Avatar stage saved!');
+      closeAvatarModal();
       await loadData();
-    } catch (e) { 
-      console.error(e); 
-      showToast(e.message || 'Save failed', true); 
+    } catch (e) {
+      console.error(e);
+      showToast(e.message || 'Avatar save failed', true);
     }
   }
 
