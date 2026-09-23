@@ -409,6 +409,12 @@
       </div>
 
       <div class="space-y-2 border-t border-surface-clow pt-4">
+        <!-- NOTIFY BUTTON IN MODAL -->
+        <a id="modalNotifyBtn" href="#" class="w-full py-2.5 bg-primary/10 hover:bg-primary/20 text-primary font-body font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5" style="font-size:12px;">
+          <span class="material-symbols-outlined" style="font-size:16px;">send</span>
+          <span>Send Personal Message / Notify</span>
+        </a>
+
         <div class="grid grid-cols-2 gap-2">
           <button onclick="confirmToggleRole()" id="roleBtn" class="py-2.5 bg-surface-clow text-on-surface font-body font-semibold rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-1.5" style="font-size:12px;">
             <span class="material-symbols-outlined" style="font-size:16px;">admin_panel_settings</span>
@@ -523,11 +529,10 @@ var searchDebounce = null
 function getAvatarLevel(user) {
   if (!allAvatarStages || allAvatarStages.length === 0) return 'Initiate';
   
-  // Sort stages logically by stage_order ASC, then req_value ASC
   var sortedStages = [...allAvatarStages].sort(function(a, b) {
     if (a.stage_order !== b.stage_order) return a.stage_order - b.stage_order;
-    var aVal = a.req_value || a.mythic_required || 0;
-    var bVal = b.req_value || b.mythic_required || 0;
+    var aVal = a.req_value !== undefined && a.req_value !== null ? a.req_value : (a.mythic_required || 0);
+    var bVal = b.req_value !== undefined && b.req_value !== null ? b.req_value : (b.mythic_required || 0);
     return aVal - bVal;
   });
 
@@ -536,23 +541,20 @@ function getAvatarLevel(user) {
   for (var i = 0; i < sortedStages.length; i++) {
     var stage = sortedStages[i];
     
-    // Filter by Era if user profile specifies an era
     if (user.era && stage.era && stage.era !== user.era) {
       continue;
     }
 
     var reqType = (stage.req_type || 'Mythic Trophies').toLowerCase();
     var reqVal = stage.req_value !== undefined && stage.req_value !== null ? stage.req_value : (stage.mythic_required || 0);
-    
     var userMetricVal = 0;
 
-    // Evaluate the exact user metric matching the Progression Builder's REQ. TYPE
     if (reqType.indexOf('share') !== -1) {
       userMetricVal = user.total_shares || 0;
     } else if (reqType.indexOf('recruit') !== -1) {
       userMetricVal = user.recruit_count || 0;
     } else if (reqType.indexOf('mythic') !== -1 || reqType.indexOf('trophy') !== -1) {
-      userMetricVal = user.mythic_count || user.total_shares || 0; // Fallback to shares if mythic_count is unpopulated
+      userMetricVal = user.mythic_count || user.total_shares || 0;
     } else {
       userMetricVal = user.total_shares || 0;
     }
@@ -615,7 +617,6 @@ async function loadDbTiers() {
   if (r.data) {
     allDbTiers = r.data;
     
-    // Populate the Filter Dropdown
     var filterSelect = document.getElementById('filterTier');
     filterSelect.innerHTML = '<option value="all">All Tiers</option>';
     allDbTiers.forEach(function(t) {
@@ -625,7 +626,6 @@ async function loadDbTiers() {
       filterSelect.innerHTML += '<option value="legacy">Legacy</option>';
     }
 
-    // Populate the Manage Modal Dropdown
     var manageSelect = document.getElementById('modalTierSelect');
     manageSelect.innerHTML = '<option value="free">Free</option>';
     allDbTiers.forEach(function(t) {
@@ -638,7 +638,7 @@ async function loadDbTiers() {
 async function loadAvatarStages() {
   var r = await supabaseClient
     .from('avatar_stages')
-    .select('id, stage_order, avatar_title, mythic_required, era, journey')
+    .select('*')
     .order('stage_order', { ascending: true });
     
   if (r.data) {
@@ -657,7 +657,6 @@ async function loadUsers() {
     return; 
   }
 
-  // Filter out incomplete ghost records
   allUsers = (result.data || []).filter(function(u) {
     return u.id && (u.email || u.full_name);
   });
@@ -677,7 +676,6 @@ function populateCountryFilter() {
   select.value = current || 'all'
 }
 
-// Dynamically generate avatar filters from currently loaded database levels
 function populateLevelFilter() {
   var levels = {}
   allAvatarStages.forEach(function(s) { 
@@ -695,8 +693,6 @@ function populateLevelFilter() {
 
 function renderStats() {
   var activeUsers = allUsers.filter(function(u) { return !u.deleted_at })
-  
-  // Aggregate dynamic metrics
   var countries = {}
   var tierCounts = { free: 0, warrior: 0, commander: 0, legacy: 0 }
   var paidCount = 0
@@ -716,7 +712,6 @@ function renderStats() {
     if (tr !== 'free') paidCount++
   })
 
-  // Injection
   document.getElementById('statTotal').textContent = activeUsers.length
   document.getElementById('statFree').textContent = tierCounts.free || 0
   document.getElementById('statWarrior').textContent = tierCounts.warrior || 0
@@ -834,7 +829,10 @@ function buildUserRow(u) {
     + '<td class="px-4 py-3 text-center hidden lg:table-cell font-body font-semibold text-on-surface" style="font-size:13px;">' + (u.current_streak||0) + '</td>'
     + '<td class="px-4 py-3 text-center hidden lg:table-cell font-body font-semibold text-on-surface" style="font-size:13px;">' + (u.recruit_count||0) + '</td>'
     + '<td class="px-4 py-3 hidden xl:table-cell font-body text-on-surface-variant" style="font-size:12px;">' + (u.created_at ? new Date(u.created_at).toLocaleDateString('en-US') : '—') + '</td>'
-    + '<td class="px-5 py-3 text-right"><button onclick="event.stopPropagation();openUserModal(\'' + u.id + '\')" class="text-primary font-body font-semibold hover:underline" style="font-size:12px;">View</button></td>'
+    + '<td class="px-5 py-3 text-right"><div class="flex items-center justify-end gap-3">'
+    + '<a href="notifications.html?userId=' + u.id + '&email=' + encodeURIComponent(email) + '" onclick="event.stopPropagation()" class="text-primary font-body font-semibold hover:underline flex items-center gap-1" style="font-size:12px;" title="Send personal message"><span class="material-symbols-outlined" style="font-size:15px;">send</span>Notify</a>'
+    + '<button onclick="event.stopPropagation();openUserModal(\'' + u.id + '\')" class="text-on-surface-variant font-body font-semibold hover:underline" style="font-size:12px;">View</button>'
+    + '</div></td>'
   return tr
 }
 
@@ -849,6 +847,7 @@ function openUserModal(userId) {
   document.getElementById('modalAvatar').textContent = (user.full_name || 'A').substring(0,2).toUpperCase()
   document.getElementById('modalName').textContent = user.full_name || 'No name'
   document.getElementById('modalEmail').textContent = user.email || '—'
+  document.getElementById('modalNickname').textContent = user.nickname ? ('@' + user.nickname) : ''
   document.getElementById('modalTierBadge').innerHTML = '<span class="tier-badge ' + getTierClass(user.subscription_tier) + '">' + escapeHtml(getTierLabel(user.subscription_tier)) + '</span>'
 
   var statusRow = document.getElementById('modalStatusRow'); statusRow.innerHTML = ''
@@ -856,8 +855,19 @@ function openUserModal(userId) {
   if (user.is_suspended) statusRow.innerHTML += '<span class="status-pill status-suspended">Suspended</span>'
   if (user.deleted_at) statusRow.innerHTML += '<span class="status-pill status-deleted">Deleted</span>'
 
+  // Hydrate Stat Cards
   document.getElementById('modalShares').textContent = user.total_shares || 0
+  document.getElementById('modalStreak').textContent = user.current_streak || 0
+  document.getElementById('modalRecruits').textContent = user.recruit_count || 0
   document.getElementById('modalLevel').textContent = getAvatarLevel(user)
+
+  // Hydration of Country, Joined, and Invite Code
+  document.getElementById('modalCountry').textContent = user.country || '—'
+  document.getElementById('modalJoined').textContent = user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
+  document.getElementById('modalInviteCode').textContent = user.invite_code || user.referral_code || user.oprcode || '—'
+
+  // Configure modal notify button link
+  document.getElementById('modalNotifyBtn').href = 'notifications.html?userId=' + user.id + '&email=' + encodeURIComponent(user.email || '');
 
   // Sub Value Calc
   var dbTier = allDbTiers.find(x => x.id === user.subscription_tier)
@@ -1016,7 +1026,7 @@ function escapeHtml(str) { return String(str||'').replace(/&/g,'&amp;').replace(
 async function init() {
   if (!(await checkAdminAuth())) return
   await loadDbTiers()
-  await loadAvatarStages() // Synchronously loads stages prior to initializing user records
+  await loadAvatarStages()
   await loadUsers()
 }
 init()
