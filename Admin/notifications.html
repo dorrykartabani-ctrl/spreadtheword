@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Notifications — GSTW Admin</title>
+  <title>Communication Center — GSTW Admin</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -18,14 +18,9 @@
         extend: {
           colors: {
             'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
-            'surface-c':'#efeee7','surface-chigh':'#e9e8e1',
+            'surface-c':'#efeee7',
             'on-surface':'#31332e','on-surface-variant':'#5e6059',
-            'inverse-surface':'#0e0e0c',
-            'outline':'#7a7b75','outline-variant':'#b2b2ab',
-            'primary':'#3d6285','on-primary':'#f7f9ff',
-            'secondary':'#41637c',
-            'tertiary':'#ad332b',
-            'sidebar-bg':'#0e0e0c','sidebar-hover':'#1a1a18',
+            'outline':'#7a7b75','primary':'#3d6285','on-primary':'#f7f9ff',
           },
           fontFamily:{
             'headline':['Plus Jakarta Sans','sans-serif'],
@@ -58,34 +53,32 @@
     .sidebar-item.active{background:#3d6285;color:#f7f9ff}
 
     /* Forms */
-    .form-input{
-      background:#ffffff;border:1px solid transparent;
-      transition:all 0.2s ease;
-    }
+    .form-input{background:#ffffff;border:1px solid transparent;transition:all 0.2s ease;}
     .form-input:focus{border-color:rgba(61,98,133,0.3);outline:none}
 
-    /* Type selectors */
-    .type-btn {
-      border: 2px solid transparent; transition: all 0.15s;
-    }
-    .type-btn.active { border-color: #3d6285; background: rgba(61,98,133,0.05); }
+    /* Type selectors & Mode Toggles */
+    .type-btn { border: 2px solid transparent; transition: all 0.15s; opacity: 0.6; }
+    .type-btn.active { opacity: 1; border-color: currentColor; background-color: transparent !important; }
+    
+    .mode-tab { padding: 8px 16px; font-weight: 700; font-size: 13px; border-radius: 8px; cursor: pointer; transition: all 0.2s; color: #7a7b75; }
+    .mode-tab.active { background: #3d6285; color: white; }
+
+    /* Match User App Card Styles */
+    .preview-card { border-radius: 16px; background: #ffffff; box-shadow: 0 2px 8px rgba(49,51,46,0.03); border-left: 3px solid transparent; }
+    .type-info { border-left-color: #3b82f6; }
+    .type-success { border-left-color: #10b981; }
+    .type-warning { border-left-color: #f59e0b; }
+    .type-alert { border-left-color: #ef4444; }
 
     /* Skeleton */
-    .skeleton{
-      background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%);
-      background-size:200% 100%;
-      animation:shimmer 1.5s infinite;
-      border-radius:12px;
-    }
+    .skeleton{background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:12px;}
     @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
   </style>
 </head>
 
 <body class="min-h-screen flex">
 
-<!-- ═══════════════════════════════════════════ -->
 <!-- SIDEBAR -->
-<!-- ═══════════════════════════════════════════ -->
 <aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 hidden md:flex">
   <div class="mb-6 px-2 pt-2">
     <div class="flex items-center gap-2.5">
@@ -99,7 +92,7 @@
     </div>
   </div>
 
-    <nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
+  <nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
     <a href="index.html" class="sidebar-item"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
     <a href="quotes.html" class="sidebar-item"><span class="material-symbols-outlined">add_circle</span>Create Quote</a>
     <a href="manage-quotes.html" class="sidebar-item"><span class="material-symbols-outlined">format_quote</span>Manage Quotes</a>
@@ -110,33 +103,20 @@
     <a href="warriors.html" class="sidebar-item"><span class="material-symbols-outlined">group</span>Users</a>
     <a href="manage-tiers.html" class="sidebar-item"><span class="material-symbols-outlined">workspace_premium</span>Tiers</a>
     <a href="manage-rewards.html" class="sidebar-item"><span class="material-symbols-outlined">emoji_events</span>Rewards</a>
-    <a href="notifications.html" class="sidebar-item"><span class="material-symbols-outlined">notifications</span>Broadcasts</a>
+    <a href="notifications.html" class="sidebar-item active"><span class="material-symbols-outlined">notifications</span>Broadcasts</a>
     <a href="analytics.html" class="sidebar-item"><span class="material-symbols-outlined">analytics</span>Analytics</a>
   </nav>
 
   <div class="mt-4 pt-4 border-t border-white/10 space-y-2">
     <a href="settings.html" class="sidebar-item"><span class="material-symbols-outlined">settings</span>Settings</a>
-    <div class="flex items-center gap-3 px-2 py-2">
-      <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center text-on-primary font-headline font-bold flex-shrink-0 admin-initials" style="font-size:13px;">AD</div>
-      <div class="flex-1 min-w-0">
-        <p class="font-body font-semibold text-white truncate admin-name" style="font-size:12px;">Admin</p>
-        <p class="text-white/40 font-body" style="font-size:10px;">Super Admin</p>
-      </div>
-      <button onclick="handleLogout()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-all flex-shrink-0" title="Log out">
-        <span class="material-symbols-outlined" style="font-size:16px;">logout</span>
-      </button>
-    </div>
   </div>
 </aside>
-
-<div id="sidebarOverlay" class="fixed inset-0 bg-inverse-surface/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
-
 
 <div class="flex-1 md:ml-64 flex flex-col min-h-screen">
   
   <header class="sticky top-0 z-20 bg-surface/85 backdrop-blur-xl border-b border-surface-c">
     <div class="flex items-center gap-4 px-6 lg:px-8 py-4">
-      <h2 class="font-headline font-bold text-on-surface" style="font-size:22px;">In-App Broadcasts</h2>
+      <h2 class="font-headline font-bold text-on-surface" style="font-size:22px;">Communication Center</h2>
     </div>
   </header>
 
@@ -145,31 +125,47 @@
     <!-- LEFT: COMPOSE -->
     <div class="lg:col-span-3 space-y-6">
       
-      <div>
-        <h3 class="font-headline font-bold text-lg text-on-surface">Compose Broadcast</h3>
-        <p class="font-body text-xs text-on-surface-variant mt-1">Send targeted alerts to users inside the app.</p>
+      <!-- MODE TOGGLE -->
+      <div class="bg-surface-cl p-1.5 rounded-xl shadow-sm inline-flex gap-1">
+        <button type="button" onclick="setMode('broadcast')" id="mode-broadcast" class="mode-tab active flex items-center gap-2">
+          <span class="material-symbols-outlined text-[18px]">campaign</span> Broadcast (All/Tier)
+        </button>
+        <button type="button" onclick="setMode('personal')" id="mode-personal" class="mode-tab flex items-center gap-2">
+          <span class="material-symbols-outlined text-[18px]">person</span> Personal (1:1)
+        </button>
       </div>
 
-      <form id="broadcastForm" onsubmit="sendBroadcast(event)" class="space-y-6">
+      <form id="composeForm" onsubmit="sendMessage(event)" class="space-y-6">
         
-        <!-- Audience -->
+        <!-- Target Audience -->
         <div class="bg-surface-cl rounded-2xl p-5 shadow-sm">
           <label class="font-body text-[11px] font-bold text-on-surface-variant uppercase tracking-wider block mb-3">Target Audience</label>
-          <div class="grid grid-cols-2 gap-3 mb-3">
-            <label class="flex items-center gap-2 p-3 rounded-xl bg-surface-clow cursor-pointer hover:bg-surface-c">
-              <input type="radio" name="audience" value="all" checked onchange="toggleTierSelect()" class="accent-primary w-4 h-4">
-              <span class="font-body text-sm font-semibold">All Users</span>
-            </label>
-            <label class="flex items-center gap-2 p-3 rounded-xl bg-surface-clow cursor-pointer hover:bg-surface-c">
-              <input type="radio" name="audience" value="tier" onchange="toggleTierSelect()" class="accent-primary w-4 h-4">
-              <span class="font-body text-sm font-semibold">Specific Tier</span>
-            </label>
-          </div>
-          <div id="tierSelectWrapper" class="hidden">
-            <select id="audienceTier" class="w-full form-input bg-surface-clow px-4 py-3 rounded-xl text-sm font-semibold">
+          
+          <!-- Broadcast Targeting -->
+          <div id="target-broadcast">
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              <label class="flex items-center gap-2 p-3 rounded-xl bg-surface-clow cursor-pointer hover:bg-surface-c transition-colors">
+                <input type="radio" name="audience" value="all" checked onchange="toggleTargetFields()" class="accent-primary w-4 h-4">
+                <span class="font-body text-sm font-semibold">All Users</span>
+              </label>
+              <label class="flex items-center gap-2 p-3 rounded-xl bg-surface-clow cursor-pointer hover:bg-surface-c transition-colors">
+                <input type="radio" name="audience" value="tier" onchange="toggleTargetFields()" class="accent-primary w-4 h-4">
+                <span class="font-body text-sm font-semibold">Specific Tier</span>
+              </label>
+            </div>
+            <select id="audienceTier" class="hidden w-full form-input bg-surface-clow px-4 py-3 rounded-xl text-sm font-semibold">
               <option value="free">Free Users</option>
-              <!-- Populated by JS -->
+              <!-- JS Populated -->
             </select>
+          </div>
+
+          <!-- Personal Targeting -->
+          <div id="target-personal" class="hidden">
+            <select id="audienceUser" required class="w-full form-input bg-surface-clow px-4 py-3 rounded-xl text-sm font-semibold">
+              <option value="">Select a user...</option>
+              <!-- JS Populated -->
+            </select>
+            <p class="text-[10px] text-outline mt-2">Only this specific user will see the message.</p>
           </div>
         </div>
 
@@ -178,21 +174,17 @@
           <div>
             <label class="font-body text-[11px] font-bold text-on-surface-variant uppercase tracking-wider block mb-2">Message Type</label>
             <div class="grid grid-cols-4 gap-2">
-              <div class="type-btn active rounded-xl bg-blue-50 text-blue-600 p-3 text-center cursor-pointer" onclick="setMessageType('info', this)">
-                <span class="material-symbols-outlined text-2xl mb-1">info</span>
-                <p class="text-[10px] font-bold uppercase tracking-wider">Info</p>
+              <div class="type-btn active rounded-xl bg-blue-50 text-blue-600 p-3 text-center cursor-pointer" onclick="setType('info', this)">
+                <span class="material-symbols-outlined text-2xl mb-1">info</span><p class="text-[10px] font-bold uppercase">Info</p>
               </div>
-              <div class="type-btn rounded-xl bg-green-50 text-green-600 p-3 text-center cursor-pointer" onclick="setMessageType('success', this)">
-                <span class="material-symbols-outlined text-2xl mb-1">check_circle</span>
-                <p class="text-[10px] font-bold uppercase tracking-wider">Success</p>
+              <div class="type-btn rounded-xl bg-green-50 text-green-600 p-3 text-center cursor-pointer" onclick="setType('success', this)">
+                <span class="material-symbols-outlined text-2xl mb-1">check_circle</span><p class="text-[10px] font-bold uppercase">Success</p>
               </div>
-              <div class="type-btn rounded-xl bg-amber-50 text-amber-600 p-3 text-center cursor-pointer" onclick="setMessageType('warning', this)">
-                <span class="material-symbols-outlined text-2xl mb-1">warning</span>
-                <p class="text-[10px] font-bold uppercase tracking-wider">Warning</p>
+              <div class="type-btn rounded-xl bg-amber-50 text-amber-600 p-3 text-center cursor-pointer" onclick="setType('warning', this)">
+                <span class="material-symbols-outlined text-2xl mb-1">warning</span><p class="text-[10px] font-bold uppercase">Warning</p>
               </div>
-              <div class="type-btn rounded-xl bg-red-50 text-red-600 p-3 text-center cursor-pointer" onclick="setMessageType('alert', this)">
-                <span class="material-symbols-outlined text-2xl mb-1">campaign</span>
-                <p class="text-[10px] font-bold uppercase tracking-wider">Alert</p>
+              <div class="type-btn rounded-xl bg-red-50 text-red-600 p-3 text-center cursor-pointer" onclick="setType('alert', this)">
+                <span class="material-symbols-outlined text-2xl mb-1">campaign</span><p class="text-[10px] font-bold uppercase">Alert</p>
               </div>
             </div>
             <input type="hidden" id="msgType" value="info">
@@ -205,7 +197,7 @@
 
           <div>
             <label class="font-body text-[11px] font-bold text-on-surface-variant uppercase tracking-wider block mb-2">Message Body</label>
-            <textarea id="msgBody" required rows="3" oninput="updatePreview()" placeholder="e.g. The app will be down for 10 minutes..." class="w-full form-input bg-surface-clow px-4 py-3 rounded-xl text-sm resize-none"></textarea>
+            <textarea id="msgBody" required rows="3" maxlength="250" oninput="updatePreview()" placeholder="e.g. The app will be down for 10 minutes..." class="w-full form-input bg-surface-clow px-4 py-3 rounded-xl text-sm resize-none"></textarea>
           </div>
         </div>
 
@@ -213,7 +205,6 @@
         <div class="bg-surface-cl rounded-2xl p-5 shadow-sm grid grid-cols-2 gap-4">
           <div class="col-span-2">
             <label class="font-body text-[11px] font-bold text-on-surface-variant uppercase tracking-wider block mb-1">Call to Action (Optional)</label>
-            <p class="text-xs text-outline mb-3">Add a button inside the notification</p>
           </div>
           <div>
             <label class="font-body text-[10px] font-bold text-on-surface-variant uppercase block mb-1">Button Label</label>
@@ -227,13 +218,12 @@
 
         <!-- Expiration -->
         <div class="bg-surface-cl rounded-2xl p-5 shadow-sm">
-          <label class="font-body text-[11px] font-bold text-on-surface-variant uppercase tracking-wider block mb-2">Show Until (Expiration)</label>
+          <label class="font-body text-[11px] font-bold text-on-surface-variant uppercase tracking-wider block mb-2">Active Until</label>
           <input type="datetime-local" id="expiresAt" required class="w-full form-input bg-surface-clow px-4 py-3 rounded-xl text-sm font-semibold">
-          <p class="text-xs text-outline mt-2">Notification disappears automatically after this date.</p>
         </div>
 
         <button type="submit" id="submitBtn" class="w-full py-4 signature-gradient text-white font-headline font-bold rounded-2xl active:scale-[0.98] transition-transform flex items-center justify-center gap-2 shadow-sm">
-          <span class="material-symbols-outlined">send</span> Send Broadcast
+          <span class="material-symbols-outlined">send</span> Deploy Message
         </button>
 
       </form>
@@ -244,18 +234,25 @@
       
       <!-- PREVIEW CARD -->
       <div class="sticky top-24">
-        <h3 class="font-headline font-bold text-sm text-on-surface-variant uppercase tracking-widest mb-3">Live Preview</h3>
+        <h3 class="font-headline font-bold text-sm text-on-surface-variant uppercase tracking-widest mb-3">Live User Preview</h3>
         
-        <div class="bg-slate-100 p-6 rounded-[2rem] border-4 border-slate-200/50 shadow-inner flex items-start justify-center min-h-[300px]">
+        <div class="bg-surface-c p-6 rounded-[2rem] border-4 border-white/50 shadow-inner flex flex-col justify-center min-h-[200px]">
           
-          <!-- App Notification Card Simulation -->
-          <div id="previewCard" class="w-full bg-white rounded-2xl p-4 shadow-lg border-l-4 border-blue-500 transition-colors duration-300">
+          <!-- Exact replica of user side card -->
+          <div id="previewCard" class="preview-card type-info p-4 transition-all w-full">
             <div class="flex gap-3">
-              <span id="previewIcon" class="material-symbols-outlined text-blue-500 filled text-2xl transition-colors duration-300">info</span>
+              <div id="previewIconBg" class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-blue-50">
+                <span id="previewIcon" class="material-symbols-outlined text-blue-600 filled">info</span>
+              </div>
               <div class="flex-1">
-                <h4 id="previewTitle" class="font-headline font-bold text-slate-800 text-sm">Your Title Here</h4>
-                <p id="previewBody" class="font-body text-xs text-slate-500 mt-1 leading-relaxed">This is how your message will look to users inside the app.</p>
-                <button id="previewBtn" class="hidden mt-3 text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors duration-300">Button</button>
+                <h4 id="previewTitle" class="font-headline font-bold text-[13px] leading-tight text-on-surface mb-1">Your Title Here</h4>
+                <p id="previewBody" class="font-body text-xs text-on-surface-variant leading-relaxed">This is exactly how it will look in the user app.</p>
+              </div>
+            </div>
+            <div id="previewActionArea" class="hidden mt-4 pt-3 border-t border-surface-c flex justify-between items-center">
+              <div id="previewBtn" class="text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-lg">Button</div>
+              <div class="flex gap-4">
+                <span class="text-[11px] font-bold text-outline opacity-50 flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">archive</span> ARCHIVE</span>
               </div>
             </div>
           </div>
@@ -263,8 +260,8 @@
         </div>
 
         <!-- HISTORY -->
-        <h3 class="font-headline font-bold text-sm text-on-surface-variant uppercase tracking-widest mt-8 mb-3">Active Broadcasts</h3>
-        <div id="activeList" class="space-y-3">
+        <h3 class="font-headline font-bold text-sm text-on-surface-variant uppercase tracking-widest mt-8 mb-3">Active Messages</h3>
+        <div id="historyList" class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
           <div class="skeleton h-20 w-full"></div>
         </div>
       </div>
@@ -286,11 +283,14 @@ var supabaseClient = supabase.createClient(
 );
 
 var currentUser = null;
-var themeColors = {
-  info:    { border: 'border-blue-500',   text: 'text-blue-500',   bg: 'bg-blue-50',   icon: 'info' },
-  success: { border: 'border-green-500',  text: 'text-green-500',  bg: 'bg-green-50',  icon: 'check_circle' },
-  warning: { border: 'border-amber-500',  text: 'text-amber-500',  bg: 'bg-amber-50',  icon: 'warning' },
-  alert:   { border: 'border-red-500',    text: 'text-red-500',    bg: 'bg-red-50',    icon: 'campaign' }
+var currentMode = 'broadcast'; // 'broadcast' or 'personal'
+
+// Design tokens exact match with user app
+var typeConfig = {
+  info:    { class: 'type-info',    bg: 'bg-blue-50',  color: 'text-blue-600',  icon: 'info' },
+  success: { class: 'type-success', bg: 'bg-green-50', color: 'text-green-600', icon: 'check_circle' },
+  warning: { class: 'type-warning', bg: 'bg-amber-50', color: 'text-amber-600', icon: 'warning' },
+  alert:   { class: 'type-alert',   bg: 'bg-red-50',   color: 'text-red-600',   icon: 'campaign' }
 };
 
 async function init() {
@@ -298,128 +298,169 @@ async function init() {
   if (!s.data.session) return window.location.href = 'login.html';
   currentUser = s.data.session.user;
 
-  // Default expiration to 7 days from now
-  var d = new Date();
-  d.setDate(d.getDate() + 7);
-  // Format for datetime-local input (YYYY-MM-DDTHH:mm)
+  // Default expiration to 7 days
+  var d = new Date(); d.setDate(d.getDate() + 7);
   document.getElementById('expiresAt').value = d.toISOString().slice(0, 16);
 
-  await Promise.all([loadTiers(), loadActiveBroadcasts()]);
+  await Promise.all([loadTiers(), loadUsers(), loadHistory()]);
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('mode-broadcast').classList.toggle('active', mode === 'broadcast');
+  document.getElementById('mode-personal').classList.toggle('active', mode === 'personal');
+  
+  document.getElementById('target-broadcast').classList.toggle('hidden', mode !== 'broadcast');
+  document.getElementById('target-personal').classList.toggle('hidden', mode !== 'personal');
+
+  // Adjust audience selection required state
+  document.getElementById('audienceUser').required = (mode === 'personal');
+}
+
+function toggleTargetFields() {
+  var isTier = document.querySelector('input[name="audience"]:checked').value === 'tier';
+  document.getElementById('audienceTier').classList.toggle('hidden', !isTier);
+}
+
+function setType(type, btn) {
+  document.getElementById('msgType').value = type;
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updatePreview();
+}
+
+function updatePreview() {
+  var title = document.getElementById('msgTitle').value || 'Your Title Here';
+  var body = document.getElementById('msgBody').value || 'This is exactly how it will look in the user app.';
+  var label = document.getElementById('actionLabel').value;
+  var type = document.getElementById('msgType').value;
+  var theme = typeConfig[type];
+
+  document.getElementById('previewTitle').textContent = title;
+  document.getElementById('previewBody').textContent = body;
+  
+  var card = document.getElementById('previewCard');
+  card.className = `preview-card ${theme.class} p-4 transition-all w-full`;
+  
+  var iconBg = document.getElementById('previewIconBg');
+  iconBg.className = `w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${theme.bg}`;
+  
+  var icon = document.getElementById('previewIcon');
+  icon.className = `material-symbols-outlined ${theme.color} filled`;
+  icon.textContent = theme.icon;
+
+  var actionArea = document.getElementById('previewActionArea');
+  var btn = document.getElementById('previewBtn');
+  if (label) {
+    actionArea.classList.remove('hidden');
+    btn.textContent = label;
+  } else {
+    actionArea.classList.add('hidden');
+  }
 }
 
 async function loadTiers() {
   var { data } = await supabaseClient.from('subscription_tiers').select('id, name').order('sort_order');
   if (data) {
     var sel = document.getElementById('audienceTier');
-    data.forEach(t => {
-      if(t.id !== 'free') sel.innerHTML += `<option value="${t.id}">${t.name} Users</option>`;
+    data.forEach(t => { if(t.id !== 'free') sel.innerHTML += `<option value="${t.id}">${t.name} Tier</option>`; });
+  }
+}
+
+async function loadUsers() {
+  var { data } = await supabaseClient.from('profiles').select('id, display_name, email').limit(1000);
+  if (data) {
+    var sel = document.getElementById('audienceUser');
+    data.forEach(u => {
+      var name = u.display_name || u.email || 'Unknown User';
+      sel.innerHTML += `<option value="${u.id}">${name}</option>`;
     });
   }
 }
 
-function toggleTierSelect() {
-  var isTier = document.querySelector('input[name="audience"]:checked').value === 'tier';
-  document.getElementById('tierSelectWrapper').classList.toggle('hidden', !isTier);
-}
-
-function setMessageType(type, btnElement) {
-  document.getElementById('msgType').value = type;
-  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
-  btnElement.classList.add('active');
-  updatePreview();
-}
-
-function updatePreview() {
-  var title = document.getElementById('msgTitle').value || 'Your Title Here';
-  var body = document.getElementById('msgBody').value || 'This is how your message will look to users inside the app.';
-  var label = document.getElementById('actionLabel').value;
-  var type = document.getElementById('msgType').value;
-  var theme = themeColors[type];
-
-  document.getElementById('previewTitle').textContent = title;
-  document.getElementById('previewBody').textContent = body;
-  
-  var card = document.getElementById('previewCard');
-  card.className = `w-full bg-white rounded-2xl p-4 shadow-lg border-l-4 ${theme.border} transition-colors duration-300`;
-  
-  var icon = document.getElementById('previewIcon');
-  icon.className = `material-symbols-outlined ${theme.text} filled text-2xl transition-colors duration-300`;
-  icon.textContent = theme.icon;
-
-  var btn = document.getElementById('previewBtn');
-  if (label) {
-    btn.textContent = label;
-    btn.className = `mt-3 text-xs font-bold ${theme.text} ${theme.bg} px-3 py-1.5 rounded-lg block`;
-  } else {
-    btn.className = 'hidden';
-  }
-}
-
-async function sendBroadcast(e) {
+async function sendMessage(e) {
   e.preventDefault();
-  
-  var audienceType = document.querySelector('input[name="audience"]:checked').value;
-  var audienceRule = { type: 'all' };
-  if (audienceType === 'tier') {
-    audienceRule = { type: 'tier', value: document.getElementById('audienceTier').value };
-  }
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="material-symbols-outlined spin">progress_activity</span> Deploying...';
 
   var data = {
     title: document.getElementById('msgTitle').value.trim(),
     message: document.getElementById('msgBody').value.trim(),
     type: document.getElementById('msgType').value,
-    target_audience: audienceRule,
     action_label: document.getElementById('actionLabel').value.trim() || null,
     action_url: document.getElementById('actionUrl').value.trim() || null,
     expires_at: new Date(document.getElementById('expiresAt').value).toISOString(),
     created_by: currentUser.id
   };
 
-  var btn = document.getElementById('submitBtn');
-  btn.disabled = true; btn.innerHTML = '<span class="material-symbols-outlined spin">progress_activity</span> Sending...';
+  var error = null;
 
-  var { error } = await supabaseClient.from('app_notifications').insert([data]);
+  if (currentMode === 'broadcast') {
+    var audType = document.querySelector('input[name="audience"]:checked').value;
+    data.target_audience = audType === 'tier' ? { type: 'tier', value: document.getElementById('audienceTier').value } : { type: 'all' };
+    var res = await supabaseClient.from('app_notifications').insert([data]);
+    error = res.error;
+  } else {
+    data.target_user_id = document.getElementById('audienceUser').value;
+    // Note: ensure notifications table exists with these columns!
+    var res = await supabaseClient.from('notifications').insert([data]);
+    error = res.error;
+  }
 
-  btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined">send</span> Send Broadcast';
+  btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined">send</span> Deploy Message';
 
   if (error) return showToast("Error: " + error.message);
 
-  showToast("Broadcast deployed successfully!");
-  document.getElementById('broadcastForm').reset();
+  showToast(currentMode === 'broadcast' ? "Broadcast deployed!" : "Personal message sent!");
+  document.getElementById('composeForm').reset();
   updatePreview();
-  await loadActiveBroadcasts();
+  await loadHistory();
 }
 
-async function loadActiveBroadcasts() {
-  var list = document.getElementById('activeList');
-  
-  var { data } = await supabaseClient.from('app_notifications')
-    .select('*')
-    .gt('expires_at', new Date().toISOString())
-    .order('created_at', { ascending: false });
+async function loadHistory() {
+  var list = document.getElementById('historyList');
+  list.innerHTML = '<div class="skeleton h-20 w-full"></div>';
 
-  if (!data || data.length === 0) {
-    list.innerHTML = `<div class="bg-white rounded-xl p-5 text-center border border-slate-100 text-slate-400 text-xs font-bold">No active broadcasts.</div>`;
+  var now = new Date().toISOString();
+  
+  // Fetch active Broadcasts
+  var bRes = await supabaseClient.from('app_notifications').select('*').gt('expires_at', now).order('created_at', { ascending: false });
+  // Fetch active Personal notes
+  var pRes = await supabaseClient.from('notifications').select('*').gt('expires_at', now).order('created_at', { ascending: false });
+  
+  var broadcasts = (bRes.data || []).map(x => ({ ...x, _mode: 'broadcast' }));
+  var personal = (pRes.data || []).map(x => ({ ...x, _mode: 'personal' }));
+  
+  var combined = [...broadcasts, ...personal].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+
+  if (combined.length === 0) {
+    list.innerHTML = `<div class="bg-white rounded-xl p-5 text-center border border-surface-c text-outline text-xs font-bold">No active messages.</div>`;
     return;
   }
 
   list.innerHTML = '';
-  data.forEach(n => {
-    var theme = themeColors[n.type || 'info'];
-    var audText = n.target_audience.type === 'all' ? 'All Users' : (n.target_audience.value + ' tier');
+  combined.forEach(n => {
+    var tConfig = typeConfig[n.type || 'info'];
+    var modeBadge = n._mode === 'broadcast' 
+      ? '<span class="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[9px] font-bold uppercase">Broadcast</span>'
+      : '<span class="bg-purple-50 text-purple-600 px-2 py-0.5 rounded text-[9px] font-bold uppercase">Personal</span>';
     
+    var audText = n._mode === 'broadcast' 
+      ? (n.target_audience.type === 'all' ? 'All Users' : 'Tier: ' + n.target_audience.value)
+      : '1 User';
+
     list.innerHTML += `
-      <div class="bg-white rounded-xl p-4 border border-slate-100 shadow-sm relative group">
+      <div class="bg-white rounded-xl p-4 border border-surface-c shadow-sm relative group">
         <div class="flex items-center gap-2 mb-2">
-          <span class="material-symbols-outlined ${theme.text} text-sm">${theme.icon}</span>
-          <h4 class="font-headline font-bold text-sm text-slate-800 truncate flex-1">${escapeHtml(n.title)}</h4>
-          <button onclick="expireBroadcast('${n.id}')" title="End Broadcast" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+          ${modeBadge}
+          <h4 class="font-headline font-bold text-sm text-on-surface truncate flex-1 ml-1">${escapeHtml(n.title)}</h4>
+          <button onclick="endEarly('${n.id}', '${n._mode}')" title="End Early" class="text-outline hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
             <span class="material-symbols-outlined text-lg">cancel</span>
           </button>
         </div>
-        <p class="text-xs text-slate-500 line-clamp-1 mb-2">${escapeHtml(n.message)}</p>
-        <div class="flex justify-between items-center text-[9px] font-bold uppercase tracking-wider text-slate-400">
-          <span>Target: ${audText}</span>
+        <p class="text-xs text-on-surface-variant line-clamp-1 mb-3">${escapeHtml(n.message)}</p>
+        <div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-outline">
+          <span class="flex items-center gap-1"><span class="material-symbols-outlined text-[13px] ${tConfig.color}">${tConfig.icon}</span> ${audText}</span>
           <span>Ends: ${new Date(n.expires_at).toLocaleDateString()}</span>
         </div>
       </div>
@@ -427,13 +468,12 @@ async function loadActiveBroadcasts() {
   });
 }
 
-// "Delete" by immediately expiring it so we keep the history but it hides from users
-async function expireBroadcast(id) {
-  if(!confirm("End this broadcast? It will immediately disappear for all users.")) return;
-  
-  await supabaseClient.from('app_notifications').update({ expires_at: new Date().toISOString() }).eq('id', id);
-  showToast("Broadcast ended.");
-  loadActiveBroadcasts();
+async function endEarly(id, mode) {
+  if(!confirm("End this message early? It will be removed from user devices immediately.")) return;
+  var table = mode === 'broadcast' ? 'app_notifications' : 'notifications';
+  await supabaseClient.from(table).update({ expires_at: new Date().toISOString() }).eq('id', id);
+  showToast("Message ended.");
+  loadHistory();
 }
 
 function showToast(msg) {
@@ -442,7 +482,6 @@ function showToast(msg) {
   t.classList.remove('hidden'); t.classList.add('flex');
   setTimeout(() => { t.classList.add('hidden'); t.classList.remove('flex'); }, 3000);
 }
-
 function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 init();
