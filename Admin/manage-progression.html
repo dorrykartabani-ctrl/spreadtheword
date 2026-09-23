@@ -20,6 +20,7 @@
   </script>
   <style>
     body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;overflow:hidden;}
+    details > summary::-webkit-details-marker { display: none; }
     .font-headline{font-family:'Plus Jakarta Sans',sans-serif;}
     .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
     .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
@@ -410,7 +411,7 @@
   }
 
   // ========== TROPHIES (CARD GRID) ==========
-  function renderTrophies() {
+ function renderTrophies() {
     const grid = getEl('trophyGrid');
     if (!grid) return;
     grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
@@ -427,28 +428,48 @@
         withImg.sort((a, b) => (a.tier_id || 0) - (b.tier_id || 0));
         displayImage = withImg[withImg.length - 1].image_url;
       }
-      const mythicTier = allTiers.find(ti => (ti.name || '').toLowerCase() === 'mythic');
-      const mythicVal = mythicTier
-        ? (allThresholds.find(th => th.trophy_id === t.id && th.tier_id === mythicTier.id)?.value ?? '—')
-        : '—';
+      
       const typeClass = t.type === 'stat' ? 'bg-indigo-50 text-indigo-700'
         : t.type === 'collection' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700';
+      
+      // Determine what stat is actually being tracked
+      let trackedStat = 'Missions/Campaigns';
+      if (t.type === 'stat') trackedStat = (t.stat_type || 'Shares').toUpperCase();
+      
+      // Build a row of stats for all available tiers
+      let tierStatsHtml = '';
+      const sortedTiers = allTiers.slice().sort((a,b) => a.id - b.id);
+      sortedTiers.forEach(tier => {
+        const val = allThresholds.find(th => th.trophy_id === t.id && th.tier_id === tier.id)?.value;
+        if (val !== undefined && val !== null) {
+          const tierInitial = (tier.name || 'T').substring(0, 1).toUpperCase();
+          tierStatsHtml += `
+            <div class="flex items-center gap-1.5 bg-surface px-2 py-1 rounded-md border border-surface-c shadow-sm" title="${escapeHtml(tier.name)} Target: ${val}">
+              <span class="w-2 h-2 rounded-full" style="background:${tier.color || '#ccc'}"></span>
+              <span class="text-[10px] font-extrabold text-slate-700">${val}</span>
+            </div>`;
+        }
+      });
+      if (!tierStatsHtml) tierStatsHtml = '<span class="text-[10px] text-slate-400 italic py-1">No tier targets set</span>';
 
       const card = document.createElement('div');
-      card.className = 'card flex flex-col hover:border-primary/40 cursor-pointer transition-all hover:shadow-md overflow-hidden group';
+      card.className = 'card flex flex-col hover:border-primary/40 cursor-pointer transition-all hover:shadow-md overflow-hidden p-0 group';
       card.onclick = () => openTrophyModal(t.id);
       card.innerHTML = `
-        <div class="aspect-[4/3] bg-surface-clow border-b border-surface-c flex items-center justify-center relative overflow-hidden">
-          <span class="material-symbols-outlined text-gold/40 absolute" style="font-size:64px;">emoji_events</span>
-          ${displayImage ? `<img src="${escapeHtml(displayImage)}" alt="" class="relative z-10 max-h-full max-w-full object-contain p-4 group-hover:scale-105 transition-transform" onerror="this.remove()">` : ''}
-          <span class="absolute top-3 right-3 px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${typeClass}">${escapeHtml(t.type || 'stat')}</span>
+        <div class="aspect-[21/9] bg-surface-clow border-b border-surface-c flex items-center justify-center relative overflow-hidden">
+          <span class="material-symbols-outlined text-gold/20 absolute" style="font-size:80px;">emoji_events</span>
+          ${displayImage ? `<img src="${escapeHtml(displayImage)}" alt="" class="relative z-10 h-full w-full object-contain p-2 group-hover:scale-105 transition-transform" onerror="this.remove()">` : ''}
+          <span class="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[9px] uppercase font-bold tracking-wider ${typeClass} shadow-sm">${escapeHtml(t.type || 'stat')}</span>
         </div>
         <div class="p-4 flex flex-col flex-1">
           <h3 class="font-headline font-bold text-slate-800 text-base leading-snug mb-1">${escapeHtml(t.name || 'Untitled')}</h3>
           <p class="text-xs text-slate-400 line-clamp-2 flex-1 mb-3">${escapeHtml(t.description || 'No description.')}</p>
-          <div class="flex items-center justify-between text-[11px] font-semibold border-t border-slate-100 pt-3">
-            <span class="text-slate-400 uppercase tracking-wide">Mythic @</span>
-            <span class="text-slate-800 font-bold">${mythicVal}</span>
+          
+          <div class="border-t border-slate-100 pt-3">
+            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Target: ${escapeHtml(trackedStat)}</p>
+            <div class="flex flex-wrap gap-1.5">
+              ${tierStatsHtml}
+            </div>
           </div>
         </div>`;
       grid.appendChild(card);
@@ -732,9 +753,7 @@
   }
 
   // ========== AVATARS (CARD GRID, MYTHIC-ONLY) ==========
-   // ========== AVATARS (CARD GRID) ==========
-  // Order: ERA → STAGE → JOURNEY (never alphabetical journey names)
-  function renderAvatars() {
+ function renderAvatars() {
     const list = getEl('avatarList');
     if (!list) return;
     list.innerHTML = '';
@@ -743,10 +762,8 @@
       return;
     }
 
-    // --- helpers for natural ordering ---
     function eraSortKey(era) {
-      const s = String(era || 'Era 1');
-      const num = parseInt(s.replace(/\D/g, ''), 10);
+      const num = parseInt(String(era || 'Era 1').replace(/\D/g, ''), 10);
       return Number.isFinite(num) ? num : 9999;
     }
     function stageNum(a) {
@@ -754,23 +771,14 @@
       return Number.isFinite(n) ? n : 0;
     }
 
-    // 1. Master list sorted globally: Era → Stage → Journey name (tie-break only)
     const sorted = allAvatars.slice().sort((a, b) => {
-      const ea = eraSortKey(a.era);
-      const eb = eraSortKey(b.era);
+      const ea = eraSortKey(a.era), eb = eraSortKey(b.era);
       if (ea !== eb) return ea - eb;
-
-      const sa = stageNum(a);
-      const sb = stageNum(b);
+      const sa = stageNum(a), sb = stageNum(b);
       if (sa !== sb) return sa - sb;
-
-      const ja = String(a.journey || '');
-      const jb = String(b.journey || '');
-      return ja.localeCompare(jb);
+      return String(a.journey || '').localeCompare(String(b.journey || ''));
     });
 
-    // 2. Group into Era → Journey, preserving encounter order (so journeys
-    //    appear in stage order, NOT alphabetically)
     const eras = [];
     const eraIndex = {};
 
@@ -791,27 +799,30 @@
       eraObj.journeys[eraObj.journeyIndex[journeyName]].stages.push(a);
     });
 
-    // 3. Render
     eras.forEach(eraObj => {
-      const section = document.createElement('div');
-      section.className = 'mb-10';
+      // Wrapper uses native <details> element for collapsible accordion
+      const section = document.createElement('details');
+      section.className = 'group mb-4 bg-white border border-surface-c rounded-2xl shadow-sm overflow-hidden';
+      section.open = true; // Open by default
 
       let html = `
-        <div class="mb-5 flex items-center gap-3">
-          <h3 class="font-headline font-extrabold text-2xl text-slate-900">${escapeHtml(eraObj.name)}</h3>
-          <div class="flex-1 h-px bg-surface-c"></div>
-        </div>
+        <summary class="flex items-center justify-between p-4 cursor-pointer select-none bg-surface-clow hover:bg-surface-c/50 transition-colors list-none outline-none">
+          <h3 class="font-headline font-extrabold text-lg text-slate-900">${escapeHtml(eraObj.name)}</h3>
+          <span class="material-symbols-outlined text-slate-400 transition-transform duration-200 group-open:rotate-180">expand_more</span>
+        </summary>
+        <div class="p-4 pt-2 border-t border-surface-c">
       `;
 
       eraObj.journeys.forEach(journeyObj => {
-        // stages already in stage_order from the master sort; keep stable
         journeyObj.stages.sort((a, b) => stageNum(a) - stageNum(b));
 
         html += `
-          <h4 class="font-headline font-bold text-sm text-slate-500 mb-3 tracking-wide uppercase">
-            ${escapeHtml(journeyObj.name)}
-          </h4>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          <div class="mt-4 mb-2 flex items-center gap-3">
+            <h4 class="font-headline font-bold text-xs text-slate-400 tracking-widest uppercase">${escapeHtml(journeyObj.name)}</h4>
+            <div class="flex-1 h-px bg-surface-c"></div>
+          </div>
+          <!-- Increased grid columns for smaller cards -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 mb-6">
         `;
 
         journeyObj.stages.forEach(a => {
@@ -822,41 +833,44 @@
 
           html += `
             <div onclick="window.openAvatarModal('${a.id}')"
-                 class="card flex flex-col hover:border-gold cursor-pointer transition-all hover:shadow-md overflow-hidden group">
-              <div class="aspect-[3/4] bg-surface-clow border-b border-surface-c flex items-center justify-center relative overflow-hidden">
-                <div class="absolute inset-0 signature-gradient opacity-10"></div>
-                <span class="absolute top-3 left-3 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/90 text-indigo-700 shadow-sm z-20">
-                  Stage ${order}
+                 class="card p-0 flex flex-col hover:border-gold cursor-pointer transition-all hover:shadow-md overflow-hidden group">
+              
+              <div class="aspect-[4/5] bg-surface-clow border-b border-surface-c flex items-center justify-center relative overflow-hidden">
+                <div class="absolute inset-0 signature-gradient opacity-[0.03]"></div>
+                <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-widest bg-white/90 text-indigo-700 shadow-sm z-20">
+                  S${order}
                 </span>
                 ${img
                   ? `<img src="${escapeHtml(img)}" alt=""
-                          class="relative z-10 max-h-full max-w-full object-contain p-3 group-hover:scale-105 transition-transform"
+                          class="relative z-10 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           onerror="this.remove()">`
-                  : `<span class="material-symbols-outlined text-slate-300 relative z-10" style="font-size:56px;">person</span>`
+                  : `<span class="material-symbols-outlined text-slate-200 relative z-10" style="font-size:48px;">person</span>`
                 }
               </div>
-              <div class="p-4">
-                <h4 class="font-headline font-bold text-slate-800 text-base leading-tight mb-1 truncate">
+              
+              <div class="p-2.5">
+                <h4 class="font-headline font-bold text-slate-800 text-xs leading-tight mb-1 truncate" title="${escapeHtml(name)}">
                   ${escapeHtml(name)}
                 </h4>
-                <p class="text-xs text-slate-500 font-medium flex items-center gap-1">
-                  <span class="material-symbols-outlined text-gold" style="font-size:14px;">emoji_events</span>
-                  Requires <strong class="text-slate-800">${mythicNeed}</strong>
-                  Mythic Troph${mythicNeed === 1 ? 'y' : 'ies'}
-                </p>
+                <div class="flex items-center gap-1 mt-1.5 bg-amber-50/50 rounded p-1 border border-amber-100/50">
+                  <span class="material-symbols-outlined text-gold" style="font-size:12px;">emoji_events</span>
+                  <span class="text-[10px] text-slate-600 font-semibold truncate">
+                    <strong class="text-slate-900">${mythicNeed}</strong> Mythic
+                  </span>
+                </div>
               </div>
+              
             </div>
           `;
         });
-
         html += `</div>`;
       });
-
+      
+      html += `</div>`;
       section.innerHTML = html;
       list.appendChild(section);
     });
   }
-
   function openAvatarModal(id = null) {
     getEl('avatarModal')?.classList.remove('hidden');
     getEl('deleteAvatarBtn')?.classList.add('hidden');
