@@ -383,21 +383,25 @@ function onUserSearchInput() {
     return;
   }
 
-  // Debounce: search after 300ms pause
   searchDebounceTimer = setTimeout(async function() {
     resultsBox.innerHTML = '<div class="p-3 text-xs text-outline font-semibold text-center">Searching...</div>';
     resultsBox.classList.remove('hidden');
 
+    // Search email, full_name, or display_name
     var { data, error } = await supabaseClient
       .from('profiles')
       .select('*')
-      .or('display_name.ilike.%' + query + '%,email.ilike.%' + query + '%')
+      .or(`email.ilike.%${query}%,full_name.ilike.%${query}%,display_name.ilike.%${query}%`)
       .limit(10);
 
     if (error) {
-      console.error("Search error:", error);
-      resultsBox.innerHTML = '<div class="p-3 text-xs text-red-500 font-semibold text-center">Error: ' + escapeHtml(error.message) + '</div>';
-      return;
+      // Fallback search by email only if name columns are missing
+      var fallback = await supabaseClient
+        .from('profiles')
+        .select('*')
+        .ilike('email', `%${query}%`)
+        .limit(10);
+      data = fallback.data;
     }
 
     if (!data || data.length === 0) {
@@ -442,19 +446,25 @@ function clearSelectedUser() {
   document.getElementById('userSearchInput').focus();
 }
 
-// Fetch 1 specific user by ID (used for deep-links from Users panel)
 async function loadSingleUser(userId) {
-  var { data, error } = await supabaseClient.from('profiles').select('*').eq('id', userId).maybeSingle();
-  if (error) {
-    console.error("Deep-link user load error:", error);
-    showToast("Could not find user");
+  var params = new URLSearchParams(window.location.search);
+  var nameFromUrl = params.get('name') || params.get('user') || params.get('displayName');
+  var emailFromUrl = params.get('email') || '';
+
+  // If name is passed in URL, select immediately without waiting for DB
+  if (nameFromUrl) {
+    selectUser(userId, nameFromUrl, emailFromUrl);
     return;
   }
+
+  // Fallback to DB query
+  var { data } = await supabaseClient.from('profiles').select('*').eq('id', userId).maybeSingle();
   if (data) {
     var name = data.display_name || data.full_name || data.name || data.email || ('User ' + data.id.slice(0, 8));
     selectUser(data.id, name, data.email || '');
   } else {
-    showToast("User not found");
+    // If profile row doesn't exist, show ID
+    selectUser(userId, 'User ' + userId.slice(0, 8), '');
   }
 }
 
