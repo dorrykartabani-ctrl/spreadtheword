@@ -674,15 +674,162 @@ async function loadMediaLibrary() {
       .filter(m => !!m.url);
   } catch (err) { mediaLibrary = []; }
 }
+async function loadTiers() {
+  var result = await supabaseClient.from('subscription_tiers').select('*').order('sort_order', { ascending: true })
+  if (result.error) {
+    showToast("Failed to load tiers: " + result.error.message)
+    return
+  }
+  tiers = result.data || []
+  renderTiers()
+}
+
 async function loadTierIcons() {
-  var result = await supabaseClient.from('media').select('label, url').eq('type', 'tier').eq('is_active', true)
+  // Query all media of type 'tier' without the strict is_active filter to prevent empty results
+  var result = await supabaseClient.from('media').select('label, url, is_active').eq('type', 'tier')
   if (result.error) {
     console.error("Error loading tier icons:", result.error)
   }
-  availableTierIcons = result.data || []
+  
+  // Use all items of type 'tier'. If an is_active column exists and is populated, we can filter, otherwise grab everything.
+  var items = result.data || []
+  var activeItems = items.filter(item => item.is_active !== false)
+  
+  availableTierIcons = activeItems.length > 0 ? activeItems : items
   populateIconsDropdown()
 }
 
+function populateIconsDropdown(extraUrl) {
+  var select = document.getElementById('tierBadge')
+  if (!select) return
+  
+  select.innerHTML = '<option value="">No Image (Show Placeholder)</option>'
+  
+  // Safe relative-to-absolute comparisons
+  var normalizedExtra = extraUrl ? extraUrl.trim().toLowerCase() : null
+  
+  // If editing an item with a custom URL not inside our media list, inject it safely so it doesn't get cleared
+  if (extraUrl && !availableTierIcons.some(x => x.url && x.url.trim().toLowerCase() === normalizedExtra)) {
+    var opt = document.createElement('option')
+    opt.value = extraUrl
+    opt.textContent = "Current Image (Custom)"
+    select.appendChild(opt)
+  }
+
+  availableTierIcons.forEach(function(icon) {
+    var opt = document.createElement('option')
+    opt.value = icon.url
+    opt.textContent = icon.label || 'Unnamed Icon'
+    select.appendChild(opt)
+  })
+}
+async function loadTiers() {
+  var result = await supabaseClient.from('subscription_tiers').select('*').order('sort_order', { ascending: true })
+  if (result.error) {
+    showToast("Failed to load tiers: " + result.error.message)
+    return
+  }
+  tiers = result.data || []
+  renderTiers()
+}
+function renderTiers() {
+  var container = document.getElementById('tiersList')
+  if (!container) return
+  container.innerHTML = ''
+
+  if (tiers.length === 0) {
+    container.innerHTML = '<div class="col-span-full text-center py-12"><p class="font-body text-outline" style="font-size:14px;">No tiers yet. Create one!</p></div>'
+    return
+  }
+
+  tiers.forEach(function(tier) {
+    var card = document.createElement('div')
+    card.className = 'tier-card' + (tier.is_active ? '' : ' inactive')
+
+    // Prepend production domain if path is relative
+    var rawUrl = tier.badge_url || ''
+    var absoluteBadgeUrl = (rawUrl && rawUrl.startsWith('/')) ? 'https://gospreadtheword.app' + rawUrl : rawUrl;
+
+    var badgeHtml = ''
+    if (absoluteBadgeUrl) {
+      badgeHtml = `<img src="${escapeHtml(absoluteBadgeUrl)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block'">` +
+                  `<span class="material-symbols-outlined text-outline hidden" style="font-size:24px;">workspace_premium</span>`
+    } else {
+      badgeHtml = `<span class="material-symbols-outlined text-outline" style="font-size:24px;">workspace_premium</span>`
+    }
+    
+    var statusBadge = ''
+    if (!tier.is_active) statusBadge = '<span class="bg-outline-variant/30 text-outline px-2 py-0.5 rounded-full font-body font-bold" style="font-size:9px;">INACTIVE</span>'
+    else if (tier.coming_soon) statusBadge = '<span class="bg-secondary-container/30 text-secondary px-2 py-0.5 rounded-full font-body font-bold" style="font-size:9px;">COMING SOON</span>'
+    else statusBadge = '<span class="bg-primary-container/30 text-primary px-2 py-0.5 rounded-full font-body font-bold" style="font-size:9px;">LIVE</span>'
+
+    var features = tier.features || []
+    var featuresHtml = features.slice(0, 3).map(function(f) {
+      var icon = f.available ? 'check_circle' : 'radio_button_unchecked'
+      var color = f.available ? 'text-primary' : 'text-outline'
+      return '<div class="flex items-center gap-2"><span class="material-symbols-outlined ' + color + '" style="font-size:14px;">' + icon + '</span><span class="font-body text-on-surface-variant" style="font-size:11px;">' + escapeHtml(f.label || '') + '</span></div>'
+    }).join('')
+
+    card.innerHTML =
+      '<div class="badge-preview">' + badgeHtml + '</div>'
+      + '<div class="flex items-start justify-between mb-4 pr-14">'
+        + '<div>'
+          + '<h4 class="font-headline font-bold text-on-surface mb-1" style="font-size:16px;">' + escapeHtml(tier.name || 'Unnamed') + '</h4>'
+          + '<p class="font-body text-on-surface-variant" style="font-size:12px;">' + escapeHtml(tier.description || '') + '</p>'
+        + '</div>'
+      + '</div>'
+      + '<div class="mb-4">' + statusBadge + '</div>'
+      + '<div class="flex items-baseline gap-1 mb-4">'
+        + '<span class="font-headline font-bold text-primary" style="font-size:24px;">$' + Number(tier.price || 0).toFixed(2) + '</span>'
+        + '<span class="font-body text-on-surface-variant" style="font-size:12px;">/' + (tier.billing_interval || 'month') + '</span>'
+      + '</div>'
+      + '<div class="space-y-2 mb-4">' + featuresHtml + '</div>'
+      + '<div class="flex gap-2">'
+        + '<button onclick="editTier(\'' + tier.id + '\')" class="flex-1 py-2 bg-primary-container/20 text-primary font-body font-semibold rounded-lg hover:bg-primary-container/30 transition-colors" style="font-size:12px;">Edit</button>'
+        + '<button onclick="duplicateTier(\'' + tier.id + '\')" class="px-3 py-2 bg-secondary-container/30 text-secondary font-body font-semibold rounded-lg hover:bg-secondary-container/50 transition-colors" style="font-size:12px;" title="Duplicate tier"><span class="material-symbols-outlined" style="font-size:16px;">content_copy</span></button>'
+        + '<button onclick="deleteTier(\'' + tier.id + '\')" class="px-3 py-2 bg-tertiary-container/20 text-tertiary font-body font-semibold rounded-lg hover:bg-tertiary-container/30 transition-colors" style="font-size:12px;" title="Delete tier"><span class="material-symbols-outlined" style="font-size:16px;">delete</span></button>'
+      + '</div>'
+
+    container.appendChild(card)
+  })
+}
+async function loadTierIcons() {
+  // Query all media of type 'tier' without the strict is_active filter to prevent empty results
+  var result = await supabaseClient.from('media').select('label, url, is_active').eq('type', 'tier')
+  if (result.error) {
+    console.error("Error loading tier icons:", result.error)
+  }
+  
+  // Use all items of type 'tier'. If an is_active column exists and is populated, we can filter, otherwise grab everything.
+  var items = result.data || []
+  var activeItems = items.filter(item => item.is_active !== false)
+  
+  availableTierIcons = activeItems.length > 0 ? activeItems : items
+  populateIconsDropdown()
+}
+
+function populateIconsDropdown(extraUrl) {
+  var select = document.getElementById('tierBadge')
+  if (!select) return
+  
+  select.innerHTML = '<option value="">No Image (Show Placeholder)</option>'
+
+  var normalizedExtra = extraUrl ? extraUrl.trim().toLowerCase() : null
+  
+  if (extraUrl && !availableTierIcons.some(x => x.url && x.url.trim().toLowerCase() === normalizedExtra)) {
+    var opt = document.createElement('option')
+    opt.value = extraUrl
+    opt.textContent = "Current Image (Custom)"
+    select.appendChild(opt)
+  }
+
+  availableTierIcons.forEach(function(icon) {
+    var opt = document.createElement('option')
+    opt.value = icon.url
+    opt.textContent = icon.label || 'Unnamed Icon'
+    select.appendChild(opt)
+  })
+}
 // ─── CMS RENDERERS ─────────────────────────────────────────
 function renderSectionList() {
   const container = $('sectionList');
