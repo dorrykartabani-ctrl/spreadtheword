@@ -292,15 +292,14 @@ async function loadImpactData() {
       dateCutoff = d.toISOString();
     }
 
+    // 1. Fetch User Profile
     var { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
     userProfile = profile || {};
 
+    // 2. Dynamic Queries
     var recruitQuery = supabaseClient.from('profiles').select('id', { count: 'exact', head: true }).eq('referred_by', currentUser.id);
     var recruitNationsQuery = supabaseClient.from('profiles').select('country').eq('referred_by', currentUser.id).not('country', 'is', null);
-    
-    // Fetching Trophies
     var userTrophiesQuery = supabaseClient.from('user_trophies').select('tier_id, trophy_id, awarded_at').eq('user_id', currentUser.id);
-    
     var userBadgesQuery = supabaseClient.from('user_badges').select('id, awarded_at', { count: 'exact', head: true }).eq('user_id', currentUser.id);
     var userMissionsQuery = supabaseClient.from('mission_activity').select('mission_ref').eq('user_id', currentUser.id);
     var userDonationsQuery = supabaseClient.from('donations').select('amount, created_at').eq('user_id', currentUser.id);
@@ -316,6 +315,7 @@ async function loadImpactData() {
       userSubsQuery = userSubsQuery.gte('created_at', dateCutoff);
     }
 
+    // 3. Parallel Database Fetch
     var [
       recruitsRes, userNationsRes, userTrophiesRes, userBadgesRes, userMissionsRes, 
       userDonationsRes, userSubsRes, avatarsRes, globalSharesRes, globalWarriorsRes, 
@@ -331,12 +331,12 @@ async function loadImpactData() {
       supabaseClient.from('donations').select('amount')
     ]);
 
-    // --- PERSONAL IMPACT CALCULATIONS ---
+    // --- PERSONAL STATS ---
     var totalShares = userProfile.total_shares || 0;
     var recruits = recruitsRes.count || 0;
     var userNationsList = (userNationsRes.data || []).map(p => p.country);
     var nations = new Set(userNationsList).size;
-    var badgesCount = userBadgesRes.count || (userProfile.badges ? userProfile.badges.length : 0);
+    var badgesCount = userBadgesRes.count || 0;
     
     var missionRefs = (userMissionsRes.data || []).map(m => m.mission_ref).filter(Boolean);
     var missionsCount = new Set(missionRefs).size;
@@ -345,59 +345,38 @@ async function loadImpactData() {
     var subValue = (userSubsRes.data || []).reduce((sum, s) => sum + Number(s.price || 0), 0);
     var totalUserContrib = donationTotal + subValue;
 
-    // --- TROPHY CALCULATION (FIXED) ---
+    // --- TROPHY CALCULATIONS ---
     var userTrophies = userTrophiesRes.data || [];
-    console.log("Raw Trophies from DB:", userTrophies); // Check browser console for this!
-
     var tierCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     var mythicCount = 0;
-    var totalTrophies = 0;
+    var totalTrophies = userTrophies.length;
 
     userTrophies.forEach(t => {
-      // Force it to a clean integer just in case Supabase sends it as a string
       var tier = parseInt(t.tier_id, 10);
       if (!isNaN(tier) && tier >= 1 && tier <= 5) {
         tierCounts[tier] += 1;
-        totalTrophies++;
-        if (tier === 5) {
-          mythicCount++;
-        }
+        if (tier === 5) mythicCount++;
       }
     });
 
-    console.log("Counted Tiers:", tierCounts, "| Mythics:", mythicCount);
-
-    // --- AVATAR STAGES CALCULATION (FIXED) ---
+    // --- AVATAR STAGES PROGRESSION ---
     var allAvatars = avatarsRes.data || [];
+    var baseStage = { avatar_title: 'The Seeker', journey: 'The Beginning', stage_order: 0, mythic_required: 0 };
     
-    // Fallback if avatar_stages table is empty
-    if (allAvatars.length === 0) {
-      allAvatars = [
-        { journey_name: 'The Seeker', stage_order: 1, mythic_required: 0 },
-        { journey_name: 'The Guide', stage_order: 2, mythic_required: 1 }
-      ];
-    }
+    var currentStage = baseStage;
+    var nextStage = allAvatars[0] || null;
 
-    var currentStage = allAvatars[0];
-    var nextStage = null;
-
-    // Forward loop to correctly evaluate levels
     for (var i = 0; i < allAvatars.length; i++) {
-      var req = allAvatars[i].mythic_required || 0;
+      var stage = allAvatars[i];
+      var req = stage.mythic_required || 0;
+      
       if (mythicCount >= req) {
-        currentStage = allAvatars[i];
+        currentStage = stage;
         nextStage = (i + 1 < allAvatars.length) ? allAvatars[i + 1] : null;
       } else {
-        break; // Stop immediately at the stage we haven't reached
+        nextStage = stage;
+        break;
       }
-    }
-
-    // Failsafe: if nextStage is null because DB is missing future rows, create a dummy next stage
-    if (!nextStage && currentStage.stage_order < 5) {
-        nextStage = { 
-            journey_name: 'Next Level', 
-            mythic_required: (currentStage.mythic_required || 0) + 1 
-        };
     }
 
     // --- GLOBAL CALCULATIONS ---
@@ -411,7 +390,7 @@ async function loadImpactData() {
 
     // --- DOM UPDATES ---
 
-    // 1. Avatar Update
+    // 1. Avatar Image
     var gender = userProfile.gender || 'male';
     var avatarImg = (gender === 'female' && currentStage.image_url_female) ? currentStage.image_url_female : currentStage.image_url_male;
     var imgEl = document.getElementById('heroAvatarImg');
@@ -426,40 +405,39 @@ async function loadImpactData() {
       if (fallbackEl) fallbackEl.style.display = 'flex';
     }
 
-    // 2. Progression Update (Fixed)
+    // 2. Progression Text & Bar
     safeSetText('userNameDisplay', userProfile.nickname || userProfile.full_name || 'Warrior');
-    safeSetText('journeyNameDisplay', currentStage.journey_name || 'The Seeker');
-    safeSetText('avatarTitleDisplay', 'Stage ' + (currentStage.stage_order || 1));
+    safeSetText('journeyNameDisplay', currentStage.avatar_title || 'The Seeker');
+    safeSetText('avatarTitleDisplay', 'Stage ' + (currentStage.stage_order || 0));
 
     if (nextStage) {
       var prevReq = currentStage.mythic_required || 0;
-      var nextReq = nextStage.mythic_required || 1; // Prevent divide by zero
+      var nextReq = nextStage.mythic_required || 1;
       
-      safeSetText('nextRankName', 'Next: ' + nextStage.journey_name);
+      safeSetText('nextRankName', 'Next: ' + (nextStage.avatar_title || ('Stage ' + nextStage.stage_order)));
       safeSetText('mythicProgressText', mythicCount + '/' + nextReq + ' Mythic');
       
       var range = nextReq - prevReq;
       var progress = mythicCount - prevReq;
-      var pct = Math.max(0, Math.min(100, (progress / range) * 100));
+      var pct = range > 0 ? Math.max(0, Math.min(100, (progress / range) * 100)) : 0;
       
       var bar = document.getElementById('mythicProgressBar');
       if (bar) bar.style.width = pct + '%';
     } else {
-      // Legitimately Max Level
       safeSetText('nextRankName', 'Max Level Reached');
       safeSetText('mythicProgressText', mythicCount + ' Mythic');
       var bar = document.getElementById('mythicProgressBar');
       if (bar) bar.style.width = '100%';
     }
 
-    // 3. Trophies Update
+    // 3. Trophy Tiers Display
     safeSetText('tierCommon', tierCounts[1] || 0);
     safeSetText('tierUncommon', tierCounts[2] || 0);
     safeSetText('tierRare', tierCounts[3] || 0);
     safeSetText('tierEpic', tierCounts[4] || 0);
     safeSetText('tierMythic', tierCounts[5] || 0);
 
-    // 4. Personal Update
+    // 4. Personal Impact Cards
     safeSetText('statShares', totalShares);
     safeSetText('statRecruits', recruits);
     safeSetText('statNations', nations);
@@ -467,7 +445,7 @@ async function loadImpactData() {
     safeSetText('statMissions', missionsCount);
     safeSetText('statTrophies', totalTrophies);
 
-    // 5. Investment Update
+    // 5. Kingdom Investment Cards
     safeSetText('statSubValue', formatMoney(subValue));
     safeSetText('statDonations', formatMoney(donationTotal));
     safeSetText('statTotalContrib', formatMoney(totalUserContrib));
@@ -479,7 +457,7 @@ async function loadImpactData() {
     if (barSubs) barSubs.style.width = subPct + '%';
     if (barGifts) barGifts.style.width = giftPct + '%';
 
-    // 6. Global Update
+    // 6. Global Impact Section
     safeSetText('globalShares', gShares.toLocaleString());
     safeSetText('globalWarriors', gWarriors.toLocaleString());
     safeSetText('globalNations', gNations.toLocaleString());
