@@ -285,7 +285,6 @@ async function init() {
 
 async function loadImpactData() {
   try {
-    // 1. Timeframe Cutoff Calculation
     var dateCutoff = null;
     if (currentTimeframe === 'week') {
       var d = new Date();
@@ -293,50 +292,19 @@ async function loadImpactData() {
       dateCutoff = d.toISOString();
     }
 
-    // 2. Fetch User Profile
-    var { data: profile } = await supabaseClient
-      .from('profiles')
-      .select('*')
-      .eq('id', currentUser.id)
-      .single();
+    var { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
     userProfile = profile || {};
 
-    // 3. Build Dynamic Queries (Applying Date Filter When "Week" Is Selected)
-    var recruitQuery = supabaseClient
-      .from('profiles')
-      .select('id', { count: 'exact', head: true })
-      .eq('referred_by', currentUser.id);
-
-    var recruitNationsQuery = supabaseClient
-      .from('profiles')
-      .select('country')
-      .eq('referred_by', currentUser.id)
-      .not('country', 'is', null);
-
-    var userTrophiesQuery = supabaseClient
-      .from('user_trophies')
-      .select('tier_id, trophy_id, awarded_at')
-      .eq('user_id', currentUser.id);
-
-    var userBadgesQuery = supabaseClient
-      .from('user_badges')
-      .select('id, awarded_at', { count: 'exact', head: true })
-      .eq('user_id', currentUser.id);
-
-    var userMissionsQuery = supabaseClient
-      .from('mission_activity')
-      .select('mission_ref')
-      .eq('user_id', currentUser.id);
-
-    var userDonationsQuery = supabaseClient
-      .from('donations')
-      .select('amount, created_at')
-      .eq('user_id', currentUser.id);
-
-    var userSubsQuery = supabaseClient
-      .from('subscriptions')
-      .select('price, status, created_at')
-      .eq('user_id', currentUser.id);
+    var recruitQuery = supabaseClient.from('profiles').select('id', { count: 'exact', head: true }).eq('referred_by', currentUser.id);
+    var recruitNationsQuery = supabaseClient.from('profiles').select('country').eq('referred_by', currentUser.id).not('country', 'is', null);
+    
+    // Fetching Trophies
+    var userTrophiesQuery = supabaseClient.from('user_trophies').select('tier_id, trophy_id, awarded_at').eq('user_id', currentUser.id);
+    
+    var userBadgesQuery = supabaseClient.from('user_badges').select('id, awarded_at', { count: 'exact', head: true }).eq('user_id', currentUser.id);
+    var userMissionsQuery = supabaseClient.from('mission_activity').select('mission_ref').eq('user_id', currentUser.id);
+    var userDonationsQuery = supabaseClient.from('donations').select('amount, created_at').eq('user_id', currentUser.id);
+    var userSubsQuery = supabaseClient.from('subscriptions').select('price, status, created_at').eq('user_id', currentUser.id);
 
     if (dateCutoff) {
       recruitQuery = recruitQuery.gte('created_at', dateCutoff);
@@ -348,29 +316,13 @@ async function loadImpactData() {
       userSubsQuery = userSubsQuery.gte('created_at', dateCutoff);
     }
 
-    // 4. Fetch All Stats in Parallel
     var [
-      recruitsRes,
-      userNationsRes,
-      userTrophiesRes,
-      userBadgesRes,
-      userMissionsRes,
-      userDonationsRes,
-      userSubsRes,
-      avatarsRes,
-      globalSharesRes,
-      globalWarriorsRes,
-      globalNationsRes,
-      projectsRes,
-      globalDonationsRes
+      recruitsRes, userNationsRes, userTrophiesRes, userBadgesRes, userMissionsRes, 
+      userDonationsRes, userSubsRes, avatarsRes, globalSharesRes, globalWarriorsRes, 
+      globalNationsRes, projectsRes, globalDonationsRes
     ] = await Promise.all([
-      recruitQuery,
-      recruitNationsQuery,
-      userTrophiesQuery,
-      userBadgesQuery,
-      userMissionsQuery,
-      userDonationsQuery,
-      userSubsQuery,
+      recruitQuery, recruitNationsQuery, userTrophiesQuery, userBadgesQuery, userMissionsQuery, 
+      userDonationsQuery, userSubsQuery, 
       supabaseClient.from('avatar_stages').select('*').order('stage_order', { ascending: true }),
       supabaseClient.from('shares').select('id', { count: 'exact', head: true }),
       supabaseClient.from('profiles').select('id', { count: 'exact', head: true }),
@@ -386,40 +338,66 @@ async function loadImpactData() {
     var nations = new Set(userNationsList).size;
     var badgesCount = userBadgesRes.count || (userProfile.badges ? userProfile.badges.length : 0);
     
-    // Distinct missions completed
     var missionRefs = (userMissionsRes.data || []).map(m => m.mission_ref).filter(Boolean);
     var missionsCount = new Set(missionRefs).size;
 
-    // Kingdom Investment (User)
     var donationTotal = (userDonationsRes.data || []).reduce((sum, d) => sum + Number(d.amount || 0), 0);
     var subValue = (userSubsRes.data || []).reduce((sum, s) => sum + Number(s.price || 0), 0);
     var totalUserContrib = donationTotal + subValue;
 
-    // Trophy Calculation
+    // --- TROPHY CALCULATION (FIXED) ---
     var userTrophies = userTrophiesRes.data || [];
+    console.log("Raw Trophies from DB:", userTrophies); // Check browser console for this!
+
     var tierCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     var mythicCount = 0;
-    var totalTrophies = userTrophies.length;
+    var totalTrophies = 0;
 
     userTrophies.forEach(t => {
-      var tier = parseInt(t.tier_id || 0);
-      if (tier >= 1 && tier <= 5) {
-        tierCounts[tier] = (tierCounts[tier] || 0) + 1;
-        if (tier === 5) mythicCount++;
+      // Force it to a clean integer just in case Supabase sends it as a string
+      var tier = parseInt(t.tier_id, 10);
+      if (!isNaN(tier) && tier >= 1 && tier <= 5) {
+        tierCounts[tier] += 1;
+        totalTrophies++;
+        if (tier === 5) {
+          mythicCount++;
+        }
       }
     });
 
-    // Avatar Stages Calculation
+    console.log("Counted Tiers:", tierCounts, "| Mythics:", mythicCount);
+
+    // --- AVATAR STAGES CALCULATION (FIXED) ---
     var allAvatars = avatarsRes.data || [];
-    var currentStage = allAvatars[0] || { journey_name: 'The Seeker', stage_order: 0, image_url_male: '', image_url_female: '', mythic_required: 0 };
+    
+    // Fallback if avatar_stages table is empty
+    if (allAvatars.length === 0) {
+      allAvatars = [
+        { journey_name: 'The Seeker', stage_order: 1, mythic_required: 0 },
+        { journey_name: 'The Guide', stage_order: 2, mythic_required: 1 }
+      ];
+    }
+
+    var currentStage = allAvatars[0];
     var nextStage = null;
 
-    for (var i = allAvatars.length - 1; i >= 0; i--) {
-      if (mythicCount >= (allAvatars[i].mythic_required || 0)) {
+    // Forward loop to correctly evaluate levels
+    for (var i = 0; i < allAvatars.length; i++) {
+      var req = allAvatars[i].mythic_required || 0;
+      if (mythicCount >= req) {
         currentStage = allAvatars[i];
-        nextStage = allAvatars[i + 1] || null;
-        break;
+        nextStage = (i + 1 < allAvatars.length) ? allAvatars[i + 1] : null;
+      } else {
+        break; // Stop immediately at the stage we haven't reached
       }
+    }
+
+    // Failsafe: if nextStage is null because DB is missing future rows, create a dummy next stage
+    if (!nextStage && currentStage.stage_order < 5) {
+        nextStage = { 
+            journey_name: 'Next Level', 
+            mythic_required: (currentStage.mythic_required || 0) + 1 
+        };
     }
 
     // --- GLOBAL CALCULATIONS ---
@@ -427,14 +405,13 @@ async function loadImpactData() {
     var gWarriors = globalWarriorsRes.count || 0;
     var gNationsList = (globalNationsRes.data || []).map(p => p.country);
     var gNations = new Set(gNationsList).size;
-
     var globalMissionRaised = (projectsRes.data || []).reduce((sum, p) => sum + Number(p.raised_amount || 0), 0);
     var globalDirectDonations = (globalDonationsRes.data || []).reduce((sum, d) => sum + Number(d.amount || 0), 0);
     var totalRaisedGlobal = globalMissionRaised + globalDirectDonations;
 
     // --- DOM UPDATES ---
 
-    // 1. Avatar Display
+    // 1. Avatar Update
     var gender = userProfile.gender || 'male';
     var avatarImg = (gender === 'female' && currentStage.image_url_female) ? currentStage.image_url_female : currentStage.image_url_male;
     var imgEl = document.getElementById('heroAvatarImg');
@@ -449,35 +426,40 @@ async function loadImpactData() {
       if (fallbackEl) fallbackEl.style.display = 'flex';
     }
 
-    // 2. Hero Text & Progress
+    // 2. Progression Update (Fixed)
     safeSetText('userNameDisplay', userProfile.nickname || userProfile.full_name || 'Warrior');
     safeSetText('journeyNameDisplay', currentStage.journey_name || 'The Seeker');
-    safeSetText('avatarTitleDisplay', 'Stage ' + (currentStage.stage_order || 0));
+    safeSetText('avatarTitleDisplay', 'Stage ' + (currentStage.stage_order || 1));
 
     if (nextStage) {
-      safeSetText('nextRankName', 'Next: ' + nextStage.journey_name);
       var prevReq = currentStage.mythic_required || 0;
-      var range = (nextStage.mythic_required || 1) - prevReq;
+      var nextReq = nextStage.mythic_required || 1; // Prevent divide by zero
+      
+      safeSetText('nextRankName', 'Next: ' + nextStage.journey_name);
+      safeSetText('mythicProgressText', mythicCount + '/' + nextReq + ' Mythic');
+      
+      var range = nextReq - prevReq;
       var progress = mythicCount - prevReq;
       var pct = Math.max(0, Math.min(100, (progress / range) * 100));
-      safeSetText('mythicProgressText', mythicCount + '/' + nextStage.mythic_required + ' Mythic');
+      
       var bar = document.getElementById('mythicProgressBar');
       if (bar) bar.style.width = pct + '%';
     } else {
+      // Legitimately Max Level
       safeSetText('nextRankName', 'Max Level Reached');
       safeSetText('mythicProgressText', mythicCount + ' Mythic');
       var bar = document.getElementById('mythicProgressBar');
       if (bar) bar.style.width = '100%';
     }
 
-    // 3. Trophy Tiers
+    // 3. Trophies Update
     safeSetText('tierCommon', tierCounts[1] || 0);
     safeSetText('tierUncommon', tierCounts[2] || 0);
     safeSetText('tierRare', tierCounts[3] || 0);
     safeSetText('tierEpic', tierCounts[4] || 0);
     safeSetText('tierMythic', tierCounts[5] || 0);
 
-    // 4. Personal Stats
+    // 4. Personal Update
     safeSetText('statShares', totalShares);
     safeSetText('statRecruits', recruits);
     safeSetText('statNations', nations);
@@ -485,7 +467,7 @@ async function loadImpactData() {
     safeSetText('statMissions', missionsCount);
     safeSetText('statTrophies', totalTrophies);
 
-    // 5. Kingdom Investment
+    // 5. Investment Update
     safeSetText('statSubValue', formatMoney(subValue));
     safeSetText('statDonations', formatMoney(donationTotal));
     safeSetText('statTotalContrib', formatMoney(totalUserContrib));
@@ -497,7 +479,7 @@ async function loadImpactData() {
     if (barSubs) barSubs.style.width = subPct + '%';
     if (barGifts) barGifts.style.width = giftPct + '%';
 
-    // 6. Global Stats
+    // 6. Global Update
     safeSetText('globalShares', gShares.toLocaleString());
     safeSetText('globalWarriors', gWarriors.toLocaleString());
     safeSetText('globalNations', gNations.toLocaleString());
