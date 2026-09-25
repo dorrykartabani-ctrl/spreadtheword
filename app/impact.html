@@ -286,45 +286,91 @@ function formatMoney(amount) {
 
 async function loadImpactData() {
   try {
-    // 1. Fetch User Profile (This now includes total_shares!)
-    var { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+    // 1. Calculate Date Cutoff if "Week" is selected
+    var dateCutoff = null;
+    if (currentTimeframe === 'week') {
+      var d = new Date();
+      d.setDate(d.getDate() - 7);
+      dateCutoff = d.toISOString();
+    }
+
+    // 2. Fetch User Profile
+    var { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('*')
+      .eq('id', currentUser.id)
+      .single();
     userProfile = profile || {};
 
-    // 2. Fetch Data in Parallel
+    // 3. Prepare queries with optional timeframe filter
+    var recruitQuery = supabaseClient
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('referred_by', currentUser.id);
+
+    var recruitNationsQuery = supabaseClient
+      .from('profiles')
+      .select('country')
+      .eq('referred_by', currentUser.id)
+      .not('country', 'is', null);
+
+    // Contribution queries (Replace table names with your actual schema names if different)
+    var userDonationsQuery = supabaseClient
+      .from('donations')
+      .select('amount, created_at')
+      .eq('user_id', currentUser.id);
+
+    var userSubsQuery = supabaseClient
+      .from('subscriptions')
+      .select('amount, status, created_at')
+      .eq('user_id', currentUser.id);
+
+    if (dateCutoff) {
+      recruitQuery = recruitQuery.gte('created_at', dateCutoff);
+      recruitNationsQuery = recruitNationsQuery.gte('created_at', dateCutoff);
+      userDonationsQuery = userDonationsQuery.gte('created_at', dateCutoff);
+      userSubsQuery = userSubsQuery.gte('created_at', dateCutoff);
+    }
+
+    // 4. Execute Queries in Parallel
     var [
-      recruitsRes, userNationsRes, trophiesRes, avatarsRes,
-      globalSharesRes, globalWarriorsRes, globalNationsRes, projectsRes
+      recruitsRes,
+      userNationsRes,
+      trophiesRes,
+      avatarsRes,
+      donationsRes,
+      subsRes,
+      globalSharesRes,
+      globalWarriorsRes,
+      globalNationsRes,
+      projectsRes
     ] = await Promise.all([
-      supabaseClient.from('profiles').select('id', { count: 'exact', head: true }).eq('referred_by', currentUser.id),
-      supabaseClient.from('profiles').select('country').eq('referred_by', currentUser.id).not('country', 'is', null),
+      recruitQuery,
+      recruitNationsQuery,
       supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
       supabaseClient.from('avatar_stages').select('*').order('stage_order', { ascending: true }),
-      
-      // Global Data
+      userDonationsQuery,
+      userSubsQuery,
       supabaseClient.from('shares').select('id', { count: 'exact', head: true }),
       supabaseClient.from('profiles').select('id', { count: 'exact', head: true }),
       supabaseClient.from('profiles').select('country').not('country', 'is', null),
       supabaseClient.from('projects').select('raised_amount').in('status', ['active', 'completed'])
     ]);
 
-    // --- PERSONAL CALCULATIONS ---
-    
-    // FIX: Use total_shares from profile instead of querying shares table
+    // --- PERSONAL CONTRIBUTIONS CALCULATION ---
+    var donationTotal = (donationsRes.data || []).reduce((sum, d) => sum + Number(d.amount || 0), 0);
+    var subValue = (subsRes.data || []).reduce((sum, s) => sum + Number(s.amount || 0), 0);
+    var totalUserContrib = donationTotal + subValue;
+
+    // --- PERSONAL STATS ---
     var totalShares = userProfile.total_shares || 0;
-    
     var recruits = recruitsRes.count || 0;
     var nationsList = (userNationsRes.data || []).map(p => p.country);
     var nations = new Set(nationsList).size;
-    
-    // Badges vs Trophies
-    var badges = (userProfile.badges || []).length; 
-    var missions = 0; 
-    
-    // FIX: Force contributions to $0 for launch
-    var subValue = 0;
-    var donationTotal = 0;
+    var badges = (userProfile.badges || []).length;
+    var missions = userProfile.completed_missions_count || 0;
 
-    // Trophy Logic
+    // --- TROPHY / AVATAR LOGIC ---
     var userProgress = trophiesRes.data || [];
     var tierCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     var mythicCount = 0;
@@ -333,13 +379,16 @@ async function loadImpactData() {
     userProgress.forEach(p => {
       var level = parseInt(p.current_tier_level || p.current_tier_id || 0);
       if (level > 0) {
-        tierCounts[level] = (tierCounts[level] || 0) + 1;
+        // If reaching level 3 means they also unlocked 1 and 2:
+        for (var i = 1; i <= level; i++) {
+          tierCounts[i] = (tierCounts[i] || 0) + 1;
+        }
         totalTrophies++;
         if (level === 5) mythicCount++;
       }
     });
 
-    // Avatar Logic
+    // Avatar Progression
     var allAvatars = avatarsRes.data || [];
     var currentStage = allAvatars[0] || { journey_name: 'The Seeker', stage_order: 0, image_url_male: '', image_url_female: '', mythic_required: 0 };
     var nextStage = null;
@@ -352,39 +401,36 @@ async function loadImpactData() {
       }
     }
 
-    // --- GLOBAL CALCULATIONS ---
+    // --- GLOBAL STATS ---
     var gShares = globalSharesRes.count || 0;
     var gWarriors = globalWarriorsRes.count || 0;
     var gNationsList = (globalNationsRes.data || []).map(p => p.country);
     var gNations = new Set(gNationsList).size;
-    
     var missionRaised = (projectsRes.data || []).reduce((sum, p) => sum + Number(p.raised_amount || 0), 0);
-    var totalRaised = missionRaised; // Donations removed for now
+    var totalRaised = missionRaised;
 
-    // --- UPDATE DOM ---
+    // --- RENDER DOM ---
 
     // 1. Avatar
     var gender = userProfile.gender || 'male';
     var avatarImg = (gender === 'female' && currentStage.image_url_female) ? currentStage.image_url_female : currentStage.image_url_male;
-    
     var imgEl = document.getElementById('heroAvatarImg');
     var fallbackEl = document.getElementById('avatarFallback');
-    
+
     if (avatarImg && avatarImg.length > 5) {
       imgEl.src = avatarImg;
       imgEl.style.display = 'block';
-      if(fallbackEl) fallbackEl.style.display = 'none';
+      if (fallbackEl) fallbackEl.style.display = 'none';
     } else {
-      if(imgEl) imgEl.style.display = 'none';
-      if(fallbackEl) fallbackEl.style.display = 'flex';
+      if (imgEl) imgEl.style.display = 'none';
+      if (fallbackEl) fallbackEl.style.display = 'flex';
     }
 
-    // 2. Hero Text
+    // 2. Hero Text & Progress
     safeSetText('userNameDisplay', userProfile.nickname || userProfile.full_name || 'Warrior');
     safeSetText('journeyNameDisplay', currentStage.journey_name || 'The Seeker');
     safeSetText('avatarTitleDisplay', 'Stage ' + (currentStage.stage_order || 0));
 
-    // 3. Progress Bar
     if (nextStage) {
       safeSetText('nextRankName', 'Next: ' + nextStage.journey_name);
       var prevReq = currentStage.mythic_required || 0;
@@ -393,15 +439,15 @@ async function loadImpactData() {
       var pct = Math.max(0, Math.min(100, (progress / range) * 100));
       safeSetText('mythicProgressText', mythicCount + '/' + nextStage.mythic_required + ' Mythic');
       var bar = document.getElementById('mythicProgressBar');
-      if(bar) bar.style.width = pct + '%';
+      if (bar) bar.style.width = pct + '%';
     } else {
       safeSetText('nextRankName', 'Max Level Reached');
       safeSetText('mythicProgressText', mythicCount + ' Mythic');
       var bar = document.getElementById('mythicProgressBar');
-      if(bar) bar.style.width = '100%';
+      if (bar) bar.style.width = '100%';
     }
 
-    // 4. Tiers & Personal Stats
+    // 3. Trophy Counts & Personal Stats
     safeSetText('tierCommon', tierCounts[1] || 0);
     safeSetText('tierUncommon', tierCounts[2] || 0);
     safeSetText('tierRare', tierCounts[3] || 0);
@@ -415,18 +461,22 @@ async function loadImpactData() {
     safeSetText('statMissions', missions);
     safeSetText('statTrophies', totalTrophies);
 
-    // 5. Kingdom Investment (Forced to 0)
-    safeSetText('statSubValue', '$0');
-    safeSetText('statDonations', '$0');
-    safeSetText('statTotalContrib', '$0');
-    document.getElementById('barSubs').style.width = '0%';
-    document.getElementById('barGifts').style.width = '0%';
+    // 4. Kingdom Investment (Dynamic Calculation)
+    safeSetText('statSubValue', formatMoney(subValue));
+    safeSetText('statDonations', formatMoney(donationTotal));
+    safeSetText('statTotalContrib', formatMoney(totalUserContrib));
 
-    // 6. Global Stats
+    var subPct = totalUserContrib > 0 ? (subValue / totalUserContrib) * 100 : 50;
+    var giftPct = totalUserContrib > 0 ? (donationTotal / totalUserContrib) * 100 : 50;
+    var barSubs = document.getElementById('barSubs');
+    var barGifts = document.getElementById('barGifts');
+    if (barSubs) barSubs.style.width = subPct + '%';
+    if (barGifts) barGifts.style.width = giftPct + '%';
+
+    // 5. Global Stats
     safeSetText('globalShares', gShares.toLocaleString());
     safeSetText('globalWarriors', gWarriors.toLocaleString());
     safeSetText('globalNations', gNations.toLocaleString());
-    
     safeSetText('globalRaisedTotal', formatMoney(totalRaised));
     safeSetText('globalMissionsRaised', formatMoney(missionRaised));
     safeSetText('globalDonationsRaised', '$0');
