@@ -247,7 +247,6 @@
     <a href="profile.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">person</span><span class="text-[10px] font-bold">Profile</span></a>
   </div>
 </nav>
-
 <script>
 var supabaseClient = supabase.createClient(
   'https://nhymadutuhpjgkiurify.supabase.co',
@@ -311,10 +310,10 @@ async function loadImpactData() {
       userSubsQuery = userSubsQuery.gte('created_at', dateCutoff);
     }
 
-    // 3. Parallel Fetch Across All System Tables
+    // 3. Fetch Data in Parallel
     var [
       recruitsRes, userNationsRes, userMissionsRes, userDonationsRes, userSubsRes,
-      trophyDefsRes, trophyThresholdsRes, userProgressRes, badgeDefsRes, userBadgesTableRes,
+      trophyDefsRes, trophyThresholdsRes, userProgressRes, badgeDefsRes,
       avatarsRes, globalSharesRes, globalWarriorsRes, globalNationsRes, projectsRes, globalDonationsRes
     ] = await Promise.all([
       recruitQuery, recruitNationsQuery, userMissionsQuery, userDonationsQuery, userSubsQuery,
@@ -322,7 +321,6 @@ async function loadImpactData() {
       supabaseClient.from('trophy_thresholds').select('*'),
       supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
       supabaseClient.from('badge_definitions').select('*'),
-      supabaseClient.from('user_badges').select('*').eq('user_id', currentUser.id),
       supabaseClient.from('avatar_stages').select('*').order('stage_order', { ascending: true }),
       supabaseClient.from('shares').select('id', { count: 'exact', head: true }),
       supabaseClient.from('profiles').select('id', { count: 'exact', head: true }),
@@ -346,56 +344,25 @@ async function loadImpactData() {
     var subValue = (userSubsRes.data || []).reduce((sum, s) => sum + Number(s.price || 0), 0);
     var totalUserContrib = donationTotal + subValue;
 
-    // --- BADGES CALCULATION (UNION OF PROFILE + USER_BADGES + STAT BADGES) ---
-    var earnedBadgeSet = new Set();
-
-    // Source 1: profiles.badges JSON
-    var rawBadges = userProfile.badges || [];
-    if (typeof rawBadges === 'string') {
-      try { rawBadges = JSON.parse(rawBadges); } catch(e) { rawBadges = []; }
-    }
-    if (Array.isArray(rawBadges)) {
-      rawBadges.forEach(b => earnedBadgeSet.add(String(b)));
+    // --- BADGES CALCULATION (1:1 MATCH WITH REWARDS.HTML) ---
+    var allBadges = badgeDefsRes.data || [];
+    var userBadgesList = userProfile.badges || [];
+    if (typeof userBadgesList === 'string') {
+      try { userBadgesList = JSON.parse(userBadgesList); } catch(e) { userBadgesList = []; }
     }
 
-    // Source 2: user_badges table
-    (userBadgesTableRes.data || []).forEach(ub => {
-      if (ub.badge_id) earnedBadgeSet.add(String(ub.badge_id));
+    var matchedBadges = new Set();
+    allBadges.forEach(b => {
+      var hasBadge = userBadgesList.includes(b.id) || userBadgesList.includes(b.name);
+      if (hasBadge) matchedBadges.add(b.name || b.id);
     });
 
-    // Source 3: Dynamic stat badges from badge_definitions
-    (badgeDefsRes.data || []).forEach(b => {
-      if (b.stat_type && b.stat_target) {
-        var statVal = 0;
-        if (b.stat_type === 'recruits') statVal = recruits;
-        if (b.stat_type === 'shares') statVal = totalShares;
-        if (b.stat_type === 'nations') statVal = nations;
-        if (b.stat_type === 'missions') statVal = missionsCount;
-        if (b.stat_type === 'signup') statVal = 1;
+    var badgesCount = Math.max(matchedBadges.size, Array.isArray(userBadgesList) ? userBadgesList.length : 0);
 
-        if (statVal >= b.stat_target) {
-          earnedBadgeSet.add(String(b.id));
-        }
-      }
-    });
-
-    var badgesCount = earnedBadgeSet.size;
-
-    // --- TROPHY CALCULATIONS (LIVE STAT + DB PROGRESS HYBRID) ---
+    // --- TROPHY CALCULATIONS (1:1 MATCH WITH REWARDS.HTML) ---
     var allTrophies = trophyDefsRes.data || [];
     var allThresholds = trophyThresholdsRes.data || [];
     var userProgress = userProgressRes.data || [];
-
-    // Map stats to trophy types
-    var liveStatsMap = {
-      'recruits': recruits,
-      'shares': totalShares,
-      'nations': nations,
-      'missions': missionsCount,
-      'donations': donationTotal,
-      'subs': subValue,
-      'signup': 1
-    };
 
     var tierCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     var mythicCount = 0;
@@ -409,18 +376,15 @@ async function loadImpactData() {
       if (activeThresholds.length === 0) return;
 
       var userProg = userProgress.find(p => p.trophy_id === t.id);
-      var dbProgress = userProg ? (userProg.current_progress || 0) : 0;
+      var currentProgress = userProg ? (userProg.current_progress || 0) : 0;
 
-      // Check live progress for stat-based trophies
-      var statKey = (t.stat_type || '').toLowerCase();
-      var liveStatProgress = liveStatsMap[statKey] || 0;
-
-      // Special case: Sign Up trophy is unlocked for all registered users
-      if (t.name && t.name.toLowerCase().includes('sign up')) {
-        liveStatProgress = Math.max(liveStatProgress, 1);
+      // Fallbacks if user_trophy_progress table row isn't created yet
+      if (t.name && t.name.toLowerCase() === 'sign up') {
+        currentProgress = Math.max(currentProgress, 1);
       }
-
-      var currentProgress = Math.max(dbProgress, liveStatProgress);
+      if (t.name && t.name.toLowerCase() === 'recruiter' && recruits >= 1) {
+        currentProgress = Math.max(currentProgress, recruits);
+      }
 
       var unlockedTier = null;
       for (var i = activeThresholds.length - 1; i >= 0; i--) {
@@ -471,7 +435,7 @@ async function loadImpactData() {
 
     // --- DOM UPDATES ---
 
-    // 1. Avatar Image
+    // 1. Avatar Display
     var gender = userProfile.gender || 'male';
     var avatarImg = (gender === 'female' && currentStage.image_url_female) ? currentStage.image_url_female : currentStage.image_url_male;
     var imgEl = document.getElementById('heroAvatarImg');
@@ -495,7 +459,7 @@ async function loadImpactData() {
       var prevReq = currentStage.mythic_required || 0;
       var nextReq = nextStage.mythic_required || 1;
 
-      safeSetText('nextRankName', 'Next: Stage ' + (nextStage.stage_order || (currentStage.stage_order + 1)));
+      safeSetText('nextRankName', 'Next: ' + (nextStage.avatar_title || ('Stage ' + nextStage.stage_order)));
       safeSetText('mythicProgressText', mythicCount + '/' + nextReq + ' Mythic');
 
       var range = nextReq - prevReq;
@@ -553,5 +517,6 @@ async function loadImpactData() {
 
 init();
 </script>
+
 </body>
 </html>
