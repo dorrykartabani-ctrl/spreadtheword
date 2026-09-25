@@ -580,7 +580,6 @@ function setupListeners(){
 }
 init()
 </script>
-
 <!-- Global Notification Badge Script -->
 <script>
 async function updateNotificationBadges() {
@@ -592,7 +591,8 @@ async function updateNotificationBadges() {
     if (!s.data || !s.data.session) return;
     var userId = s.data.session.user.id;
 
-    var p = await client.from('profiles').select('subscription_tier, tier, tier_id').eq('id', userId).maybeSingle();
+    // CHANGED: select('*') instead of hardcoding non-existent column names
+    var p = await client.from('profiles').select('*').eq('id', userId).maybeSingle();
     var userTier = p.data?.subscription_tier || p.data?.tier || p.data?.tier_id || 'free';
 
     var notifs = await client.from('app_notifications').select('id, target_audience, expires_at').gt('expires_at', new Date().toISOString());
