@@ -262,6 +262,15 @@ const tierColors = {
 
 const tierNames = { 1: 'Common', 2: 'Uncommon', 3: 'Rare', 4: 'Epic', 5: 'Mythic' };
 
+// Default Fallback Image Map for Tier Badges
+const defaultTierBadgeMap = {
+  'called': '/images/badges/called.svg',
+  'free': '/images/badges/called.svg',
+  'warrior': '/images/badges/warrior.svg',
+  'commander': '/images/badges/commander.svg',
+  'legacy': '/images/badges/legacy.svg'
+};
+
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(b => { 
     b.classList.remove('active', 'text-slate-900'); 
@@ -312,7 +321,7 @@ function openTrophyModal(trophyId) {
     iconBox.innerHTML = `<span class="material-symbols-outlined text-4xl text-white">emoji_events</span>`;
   }
 
-  // Generate Tier Pills inside Modal
+  // Generate Tier Pills
   var pillsHTML = '';
   for(var i = 1; i <= 5; i++) {
     var isEarned = (tData.tier >= i && tData.unlocked);
@@ -322,7 +331,7 @@ function openTrophyModal(trophyId) {
   }
   document.getElementById('modalTrophyPills').innerHTML = pillsHTML;
 
-  // Generate Dynamic Milestones Progression
+  // Generate Dynamic Milestones
   var milesHTML = '';
   var maxVal = 1;
   tData.thresholds.forEach(th => {
@@ -339,7 +348,6 @@ function openTrophyModal(trophyId) {
   });
   document.getElementById('modalTrophyMilestones').innerHTML = milesHTML;
 
-  // Neutral Progress Bar Fill
   var progPct = Math.min(100, (tData.current / maxVal) * 100);
   document.getElementById('modalTrophyProgressBar').style.width = progPct + '%';
   document.getElementById('modalTrophyProgressText').textContent = `${tData.current} / ${maxVal}`;
@@ -383,8 +391,8 @@ async function loadCatalog() {
       trophiesRes, thresholdsRes, utpRes, 
       badgesRes, userBadgesRes, 
       avatarsRes, 
-      subsRes, subTiersRes,
-      campaignsRes, projectsRes
+      subsRes, subTiersRes, mediaTiersRes,
+      campaignsRes
     ] = await Promise.all([
       supabaseClient.from('trophy_definitions').select('*'),
       supabaseClient.from('trophy_thresholds').select('*').eq('is_active', true),
@@ -392,18 +400,27 @@ async function loadCatalog() {
       supabaseClient.from('badge_definitions').select('*').eq('is_active', true),
       supabaseClient.from('user_badges').select('*').eq('user_id', currentUser.id),
       supabaseClient.from('avatar_stages').select('*').order('stage_order', { ascending: true }),
-      supabaseClient.from('subscriptions').select('tier, status').eq('user_id', currentUser.id).in('status', ['active', 'trialing']),
+      supabaseClient.from('subscriptions').select('tier, status, plan').eq('user_id', currentUser.id).in('status', ['active', 'trialing']),
       supabaseClient.from('subscription_tiers').select('*').eq('is_active', true).order('price', { ascending: true }),
-      supabaseClient.from('campaigns').select('*').eq('status', 'active'),
-      supabaseClient.from('projects').select('*')
+      supabaseClient.from('media').select('*').eq('type', 'tier'),
+      supabaseClient.from('campaigns').select('*').eq('status', 'active')
     ]);
 
-    // 1. Subscriptions (Isolated Image at Top)
+    // Build Tier Media Image Map
+    var tierMediaMap = { ...defaultTierBadgeMap };
+    (mediaTiersRes.data || []).forEach(m => {
+      var key = (m.label || m.name || '').toLowerCase();
+      if (key && m.url) {
+        tierMediaMap[key] = m.url;
+      }
+    });
+
+    // 1. Process Active Subscription & Badge Display
     var activeSub = (subsRes.data || [])[0];
     var allSubTiers = subTiersRes.data || [];
-    renderSubscriptions(activeSub, allSubTiers);
+    renderSubscriptions(activeSub, allSubTiers, tierMediaMap);
 
-    // 2. Trophies
+    // 2. Trophies Processing
     var allTrophies = trophiesRes.data || [];
     var allThresholds = thresholdsRes.data || [];
     var utp = utpRes.data || [];
@@ -419,7 +436,7 @@ async function loadCatalog() {
       var dbProg = utp.find(p => p.trophy_id === t.id);
       var currentVal = dbProg ? (dbProg.current_progress || 0) : 0;
 
-      // Live fallback rules
+      // Fallbacks
       if (t.name && t.name.toLowerCase() === 'sign up') currentVal = Math.max(currentVal, 1);
       if (t.name && t.name.toLowerCase() === 'recruiter') currentVal = Math.max(currentVal, recruits);
 
@@ -459,7 +476,7 @@ async function loadCatalog() {
     document.getElementById('earnedTrophies').innerHTML = earnedTHTML || '<p class="text-slate-400 text-xs col-span-4 py-2">No trophies unlocked yet.</p>';
     document.getElementById('lockedTrophies').innerHTML = lockedTHTML || '<p class="text-slate-400 text-xs col-span-4 py-2">All caught up!</p>';
 
-    // 3. Badges
+    // 3. Badges Processing
     var allBadges = badgesRes.data || [];
     var earnedTable = (userBadgesRes.data || []).map(b => b.badge_id);
     var earnedJson = userProfile.badges || [];
@@ -491,7 +508,7 @@ async function loadCatalog() {
       if(isEarned) earnedBHTML += itemHTML;
       else lockedBHTML += itemHTML;
 
-      // Participation Rewards (Missions & Campaigns)
+      // Participation Missions & Campaigns
       if(!isEarned && b.rule_type === 'participation') {
         var targetUrl = 'cause.html';
         var campaignMatch = (campaignsRes.data || []).find(c => c.reward_badge_id === b.id || (b.rule_config && b.rule_config.campaign_ids && b.rule_config.campaign_ids.includes(c.id)));
@@ -516,7 +533,7 @@ async function loadCatalog() {
     document.getElementById('lockedBadges').innerHTML = lockedBHTML || '<p class="text-slate-400 text-xs col-span-4 py-2">All caught up!</p>';
     document.getElementById('missionList').innerHTML = activeMissionsHTML || '<p class="text-center text-slate-400 text-xs py-4">No active reward missions or campaigns available.</p>';
 
-    // 4. Avatars (Gender Sensitive)
+    // 4. Avatars Processing (Gender Sensitive)
     var allAvatars = avatarsRes.data || [];
     var earnedAHTML = '', lockedAHTML = '';
     var gender = userProfile.gender || 'male';
@@ -552,15 +569,22 @@ async function loadCatalog() {
   }
 }
 
-function renderSubscriptions(activeSub, allSubTiers) {
+function renderSubscriptions(activeSub, allSubTiers, tierMediaMap) {
   var subBadgeImg = document.getElementById('currentSubBadge');
   var subFallback = document.getElementById('subBadgeFallback');
   
-  var currentTierName = activeSub ? activeSub.tier : 'Free';
-  var currentDef = allSubTiers.find(t => t.name.toLowerCase() === currentTierName.toLowerCase());
+  // Resolve active tier name from activeSub or user profile
+  var currentTierKey = 'free';
+  if (activeSub && (activeSub.tier || activeSub.plan)) {
+    currentTierKey = (activeSub.tier || activeSub.plan).toLowerCase();
+  } else if (userProfile && userProfile.subscription_tier) {
+    currentTierKey = userProfile.subscription_tier.toLowerCase();
+  }
 
-  if(currentDef && currentDef.badge_url) {
-    subBadgeImg.src = currentDef.badge_url;
+  var badgeUrl = tierMediaMap[currentTierKey] || defaultTierBadgeMap[currentTierKey];
+
+  if(badgeUrl) {
+    subBadgeImg.src = badgeUrl;
     subBadgeImg.style.display = 'block';
     subFallback.style.display = 'none';
   } else {
@@ -568,12 +592,16 @@ function renderSubscriptions(activeSub, allSubTiers) {
     subFallback.style.display = 'flex';
   }
 
+  // Render Upgrade Modal List
   var listHTML = '';
   allSubTiers.forEach(t => {
-    var isCurrent = currentTierName.toLowerCase() === t.name.toLowerCase();
+    var tKey = t.name.toLowerCase();
+    var isCurrent = currentTierKey === tKey;
+    var tImg = tierMediaMap[tKey] || defaultTierBadgeMap[tKey];
+
     listHTML += `
       <div class="border border-slate-100 rounded-2xl p-4 flex items-center gap-4 ${isCurrent ? 'bg-primary/5 border-primary/20' : 'bg-white'}">
-        ${t.badge_url ? `<img src="${t.badge_url}" class="w-12 h-12 object-contain">` : `<div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center"><span class="material-symbols-outlined text-slate-400">shield</span></div>`}
+        ${tImg ? `<img src="${tImg}" class="w-12 h-12 object-contain">` : `<div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center"><span class="material-symbols-outlined text-slate-400">shield</span></div>`}
         <div class="flex-1">
           <h4 class="font-headline font-bold text-sm text-slate-900">${t.name}</h4>
           <p class="text-xs text-slate-500">$${t.price} / ${t.billing_interval || 'mo'}</p>
