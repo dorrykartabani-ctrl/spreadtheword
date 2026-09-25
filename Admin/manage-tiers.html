@@ -258,7 +258,7 @@
             <input type="text" id="tierDescription" name="description" class="w-full px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30" style="font-size:14px;" placeholder="Full mission access">
           </div>
           <div>
-            <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Badge Icon</label>
+            <label class="block font-body font-semibold text-on-surface mb-2" style="font-size:12px;">Tier Image</label>
             <div class="flex gap-2">
               <select id="tierBadge" name="badge_url" onchange="updateModalBadgePreview()" class="flex-1 px-3 py-2.5 bg-surface-clow rounded-lg font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30" style="font-size:14px;">
                 <option value="">Default (Auto-match ID)</option>
@@ -381,7 +381,7 @@ var allocation = null
 var editingTier = null
 var featureCounter = 0
 var segmentCounter = 0
-var availableBadges = []
+var availableTierIcons = []
 
 // Setup change event listeners to update previews in real-time
 document.addEventListener('DOMContentLoaded', function() {
@@ -403,7 +403,6 @@ async function checkAdminAuth() {
     }
     currentUser = result.data.session.user
     
-    // Attempt profiles query
     var p = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single()
     var isAdmin = false
     
@@ -411,7 +410,6 @@ async function checkAdminAuth() {
       isAdmin = (p.data.role === 'admin')
       updateSidebarProfile(p.data)
     } else {
-      // Graceful fallback metadata checking
       isAdmin = (currentUser.app_metadata && currentUser.app_metadata.role === 'admin') || 
                 (currentUser.user_metadata && currentUser.user_metadata.role === 'admin') ||
                 (currentUser.email && currentUser.email.includes('admin'))
@@ -485,20 +483,20 @@ async function loadTiers() {
   renderTiers()
 }
 
-async function loadBadges() {
-  var result = await supabaseClient.from('media').select('label, url').eq('type', 'badge').eq('is_active', true)
+async function loadTierIcons() {
+  var result = await supabaseClient.from('media').select('label, url').eq('type', 'tiers').eq('is_active', true)
   if (result.error) {
-    console.error("Error loading badges:", result.error)
+    console.error("Error loading tier icons:", result.error)
   }
-  availableBadges = result.data || []
+  availableTierIcons = result.data || []
   
   var select = document.getElementById('tierBadge')
   if (select) {
     select.innerHTML = '<option value="">Default (Auto-match ID)</option>'
-    availableBadges.forEach(function(b) {
+    availableTierIcons.forEach(function(icon) {
       var opt = document.createElement('option')
-      opt.value = b.url
-      opt.textContent = b.label || 'Unnamed Badge'
+      opt.value = icon.url
+      opt.textContent = icon.label || 'Unnamed Icon'
       select.appendChild(opt)
     })
   }
@@ -551,7 +549,8 @@ function renderTiers() {
       + '<div class="space-y-2 mb-4">' + featuresHtml + '</div>'
       + '<div class="flex gap-2">'
         + '<button onclick="editTier(\'' + tier.id + '\')" class="flex-1 py-2 bg-primary-container/20 text-primary font-body font-semibold rounded-lg hover:bg-primary-container/30 transition-colors" style="font-size:12px;">Edit</button>'
-        + '<button onclick="deleteTier(\'' + tier.id + '\')" class="px-3 py-2 bg-tertiary-container/20 text-tertiary font-body font-semibold rounded-lg hover:bg-tertiary-container/30 transition-colors" style="font-size:12px;"><span class="material-symbols-outlined" style="font-size:16px;">delete</span></button>'
+        + '<button onclick="duplicateTier(\'' + tier.id + '\')" class="px-3 py-2 bg-secondary-container/30 text-secondary font-body font-semibold rounded-lg hover:bg-secondary-container/50 transition-colors" style="font-size:12px;" title="Duplicate tier"><span class="material-symbols-outlined" style="font-size:16px;">content_copy</span></button>'
+        + '<button onclick="deleteTier(\'' + tier.id + '\')" class="px-3 py-2 bg-tertiary-container/20 text-tertiary font-body font-semibold rounded-lg hover:bg-tertiary-container/30 transition-colors" style="font-size:12px;" title="Delete tier"><span class="material-symbols-outlined" style="font-size:16px;">delete</span></button>'
       + '</div>'
 
     container.appendChild(card)
@@ -639,6 +638,56 @@ function editTier(tierId) {
 
   document.getElementById('tierModal').classList.remove('hidden')
   document.body.style.overflow = 'hidden'
+}
+
+function duplicateTier(tierId) {
+  var source = tiers.find(function(t) { return t.id === tierId })
+  if (!source) return
+
+  // Generate a unique ID by appending "-copy" (or "-copy-2", "-copy-3", etc.)
+  var baseId = source.id + '-copy'
+  var newId = baseId
+  var counter = 2
+  while (tiers.some(function(t) { return t.id === newId })) {
+    newId = baseId + '-' + counter
+    counter++
+  }
+
+  // Treat as a new tier (not editing)
+  editingTier = null
+
+  document.getElementById('tierModalTitle').textContent = 'Duplicate Tier'
+  document.getElementById('tierForm').reset()
+  document.getElementById('tierId').value = ''
+  document.getElementById('tierIdInput').value = newId
+  document.getElementById('tierIdInput').disabled = false
+  document.getElementById('tierName').value = (source.name || '') + ' Copy'
+  document.getElementById('tierPrice').value = source.price || 0
+  document.getElementById('tierInterval').value = source.billing_interval || 'monthly'
+  document.getElementById('tierDescription').value = source.description || ''
+  
+  // Clear Stripe IDs — a duplicate must not share Stripe references with the original
+  document.getElementById('tierStripePriceId').value = ''
+  document.getElementById('tierStripeProductId').value = ''
+  
+  // Default the duplicate to inactive + non-public for safety
+  document.getElementById('tierActive').checked = false
+  document.getElementById('tierPublic').checked = false
+  document.getElementById('tierComingSoon').checked = source.coming_soon === true
+  
+  document.getElementById('tierBadge').value = source.badge_url || ''
+  updateModalBadgePreview()
+
+  var featuresList = document.getElementById('featuresList')
+  featuresList.innerHTML = ''
+  featureCounter = 0
+  var features = source.features || []
+  features.forEach(function(f) { addFeature(f.label, f.available, f.soon) })
+
+  document.getElementById('tierModal').classList.remove('hidden')
+  document.body.style.overflow = 'hidden'
+  
+  showToast('Duplicated — review and save to create the new tier')
 }
 
 function closeTierModal() {
@@ -739,7 +788,7 @@ async function deleteTier(tierId) {
 // ════════════════════════════════════════════
 async function loadAllocation() {
   var result = await supabaseClient.from('subscription_allocation').select('*').eq('is_active', true).single()
-  if (result.error && result.error.code !== 'PGRST116') { // PGRST116 is code for 'no rows returned'
+  if (result.error && result.error.code !== 'PGRST116') {
     console.error("Error loading allocation:", result.error)
   }
   allocation = result.data || null
@@ -868,7 +917,6 @@ async function saveAllocation(e) {
     return
   }
 
-  // Deactivate old allocation records
   var deactivateResult = await supabaseClient.from('subscription_allocation').update({ is_active: false }).eq('is_active', true)
   if (deactivateResult.error) {
     showToast('Failed to modify prior allocations: ' + deactivateResult.error.message)
@@ -876,7 +924,6 @@ async function saveAllocation(e) {
     return
   }
 
-  // Insert new active allocation record
   var insertResult = await supabaseClient.from('subscription_allocation').insert([{ segments: segments, admin_note: note, is_active: true }])
   if (insertResult.error) {
     showToast('Failed to save allocation: ' + insertResult.error.message)
@@ -913,7 +960,7 @@ function escapeHtml(str) {
 
 async function init() {
   if (!(await checkAdminAuth())) return
-  await Promise.all([loadTiers(), loadAllocation(), loadBadges()])
+  await Promise.all([loadTiers(), loadAllocation(), loadTierIcons()])
 }
 
 init()
