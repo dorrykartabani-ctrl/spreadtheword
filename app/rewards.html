@@ -325,51 +325,66 @@ window.openAvatarModal = function(id) {
 
 window.openTrophyModal = function(trophyId) {
   var tData = window.appData.trophies[trophyId];
-  if(!tData) return;
+  if (!tData) return;
 
   document.getElementById('modalTrophyTitle').textContent = tData.name;
   document.getElementById('modalTrophyDesc').textContent = tData.desc || 'Level up your stats to earn this trophy.';
-  
+
   var iconBox = document.getElementById('modalTrophyIcon');
   iconBox.style.backgroundColor = tData.unlocked ? tData.color : '#e2e8f0';
-  if(tData.img) {
+  if (tData.img) {
     iconBox.innerHTML = `<img src="${tData.img}" class="w-full h-full object-contain ${!tData.unlocked ? 'grayscale opacity-60' : ''}">`;
   } else {
     iconBox.innerHTML = `<span class="material-symbols-outlined text-4xl text-white">emoji_events</span>`;
   }
 
+  // Tier pills — always colored by tier; muted if not reached yet
   var pillsHTML = '';
-  for(var i = 1; i <= 5; i++) {
-    var isEarned = (tData.tier >= i && tData.unlocked);
-    var bg = isEarned ? tierColors[i] : '#e2e8f0';
-    var textCol = isEarned ? 'text-white' : 'text-slate-400';
-    pillsHTML += `<div class="px-2.5 py-1 rounded-full ${textCol} text-[8px] font-black uppercase tracking-wider" style="background-color: ${bg}">${tierNames[i]}</div>`;
+  for (var i = 1; i <= 5; i++) {
+    var reached = (tData.unlocked && tData.tier >= i);
+    var bg = tierColors[i];
+    var opacity = reached ? '1' : '0.35';
+    var textCol = reached ? '#ffffff' : '#64748b';
+    pillsHTML += `
+      <div class="px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-wider"
+           style="background-color: ${bg}; color: ${textCol}; opacity: ${opacity};">
+        ${tierNames[i]}
+      </div>`;
   }
   document.getElementById('modalTrophyPills').innerHTML = pillsHTML;
 
+  // Milestones — green checkbox when reached
   var milesHTML = '';
   var maxVal = 1;
-  tData.thresholds.forEach(th => {
+  tData.thresholds.forEach(function(th) {
     maxVal = Math.max(maxVal, th.val);
     var earned = tData.current >= th.val;
     var icon = earned ? 'check_circle' : 'radio_button_unchecked';
-    var col = earned ? tierColors[th.tier] : '#94a3b8';
+    var checkColor = earned ? '#16a34a' : '#94a3b8'; // green when reached
+    var tierLabelColor = tierColors[th.tier] || '#94a3b8';
     milesHTML += `
       <div class="flex items-center gap-2.5 text-xs font-semibold ${earned ? 'text-slate-800' : 'text-slate-400'}">
-        <span class="material-symbols-outlined text-base flex-shrink-0" style="color: ${col}">${icon}</span>
-        <span>${th.val} ${tData.statType || 'actions'} unlocks <span style="color: ${col}" class="font-bold uppercase tracking-widest text-[10px] ml-1">${tierNames[th.tier]}</span></span>
-      </div>
-    `;
+        <span class="material-symbols-outlined text-base flex-shrink-0" style="color: ${checkColor}">${icon}</span>
+        <span>
+          ${th.val} ${tData.statType || 'actions'} unlocks
+          <span class="font-bold uppercase tracking-widest text-[10px] ml-1" style="color: ${tierLabelColor}">
+            ${tierNames[th.tier]}
+          </span>
+        </span>
+      </div>`;
   });
   document.getElementById('modalTrophyMilestones').innerHTML = milesHTML;
 
   var progPct = Math.min(100, (tData.current / maxVal) * 100);
   document.getElementById('modalTrophyProgressBar').style.width = progPct + '%';
-  document.getElementById('modalTrophyProgressText').textContent = `${tData.current} / ${maxVal}`;
+  document.getElementById('modalTrophyProgressText').textContent = tData.current + ' / ' + maxVal;
 
   var m = document.getElementById('trophyModal');
   m.classList.remove('hidden');
-  setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('translate-y-full'); }, 10);
+  setTimeout(function() {
+    m.classList.remove('opacity-0');
+    m.children[0].classList.remove('translate-y-full');
+  }, 10);
 };
 
 function openBasicModal(title, desc, img, progressText, progressPct, color) {
