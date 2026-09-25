@@ -296,7 +296,7 @@ async function loadImpactData() {
     var { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
     userProfile = profile || {};
 
-    // 2. Prepare Queries
+    // 2. Base Queries
     var recruitQuery = supabaseClient.from('profiles').select('id', { count: 'exact', head: true }).eq('referred_by', currentUser.id);
     var recruitNationsQuery = supabaseClient.from('profiles').select('country').eq('referred_by', currentUser.id).not('country', 'is', null);
     var userMissionsQuery = supabaseClient.from('mission_activity').select('mission_ref').eq('user_id', currentUser.id);
@@ -311,16 +311,18 @@ async function loadImpactData() {
       userSubsQuery = userSubsQuery.gte('created_at', dateCutoff);
     }
 
-    // 3. Parallel Fetch Matching `rewards.html` Architecture
+    // 3. Parallel Fetch Across All System Tables
     var [
       recruitsRes, userNationsRes, userMissionsRes, userDonationsRes, userSubsRes,
-      trophyDefsRes, trophyThresholdsRes, userProgressRes,
+      trophyDefsRes, trophyThresholdsRes, userProgressRes, badgeDefsRes, userBadgesTableRes,
       avatarsRes, globalSharesRes, globalWarriorsRes, globalNationsRes, projectsRes, globalDonationsRes
     ] = await Promise.all([
       recruitQuery, recruitNationsQuery, userMissionsQuery, userDonationsQuery, userSubsQuery,
       supabaseClient.from('trophy_definitions').select('*'),
       supabaseClient.from('trophy_thresholds').select('*'),
       supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
+      supabaseClient.from('badge_definitions').select('*'),
+      supabaseClient.from('user_badges').select('*').eq('user_id', currentUser.id),
       supabaseClient.from('avatar_stages').select('*').order('stage_order', { ascending: true }),
       supabaseClient.from('shares').select('id', { count: 'exact', head: true }),
       supabaseClient.from('profiles').select('id', { count: 'exact', head: true }),
@@ -335,13 +337,6 @@ async function loadImpactData() {
     var userNationsList = (userNationsRes.data || []).map(p => p.country);
     var nations = new Set(userNationsList).size;
 
-    // Badges (Reading profiles.badges JSON array like rewards.html)
-    var rawBadges = userProfile.badges || [];
-    if (typeof rawBadges === 'string') {
-      try { rawBadges = JSON.parse(rawBadges); } catch(e) { rawBadges = []; }
-    }
-    var badgesCount = Array.isArray(rawBadges) ? rawBadges.length : 0;
-
     // Distinct Missions Completed
     var missionRefs = (userMissionsRes.data || []).map(m => m.mission_ref).filter(Boolean);
     var missionsCount = new Set(missionRefs).size;
@@ -351,10 +346,56 @@ async function loadImpactData() {
     var subValue = (userSubsRes.data || []).reduce((sum, s) => sum + Number(s.price || 0), 0);
     var totalUserContrib = donationTotal + subValue;
 
-    // --- TROPHY CALCULATIONS (REPLICATING REWARDS.HTML LOGIC) ---
+    // --- BADGES CALCULATION (UNION OF PROFILE + USER_BADGES + STAT BADGES) ---
+    var earnedBadgeSet = new Set();
+
+    // Source 1: profiles.badges JSON
+    var rawBadges = userProfile.badges || [];
+    if (typeof rawBadges === 'string') {
+      try { rawBadges = JSON.parse(rawBadges); } catch(e) { rawBadges = []; }
+    }
+    if (Array.isArray(rawBadges)) {
+      rawBadges.forEach(b => earnedBadgeSet.add(String(b)));
+    }
+
+    // Source 2: user_badges table
+    (userBadgesTableRes.data || []).forEach(ub => {
+      if (ub.badge_id) earnedBadgeSet.add(String(ub.badge_id));
+    });
+
+    // Source 3: Dynamic stat badges from badge_definitions
+    (badgeDefsRes.data || []).forEach(b => {
+      if (b.stat_type && b.stat_target) {
+        var statVal = 0;
+        if (b.stat_type === 'recruits') statVal = recruits;
+        if (b.stat_type === 'shares') statVal = totalShares;
+        if (b.stat_type === 'nations') statVal = nations;
+        if (b.stat_type === 'missions') statVal = missionsCount;
+        if (b.stat_type === 'signup') statVal = 1;
+
+        if (statVal >= b.stat_target) {
+          earnedBadgeSet.add(String(b.id));
+        }
+      }
+    });
+
+    var badgesCount = earnedBadgeSet.size;
+
+    // --- TROPHY CALCULATIONS (LIVE STAT + DB PROGRESS HYBRID) ---
     var allTrophies = trophyDefsRes.data || [];
     var allThresholds = trophyThresholdsRes.data || [];
     var userProgress = userProgressRes.data || [];
+
+    // Map stats to trophy types
+    var liveStatsMap = {
+      'recruits': recruits,
+      'shares': totalShares,
+      'nations': nations,
+      'missions': missionsCount,
+      'donations': donationTotal,
+      'subs': subValue,
+      'signup': 1
+    };
 
     var tierCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     var mythicCount = 0;
@@ -368,7 +409,18 @@ async function loadImpactData() {
       if (activeThresholds.length === 0) return;
 
       var userProg = userProgress.find(p => p.trophy_id === t.id);
-      var currentProgress = userProg ? (userProg.current_progress || 0) : 0;
+      var dbProgress = userProg ? (userProg.current_progress || 0) : 0;
+
+      // Check live progress for stat-based trophies
+      var statKey = (t.stat_type || '').toLowerCase();
+      var liveStatProgress = liveStatsMap[statKey] || 0;
+
+      // Special case: Sign Up trophy is unlocked for all registered users
+      if (t.name && t.name.toLowerCase().includes('sign up')) {
+        liveStatProgress = Math.max(liveStatProgress, 1);
+      }
+
+      var currentProgress = Math.max(dbProgress, liveStatProgress);
 
       var unlockedTier = null;
       for (var i = activeThresholds.length - 1; i >= 0; i--) {
@@ -419,7 +471,7 @@ async function loadImpactData() {
 
     // --- DOM UPDATES ---
 
-    // 1. Avatar Display
+    // 1. Avatar Image
     var gender = userProfile.gender || 'male';
     var avatarImg = (gender === 'female' && currentStage.image_url_female) ? currentStage.image_url_female : currentStage.image_url_male;
     var imgEl = document.getElementById('heroAvatarImg');
