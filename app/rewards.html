@@ -4,115 +4,122 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Rewards — Command Center</title>
+  <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Lora:ital@1&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+  
   <script>
     tailwind.config = {
-      theme: { extend: { colors: { 'surface': '#f8fafc', 'primary': '#3d6285', 'gold': '#D4A24C' }, fontFamily: { 'headline': ['Plus Jakarta Sans', 'sans-serif'], 'body': ['Manrope', 'sans-serif'] } } }
+      theme: {
+        extend: {
+          colors: {
+            'surface': '#f8fafc', 'card': '#ffffff', 'text-main': '#0f172a', 'text-muted': '#64748b',
+            'primary': '#3d6285', 'gold': '#D4A24C',
+            'common': '#94a3b8', 'uncommon': '#16a34a', 'rare': '#2563eb', 'epic': '#9333ea', 'mythic': '#d97706'
+          },
+          fontFamily: {
+            'headline': ['Plus Jakarta Sans', 'sans-serif'],
+            'body': ['Manrope', 'sans-serif']
+          }
+        }
+      }
     }
   </script>
+
   <style>
     body { font-family: 'Manrope', sans-serif; background: #f8fafc; color: #0f172a; }
     .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .tab-btn { flex: 1; padding: 12px; text-align: center; font-weight: 700; font-size: 14px; color: #64748b; border-bottom: 2px solid transparent; transition: all 0.2s; }
-    .tab-btn.active { color: #3d6285; border-bottom-color: #3d6285; background: rgba(61, 98, 133, 0.05); }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
-    /* Trophy Card - Square like Image 1 */
-       /* Trophy Card - 4 per row */
-    .bold-block { 
-      aspect-ratio: 1 / 1; 
-      border-radius: 1rem; 
-      overflow: hidden; 
-      position: relative; 
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      justify-content: center; 
-      padding: 6px; 
-      text-align: center; 
-      color: white; 
-      transition: transform 0.2s ease;
-      cursor: pointer;
-    }
-    .bold-block:active { transform: scale(0.95); }
-    .bold-block img { max-height: 45px; width: auto; margin-bottom: 4px; object-fit: contain; }
-    .bold-block p { font-size: 10px; line-height: 1.1; } /* Smaller text */
+    .tab-btn { transition: all 0.2s ease; }
+    .tab-btn.active { background: white; color: #0f172a; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
     
-    /* Locked State */
-    .locked-block { background-color: #cbd5e1 !important; color: #64748b; opacity: 0.8; }
-    .locked-block img { filter: grayscale(100%) opacity(0.5); }
-
-    /* Badge Card */
-    .badge-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.2s ease; padding: 10px; }
-    .badge-item:active { transform: scale(0.95); }
-    .badge-item img { width: 80px; height: 80px; object-fit: contain; margin-bottom: 8px; }
-    .badge-item.locked img { filter: grayscale(100%) opacity(0.3); }
-    .badge-item p { font-size: 11px; font-weight: 700; color: #475569; text-align: center; line-height: 1.2; }
+    /* Reward Grid Items */
+    .reward-card { background: white; border-radius: 20px; padding: 16px; text-align: center; border: 1px solid #f1f5f9; box-shadow: 0 4px 15px rgba(0,0,0,0.02); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: transform 0.1s; }
+    .reward-card:active { transform: scale(0.96); }
+    .reward-card.locked { opacity: 0.6; filter: grayscale(100%); background: #f8fafc; }
+    
+    /* Sub Badge Hover */
+    .sub-badge-btn { transition: transform 0.2s; cursor: pointer; }
+    .sub-badge-btn:active { transform: scale(0.9); }
   </style>
 </head>
 <body class="pb-32">
 
-<header class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 pt-[env(safe-area-inset-top)]">
-  <div class="max-w-[430px] mx-auto px-6 py-4 flex justify-between items-center">
-    <div class="flex items-center gap-3">
-      <img src="/images/icon/icon-light-512.png" alt="GSTW" class="w-8 h-8 rounded-lg object-contain">
-      <h1 class="font-headline font-extrabold text-lg text-slate-900">Rewards</h1>
-    </div>
-    <a href="impact.html" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors">
-      <span class="material-symbols-outlined text-[20px]">bar_chart</span>
+<!-- HEADER -->
+<header class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100" style="padding-top: env(safe-area-inset-top);">
+  <div class="max-w-[430px] mx-auto px-6 py-3 flex justify-between items-center">
+    <a href="impact.html" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">
+      <span class="material-symbols-outlined text-[20px]">arrow_back</span>
     </a>
+    <h1 class="font-headline font-extrabold text-lg text-slate-900">Rewards</h1>
+    <div class="w-10 h-10"></div> <!-- Spacer for centering -->
   </div>
 </header>
 
-<main class="pt-24 px-5 max-w-[430px] mx-auto">
-  <div class="flex bg-white rounded-2xl p-1 shadow-sm border border-slate-100 mb-6">
-    <button onclick="switchTab('trophies')" id="tab-trophies" class="tab-btn active rounded-xl">Trophies</button>
-    <button onclick="switchTab('badges')" id="tab-badges" class="tab-btn rounded-xl">Badges</button>
-  </div>
+<main class="px-5 max-w-[430px] mx-auto space-y-6" style="padding-top: calc(5.2rem + env(safe-area-inset-top));">
 
-  <div id="section-trophies">
-    <div class="grid grid-cols-5 gap-2 mb-6">
-      <div class="flex flex-col items-center justify-center py-2 rounded-xl text-white" style="background-color: #94a3b8;"><span class="text-[8px] font-black uppercase">Common</span></div>
-      <div class="flex flex-col items-center justify-center py-2 rounded-xl text-white" style="background-color: #16a34a;"><span class="text-[8px] font-black uppercase">Uncommon</span></div>
-      <div class="flex flex-col items-center justify-center py-2 rounded-xl text-white" style="background-color: #2563eb;"><span class="text-[8px] font-black uppercase">Rare</span></div>
-      <div class="flex flex-col items-center justify-center py-2 rounded-xl text-white" style="background-color: #9333ea;"><span class="text-[8px] font-black uppercase">Epic</span></div>
-      <div class="flex flex-col items-center justify-center py-2 rounded-xl text-white" style="background-color: #d97706;"><span class="text-[8px] font-black uppercase">Mythic</span></div>
+  <!-- TOP CENTER: SUB BADGE -->
+  <section class="flex flex-col items-center justify-center pt-2">
+    <div onclick="openSubModal()" class="sub-badge-btn relative flex items-center justify-center h-24 w-24">
+      <img id="currentSubBadge" src="" alt="Subscription Tier" class="h-20 w-auto object-contain drop-shadow-md" style="display:none;">
+      <div id="subBadgeFallback" class="w-16 h-16 rounded-full bg-slate-200 flex items-center justify-center text-slate-400">
+        <span class="material-symbols-outlined text-3xl">workspace_premium</span>
+      </div>
+    </div>
+    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Current Rank</p>
+  </section>
+
+  <!-- TIER PILLS -->
+  <section class="flex justify-center gap-2 flex-wrap">
+    <div class="px-3 py-1.5 rounded-full bg-common text-white text-[9px] font-black uppercase tracking-wider">Common</div>
+    <div class="px-3 py-1.5 rounded-full bg-uncommon text-white text-[9px] font-black uppercase tracking-wider">Uncommon</div>
+    <div class="px-3 py-1.5 rounded-full bg-rare text-white text-[9px] font-black uppercase tracking-wider">Rare</div>
+    <div class="px-3 py-1.5 rounded-full bg-epic text-white text-[9px] font-black uppercase tracking-wider">Epic</div>
+    <div class="px-3 py-1.5 rounded-full bg-mythic text-white text-[9px] font-black uppercase tracking-wider">Mythic</div>
+  </section>
+
+  <!-- TABS -->
+  <section>
+    <div class="flex bg-slate-100 p-1 rounded-xl mb-4">
+      <button onclick="switchTab('trophies')" id="btn-trophies" class="tab-btn active flex-1 py-2 rounded-lg text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Trophies</button>
+      <button onclick="switchTab('badges')" id="btn-badges" class="tab-btn flex-1 py-2 rounded-lg text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Badges</button>
+      <button onclick="switchTab('avatars')" id="btn-avatars" class="tab-btn flex-1 py-2 rounded-lg text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Avatars</button>
     </div>
 
-    <h3 class="font-headline font-bold text-lg mb-4 px-1 text-slate-900">Your Collection</h3>
-    <div id="unlockedTrophies" class="grid grid-cols-4 gap-2 mb-8"></div>
-    <h3 class="font-headline font-bold text-lg mb-4 px-1 text-slate-900">Path to Glory</h3>
-    <div id="lockedTrophies" class="grid grid-cols-4 gap-2"></div>
-  </div>
+    <!-- TAB CONTENT: TROPHIES -->
+    <div id="tab-trophies" class="grid grid-cols-2 gap-3">
+      <!-- Injected by JS -->
+      <div class="col-span-2 text-center text-slate-400 text-xs py-10">Loading Trophies...</div>
+    </div>
 
-  <div id="section-badges" class="hidden">
-    <h3 class="font-headline font-bold text-lg mb-4 px-1 text-slate-900">Earned Badges</h3>
-    <div id="unlockedBadges" class="grid grid-cols-3 gap-2 mb-8"></div>
-    <h3 class="font-headline font-bold text-lg mb-4 px-1 text-slate-900">Future Missions</h3>
-    <div id="lockedBadges" class="grid grid-cols-3 gap-2"></div>
-  </div>
+    <!-- TAB CONTENT: BADGES -->
+    <div id="tab-badges" class="grid grid-cols-3 gap-3 hidden">
+      <!-- Injected by JS -->
+    </div>
+
+    <!-- TAB CONTENT: AVATARS -->
+    <div id="tab-avatars" class="grid grid-cols-2 gap-3 hidden">
+      <!-- Injected by JS -->
+    </div>
+  </section>
+
+  <!-- BOTTOM: ACTIVE MISSIONS -->
+  <section class="pt-6 border-t border-slate-200">
+    <h3 class="font-headline font-bold text-lg mb-3 px-1 text-slate-900">Active Missions</h3>
+    <div id="missionList" class="space-y-3">
+      <!-- Injected by JS -->
+      <div class="text-center text-slate-400 text-xs py-4">Loading Missions...</div>
+    </div>
+  </section>
+
 </main>
 
-<div id="rewardModal" class="hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-end justify-center">
-  <div class="bg-white w-full max-w-[430px] rounded-t-3xl p-6 pb-10 relative">
-    <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-6"></div>
-    <button onclick="closeModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"><span class="material-symbols-outlined text-[20px]">close</span></button>
-    <div class="flex flex-col items-center text-center">
-      <!-- Darker Blue Background -->
-      <div id="modalIconContainer" class="w-32 h-32 flex items-center justify-center mb-4 rounded-2xl shadow-inner" style="background-color: #dbeafe;">
-      </div>
-      <h3 id="modalTitle" class="font-headline font-black text-2xl text-slate-900 mb-1">Trophy Name</h3>
-      <p id="modalTier" class="text-[10px] font-black uppercase tracking-widest mb-4">TIER</p>
-      
-      <div id="modalProgressBar" class="flex gap-1 w-full max-w-[200px] mb-4"></div>
-
-      <div id="modalDetails" class="w-full bg-slate-50 rounded-2xl p-5 text-left space-y-3 border border-slate-100"></div>
-    </div>
-  </div>
-</div>
-
+<!-- BOTTOM NAV -->
 <nav class="fixed bottom-0 inset-x-0 z-40 bg-white/80 backdrop-blur-[20px] border-t border-slate-100" style="padding-bottom: env(safe-area-inset-bottom);">
   <div class="max-w-lg mx-auto flex items-center justify-around h-16 px-2">
     <a href="index.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">home</span><span class="text-[10px] font-bold">Home</span></a>
@@ -123,156 +130,317 @@
   </div>
 </nav>
 
-<script>
-var supabaseClient = supabase.createClient('https://nhymadutuhpjgkiurify.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM');
-var currentUser = null, allTiers = [], allTrophies = [], allThresholds = [], userProgress = [], allBadges = [], userBadges = [];
+<!-- UNIVERSAL REWARD MODAL -->
+<div id="rewardModal" class="fixed inset-0 z-[100] hidden items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity opacity-0">
+  <div class="bg-white w-full max-w-[430px] rounded-t-3xl sm:rounded-3xl p-6 pb-12 sm:pb-6 transform translate-y-full transition-transform duration-300 shadow-2xl relative">
+    <button onclick="closeModal('rewardModal')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200">
+      <span class="material-symbols-outlined text-lg">close</span>
+    </button>
+    <div class="flex flex-col items-center text-center mt-2">
+      <div id="modalIconContainer" class="h-24 w-24 mb-4 flex items-center justify-center">
+        <!-- Image injected here -->
+      </div>
+      <h2 id="modalTitle" class="font-headline font-black text-2xl text-slate-900 leading-tight">Reward Name</h2>
+      <p id="modalDesc" class="text-sm text-slate-500 mt-2 leading-relaxed px-4">Description of how to earn this reward.</p>
+      
+      <!-- Color Coded Progress Bar -->
+      <div class="w-full mt-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+        <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase mb-2">
+          <span id="modalProgressLabel">Progress</span>
+          <span id="modalProgressText">0/0</span>
+        </div>
+        <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
+          <div id="modalProgressBar" class="h-full rounded-full transition-all duration-500" style="width: 0%; background-color: #94a3b8;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-window.switchTab = function(tab) { 
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); 
-  document.getElementById('tab-' + tab).classList.add('active'); 
-  document.getElementById('section-trophies').classList.add('hidden'); 
-  document.getElementById('section-badges').classList.add('hidden'); 
-  document.getElementById('section-' + tab).classList.remove('hidden'); 
+<!-- SUBSCRIPTION UPGRADE MODAL -->
+<div id="subModal" class="fixed inset-0 z-[100] hidden items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity opacity-0">
+  <div class="bg-white w-full max-w-[430px] rounded-t-3xl sm:rounded-3xl p-6 pb-12 sm:pb-6 transform translate-y-full transition-transform duration-300 shadow-2xl relative max-h-[85vh] overflow-y-auto no-scrollbar">
+    <button onclick="closeModal('subModal')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200 z-10">
+      <span class="material-symbols-outlined text-lg">close</span>
+    </button>
+    <h2 class="font-headline font-black text-xl text-slate-900 mb-4 pt-2">Kingdom Ranks</h2>
+    <div id="subList" class="space-y-3">
+      <!-- Sub tiers injected here -->
+    </div>
+  </div>
+</div>
+
+<script>
+var supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+);
+
+var currentUser = null;
+var userProfile = null;
+var globalMythicCount = 0;
+
+const tierColors = {
+  1: '#94a3b8', // Common
+  2: '#16a34a', // Uncommon
+  3: '#2563eb', // Rare
+  4: '#9333ea', // Epic
+  5: '#d97706'  // Mythic
 };
 
-async function init() {
-  var s = await supabaseClient.auth.getSession(); 
-  if (!s.data.session) { window.location.href = 'login.html'; return; } 
-  currentUser = s.data.session.user;
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.classList.add('text-slate-400'); b.classList.remove('text-slate-900'); });
+  document.getElementById('btn-' + tab).classList.add('active', 'text-slate-900');
+  document.getElementById('btn-' + tab).classList.remove('text-slate-400');
   
+  document.getElementById('tab-trophies').classList.add('hidden');
+  document.getElementById('tab-badges').classList.add('hidden');
+  document.getElementById('tab-avatars').classList.add('hidden');
+  
+  document.getElementById('tab-' + tab).classList.remove('hidden');
+}
+
+function openModal(id, title, desc, img, progressText, progressPct, color) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalDesc').textContent = desc || 'Continue your journey to unlock this reward.';
+  document.getElementById('modalProgressText').textContent = progressText;
+  document.getElementById('modalProgressBar').style.width = progressPct + '%';
+  document.getElementById('modalProgressBar').style.backgroundColor = color || '#94a3b8';
+  
+  var iconCont = document.getElementById('modalIconContainer');
+  if(img && img.length > 5) {
+    iconCont.innerHTML = `<img src="${img}" class="h-full w-auto object-contain">`;
+  } else {
+    iconCont.innerHTML = `<div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center"><span class="material-symbols-outlined text-4xl text-slate-300">lock</span></div>`;
+  }
+
+  var m = document.getElementById('rewardModal');
+  m.classList.remove('hidden');
+  setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('translate-y-full'); }, 10);
+}
+
+function openSubModal() {
+  var m = document.getElementById('subModal');
+  m.classList.remove('hidden');
+  setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('translate-y-full'); }, 10);
+}
+
+function closeModal(id) {
+  var m = document.getElementById(id);
+  m.classList.add('opacity-0'); m.children[0].classList.add('translate-y-full');
+  setTimeout(() => { m.classList.add('hidden'); }, 300);
+}
+
+async function init() {
+  var s = await supabaseClient.auth.getSession();
+  if (!s.data.session) { window.location.href = 'login.html'; return; }
+  currentUser = s.data.session.user;
+  await loadCatalog();
+}
+
+async function loadCatalog() {
   try {
-    var results = await Promise.all([
-      supabaseClient.from('trophy_tiers').select('*').order('id'),
+    // 1. Fetch live stats required for calculating trophies
+    var { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+    userProfile = profile || {};
+    
+    var recruitRes = await supabaseClient.from('profiles').select('id', { count: 'exact', head: true }).eq('referred_by', currentUser.id);
+    var missionRes = await supabaseClient.from('mission_activity').select('mission_ref').eq('user_id', currentUser.id);
+    var recruits = recruitRes.count || 0;
+    var missions = new Set((missionRes.data || []).map(m => m.mission_ref).filter(Boolean)).size;
+    var shares = userProfile.total_shares || 0;
+
+    // 2. Fetch Catalogs & Progress
+    var [
+      trophiesRes, thresholdsRes, utpRes, 
+      badgesRes, userBadgesRes, 
+      avatarsRes, 
+      subsRes, subTiersRes,
+      projectsRes
+    ] = await Promise.all([
       supabaseClient.from('trophy_definitions').select('*'),
-      supabaseClient.from('trophy_thresholds').select('*'),
+      supabaseClient.from('trophy_thresholds').select('*').eq('is_active', true),
       supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
-      supabaseClient.from('badge_definitions').select('*'),
-      supabaseClient.from('profiles').select('badges').eq('id', currentUser.id).single()
+      supabaseClient.from('badge_definitions').select('*').eq('is_active', true),
+      supabaseClient.from('user_badges').select('*').eq('user_id', currentUser.id),
+      supabaseClient.from('avatar_stages').select('*').order('stage_order', { ascending: true }),
+      supabaseClient.from('subscriptions').select('tier, status').eq('user_id', currentUser.id).in('status', ['active', 'trialing']),
+      supabaseClient.from('subscription_tiers').select('*').eq('is_active', true).order('price', { ascending: true }),
+      supabaseClient.from('projects').select('id, name, reward_description, reward_badge, status').in('status', ['active', 'coming_soon'])
     ]);
 
-    allTiers = results[0].data || []; 
-    allTrophies = results[1].data || []; 
-    allThresholds = results[2].data || []; 
-    userProgress = results[3].data || [];
-    allBadges = results[4].data || []; 
-    userBadges = (results[5].data && results[5].data.badges) ? results[5].data.badges : [];
+    // --- PROCESS SUBSCRIPTIONS ---
+    var activeSub = (subsRes.data || [])[0];
+    var allSubTiers = subTiersRes.data || [];
+    renderSubscriptions(activeSub, allSubTiers);
 
-    renderTrophies();
-    renderBadges();
-  } catch (err) { console.error("Rewards Page Error:", err); }
-}
+    // --- PROCESS TROPHIES (Matching Impact Logic) ---
+    var allTrophies = trophiesRes.data || [];
+    var allThresholds = thresholdsRes.data || [];
+    var utp = utpRes.data || [];
+    globalMythicCount = 0;
 
-function renderTrophies() {
-  var unlocked = document.getElementById('unlockedTrophies'); 
-  var locked = document.getElementById('lockedTrophies');
-  if(!unlocked || !locked) return;
-  unlocked.innerHTML = ''; locked.innerHTML = '';
-  
-  allTrophies.forEach(t => {
-    var activeThresholds = allThresholds.filter(th => th.trophy_id === t.id && th.is_active !== false).sort((a,b) => a.tier_id - b.tier_id);
-    if (activeThresholds.length === 0) return;
+    var trophyHTML = '';
+    allTrophies.forEach(t => {
+      var ths = allThresholds.filter(th => th.trophy_id === t.id).sort((a, b) => a.tier_id - b.tier_id);
+      if (ths.length === 0) return;
 
-    var userProg = userProgress.find(p => p.trophy_id === t.id);
-    var currentProgress = userProg ? userProg.current_progress : 0;
+      var dbProg = utp.find(p => p.trophy_id === t.id);
+      var currentVal = dbProg ? (dbProg.current_progress || 0) : 0;
 
-    var unlockedTier = null;
-    for (var i = activeThresholds.length - 1; i >= 0; i--) {
-      if (currentProgress >= activeThresholds[i].threshold_value) { unlockedTier = activeThresholds[i]; break; }
-    }
+      // Apply Live Overrides
+      if (t.name && t.name.toLowerCase() === 'sign up') currentVal = Math.max(currentVal, 1);
+      if (t.name && t.name.toLowerCase() === 'recruiter') currentVal = Math.max(currentVal, recruits);
 
-    if (unlockedTier) {
-      var color = getTierColor(unlockedTier.tier_id);
-      unlocked.innerHTML += `<div class="bold-block" style="background-color: ${color};" onclick="openModal('${t.id}', ${unlockedTier.tier_id}, false)">
-        ${t.image_url ? `<img src="${t.image_url}">` : '<span class="material-symbols-outlined text-4xl filled">emoji_events</span>'}
-        <p class="font-headline font-bold text-xs leading-tight w-full truncate px-1">${t.name}</p>
-      </div>`;
-    }
+      var unlockedTier = null;
+      var nextTier = ths[0];
 
-    var nextTier = activeThresholds.find(th => currentProgress < th.threshold_value);
-    if (nextTier) {
-      locked.innerHTML += `<div class="bold-block locked-block" onclick="openModal('${t.id}', ${nextTier.tier_id}, true)">
-        ${t.image_url ? `<img src="${t.image_url}">` : '<span class="material-symbols-outlined text-4xl">lock</span>'}
-        <p class="font-headline font-bold text-xs leading-tight w-full truncate px-1">${t.name}</p>
-      </div>`;
-    }
-  });
-  if (unlocked.innerHTML === '') unlocked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">No trophies unlocked yet.</p>';
-  if (locked.innerHTML === '') locked.innerHTML = '<p class="col-span-2 text-center text-slate-400 text-sm py-4">All caught up!</p>';
-}
+      for (var i = ths.length - 1; i >= 0; i--) {
+        if (currentVal >= ths[i].threshold_value) {
+          unlockedTier = ths[i];
+          nextTier = ths[i+1] || ths[i]; // Cap at max
+          break;
+        }
+      }
+      
+      var isUnlocked = unlockedTier !== null;
+      var tLevel = isUnlocked ? unlockedTier.tier_id : 1;
+      if (isUnlocked && tLevel === 5) globalMythicCount++;
+      
+      var color = isUnlocked ? (tierColors[tLevel] || '#94a3b8') : '#cbd5e1';
+      var maxTarget = nextTier.threshold_value || 1;
+      var progressPct = Math.min(100, (currentVal / maxTarget) * 100);
+      var progText = `${currentVal} / ${maxTarget}`;
+      var displayLevelName = isUnlocked ? `Tier ${tLevel}` : 'Locked';
 
-function renderBadges() {
-  var unlocked = document.getElementById('unlockedBadges'); 
-  var locked = document.getElementById('lockedBadges');
-  if(!unlocked || !locked) return;
-  unlocked.innerHTML = ''; locked.innerHTML = '';
-  allBadges.forEach(b => {
-    var hasBadge = userBadges.includes(b.id) || userBadges.includes(b.name);
-    if (hasBadge) {
-      unlocked.innerHTML += `<div class="badge-item" onclick="openBadgeModal('${b.name}')">
-        ${b.image_url ? `<img src="${b.image_url}">` : '<span class="material-symbols-outlined text-4xl text-primary">military_tech</span>'}
-        <p>${b.name}</p>
-      </div>`;
-    } else {
-      locked.innerHTML += `<div class="badge-item locked">
-        ${b.image_url ? `<img src="${b.image_url}">` : '<span class="material-symbols-outlined text-4xl">lock</span>'}
-        <p>${b.name}</p>
-      </div>`;
-    }
-  });
-  if (unlocked.innerHTML === '') unlocked.innerHTML = '<p class="col-span-3 text-center text-slate-400 text-sm py-4">No badges earned yet.</p>';
-  if (locked.innerHTML === '') locked.innerHTML = '<p class="col-span-3 text-center text-slate-400 text-sm py-4">No future missions available.</p>';
-}
+      trophyHTML += `
+        <div onclick="openModal('${t.id}', '${t.name.replace(/'/g,"\\'")}', '${t.description || 'Level up your stats to earn this trophy.'}', '${t.image_url || ''}', '${progText}', ${progressPct}, '${color}')" 
+             class="reward-card ${isUnlocked ? '' : 'locked'}">
+          ${t.image_url ? `<img src="${t.image_url}" class="h-16 w-auto object-contain">` : `<span class="material-symbols-outlined text-4xl text-slate-300">emoji_events</span>`}
+          <div class="w-full mt-2">
+            <h4 class="font-headline font-bold text-[13px] text-slate-900 leading-tight truncate">${t.name}</h4>
+            <p class="text-[9px] font-bold uppercase tracking-widest mt-0.5" style="color: ${color}">${displayLevelName}</p>
+          </div>
+        </div>
+      `;
+    });
+    document.getElementById('tab-trophies').innerHTML = trophyHTML || '<p class="col-span-2 text-center text-slate-400 text-sm py-4">No trophies found.</p>';
 
-function getTierColor(tierId) { var t = allTiers.find(x => x.id === tierId); return t ? t.color_hex : '#94a3b8'; }
-function getTierName(tierId) { var t = allTiers.find(x => x.id === tierId); return t ? t.name : 'Unknown'; }
-function getThreshold(trophyId, tierId) { var th = allThresholds.find(x => x.trophy_id === trophyId && x.tier_id === tierId); return th ? th.threshold_value : 0; }
+    // --- PROCESS BADGES ---
+    var allBadges = badgesRes.data || [];
+    var earnedTable = (userBadgesRes.data || []).map(b => b.badge_id);
+    var earnedJson = userProfile.badges || [];
+    if(typeof earnedJson === 'string') { try { earnedJson = JSON.parse(earnedJson); } catch(e){ earnedJson = []; } }
+    
+    var badgeHTML = '';
+    allBadges.forEach(b => {
+      var isEarned = earnedTable.includes(b.id) || earnedJson.includes(b.id) || earnedJson.includes(b.name);
+      
+      // Auto-evaluate stat badges just in case
+      if(!isEarned && b.stat_target > 0) {
+        if(b.stat_type === 'recruits' && recruits >= b.stat_target) isEarned = true;
+        if(b.stat_type === 'shares' && shares >= b.stat_target) isEarned = true;
+        if(b.stat_type === 'signup') isEarned = true;
+      }
 
-window.openModal = function(trophyId, tierId, isLocked) {
-  var t = allTrophies.find(x => x.id === trophyId); if (!t) return;
-  var color = getTierColor(tierId);
-  
-  document.getElementById('modalTitle').textContent = t.name;
-  document.getElementById('modalTier').textContent = isLocked ? 'Locked' : getTierName(tierId);
-  document.getElementById('modalTier').style.color = isLocked ? '#94a3b8' : color;
-  
-  var container = document.getElementById('modalIconContainer');
-  container.style.backgroundColor = '#dbeafe'; // Darker blue
-  container.innerHTML = t.image_url ? `<img src="${t.image_url}" class="w-20 h-20 object-contain ${isLocked ? 'opacity-50' : ''}">` : '<span class="material-symbols-outlined text-5xl text-primary">emoji_events</span>';
+      var color = isEarned ? tierColors[3] : '#cbd5e1'; // Badges usually rare colored
+      var progText = isEarned ? '1/1' : '0/1';
+      var progPct = isEarned ? 100 : 0;
 
-  var currentLevel = isLocked ? 0 : tierId;
-  var barHTML = '';
-  for(var i=1; i<=5; i++) {
-     var isActive = i <= currentLevel;
-     barHTML += `<div class="h-2 flex-1 rounded-full ${isActive ? 'bg-primary' : 'bg-slate-200'}"></div>`;
+      badgeHTML += `
+        <div onclick="openModal('${b.id}', '${b.name.replace(/'/g,"\\'")}', '${b.description || 'Complete missions to earn.'}', '${b.image_url || ''}', '${progText}', ${progPct}, '${color}')" 
+             class="reward-card ${isEarned ? '' : 'locked'} !p-2">
+          ${b.image_url ? `<img src="${b.image_url}" class="h-12 w-auto object-contain">` : `<span class="material-symbols-outlined text-3xl text-slate-300">military_tech</span>`}
+          <h4 class="font-headline font-bold text-[10px] text-slate-900 leading-tight mt-2 w-full truncate">${b.name}</h4>
+        </div>
+      `;
+    });
+    document.getElementById('tab-badges').innerHTML = badgeHTML || '<p class="col-span-3 text-center text-slate-400 text-sm py-4">No badges found.</p>';
+
+    // --- PROCESS AVATARS ---
+    var allAvatars = avatarsRes.data || [];
+    var avatarHTML = '';
+    var gender = userProfile.gender || 'male';
+
+    allAvatars.forEach(a => {
+      var isUnlocked = globalMythicCount >= (a.mythic_required || 0);
+      var img = (gender === 'female' && a.image_url_female) ? a.image_url_female : a.image_url_male;
+      var color = isUnlocked ? tierColors[5] : '#cbd5e1'; // Avatars linked to Mythic
+      var progPct = Math.min(100, (globalMythicCount / Math.max(1, a.mythic_required)) * 100);
+      var progText = `${globalMythicCount} / ${a.mythic_required} Mythic`;
+
+      avatarHTML += `
+        <div onclick="openModal('${a.id}', '${(a.avatar_title || 'Avatar').replace(/'/g,"\\'")}', 'Requires ${a.mythic_required} Mythic Trophies to unlock.', '${img || ''}', '${progText}', ${progPct}, '${color}')" 
+             class="reward-card ${isUnlocked ? '' : 'locked'}">
+          ${img ? `<img src="${img}" class="h-20 w-auto object-contain">` : `<div class="h-20 flex items-center"><span class="material-symbols-outlined text-4xl text-slate-300">person</span></div>`}
+          <div class="w-full mt-2 border-t border-slate-100 pt-2">
+            <h4 class="font-headline font-bold text-[12px] text-slate-900 leading-tight truncate">${a.avatar_title || 'Stage '+a.stage_order}</h4>
+            <p class="text-[9px] font-bold text-slate-400 mt-0.5">STAGE ${a.stage_order}</p>
+          </div>
+        </div>
+      `;
+    });
+    document.getElementById('tab-avatars').innerHTML = avatarHTML || '<p class="col-span-2 text-center text-slate-400 text-sm py-4">No avatars found.</p>';
+
+    // --- PROCESS MISSIONS ---
+    var allProjects = projectsRes.data || [];
+    var missionHTML = '';
+    allProjects.forEach(m => {
+      if(!m.reward_badge && !m.reward_description) return; // Only show missions with rewards
+      missionHTML += `
+        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center justify-between">
+          <div class="flex-1 pr-4">
+            <h4 class="font-headline font-bold text-sm text-slate-900">${m.name}</h4>
+            <p class="text-xs text-slate-500 mt-1 line-clamp-2">${m.reward_description || 'Complete to earn an exclusive reward.'}</p>
+          </div>
+          <a href="cause.html" class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-primary flex-shrink-0">
+            <span class="material-symbols-outlined text-xl">arrow_forward</span>
+          </a>
+        </div>
+      `;
+    });
+    document.getElementById('missionList').innerHTML = missionHTML || '<p class="text-center text-slate-400 text-sm py-4">No active reward missions right now.</p>';
+
+  } catch(e) {
+    console.error("Rewards load error:", e);
   }
-  document.getElementById('modalProgressBar').innerHTML = barHTML;
+}
 
-  // Use description if available, otherwise fallback
-  var descText = t.description || `Reach ${getThreshold(trophyId, tierId)} ${t.stat_type || 'points'} to unlock.`;
-  if (isLocked) {
-     descText = `<strong class="text-slate-900 block mb-1">Requirement</strong>${descText}`;
+function renderSubscriptions(activeSub, allSubTiers) {
+  var subBadgeImg = document.getElementById('currentSubBadge');
+  var subFallback = document.getElementById('subBadgeFallback');
+  var subList = document.getElementById('subList');
+  
+  var currentTierName = activeSub ? activeSub.tier : 'Free';
+  var currentDef = allSubTiers.find(t => t.name.toLowerCase() === currentTierName.toLowerCase());
+
+  // Top Center Badge
+  if(currentDef && currentDef.badge_url) {
+    subBadgeImg.src = currentDef.badge_url;
+    subBadgeImg.style.display = 'block';
+    subFallback.style.display = 'none';
   } else {
-     descText = `<strong class="text-slate-900 block mb-1">${getTierName(tierId)} Tier Unlocked</strong>${descText}`;
+    subBadgeImg.style.display = 'none';
+    subFallback.style.display = 'flex';
   }
-  document.getElementById('modalDetails').innerHTML = `<p class="text-sm text-slate-600">${descText}</p>`;
-  document.getElementById('rewardModal').classList.remove('hidden');
-}
 
-window.openBadgeModal = function(badgeName) {
-  var b = allBadges.find(x => x.name === badgeName); if (!b) return;
-  document.getElementById('modalTitle').textContent = b.name;
-  document.getElementById('modalTier').textContent = 'Badge Earned';
-  document.getElementById('modalTier').style.color = '#3d6285';
-  var container = document.getElementById('modalIconContainer');
-  container.style.backgroundColor = '#dbeafe';
-  container.innerHTML = b.image_url ? `<img src="${b.image_url}" class="w-20 h-20 object-contain">` : '<span class="material-symbols-outlined text-5xl text-primary">military_tech</span>';
-  document.getElementById('modalProgressBar').innerHTML = '';
-  document.getElementById('modalDetails').innerHTML = `<p class="text-sm text-slate-600"><strong class="text-slate-900 block mb-1">Mission Complete</strong>You have successfully earned the ${b.name} badge!</p>`;
-  document.getElementById('rewardModal').classList.remove('hidden');
+  // Modal List
+  var listHTML = '';
+  allSubTiers.forEach(t => {
+    var isCurrent = currentTierName.toLowerCase() === t.name.toLowerCase();
+    listHTML += `
+      <div class="border border-slate-100 rounded-2xl p-4 flex items-center gap-4 ${isCurrent ? 'bg-primary/5 border-primary/20' : 'bg-white'}">
+        ${t.badge_url ? `<img src="${t.badge_url}" class="w-12 h-12 object-contain">` : `<div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center"><span class="material-symbols-outlined text-slate-400">shield</span></div>`}
+        <div class="flex-1">
+          <h4 class="font-headline font-bold text-sm text-slate-900">${t.name}</h4>
+          <p class="text-xs text-slate-500">$${t.price} / ${t.billing_interval || 'mo'}</p>
+        </div>
+        ${isCurrent ? `<span class="text-[10px] font-black text-primary uppercase tracking-widest bg-white px-2 py-1 rounded-md shadow-sm">Active</span>` : `<button onclick="window.location.href='settings.html'" class="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl">Upgrade</button>`}
+      </div>
+    `;
+  });
+  subList.innerHTML = listHTML;
 }
-
-window.closeModal = function() { document.getElementById('rewardModal').classList.add('hidden'); }
-document.getElementById('rewardModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
 
 init();
 </script>
