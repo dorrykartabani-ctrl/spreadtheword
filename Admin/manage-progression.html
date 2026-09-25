@@ -158,28 +158,18 @@
 <!-- BADGE MODAL -->
 <div id="badgeParticipationContainer" class="hidden space-y-3">
   <label class="text-[11px] font-bold text-slate-500 uppercase block">Triggers</label>
-  
   <div class="flex items-center gap-2 p-3 bg-surface-clow rounded-xl">
     <input type="checkbox" id="badgeAdminReferral" class="w-4 h-4 accent-primary">
     <span class="text-sm font-semibold">Award on Admin Referral Sign-up</span>
   </div>
-  
   <div class="flex items-center gap-2 p-3 bg-surface-clow rounded-xl">
     <input type="checkbox" id="badgeMissionPriority" class="w-4 h-4 accent-primary">
     <span class="text-sm font-semibold">Award for Mission Priority (1,2,3) + Donation</span>
   </div>
-  
   <label class="text-[11px] font-bold text-slate-500 uppercase block mt-2">Or Link Specific Missions (By Reference)</label>
   <div id="badgeMissionChecklist" class="bg-surface-clow rounded-xl p-3 max-h-36 overflow-y-auto space-y-1 border border-surface-c"></div>
-  
   <label class="text-[11px] font-bold text-slate-500 uppercase block mt-2">Or Link Specific Campaigns</label>
   <div id="badgeCampaignChecklist" class="bg-surface-clow rounded-xl p-3 max-h-36 overflow-y-auto space-y-1 border border-surface-c"></div>
-</div>
-
-<!-- Top 10 stays outside / below as you already have -->
-<div class="flex items-center gap-2 p-3 bg-amber-50 rounded-xl border border-amber-100">
-  <input type="checkbox" id="badgeTop10" class="w-4 h-4 accent-amber-500">
-  <span class="text-sm font-semibold text-amber-900">Qualifies for Dynamic Top 10 Award</span>
 </div>
 
 <!-- AVATAR MODAL -->
@@ -223,956 +213,694 @@
   </div>
 </div>
 <script>
-  // ==========================================
-  // INITIALIZE SUPABASE CLIENT
-  // ==========================================
-  const supabaseClient = supabase.createClient(
-    'https://nhymadutuhpjgkiurify.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
-  );
+const supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+);
 
-  let currentUser = null;
-  let allTiers = [], allTrophies = [], allThresholds = [], allBadges = [], allAvatars = [];
-  let allMissions = [], allCampaigns = [];
-  let trophyImages = [], avatarImages = [], badgeImages = [];
-  let campaignQuoteCounts = {};
+let currentUser = null;
+let allTiers = [], allTrophies = [], allThresholds = [], allBadges = [], allAvatars = [];
+let allMissions = [], allCampaigns = [];
+let trophyImages = [], avatarImages = [], badgeImages = [];
+let campaignQuoteCounts = {};
 
-  // ==========================================
-  // TOP-LEVEL UTILITIES
-  // ==========================================
-  function getEl(id) { return document.getElementById(id); }
-  function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  
-  function toggleSidebar() {
-    const sb = getEl('sidebar');
-    const overlay = getEl('sidebarOverlay');
-    if (sb) sb.classList.toggle('hidden');
-    if (overlay) overlay.classList.toggle('hidden');
+function getEl(id) { return document.getElementById(id); }
+function escapeHtml(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function generateUUID() {
+  if (crypto?.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+function extractMediaTitle(url) {
+  if (!url) return 'Media Asset';
+  try {
+    const f = url.split('?')[0].split('/').pop() || '';
+    const base = f.includes('.') ? f.slice(0, f.lastIndexOf('.')) : f;
+    const t = base.replace(/[-_]/g, ' ').trim();
+    return t ? t.replace(/\b\w/g, c => c.toUpperCase()) : 'Media Asset';
+  } catch { return 'Media Asset'; }
+}
+function showToast(msg, isError = false) {
+  let toast = getEl('toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast';
+    toast.className = 'hidden fixed top-6 right-6 z-[200] bg-slate-900/90 text-white font-semibold px-5 py-3 rounded-full shadow-2xl items-center gap-2 text-sm backdrop-blur-md';
+    toast.innerHTML = `<span id="toastIcon" class="material-symbols-outlined text-lg">check_circle</span><span id="toastMsg"></span>`;
+    document.body.appendChild(toast);
   }
-
-  async function handleLogout() {
-    try {
-      await supabaseClient.auth.signOut();
-    } catch(e) {}
-    window.location.href = 'login.html';
+  getEl('toastMsg').textContent = msg;
+  const icon = getEl('toastIcon');
+  if (icon) {
+    icon.textContent = isError ? 'error' : 'check_circle';
+    icon.className = `material-symbols-outlined text-lg ${isError ? 'text-rose-400' : 'text-emerald-400'}`;
   }
+  toast.classList.remove('hidden'); toast.classList.add('flex');
+  clearTimeout(window.toastTimer);
+  window.toastTimer = setTimeout(() => { toast.classList.add('hidden'); toast.classList.remove('flex'); }, 3500);
+}
+function toggleSidebar() {
+  getEl('sidebar')?.classList.toggle('hidden');
+  getEl('sidebarOverlay')?.classList.toggle('hidden');
+}
+async function handleLogout() {
+  try { await supabaseClient.auth.signOut(); } catch {}
+  location.href = 'login.html';
+}
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  getEl('tab-' + tab)?.classList.add('active');
+  ['trophies','badges','avatars'].forEach(t => getEl('view-' + t)?.classList.toggle('hidden', t !== tab));
+}
 
-  function generateUUID() {
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-      const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-    });
-  }
+async function init() {
+  const s = await supabaseClient.auth.getSession();
+  if (!s.data.session) return location.href = 'login.html';
+  currentUser = s.data.session.user;
+  const p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single();
+  if (!p.data || p.data.role !== 'admin') return location.href = '../app/index.html';
+  document.querySelectorAll('.admin-name').forEach(el => el.textContent = p.data.full_name || currentUser.email);
+  document.querySelectorAll('.admin-initials').forEach(el => el.textContent = (p.data.full_name || 'AD').substring(0, 2).toUpperCase());
+  await loadData();
+}
 
-  // Generates clean title from URL filename when DB 'label' / 'name' is missing or "Unnamed"
-  function extractMediaTitle(url) {
-    if (!url) return 'Media Asset';
-    try {
-      const cleanPath = url.split('?')[0].split('#')[0];
-      const filename = cleanPath.substring(cleanPath.lastIndexOf('/') + 1);
-      if (filename) {
-        const nameNoExt = filename.substring(0, filename.lastIndexOf('.')) || filename;
-        const readable = nameNoExt.replace(/[-_]/g, ' ').trim();
-        if (readable) {
-          return readable.replace(/\b\w/g, c => c.toUpperCase());
-        }
-      }
-    } catch(e) {}
-    return 'Media Asset';
-  }
+async function loadData() {
+  try {
+    const [tierRes, tRes, threshRes, bRes, aRes, mediaRes, projRes, campRes] = await Promise.all([
+      supabaseClient.from('trophy_tiers').select('*').order('id'),
+      supabaseClient.from('trophy_definitions').select('*').order('created_at', { ascending: false }),
+      supabaseClient.from('trophy_thresholds').select('*'),
+      supabaseClient.from('badge_definitions').select('*').order('created_at', { ascending: false }),
+      supabaseClient.from('avatar_stages').select('*').order('stage_order'),
+      supabaseClient.from('media').select('*').in('type', ['trophy', 'avatar', 'badge']).eq('is_active', true),
+      supabaseClient.from('projects').select('id, title, mission_ref').eq('status', 'active'),
+      supabaseClient.from('campaigns').select('id, name').eq('status', 'active')
+    ]);
+    allTiers = tierRes.data || [];
+    allTrophies = tRes.data || [];
+    allThresholds = threshRes.data || [];
+    allBadges = bRes.data || [];
+    allAvatars = aRes.data || [];
+    allMissions = projRes.data || [];
+    allCampaigns = campRes.data || [];
 
-  function showToast(msg, isError = false) {
-    let toast = document.getElementById('toast');
-    if (!toast) {
-      toast = document.createElement('div');
-      toast.id = 'toast';
-      toast.className = 'hidden fixed top-6 right-6 z-[200] bg-slate-900/90 text-white font-semibold px-5 py-3 rounded-full shadow-2xl items-center gap-2 text-sm backdrop-blur-md transition-all';
-      toast.innerHTML = `<span id="toastIcon" class="material-symbols-outlined text-emerald-400 text-lg">check_circle</span><span id="toastMsg"></span>`;
-      document.body.appendChild(toast);
-    }
-    document.getElementById('toastMsg').textContent = msg;
-    const icon = document.getElementById('toastIcon');
-    if (icon) {
-      icon.textContent = isError ? 'error' : 'check_circle';
-      icon.className = `material-symbols-outlined text-lg ${isError ? 'text-rose-400' : 'text-emerald-400'}`;
-    }
-    toast.classList.remove('hidden'); toast.classList.add('flex');
-    if (window.toastTimer) clearTimeout(window.toastTimer);
-    window.toastTimer = setTimeout(() => { toast.classList.add('hidden'); toast.classList.remove('flex'); }, 3000);
-  }
-
-  // ==========================================
-  // AUTH & INIT
-  // ==========================================
-  async function init() {
-    try {
-      const s = await supabaseClient.auth.getSession();
-      if (!s.data.session) return window.location.href = 'login.html';
-      currentUser = s.data.session.user;
-
-      const p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single();
-      if (!p.data || p.data.role !== 'admin') return window.location.href = '../app/index.html';
-
-      document.querySelectorAll('.admin-name').forEach(el => el.textContent = p.data.full_name || currentUser.email);
-      document.querySelectorAll('.admin-initials').forEach(el => el.textContent = (p.data.full_name || 'AD').substring(0,2).toUpperCase());
-
-      await loadData();
-    } catch (e) {
-      console.error('Init error:', e);
-    }
-  }
-
-  // ==========================================
-  // LOAD DATA
-  // ==========================================
-  async function loadData() {
-    try {
-      const [tierRes, tRes, threshRes, bRes, aRes, mediaRes, projRes, campRes] = await Promise.all([
-        supabaseClient.from('trophy_tiers').select('*').order('id'),
-        supabaseClient.from('trophy_definitions').select('*').order('created_at', { ascending: false }),
-        supabaseClient.from('trophy_thresholds').select('*'),
-        supabaseClient.from('badge_definitions').select('*').order('created_at', { ascending: false }),
-        supabaseClient.from('avatar_stages').select('*').order('stage_order'),
-        supabaseClient.from('media').select('*').in('type', ['trophy', 'avatar', 'badge']).eq('is_active', true),
-        supabaseClient.from('projects').select('id, title, mission_ref').eq('status', 'active'),
-        supabaseClient.from('campaigns').select('id, name').eq('status', 'active')
-      ]);
-
-      allTiers = tierRes.data || [];
-      allTrophies = tRes.data || [];
-      allThresholds = threshRes.data || [];
-      allBadges = bRes.data || [];
-      allAvatars = aRes.data || [];
-      allMissions = projRes.data || [];
-      allCampaigns = campRes.data || [];
-
-      // Calculate Quote Counts per Campaign
-      campaignQuoteCounts = {};
-      if (allCampaigns.length > 0) {
-        const qRes = await supabaseClient.from('quotes').select('campaign_id').in('campaign_id', allCampaigns.map(c => c.id));
-        (qRes.data || []).forEach(q => {
-          if (q.campaign_id) campaignQuoteCounts[q.campaign_id] = (campaignQuoteCounts[q.campaign_id] || 0) + 1;
-        });
-      }
-
-      // Filter Media Assets & Extract Real Titles from label / name / filename
-      const mediaData = (mediaRes.data || []).map(m => {
-        const url = m.url || '';
-        const rawLabel = m.label || m.name || '';
-        const cleanLabel = (rawLabel && String(rawLabel).trim().toLowerCase() !== 'unnamed') 
-          ? String(rawLabel).trim() 
-          : extractMediaTitle(url);
-
-        return { ...m, url, label: cleanLabel, type: String(m.type || '').toLowerCase().trim() };
-      }).filter(m => m.url);
-
-      trophyImages = mediaData.filter(m => m.type.includes('troph'));
-      avatarImages = mediaData.filter(m => m.type.includes('avatar') || m.type.includes('char'));
-      badgeImages  = mediaData.filter(m => m.type.includes('badge'));
-
-      // Fallback if category tag isn't strictly formatted
-      if (!trophyImages.length) trophyImages = mediaData;
-      if (!badgeImages.length) badgeImages = mediaData;
-      if (!avatarImages.length) avatarImages = mediaData;
-
-      renderTrophies();
-      renderBadges();
-      renderAvatars();
-      populateDropdowns();
-    } catch (e) {
-      console.error('Data load error:', e);
-      showToast('Error loading progression data.', true);
-    }
-  }
-
-  // ==========================================
-  // DROPDOWNS & CHECKLISTS
-  // ==========================================
-  function buildMediaOptions(images, selectedUrl) {
-    if (!images?.length) return '<option value="">-- No media assets found --</option>';
-    return images.map(m =>
-      `<option value="${m.url}" ${selectedUrl === m.url ? 'selected' : ''}>${escapeHtml(m.label)}</option>`
-    ).join('');
-  }
-
-  function populateDropdowns() {
-    const tSel = getEl('trophyImage') || getEl('trophyBaseImage');
-    if (tSel) tSel.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages);
-
-    const bSel = getEl('badgeImage');
-    if (bSel) bSel.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages);
-
-    const amSel = getEl('avatarImageMale'), afSel = getEl('avatarImageFemale');
-    if (amSel && afSel) {
-      amSel.innerHTML = '<option value="">-- Select Male Image --</option>' + buildMediaOptions(avatarImages);
-      afSel.innerHTML = '<option value="">-- Select Female Image --</option>' + buildMediaOptions(avatarImages);
+    campaignQuoteCounts = {};
+    if (allCampaigns.length) {
+      const qRes = await supabaseClient.from('quotes').select('campaign_id').in('campaign_id', allCampaigns.map(c => c.id));
+      (qRes.data || []).forEach(q => {
+        if (q.campaign_id) campaignQuoteCounts[q.campaign_id] = (campaignQuoteCounts[q.campaign_id] || 0) + 1;
+      });
     }
 
-    const reqBadgeSel = getEl('avatarReqBadge');
-    if (reqBadgeSel) {
-      reqBadgeSel.innerHTML = '<option value="">-- Select Required Badge --</option>';
-      allBadges.forEach(b => reqBadgeSel.innerHTML += `<option value="${b.id}">${escapeHtml(b.name || b.title)}</option>`);
-    }
-  }
+    const media = (mediaRes.data || []).map(m => {
+      const url = m.url || '';
+      const raw = (m.label || m.name || '').trim();
+      const label = raw && raw.toLowerCase() !== 'unnamed' ? raw : extractMediaTitle(url);
+      return { ...m, url, label, type: String(m.type || '').toLowerCase() };
+    }).filter(m => m.url);
 
-  function renderParticipationChecklists() {
-    const mc = getEl('missionChecklist');
-    if (mc) {
-      mc.innerHTML = allMissions.length ? allMissions.map(m => {
+    trophyImages = media.filter(m => m.type.includes('troph'));
+    badgeImages  = media.filter(m => m.type.includes('badge'));
+    avatarImages = media.filter(m => m.type.includes('avatar') || m.type.includes('char'));
+    if (!trophyImages.length) trophyImages = media;
+    if (!badgeImages.length) badgeImages = media;
+    if (!avatarImages.length) avatarImages = media;
+
+    renderTrophies(); renderBadges(); renderAvatars(); populateDropdowns();
+  } catch (e) {
+    console.error(e);
+    showToast('Error loading data', true);
+  }
+}
+
+function buildMediaOptions(images, selected) {
+  if (!images.length) return '<option value="">-- No media --</option>';
+  return images.map(m =>
+    `<option value="${m.url}" ${selected === m.url ? 'selected' : ''}>${escapeHtml(m.label)}</option>`
+  ).join('');
+}
+function populateDropdowns() {
+  const t = getEl('trophyImage') || getEl('trophyBaseImage');
+  if (t) t.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages);
+  const b = getEl('badgeImage');
+  if (b) b.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages);
+  const am = getEl('avatarImageMale'), af = getEl('avatarImageFemale');
+  if (am) am.innerHTML = '<option value="">-- Male Image --</option>' + buildMediaOptions(avatarImages);
+  if (af) af.innerHTML = '<option value="">-- Female Image --</option>' + buildMediaOptions(avatarImages);
+}
+
+function renderMissionList(containerId, cbClass) {
+  const el = getEl(containerId);
+  if (!el) return;
+  el.innerHTML = allMissions.length
+    ? allMissions.map(m => {
         const ref = m.mission_ref || m.id;
-        return `
-          <label class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-c cursor-pointer">
-            <div class="flex items-center gap-2 min-w-0">
-              <input type="checkbox" value="${escapeHtml(ref)}" class="mission-cb flex-shrink-0">
-              <span class="text-xs font-semibold text-slate-700 truncate">${escapeHtml(m.title)}</span>
-            </div>
-            <span class="text-[10px] font-mono font-bold text-primary bg-white px-1.5 py-0.5 rounded border border-slate-200 flex-shrink-0 ml-2">${escapeHtml(m.mission_ref || 'NO-REF')}</span>
-          </label>`;
-      }).join('') : '<p class="text-xs text-slate-400 p-2">No active missions.</p>';
-    }
-
-    const cc = getEl('campaignChecklist');
-    if (cc) {
-      cc.innerHTML = allCampaigns.length ? allCampaigns.map(c => `
-        <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer">
-          <input type="checkbox" value="${c.id}" class="campaign-cb" onchange="updateCollectionThresholds()">
-          <span class="text-xs font-semibold text-slate-700 truncate">${escapeHtml(c.name)}</span>
-        </label>
-      `).join('') : '<p class="text-xs text-slate-400 p-2">No active campaigns.</p>';
-    }
-  }
-
-  function updateCollectionThresholds() {
-    const type = getEl('trophyType')?.value;
-    if (type !== 'collection') return;
-
-    const checkedBoxes = document.querySelectorAll('#campaignChecklist .campaign-cb:checked');
-    let totalQuotes = 0;
-    checkedBoxes.forEach(cb => { totalQuotes += (campaignQuoteCounts[cb.value] || 0); });
-
-    if (totalQuotes > 0) {
-      const tiers = document.querySelectorAll('.tier-thresh');
-      if (tiers.length === 5) {
-        tiers[0].value = Math.ceil(totalQuotes * 0.2);
-        tiers[1].value = Math.ceil(totalQuotes * 0.4);
-        tiers[2].value = Math.ceil(totalQuotes * 0.6);
-        tiers[3].value = Math.ceil(totalQuotes * 0.8);
-        tiers[4].value = totalQuotes;
-      }
-    }
-  }
-
-  function switchTab(tab) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    getEl('tab-' + tab)?.classList.add('active');
-    getEl('view-trophies')?.classList.toggle('hidden', tab !== 'trophies');
-    getEl('view-badges')?.classList.toggle('hidden', tab !== 'badges');
-    getEl('view-avatars')?.classList.toggle('hidden', tab !== 'avatars');
-  }
-
-  // ==========================================
-  // TROPHIES (CARD VIEW WITH THRESHOLD STATS)
-  // ==========================================
-  function renderTrophies() {
-    const grid = getEl('trophyGrid');
-    if (!grid) return;
-    grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
-
-    if (!allTrophies.length) {
-      grid.innerHTML = '<div class="col-span-full text-center py-12 text-sm text-slate-400 font-semibold">No trophies created yet.</div>';
-      return;
-    }
-
-    grid.innerHTML = allTrophies.map(t => {
-      const displayImage = t.image_url || null;
-      const typeClass = t.type === 'stat' ? 'bg-indigo-50 text-indigo-700' : t.type === 'collection' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700';
-      const trackedStat = t.type === 'stat' ? (t.stat_type || 'Shares').toUpperCase() : 'Missions/Campaigns';
-
-      const trophyThreshs = allThresholds.filter(th => String(th.trophy_id) === String(t.id) && th.is_active !== false);
-      let tierStatsHtml = '';
-
-      if (trophyThreshs.length > 0) {
-        trophyThreshs.sort((a,b) => a.tier_id - b.tier_id).forEach(th => {
-          const matchedTier = allTiers.find(ti => String(ti.id) === String(th.tier_id));
-          const color = matchedTier?.color_hex || matchedTier?.color || '#3d6285';
-          tierStatsHtml += `
-            <div class="flex items-center gap-1.5 bg-white px-2 py-0.5 rounded-md border border-slate-200 shadow-sm" title="${escapeHtml(matchedTier?.name || 'Tier')}: ${th.threshold_value}">
-              <span class="w-2 h-2 rounded-full" style="background:${color}"></span>
-              <span class="text-[10px] font-extrabold text-slate-700">${th.threshold_value}</span>
-            </div>`;
-        });
-      }
-
-      if (!tierStatsHtml) tierStatsHtml = '<span class="text-[10px] text-slate-400 italic py-0.5">No targets set</span>';
-
-      return `
-        <div class="card flex flex-col hover:border-primary/40 cursor-pointer transition-all hover:shadow-md p-5 bg-white" onclick="editTrophy('${t.id}')">
-          <div class="flex justify-between items-start gap-3 mb-3">
-            <div class="w-12 h-12 flex items-center justify-center flex-shrink-0 relative">
-              ${displayImage
-                ? `<img src="${escapeHtml(displayImage)}" class="max-w-full max-h-full object-contain" onerror="this.src='/images/placeholder.png'">`
-                : `<span class="material-symbols-outlined text-slate-300" style="font-size:40px;">emoji_events</span>`
-              }
-            </div>
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${typeClass} shadow-sm">${escapeHtml(t.type || 'stat')}</span>
+        return `<label class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-c cursor-pointer">
+          <div class="flex items-center gap-2 min-w-0">
+            <input type="checkbox" value="${escapeHtml(ref)}" class="${cbClass} flex-shrink-0">
+            <span class="text-xs font-semibold truncate">${escapeHtml(m.title)}</span>
           </div>
-          <h3 class="font-headline font-bold text-slate-800 text-base leading-snug mb-1">${escapeHtml(t.name)}</h3>
-          <p class="text-xs text-slate-400 line-clamp-2 flex-1 mb-4">${escapeHtml(t.description || 'No description.')}</p>
-          <div class="border-t border-slate-100 pt-3 mt-auto">
-            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Target: ${escapeHtml(trackedStat)}</p>
-            <div class="flex flex-wrap gap-1.5">${tierStatsHtml}</div>
-          </div>
-        </div>
-      `;
+          <span class="text-[10px] font-mono font-bold text-primary bg-white px-1.5 py-0.5 rounded border border-slate-200 ml-2">${escapeHtml(m.mission_ref || 'NO-REF')}</span>
+        </label>`;
+      }).join('')
+    : '<p class="text-xs text-slate-400 p-2">No active missions.</p>';
+}
+function renderCampaignList(containerId, cbClass, onChange) {
+  const el = getEl(containerId);
+  if (!el) return;
+  el.innerHTML = allCampaigns.length
+    ? allCampaigns.map(c =>
+        `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer">
+          <input type="checkbox" value="${c.id}" class="${cbClass}" ${onChange ? `onchange="${onChange}"` : ''}>
+          <span class="text-xs font-semibold truncate">${escapeHtml(c.name)}</span>
+        </label>`
+      ).join('')
+    : '<p class="text-xs text-slate-400 p-2">No active campaigns.</p>';
+}
+function renderParticipationChecklists() {
+  renderMissionList('missionChecklist', 'mission-cb');
+  renderCampaignList('campaignChecklist', 'campaign-cb', 'updateCollectionThresholds()');
+}
+function renderBadgeChecklists() {
+  renderMissionList('badgeMissionChecklist', 'badge-mission-cb');
+  renderCampaignList('badgeCampaignChecklist', 'badge-campaign-cb');
+}
+function updateCollectionThresholds() {
+  if (getEl('trophyType')?.value !== 'collection') return;
+  let total = 0;
+  document.querySelectorAll('#campaignChecklist .campaign-cb:checked').forEach(cb => {
+    total += campaignQuoteCounts[cb.value] || 0;
+  });
+  const tiers = document.querySelectorAll('.tier-thresh');
+  if (total > 0 && tiers.length >= 5) {
+    tiers[0].value = Math.ceil(total * 0.2);
+    tiers[1].value = Math.ceil(total * 0.4);
+    tiers[2].value = Math.ceil(total * 0.6);
+    tiers[3].value = Math.ceil(total * 0.8);
+    tiers[4].value = total;
+  }
+}
+
+/* ===================== TROPHIES ===================== */
+function renderTrophies() {
+  const grid = getEl('trophyGrid');
+  if (!grid) return;
+  grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
+  if (!allTrophies.length) {
+    grid.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400 text-sm">No trophies yet.</div>';
+    return;
+  }
+  grid.innerHTML = allTrophies.map(t => {
+    const img = t.image_url;
+    const typeClass = t.type === 'stat' ? 'bg-indigo-50 text-indigo-700' : t.type === 'collection' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700';
+    const tracked = t.type === 'stat' ? (t.stat_type || 'shares').toUpperCase() : 'Missions/Campaigns';
+    const ths = allThresholds.filter(x => String(x.trophy_id) === String(t.id) && x.is_active !== false)
+      .sort((a, b) => a.tier_id - b.tier_id);
+    let stats = ths.map(th => {
+      const tier = allTiers.find(ti => String(ti.id) === String(th.tier_id));
+      const color = tier?.color_hex || '#3d6285';
+      return `<div class="flex items-center gap-1.5 bg-white px-2 py-0.5 rounded-md border border-slate-200 shadow-sm" title="${escapeHtml(tier?.name || '')}">
+        <span class="w-2 h-2 rounded-full" style="background:${color}"></span>
+        <span class="text-[10px] font-extrabold text-slate-700">${th.threshold_value}</span>
+      </div>`;
     }).join('');
-  }
-
-  function addThresholdRow(tierId, name, color, val, isActive = true) {
-    const container = getEl('thresholdsContainer');
-    if (!container) return;
-    const div = document.createElement('div'); 
-    div.className = 'flex items-center gap-3 p-3 bg-surface-clow rounded-xl border border-surface-c';
-    div.innerHTML = `
-      <div class="w-4 h-4 rounded-full flex-shrink-0" style="background:${color || '#3d6285'}"></div>
-      <span class="text-xs font-bold text-slate-600 w-20 truncate">${escapeHtml(name)}</span>
-      <input type="number" placeholder="Threshold" value="${val}" class="tier-thresh form-input flex-1 rounded-lg px-3 py-2 text-sm" data-tier="${tierId}">
-      <label class="relative inline-flex items-center cursor-pointer">
-        <input type="checkbox" class="sr-only peer tier-toggle" data-tier="${tierId}" ${isActive ? 'checked' : ''}>
-        <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-      </label>`;
-    container.appendChild(div);
-  }
-
-  function openTrophyModal() {
-    if (getEl('trophyId')) getEl('trophyId').value = '';
-    if (getEl('trophyName')) getEl('trophyName').value = '';
-    if (getEl('trophyType')) getEl('trophyType').value = 'stat';
-    if (getEl('trophyStatType')) getEl('trophyStatType').value = 'shares';
-    if (getEl('trophyDesc')) getEl('trophyDesc').value = '';
-    if (getEl('trophyModalTitle')) getEl('trophyModalTitle').textContent = 'Create Trophy';
-
-    const tSel = getEl('trophyImage') || getEl('trophyBaseImage');
-    if (tSel) tSel.value = '';
-
-    toggleTrophyType();
-    
-    const container = getEl('thresholdsContainer');
-    if (container) {
-      container.innerHTML = '';
-      allTiers.forEach((t, index) => {
-        const defaults = [1, 10, 50, 150, 500, 1000];
-        addThresholdRow(t.id, t.name, t.color_hex || t.color, defaults[index] || 0, true);
-      });
-    }
-
-    getEl('deleteTrophyBtn')?.classList.add('hidden');
-    getEl('trophyModal')?.classList.remove('hidden');
-  }
-
-  function editTrophy(id) {
-    const t = allTrophies.find(x => String(x.id) === String(id));
-    if (!t) return;
-
-    if (getEl('trophyId')) getEl('trophyId').value = t.id;
-    if (getEl('trophyName')) getEl('trophyName').value = t.name || '';
-    if (getEl('trophyType')) getEl('trophyType').value = t.type || 'stat';
-    if (getEl('trophyStatType')) getEl('trophyStatType').value = t.stat_type || 'shares';
-    
-    const tSel = getEl('trophyImage') || getEl('trophyBaseImage');
-    if (tSel) tSel.value = t.image_url || '';
-    
-    if (getEl('trophyDesc')) getEl('trophyDesc').value = t.description || '';
-    if (getEl('trophyModalTitle')) getEl('trophyModalTitle').textContent = 'Edit Trophy';
-
-    toggleTrophyType();
-
-    const linkedMissions = t.mission_refs || [];
-    const linkedCampaigns = t.campaign_ids || [];
-    document.querySelectorAll('#missionChecklist .mission-cb').forEach(cb => { cb.checked = linkedMissions.includes(cb.value); });
-    document.querySelectorAll('#campaignChecklist .campaign-cb').forEach(cb => { cb.checked = linkedCampaigns.includes(cb.value); });
-
-    const container = getEl('thresholdsContainer');
-    if (container) {
-      container.innerHTML = '';
-      allTiers.forEach(tier => {
-        const th = allThresholds.find(x => String(x.trophy_id) === String(id) && String(x.tier_id) === String(tier.id));
-        addThresholdRow(tier.id, tier.name, tier.color_hex || tier.color, th ? th.threshold_value : 0, th ? (th.is_active !== false) : true);
-      });
-    }
-
-    getEl('deleteTrophyBtn')?.classList.remove('hidden');
-    getEl('trophyModal')?.classList.remove('hidden');
-  }
-
-  function toggleTrophyType() {
-    const type = getEl('trophyType')?.value || 'stat';
-    getEl('statTypeContainer')?.classList.toggle('hidden', type !== 'stat');
-    getEl('participationContainer')?.classList.toggle('hidden', type !== 'participation' && type !== 'collection');
-    if (type === 'participation' || type === 'collection') renderParticipationChecklists();
-  }
-
-  function closeTrophyModal() { getEl('trophyModal')?.classList.add('hidden'); }
-
-  // EXACT MATCH FOR trophy_definitions & trophy_thresholds SCHEMA
-  async function saveTrophy() {
-    const id = getEl('trophyId')?.value;
-    const name = getEl('trophyName')?.value.trim();
-    const type = getEl('trophyType')?.value || 'stat';
-    const statType = type === 'stat' ? getEl('trophyStatType')?.value : null;
-    const tSel = getEl('trophyImage') || getEl('trophyBaseImage');
-    const imgUrl = tSel ? (tSel.value || null) : null;
-    const desc = getEl('trophyDesc')?.value.trim();
-
-    if (!name) return showToast('Name required', true);
-
-    let missionRefs = [];
-    let campaignIds = [];
-    if (type === 'participation' || type === 'collection') {
-      document.querySelectorAll('#missionChecklist .mission-cb:checked').forEach(cb => missionRefs.push(cb.value));
-      document.querySelectorAll('#campaignChecklist .campaign-cb:checked').forEach(cb => campaignIds.push(cb.value));
-    }
-
-    const btn = getEl('saveTrophyBtn');
-    if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
-
-    try {
-      // Payload strictly matching trophy_definitions schema
-      const payload = {
-        name,
-        type,
-        stat_type: statType,
-        image_url: imgUrl,
-        description: desc || null,
-        mission_refs: missionRefs || [], // MUST BE ARRAY (NON-NULLABLE IN SCHEMA)
-        campaign_ids: campaignIds || []
-      };
-
-      let savedTrophyId = id;
-
-      if (id) {
-        const res = await supabaseClient.from('trophy_definitions').update(payload).eq('id', id);
-        if (res.error) throw new Error(res.error.message);
-      } else {
-        payload.id = generateUUID();
-        const res = await supabaseClient.from('trophy_definitions').insert([payload]).select().single();
-        if (res.error) throw new Error(res.error.message);
-        savedTrophyId = res.data ? res.data.id : payload.id;
-      }
-
-      // Save relational thresholds to trophy_thresholds table
-      if (allTiers.length > 0 && savedTrophyId) {
-        await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', savedTrophyId);
-
-        const threshData = Array.from(document.querySelectorAll('.tier-thresh')).map(el => {
-          const tierId = parseInt(el.dataset.tier, 10);
-          const toggle = document.querySelector(`.tier-toggle[data-tier="${tierId}"]`);
-          return {
-            id: generateUUID(),
-            trophy_id: savedTrophyId,
-            tier_id: tierId,
-            threshold_value: parseInt(el.value, 10) || 0, // NON-NULLABLE IN SCHEMA
-            is_active: toggle ? toggle.checked : true
-          };
-        });
-
-        if (threshData.length > 0) {
-          const tRes = await supabaseClient.from('trophy_thresholds').insert(threshData);
-          if (tRes.error) throw new Error(tRes.error.message);
-        }
-      }
-
-      showToast('Trophy saved!');
-      closeTrophyModal();
-      await loadData();
-    } catch (e) {
-      console.error('Save trophy error:', e);
-      showToast('Error: ' + e.message, true);
-    } finally {
-      if (btn) { btn.disabled = false; btn.textContent = 'Save Trophy'; }
-    }
-  }
-
-  async function deleteTrophy() {
-    const id = getEl('trophyId')?.value;
-    if (!id || !confirm('Delete this trophy?')) return;
-    try {
-      await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', id);
-      const { error } = await supabaseClient.from('trophy_definitions').delete().eq('id', id);
-      if (error) throw error;
-      showToast('Trophy deleted.');
-      closeTrophyModal();
-      await loadData();
-    } catch (e) {
-      showToast(e.message || 'Delete failed', true);
-    }
-  }
-
-  // ==========================================
-  // BADGES
-  // ==========================================
-  function renderBadgeChecklists() {
-    const mc = getEl('badgeMissionChecklist');
-    const cc = getEl('badgeCampaignChecklist');
-
-    if (mc) {
-      mc.innerHTML = allMissions.length
-        ? allMissions.map(m => {
-            const ref = m.mission_ref || m.id;
-            return `
-              <label class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-c cursor-pointer">
-                <div class="flex items-center gap-2 min-w-0">
-                  <input type="checkbox" value="${escapeHtml(ref)}" class="badge-mission-cb flex-shrink-0">
-                  <span class="text-xs font-semibold text-slate-700 truncate">${escapeHtml(m.title)}</span>
-                </div>
-                <span class="text-[10px] font-mono font-bold text-primary bg-white px-1.5 py-0.5 rounded border border-slate-200 flex-shrink-0 ml-2">${escapeHtml(m.mission_ref || 'NO-REF')}</span>
-              </label>`;
-          }).join('')
-        : '<p class="text-xs text-slate-400 p-2">No active missions.</p>';
-    }
-
-    if (cc) {
-      cc.innerHTML = allCampaigns.length
-        ? allCampaigns.map(c => `
-            <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-c cursor-pointer">
-              <input type="checkbox" value="${c.id}" class="badge-campaign-cb flex-shrink-0">
-              <span class="text-xs font-semibold text-slate-700 truncate">${escapeHtml(c.name)}</span>
-            </label>
-          `).join('')
-        : '<p class="text-xs text-slate-400 p-2">No active campaigns.</p>';
-    }
-  }
-
-  function renderBadges() {
-    const list = getEl('badgeList');
-    if (!list) return;
-    list.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
-
-    if (!allBadges.length) {
-      list.innerHTML = '<div class="col-span-full text-center py-12 text-sm text-slate-400 font-semibold">No badges created yet.</div>';
-      return;
-    }
- function openBadgeModal(id = null) {
-    getEl('badgeModal')?.classList.remove('hidden');
-    getEl('deleteBadgeBtn')?.classList.add('hidden');
-    getEl('badgeModalTitle').innerText = id ? 'Edit Badge' : 'New Badge';
-
-    // Always clear previous checks first
-    document.querySelectorAll('.badge-mission-cb, .badge-campaign-cb').forEach(cb => cb.checked = false);
-
-    if (id) {
-      const b = allBadges.find(x => String(x.id) === String(id));
-      if (!b) return;
-
-      let cfg = b.rule_config || {};
-      if (typeof cfg === 'string') {
-        try { cfg = JSON.parse(cfg); } catch (e) { cfg = {}; }
-      }
-
-      getEl('badgeId').value = b.id;
-      getEl('badgeName').value = b.name || b.title || '';
-      getEl('badgeDesc').value = b.description || '';
-      getEl('badgeRuleType').value = b.rule_type || 'milestone';
-      getEl('badgeImage').value = b.image_url || '';
-      getEl('badgeStatType').value = cfg.stat_type || b.stat_type || 'shares';
-      getEl('badgeStatTarget').value = cfg.stat_target ?? b.stat_target ?? '';
-      getEl('badgeAdminReferral').checked = !!cfg.is_admin_referral;
-      getEl('badgeMissionPriority').checked = !!cfg.is_priority_mission;
-      getEl('badgeTop10').checked = !!b.is_top_10_eligible;
-
-      // Show participation UI and restore checked missions/campaigns
-      toggleBadgeRule();
-      renderBadgeChecklists();
-
-      const linkedM = cfg.linked_missions || cfg.mission_refs || [];
-      const linkedC = cfg.linked_campaigns || cfg.campaign_ids || [];
-
-      linkedM.forEach(ref => {
-        const el = document.querySelector(`.badge-mission-cb[value="${CSS.escape(String(ref))}"]`);
-        if (el) el.checked = true;
-      });
-      linkedC.forEach(cid => {
-        const el = document.querySelector(`.badge-campaign-cb[value="${CSS.escape(String(cid))}"]`);
-        if (el) el.checked = true;
-      });
-
-      getEl('deleteBadgeBtn')?.classList.remove('hidden');
-    } else {
-      getEl('badgeId').value = '';
-      getEl('badgeName').value = '';
-      getEl('badgeDesc').value = '';
-      getEl('badgeRuleType').value = 'milestone';
-      getEl('badgeImage').value = '';
-      getEl('badgeStatType').value = 'shares';
-      getEl('badgeStatTarget').value = '';
-      getEl('badgeAdminReferral').checked = false;
-      getEl('badgeMissionPriority').checked = false;
-      getEl('badgeTop10').checked = false;
-      toggleBadgeRule();
-    }
-
-    // Ensure image dropdown is filled (same pattern as trophies)
-    const bSel = getEl('badgeImage');
-    if (bSel) {
-      const current = id ? (allBadges.find(x => String(x.id) === String(id))?.image_url || '') : '';
-      bSel.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages, current);
-    }
-  }
-
-    list.innerHTML = allBadges.map(b => `
-      <div class="card flex flex-col hover:border-slate-300 cursor-pointer transition-all hover:shadow-md overflow-hidden p-0 bg-white" onclick="openBadgeModal('${b.id}')">
-        <div class="aspect-[21/9] bg-slate-50/50 border-b border-surface-c flex items-center justify-center relative p-4">
-          ${b.image_url
-            ? `<img src="${escapeHtml(b.image_url)}" class="max-h-full max-w-full object-contain" onerror="this.src='/images/placeholder.png'">`
-            : `<span class="material-symbols-outlined text-slate-200" style="font-size:64px;">workspace_premium</span>`
-          }
-          ${b.is_top_10_eligible ? '<span class="absolute top-3 right-3 text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full shadow-sm">TOP 10</span>' : ''}
+    if (!stats) stats = '<span class="text-[10px] text-slate-400 italic">No targets set</span>';
+    return `<div class="card flex flex-col hover:border-primary/40 cursor-pointer transition-all hover:shadow-md p-5 bg-white" onclick="editTrophy('${t.id}')">
+      <div class="flex justify-between items-start gap-3 mb-3">
+        <div class="w-12 h-12 flex items-center justify-center">
+          ${img ? `<img src="${escapeHtml(img)}" class="max-w-full max-h-full object-contain" onerror="this.remove()">` : `<span class="material-symbols-outlined text-slate-300" style="font-size:40px">emoji_events</span>`}
         </div>
-        <div class="p-4 flex flex-col flex-1">
-          <div class="flex items-start justify-between gap-2 mb-1">
-            <h3 class="font-headline font-bold text-slate-800 text-base leading-snug">${escapeHtml(b.name || b.title)}</h3>
-            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-slate-100 text-slate-600 flex-shrink-0">${escapeHtml(b.rule_type || 'milestone')}</span>
-          </div>
-          <p class="text-xs text-slate-400 line-clamp-2">${escapeHtml(b.description || 'No description.')}</p>
-        </div>
+        <span class="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold ${typeClass}">${escapeHtml(t.type || 'stat')}</span>
       </div>
-    `).join('');
+      <h3 class="font-headline font-bold text-slate-800 text-base mb-1">${escapeHtml(t.name)}</h3>
+      <p class="text-xs text-slate-400 line-clamp-2 flex-1 mb-4">${escapeHtml(t.description || '')}</p>
+      <div class="border-t border-slate-100 pt-3 mt-auto">
+        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Target: ${escapeHtml(tracked)}</p>
+        <div class="flex flex-wrap gap-1.5">${stats}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addThresholdRow(tierId, name, color, val, isActive = true) {
+  const c = getEl('thresholdsContainer');
+  if (!c) return;
+  const div = document.createElement('div');
+  div.className = 'flex items-center gap-3 p-3 bg-surface-clow rounded-xl border border-surface-c';
+  div.innerHTML = `
+    <div class="w-4 h-4 rounded-full flex-shrink-0" style="background:${color || '#3d6285'}"></div>
+    <span class="text-xs font-bold text-slate-600 w-20 truncate">${escapeHtml(name)}</span>
+    <input type="number" value="${val}" class="tier-thresh form-input flex-1 rounded-lg px-3 py-2 text-sm" data-tier="${tierId}">
+    <label class="relative inline-flex items-center cursor-pointer">
+      <input type="checkbox" class="sr-only peer tier-toggle" data-tier="${tierId}" ${isActive ? 'checked' : ''}>
+      <div class="w-9 h-5 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+    </label>`;
+  c.appendChild(div);
+}
+
+function openTrophyModal() {
+  getEl('trophyId').value = '';
+  getEl('trophyName').value = '';
+  getEl('trophyType').value = 'stat';
+  getEl('trophyStatType').value = 'shares';
+  getEl('trophyDesc').value = '';
+  getEl('trophyModalTitle').textContent = 'Create Trophy';
+  const tSel = getEl('trophyImage') || getEl('trophyBaseImage');
+  if (tSel) tSel.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages);
+  toggleTrophyType();
+  const box = getEl('thresholdsContainer');
+  if (box) {
+    box.innerHTML = '';
+    const defaults = [1, 10, 50, 150, 500, 1000];
+    allTiers.forEach((t, i) => addThresholdRow(t.id, t.name, t.color_hex, defaults[i] || 0, true));
   }
+  getEl('deleteTrophyBtn')?.classList.add('hidden');
+  getEl('trophyModal')?.classList.remove('hidden');
+}
 
-  function openBadgeModal(id = null) {
-    getEl('badgeModal')?.classList.remove('hidden');
-    getEl('deleteBadgeBtn')?.classList.add('hidden');
-    getEl('badgeModalTitle').innerText = id ? 'Edit Badge' : 'New Badge';
-
-    if (id) {
-      const b = allBadges.find(x => String(x.id) === String(id));
-      if (!b) return;
-      let cfg = b.rule_config || {};
-      if (typeof cfg === 'string') { try { cfg = JSON.parse(cfg); } catch(e) { cfg = {}; } }
-
-      getEl('badgeId').value = b.id;
-      getEl('badgeName').value = b.name || b.title || '';
-      getEl('badgeDesc').value = b.description || '';
-      getEl('badgeRuleType').value = b.rule_type || 'milestone';
-      getEl('badgeImage').value = b.image_url || '';
-      getEl('badgeStatType').value = cfg.stat_type || b.stat_type || 'shares';
-      getEl('badgeStatTarget').value = cfg.stat_target ?? b.stat_target ?? '';
-      getEl('badgeAdminReferral').checked = !!cfg.is_admin_referral;
-      getEl('badgeMissionPriority').checked = !!cfg.is_priority_mission;
-      getEl('badgeTop10').checked = !!b.is_top_10_eligible;
-
-      toggleBadgeRule();
-      getEl('deleteBadgeBtn')?.classList.remove('hidden');
-    } else {
-      getEl('badgeId').value = '';
-      getEl('badgeName').value = '';
-      getEl('badgeDesc').value = '';
-      getEl('badgeRuleType').value = 'milestone';
-      getEl('badgeImage').value = '';
-      getEl('badgeStatType').value = 'shares';
-      getEl('badgeStatTarget').value = '';
-      getEl('badgeAdminReferral').checked = false;
-      getEl('badgeMissionPriority').checked = false;
-      getEl('badgeTop10').checked = false;
-      toggleBadgeRule();
-    }
+function editTrophy(id) {
+  const t = allTrophies.find(x => String(x.id) === String(id));
+  if (!t) return;
+  getEl('trophyId').value = t.id;
+  getEl('trophyName').value = t.name || '';
+  getEl('trophyType').value = t.type || 'stat';
+  getEl('trophyStatType').value = t.stat_type || 'shares';
+  getEl('trophyDesc').value = t.description || '';
+  getEl('trophyModalTitle').textContent = 'Edit Trophy';
+  const tSel = getEl('trophyImage') || getEl('trophyBaseImage');
+  if (tSel) tSel.innerHTML = '<option value="">-- Select Trophy Image --</option>' + buildMediaOptions(trophyImages, t.image_url || '');
+  toggleTrophyType();
+  (t.mission_refs || []).forEach(ref => {
+    const el = document.querySelector(`#missionChecklist .mission-cb[value="${CSS.escape(String(ref))}"]`);
+    if (el) el.checked = true;
+  });
+  (t.campaign_ids || []).forEach(cid => {
+    const el = document.querySelector(`#campaignChecklist .campaign-cb[value="${CSS.escape(String(cid))}"]`);
+    if (el) el.checked = true;
+  });
+  const box = getEl('thresholdsContainer');
+  if (box) {
+    box.innerHTML = '';
+    allTiers.forEach(tier => {
+      const th = allThresholds.find(x => String(x.trophy_id) === String(id) && String(x.tier_id) === String(tier.id));
+      addThresholdRow(tier.id, tier.name, tier.color_hex, th ? th.threshold_value : 0, th ? th.is_active !== false : true);
+    });
   }
+  getEl('deleteTrophyBtn')?.classList.remove('hidden');
+  getEl('trophyModal')?.classList.remove('hidden');
+}
 
-  function toggleBadgeRule() {
-    const r = getEl('badgeRuleType')?.value;
-    getEl('badgeMilestoneContainer')?.classList.toggle('hidden', r !== 'milestone');
-    getEl('badgeParticipationContainer')?.classList.toggle('hidden', r !== 'participation');
-    
-    // Populate lists when switching to participation
-    if (r === 'participation') renderBadgeChecklists();
-  }
+function toggleTrophyType() {
+  const type = getEl('trophyType')?.value || 'stat';
+  getEl('statTypeContainer')?.classList.toggle('hidden', type !== 'stat');
+  getEl('participationContainer')?.classList.toggle('hidden', type !== 'participation' && type !== 'collection');
+  if (type === 'participation' || type === 'collection') renderParticipationChecklists();
+}
+function closeTrophyModal() { getEl('trophyModal')?.classList.add('hidden'); }
 
-  function closeBadgeModal() { getEl('badgeModal')?.classList.add('hidden'); }
-
- async function saveBadge() {
-    const id = getEl('badgeId')?.value;
-    const name = getEl('badgeName')?.value.trim();
-    if (!name) return showToast('Enter a badge name.', true);
-
-    const ruleType = getEl('badgeRuleType')?.value || 'milestone';
-
-    // Collect linked missions (by mission_ref) and campaigns (by id)
-    const linkedMissions = [...document.querySelectorAll('.badge-mission-cb:checked')].map(cb => cb.value);
-    const linkedCampaigns = [...document.querySelectorAll('.badge-campaign-cb:checked')].map(cb => cb.value);
-
-    const ruleConfig = {
-      stat_type: getEl('badgeStatType')?.value || 'shares',
-      stat_target: parseInt(getEl('badgeStatTarget')?.value, 10) || 0,
-      is_admin_referral: !!getEl('badgeAdminReferral')?.checked,
-      is_priority_mission: !!getEl('badgeMissionPriority')?.checked,
-      linked_missions: linkedMissions,
-      linked_campaigns: linkedCampaigns,
-      // aliases in case player app reads either name
-      mission_refs: linkedMissions,
-      campaign_ids: linkedCampaigns
-    };
-
-    // Strict schema match for badge_definitions
+async function saveTrophy() {
+  const id = getEl('trophyId')?.value;
+  const name = getEl('trophyName')?.value.trim();
+  if (!name) return showToast('Name required', true);
+  const type = getEl('trophyType')?.value || 'stat';
+  const tSel = getEl('trophyImage') || getEl('trophyBaseImage');
+  const missionRefs = [...document.querySelectorAll('#missionChecklist .mission-cb:checked')].map(c => c.value);
+  const campaignIds = [...document.querySelectorAll('#campaignChecklist .campaign-cb:checked')].map(c => c.value);
+  const btn = getEl('saveTrophyBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+  try {
     const payload = {
-      name: name,
-      title: name,
-      description: getEl('badgeDesc')?.value.trim() || null,
-      rule_type: ruleType,
-      image_url: getEl('badgeImage')?.value || null,
-      is_top_10_eligible: !!getEl('badgeTop10')?.checked,
-      rule_config: ruleConfig,
-      // also store flat copies if those columns exist
-      stat_type: ruleConfig.stat_type,
-      stat_target: ruleConfig.stat_target
+      name,
+      type,
+      stat_type: type === 'stat' ? (getEl('trophyStatType')?.value || 'shares') : null,
+      image_url: tSel?.value || null,
+      description: getEl('trophyDesc')?.value.trim() || null,
+      mission_refs: missionRefs,   // required NOT NULL array
+      campaign_ids: campaignIds
     };
-
-    try {
-      if (id) {
-        const { error } = await supabaseClient.from('badge_definitions').update(payload).eq('id', id);
-        if (error) throw error;
-      } else {
-        payload.id = generateUUID();
-        const { error } = await supabaseClient.from('badge_definitions').insert([payload]);
-        if (error) throw error;
-      }
-      showToast('Badge saved!');
-      closeBadgeModal();
-      await loadData();
-    } catch (e) {
-      console.error('Save badge failed:', e);
-      showToast(e.message || 'Save badge failed', true);
-    }
-  }
-
-  async function deleteBadge() {
-    const id = getEl('badgeId')?.value;
-    if (!id || !confirm('Delete this badge?')) return;
-    try {
-      const { error } = await supabaseClient.from('badge_definitions').delete().eq('id', id);
+    let trophyId = id;
+    if (id) {
+      const { error } = await supabaseClient.from('trophy_definitions').update(payload).eq('id', id);
       if (error) throw error;
-      showToast('Badge deleted.');
-      closeBadgeModal();
-      await loadData();
-    } catch (e) {
-      showToast(e.message || 'Delete failed', true);
+    } else {
+      payload.id = generateUUID();
+      const { data, error } = await supabaseClient.from('trophy_definitions').insert([payload]).select().single();
+      if (error) throw error;
+      trophyId = data.id;
     }
+    await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', trophyId);
+    const rows = [...document.querySelectorAll('.tier-thresh')].map(el => {
+      const tierId = parseInt(el.dataset.tier, 10);
+      const toggle = document.querySelector(`.tier-toggle[data-tier="${tierId}"]`);
+      return {
+        id: generateUUID(),
+        trophy_id: trophyId,
+        tier_id: tierId,
+        threshold_value: parseInt(el.value, 10) || 0,
+        is_active: toggle ? toggle.checked : true
+      };
+    });
+    if (rows.length) {
+      const { error } = await supabaseClient.from('trophy_thresholds').insert(rows);
+      if (error) throw error;
+    }
+    showToast('Trophy saved!');
+    closeTrophyModal();
+    await loadData();
+  } catch (e) {
+    console.error(e);
+    showToast(e.message || 'Save failed', true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Save Trophy'; }
   }
+}
 
-  // ==========================================
-  // AVATARS (EXACT SCHEMA MATCH FOR avatar_stages)
-  // ==========================================
-  function renderAvatars() {
-    const list = getEl('avatarList');
-    if (!list) return;
-    list.innerHTML = '';
+async function deleteTrophy() {
+  const id = getEl('trophyId')?.value;
+  if (!id || !confirm('Delete this trophy?')) return;
+  try {
+    await supabaseClient.from('trophy_thresholds').delete().eq('trophy_id', id);
+    const { error } = await supabaseClient.from('trophy_definitions').delete().eq('id', id);
+    if (error) throw error;
+    showToast('Trophy deleted');
+    closeTrophyModal();
+    await loadData();
+  } catch (e) { showToast(e.message || 'Delete failed', true); }
+}
 
-    if (!allAvatars.length) {
-      list.innerHTML = '<div class="text-center py-12 text-sm text-slate-400 font-semibold">No avatar stages created yet.</div>';
-      return;
-    }
+/* ===================== BADGES ===================== */
+function renderBadges() {
+  const list = getEl('badgeList');
+  if (!list) return;
+  list.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
+  if (!allBadges.length) {
+    list.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400 text-sm">No badges yet.</div>';
+    return;
+  }
+  list.innerHTML = allBadges.map(b => `
+    <div class="card flex flex-col hover:border-slate-300 cursor-pointer transition-all hover:shadow-md overflow-hidden p-0 bg-white" onclick="openBadgeModal('${b.id}')">
+      <div class="aspect-[21/9] bg-slate-50/50 border-b border-surface-c flex items-center justify-center relative p-4">
+        ${b.image_url
+          ? `<img src="${escapeHtml(b.image_url)}" class="max-h-full max-w-full object-contain" onerror="this.remove()">`
+          : `<span class="material-symbols-outlined text-slate-200" style="font-size:48px">workspace_premium</span>`}
+        ${b.is_top_10_eligible ? '<span class="absolute top-3 right-3 text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">TOP 10</span>' : ''}
+      </div>
+      <div class="p-4">
+        <div class="flex justify-between gap-2 mb-1">
+          <h3 class="font-headline font-bold text-slate-800 text-base">${escapeHtml(b.name || b.title || '')}</h3>
+          <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-slate-100 text-slate-600">${escapeHtml(b.rule_type || 'milestone')}</span>
+        </div>
+        <p class="text-xs text-slate-400 line-clamp-2">${escapeHtml(b.description || '')}</p>
+      </div>
+    </div>`).join('');
+}
 
-    function eraSortKey(era) {
-      const num = parseInt(String(era || 'Era 1').replace(/\D/g, ''), 10);
-      return Number.isFinite(num) ? num : 9999;
-    }
-    function stageNum(a) {
-      const n = parseInt(a.stage_order ?? 0, 10);
-      return Number.isFinite(n) ? n : 0;
-    }
+function toggleBadgeRule() {
+  const r = getEl('badgeRuleType')?.value;
+  getEl('badgeMilestoneContainer')?.classList.toggle('hidden', r !== 'milestone');
+  getEl('badgeParticipationContainer')?.classList.toggle('hidden', r !== 'participation');
+  if (r === 'participation') renderBadgeChecklists();
+}
 
-    const sorted = allAvatars.slice().sort((a, b) => {
-      const ea = eraSortKey(a.era), eb = eraSortKey(b.era);
-      if (ea !== eb) return ea - eb;
-      const sa = stageNum(a), sb = stageNum(b);
-      if (sa !== sb) return sa - sb;
-      return String(a.journey || '').localeCompare(String(b.journey || ''));
+function openBadgeModal(id = null) {
+  getEl('badgeModal')?.classList.remove('hidden');
+  getEl('deleteBadgeBtn')?.classList.add('hidden');
+  getEl('badgeModalTitle').textContent = id ? 'Edit Badge' : 'New Badge';
+  document.querySelectorAll('.badge-mission-cb, .badge-campaign-cb').forEach(cb => cb.checked = false);
+
+  if (id) {
+    const b = allBadges.find(x => String(x.id) === String(id));
+    if (!b) return;
+    let cfg = b.rule_config || {};
+    if (typeof cfg === 'string') { try { cfg = JSON.parse(cfg); } catch { cfg = {}; } }
+    getEl('badgeId').value = b.id;
+    getEl('badgeName').value = b.name || b.title || '';
+    getEl('badgeDesc').value = b.description || '';
+    getEl('badgeRuleType').value = b.rule_type || 'milestone';
+    getEl('badgeStatType').value = cfg.stat_type || b.stat_type || 'shares';
+    getEl('badgeStatTarget').value = cfg.stat_target ?? b.stat_target ?? '';
+    getEl('badgeAdminReferral').checked = !!cfg.is_admin_referral;
+    getEl('badgeMissionPriority').checked = !!cfg.is_priority_mission;
+    getEl('badgeTop10').checked = !!b.is_top_10_eligible;
+    const bImg = getEl('badgeImage');
+    if (bImg) bImg.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages, b.image_url || '');
+    toggleBadgeRule();
+    renderBadgeChecklists();
+    (cfg.linked_missions || cfg.mission_refs || []).forEach(ref => {
+      const el = document.querySelector(`.badge-mission-cb[value="${CSS.escape(String(ref))}"]`);
+      if (el) el.checked = true;
     });
-
-    const eras = [];
-    const eraIndex = {};
-
-    sorted.forEach(a => {
-      const eraName = a.era || 'Era 1';
-      const journeyName = a.journey || 'Journey';
-      if (eraIndex[eraName] === undefined) {
-        eraIndex[eraName] = eras.length;
-        eras.push({ name: eraName, journeys: [], journeyIndex: {} });
-      }
-      const eraObj = eras[eraIndex[eraName]];
-      if (eraObj.journeyIndex[journeyName] === undefined) {
-        eraObj.journeyIndex[journeyName] = eraObj.journeys.length;
-        eraObj.journeys.push({ name: journeyName, stages: [] });
-      }
-      eraObj.journeys[eraObj.journeyIndex[journeyName]].stages.push(a);
+    (cfg.linked_campaigns || cfg.campaign_ids || []).forEach(cid => {
+      const el = document.querySelector(`.badge-campaign-cb[value="${CSS.escape(String(cid))}"]`);
+      if (el) el.checked = true;
     });
+    getEl('deleteBadgeBtn')?.classList.remove('hidden');
+  } else {
+    getEl('badgeId').value = '';
+    getEl('badgeName').value = '';
+    getEl('badgeDesc').value = '';
+    getEl('badgeRuleType').value = 'milestone';
+    getEl('badgeStatType').value = 'shares';
+    getEl('badgeStatTarget').value = '';
+    getEl('badgeAdminReferral').checked = false;
+    getEl('badgeMissionPriority').checked = false;
+    getEl('badgeTop10').checked = false;
+    const bImg = getEl('badgeImage');
+    if (bImg) bImg.innerHTML = '<option value="">-- Select Badge Image --</option>' + buildMediaOptions(badgeImages);
+    toggleBadgeRule();
+  }
+}
+function closeBadgeModal() { getEl('badgeModal')?.classList.add('hidden'); }
 
-    eras.forEach(eraObj => {
-      const section = document.createElement('details');
-      section.className = 'group mb-4 bg-white border border-surface-c rounded-2xl shadow-sm overflow-hidden';
-      section.open = true;
+async function saveBadge() {
+  const id = getEl('badgeId')?.value;
+  const name = getEl('badgeName')?.value.trim();
+  if (!name) return showToast('Name required', true);
+  const linkedM = [...document.querySelectorAll('.badge-mission-cb:checked')].map(c => c.value);
+  const linkedC = [...document.querySelectorAll('.badge-campaign-cb:checked')].map(c => c.value);
+  const ruleConfig = {
+    stat_type: getEl('badgeStatType')?.value || 'shares',
+    stat_target: parseInt(getEl('badgeStatTarget')?.value, 10) || 0,
+    is_admin_referral: !!getEl('badgeAdminReferral')?.checked,
+    is_priority_mission: !!getEl('badgeMissionPriority')?.checked,
+    linked_missions: linkedM,
+    linked_campaigns: linkedC,
+    mission_refs: linkedM,
+    campaign_ids: linkedC
+  };
+  const payload = {
+    name,
+    title: name,
+    description: getEl('badgeDesc')?.value.trim() || null,
+    rule_type: getEl('badgeRuleType')?.value || 'milestone',
+    image_url: getEl('badgeImage')?.value || null,
+    is_top_10_eligible: !!getEl('badgeTop10')?.checked,
+    rule_config: ruleConfig,
+    stat_type: ruleConfig.stat_type,
+    stat_target: ruleConfig.stat_target
+  };
+  try {
+    if (id) {
+      const { error } = await supabaseClient.from('badge_definitions').update(payload).eq('id', id);
+      if (error) throw error;
+    } else {
+      payload.id = generateUUID();
+      const { error } = await supabaseClient.from('badge_definitions').insert([payload]);
+      if (error) throw error;
+    }
+    showToast('Badge saved!');
+    closeBadgeModal();
+    await loadData();
+  } catch (e) {
+    console.error(e);
+    showToast(e.message || 'Save failed', true);
+  }
+}
 
-      let html = `
-        <summary class="flex items-center justify-between p-4 cursor-pointer select-none bg-surface-clow hover:bg-surface-c/50 transition-colors list-none outline-none">
-          <h3 class="font-headline font-extrabold text-lg text-slate-900">${escapeHtml(eraObj.name)}</h3>
-          <span class="material-symbols-outlined text-slate-400 transition-transform duration-200 group-open:rotate-180">expand_more</span>
-        </summary>
-        <div class="p-4 pt-2 border-t border-surface-c">
-      `;
+async function deleteBadge() {
+  const id = getEl('badgeId')?.value;
+  if (!id || !confirm('Delete this badge?')) return;
+  try {
+    const { error } = await supabaseClient.from('badge_definitions').delete().eq('id', id);
+    if (error) throw error;
+    showToast('Badge deleted');
+    closeBadgeModal();
+    await loadData();
+  } catch (e) { showToast(e.message || 'Delete failed', true); }
+}
 
-      eraObj.journeys.forEach(journeyObj => {
-        journeyObj.stages.sort((a, b) => stageNum(a) - stageNum(b));
-        html += `
-          <div class="mt-4 mb-2 flex items-center gap-3">
-            <h4 class="font-headline font-bold text-xs text-slate-400 tracking-widest uppercase">${escapeHtml(journeyObj.name)}</h4>
-            <div class="flex-1 h-px bg-surface-c"></div>
+/* ===================== AVATARS ===================== */
+function renderAvatars() {
+  const list = getEl('avatarList');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!allAvatars.length) {
+    list.innerHTML = '<div class="text-center py-12 text-slate-400 text-sm">No avatar stages yet.</div>';
+    return;
+  }
+  const eraKey = e => { const n = parseInt(String(e || '1').replace(/\D/g, ''), 10); return Number.isFinite(n) ? n : 9999; };
+  const stageNum = a => parseInt(a.stage_order ?? 0, 10) || 0;
+  const sorted = allAvatars.slice().sort((a, b) => {
+    const e = eraKey(a.era) - eraKey(b.era);
+    if (e) return e;
+    const s = stageNum(a) - stageNum(b);
+    if (s) return s;
+    return String(a.journey || '').localeCompare(String(b.journey || ''));
+  });
+  const eras = [];
+  const eraIdx = {};
+  sorted.forEach(a => {
+    const en = a.era || 'Era 1';
+    const jn = a.journey || 'Journey';
+    if (eraIdx[en] === undefined) { eraIdx[en] = eras.length; eras.push({ name: en, journeys: [], jIdx: {} }); }
+    const eo = eras[eraIdx[en]];
+    if (eo.jIdx[jn] === undefined) { eo.jIdx[jn] = eo.journeys.length; eo.journeys.push({ name: jn, stages: [] }); }
+    eo.journeys[eo.jIdx[jn]].stages.push(a);
+  });
+
+  eras.forEach(eo => {
+    const section = document.createElement('details');
+    section.open = true;
+    section.className = 'group mb-4 bg-white border border-surface-c rounded-2xl shadow-sm overflow-hidden';
+    let html = `<summary class="flex items-center justify-between p-4 cursor-pointer bg-surface-clow list-none">
+      <h3 class="font-headline font-extrabold text-lg text-slate-900">${escapeHtml(eo.name)}</h3>
+      <span class="material-symbols-outlined text-slate-400 group-open:rotate-180 transition-transform">expand_more</span>
+    </summary><div class="p-4 pt-2 border-t border-surface-c">`;
+    eo.journeys.forEach(jo => {
+      jo.stages.sort((a, b) => stageNum(a) - stageNum(b));
+      html += `<div class="mt-4 mb-2 flex items-center gap-3">
+        <h4 class="font-headline font-bold text-xs text-slate-400 tracking-widest uppercase">${escapeHtml(jo.name)}</h4>
+        <div class="flex-1 h-px bg-surface-c"></div>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 mb-6">`;
+      jo.stages.forEach(a => {
+        const img = a.image_url_male || a.image_url_female || '';
+        const title = a.avatar_title || ('Stage ' + stageNum(a));
+        const need = a.mythic_required ?? a.req_value ?? 0;
+        html += `<div onclick="openAvatarModal('${a.id}')" class="card p-0 flex flex-col hover:border-gold cursor-pointer transition-all hover:shadow-md overflow-hidden bg-white">
+          <div class="aspect-[4/5] bg-surface-clow border-b border-surface-c flex items-center justify-center relative overflow-hidden">
+            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-white/90 text-indigo-700 z-20">S${stageNum(a)}</span>
+            ${img ? `<img src="${escapeHtml(img)}" class="w-full h-full object-cover" onerror="this.remove()">` : `<span class="material-symbols-outlined text-slate-200" style="font-size:48px">person</span>`}
           </div>
-          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 mb-6">
-        `;
-
-        journeyObj.stages.forEach(a => {
-          const img = a.image_url_male || a.image_url_female || null;
-          const name = a.avatar_title || 'Stage ' + stageNum(a);
-          const order = stageNum(a);
-          const mythicNeed = a.mythic_required ?? a.req_value ?? 0;
-
-          html += `
-            <div onclick="openAvatarModal('${a.id}')" class="card p-0 flex flex-col hover:border-gold cursor-pointer transition-all hover:shadow-md overflow-hidden group bg-white">
-              <div class="aspect-[4/5] bg-surface-clow border-b border-surface-c flex items-center justify-center relative overflow-hidden">
-                <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-widest bg-white/90 text-indigo-700 shadow-sm z-20">S${order}</span>
-                ${img
-                  ? `<img src="${escapeHtml(img)}" class="relative z-10 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='/images/placeholder.png'">`
-                  : `<span class="material-symbols-outlined text-slate-200 relative z-10" style="font-size:48px;">person</span>`
-                }
-              </div>
-              <div class="p-2.5">
-                <h4 class="font-headline font-bold text-slate-800 text-xs leading-tight mb-1 truncate" title="${escapeHtml(name)}">${escapeHtml(name)}</h4>
-                <div class="flex items-center gap-1 mt-1.5 bg-amber-50/50 rounded p-1 border border-amber-100/50">
-                  <span class="material-symbols-outlined text-gold" style="font-size:12px;">emoji_events</span>
-                  <span class="text-[10px] text-slate-600 font-semibold truncate"><strong class="text-slate-900">${mythicNeed}</strong> Mythic</span>
-                </div>
-              </div>
+          <div class="p-2.5">
+            <h4 class="font-headline font-bold text-slate-800 text-xs truncate mb-1">${escapeHtml(title)}</h4>
+            <div class="flex items-center gap-1 bg-amber-50/50 rounded p-1 border border-amber-100/50">
+              <span class="material-symbols-outlined text-gold" style="font-size:12px">emoji_events</span>
+              <span class="text-[10px] font-semibold text-slate-600"><strong class="text-slate-900">${need}</strong> Mythic</span>
             </div>
-          `;
-        });
-        html += `</div>`;
+          </div>
+        </div>`;
       });
       html += `</div>`;
-      section.innerHTML = html;
-      list.appendChild(section);
     });
+    html += `</div>`;
+    section.innerHTML = html;
+    list.appendChild(section);
+  });
+}
+
+function openAvatarModal(id = null) {
+  getEl('avatarModal')?.classList.remove('hidden');
+  getEl('deleteAvatarBtn')?.classList.add('hidden');
+  getEl('avatarModalTitle').textContent = id ? 'Edit Avatar Stage' : 'Add Avatar Stage';
+  if (id) {
+    const a = allAvatars.find(x => String(x.id) === String(id));
+    if (!a) return;
+    getEl('avatarId').value = a.id;
+    getEl('avatarEra').value = a.era || '';
+    getEl('avatarJourney').value = a.journey || '';
+    getEl('avatarOrder').value = a.stage_order ?? '';
+    getEl('avatarName').value = a.avatar_title || '';
+    getEl('avatarReqValue').value = a.mythic_required ?? a.req_value ?? 0;
+    const am = getEl('avatarImageMale'), af = getEl('avatarImageFemale');
+    if (am) am.innerHTML = '<option value="">-- Male Image --</option>' + buildMediaOptions(avatarImages, a.image_url_male || '');
+    if (af) af.innerHTML = '<option value="">-- Female Image --</option>' + buildMediaOptions(avatarImages, a.image_url_female || '');
+    getEl('deleteAvatarBtn')?.classList.remove('hidden');
+  } else {
+    getEl('avatarId').value = '';
+    getEl('avatarEra').value = '';
+    getEl('avatarJourney').value = '';
+    getEl('avatarOrder').value = '';
+    getEl('avatarName').value = '';
+    getEl('avatarReqValue').value = '0';
+    const am = getEl('avatarImageMale'), af = getEl('avatarImageFemale');
+    if (am) am.innerHTML = '<option value="">-- Male Image --</option>' + buildMediaOptions(avatarImages);
+    if (af) af.innerHTML = '<option value="">-- Female Image --</option>' + buildMediaOptions(avatarImages);
   }
+}
+function closeAvatarModal() { getEl('avatarModal')?.classList.add('hidden'); }
 
-  function openAvatarModal(id = null) {
-    getEl('avatarModal')?.classList.remove('hidden');
-    getEl('deleteAvatarBtn')?.classList.add('hidden');
-    getEl('avatarModalTitle').innerText = id ? 'Edit Avatar Stage' : 'Add Avatar Stage';
-
+async function saveAvatar() {
+  const id = getEl('avatarId')?.value;
+  const title = getEl('avatarName')?.value.trim();
+  if (!title) return showToast('Enter avatar title', true);
+  const req = parseInt(getEl('avatarReqValue')?.value, 10) || 0;
+  // EXACT avatar_stages columns from your schema
+  const payload = {
+    era: getEl('avatarEra')?.value.trim() || 'Era 1',
+    journey: getEl('avatarJourney')?.value.trim() || 'The Journey',
+    stage_order: parseInt(getEl('avatarOrder')?.value, 10) || 1,
+    avatar_title: title,
+    image_url_male: getEl('avatarImageMale')?.value || null,
+    image_url_female: getEl('avatarImageFemale')?.value || null,
+    mythic_required: req,
+    req_type: 'mythic',
+    req_value: req
+  };
+  try {
     if (id) {
-      const a = allAvatars.find(x => String(x.id) === String(id));
-      if (!a) return;
-      getEl('avatarId').value = a.id;
-      getEl('avatarEra').value = a.era || '';
-      getEl('avatarJourney').value = a.journey || '';
-      getEl('avatarOrder').value = a.stage_order ?? '';
-      getEl('avatarName').value = a.avatar_title || '';
-      getEl('avatarReqValue').value = a.mythic_required ?? a.req_value ?? 0;
-
-      const amSel = getEl('avatarImageMale');
-      const afSel = getEl('avatarImageFemale');
-      if (amSel) amSel.value = a.image_url_male || '';
-      if (afSel) afSel.value = a.image_url_female || '';
-
-      getEl('deleteAvatarBtn')?.classList.remove('hidden');
-    } else {
-      getEl('avatarId').value = '';
-      getEl('avatarEra').value = '';
-      getEl('avatarJourney').value = '';
-      getEl('avatarOrder').value = '';
-      getEl('avatarName').value = '';
-      getEl('avatarReqValue').value = '0';
-      if (getEl('avatarImageMale')) getEl('avatarImageMale').value = '';
-      if (getEl('avatarImageFemale')) getEl('avatarImageFemale').value = '';
-    }
-  }
-
-  function closeAvatarModal() { getEl('avatarModal')?.classList.add('hidden'); }
-
-  // STRICT SAVE PAYLOAD MATCHING YOUR avatar_stages COLUMNS
-  async function saveAvatar() {
-    const id = getEl('avatarId')?.value;
-    const title = getEl('avatarName')?.value.trim();
-    if (!title) return showToast('Enter an avatar title.', true);
-
-    const reqVal = parseInt(getEl('avatarReqValue')?.value, 10) || 0;
-
-    const payload = {
-      era: getEl('avatarEra')?.value.trim() || 'Era 1',
-      journey: getEl('avatarJourney')?.value.trim() || 'The Journey',
-      stage_order: parseInt(getEl('avatarOrder')?.value, 10) || 1,
-      avatar_title: title,
-      image_url_male: getEl('avatarImageMale')?.value || null,
-      image_url_female: getEl('avatarImageFemale')?.value || null,
-      mythic_required: reqVal,
-      req_type: 'mythic',
-      req_value: reqVal
-    };
-
-    try {
-      if (id) {
-        const { error } = await supabaseClient.from('avatar_stages').update(payload).eq('id', id);
-        if (error) throw error;
-      } else {
-        payload.id = generateUUID();
-        const { error } = await supabaseClient.from('avatar_stages').insert([payload]);
-        if (error) throw error;
-      }
-      showToast('Avatar stage saved!');
-      closeAvatarModal();
-      await loadData();
-    } catch (e) {
-      console.error('Save avatar failed:', e);
-      showToast(e.message || 'Save avatar failed', true);
-    }
-  }
-
-  async function deleteAvatarStage() {
-    const id = getEl('avatarId')?.value;
-    if (!id || !confirm('Delete this avatar stage?')) return;
-    try {
-      const { error } = await supabaseClient.from('avatar_stages').delete().eq('id', id);
+      const { error } = await supabaseClient.from('avatar_stages').update(payload).eq('id', id);
       if (error) throw error;
-      showToast('Avatar stage deleted.');
-      closeAvatarModal();
-      await loadData();
-    } catch (e) {
-      showToast(e.message || 'Delete failed', true);
+    } else {
+      payload.id = generateUUID();
+      const { error } = await supabaseClient.from('avatar_stages').insert([payload]);
+      if (error) throw error;
     }
+    showToast('Avatar saved!');
+    closeAvatarModal();
+    await loadData();
+  } catch (e) {
+    console.error(e);
+    showToast(e.message || 'Save failed', true);
   }
+}
 
-  // Explicit global bindings
-  window.handleLogout = handleLogout;
-  window.toggleSidebar = toggleSidebar;
-  window.openTrophyModal = openTrophyModal;
-  window.editTrophy = editTrophy;
-  window.closeTrophyModal = closeTrophyModal;
-  window.saveTrophy = saveTrophy;
-  window.deleteTrophy = deleteTrophy;
-  window.toggleTrophyType = toggleTrophyType;
-  window.updateCollectionThresholds = updateCollectionThresholds;
+async function deleteAvatarStage() {
+  const id = getEl('avatarId')?.value;
+  if (!id || !confirm('Delete this stage?')) return;
+  try {
+    const { error } = await supabaseClient.from('avatar_stages').delete().eq('id', id);
+    if (error) throw error;
+    showToast('Stage deleted');
+    closeAvatarModal();
+    await loadData();
+  } catch (e) { showToast(e.message || 'Delete failed', true); }
+}
 
-  window.openBadgeModal = openBadgeModal;
-  window.closeBadgeModal = closeBadgeModal;
-  window.saveBadge = saveBadge;
-  window.deleteBadge = deleteBadge;
-  window.toggleBadgeRule = toggleBadgeRule;
+/* bindings */
+window.handleLogout = handleLogout;
+window.toggleSidebar = toggleSidebar;
+window.switchTab = switchTab;
+window.openTrophyModal = openTrophyModal;
+window.editTrophy = editTrophy;
+window.closeTrophyModal = closeTrophyModal;
+window.saveTrophy = saveTrophy;
+window.deleteTrophy = deleteTrophy;
+window.toggleTrophyType = toggleTrophyType;
+window.updateCollectionThresholds = updateCollectionThresholds;
+window.openBadgeModal = openBadgeModal;
+window.closeBadgeModal = closeBadgeModal;
+window.saveBadge = saveBadge;
+window.deleteBadge = deleteBadge;
+window.toggleBadgeRule = toggleBadgeRule;
+window.openAvatarModal = openAvatarModal;
+window.closeAvatarModal = closeAvatarModal;
+window.saveAvatar = saveAvatar;
+window.deleteAvatarStage = deleteAvatarStage;
 
-  window.openAvatarModal = openAvatarModal;
-  window.closeAvatarModal = closeAvatarModal;
-  window.saveAvatar = saveAvatar;
-  window.deleteAvatarStage = deleteAvatarStage;
-
-  window.switchTab = switchTab;
-
-  window.addEventListener('DOMContentLoaded', init);
+window.addEventListener('DOMContentLoaded', init);
 </script>      
 
 </body>
