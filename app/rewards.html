@@ -76,13 +76,16 @@
 
 <main class="px-5 max-w-[430px] mx-auto space-y-6" style="padding-top: calc(5.2rem + env(safe-area-inset-top));">
 
-  <!-- TOP CENTER: SUB BADGE (ISOLATED - NO CONTAINER) -->
+  <!-- TOP CENTER: SUB BADGE (ISOLATED WITH TITLE) -->
   <section class="flex flex-col items-center justify-center pt-2">
-    <div onclick="openSubModal()" class="sub-badge-btn relative flex items-center justify-center h-28 w-28">
-      <img id="currentSubBadge" src="" alt="Subscription Tier" class="h-full w-full object-contain filter drop-shadow-xl" style="display:none;">
-      <div id="subBadgeFallback" class="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-        <span class="material-symbols-outlined text-4xl">workspace_premium</span>
+    <div onclick="openSubModal()" class="sub-badge-btn flex flex-col items-center justify-center">
+      <div class="relative flex items-center justify-center h-28 w-28">
+        <img id="currentSubBadge" src="" alt="Subscription Tier" class="h-full w-full object-contain filter drop-shadow-xl" style="display:none;">
+        <div id="subBadgeFallback" class="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+          <span class="material-symbols-outlined text-4xl">workspace_premium</span>
+        </div>
       </div>
+      <h2 id="currentSubTitle" class="font-headline font-black text-sm text-slate-900 uppercase tracking-[0.2em] mt-2">Loading...</h2>
     </div>
   </section>
 
@@ -250,7 +253,6 @@ var supabaseClient = supabase.createClient(
 var currentUser = null;
 var userProfile = null;
 
-// Global Lookup Cache to avoid string escaping issues in HTML attributes
 window.appData = {
   trophies: {},
   badges: {},
@@ -275,7 +277,6 @@ const defaultTierBadgeMap = {
   'legacy': '/images/badges/legacy.svg'
 };
 
-// Global Window Functions for Inline Events
 window.switchTab = function(tab) {
   document.querySelectorAll('.tab-btn').forEach(b => { 
     b.classList.remove('active', 'text-slate-900'); 
@@ -337,7 +338,6 @@ window.openTrophyModal = function(trophyId) {
     iconBox.innerHTML = `<span class="material-symbols-outlined text-4xl text-white">emoji_events</span>`;
   }
 
-  // Generate Tier Pills
   var pillsHTML = '';
   for(var i = 1; i <= 5; i++) {
     var isEarned = (tData.tier >= i && tData.unlocked);
@@ -347,7 +347,6 @@ window.openTrophyModal = function(trophyId) {
   }
   document.getElementById('modalTrophyPills').innerHTML = pillsHTML;
 
-  // Generate Dynamic Milestones
   var milesHTML = '';
   var maxVal = 1;
   tData.thresholds.forEach(th => {
@@ -609,12 +608,14 @@ async function loadCatalog() {
 function renderSubscriptions(activeSub, allSubTiers, tierMediaMap) {
   var subBadgeImg = document.getElementById('currentSubBadge');
   var subFallback = document.getElementById('subBadgeFallback');
+  var subTitleEl = document.getElementById('currentSubTitle');
   
+  // Prioritize user profile subscription_tier first
   var currentTierKey = 'free';
-  if (activeSub && (activeSub.tier || activeSub.plan)) {
-    currentTierKey = (activeSub.tier || activeSub.plan).toLowerCase();
-  } else if (userProfile && userProfile.subscription_tier) {
+  if (userProfile && userProfile.subscription_tier) {
     currentTierKey = userProfile.subscription_tier.toLowerCase();
+  } else if (activeSub && (activeSub.tier || activeSub.plan)) {
+    currentTierKey = (activeSub.tier || activeSub.plan).toLowerCase();
   }
 
   var badgeUrl = tierMediaMap[currentTierKey] || defaultTierBadgeMap[currentTierKey];
@@ -628,6 +629,12 @@ function renderSubscriptions(activeSub, allSubTiers, tierMediaMap) {
     subFallback.style.display = 'flex';
   }
 
+  // Set Top Tier Title
+  if (subTitleEl) {
+    subTitleEl.textContent = currentTierKey;
+  }
+
+  // Render Upgrade Modal List (Redirecting to subscription.html)
   var listHTML = '';
   allSubTiers.forEach(t => {
     var tKey = t.name.toLowerCase();
@@ -641,7 +648,7 @@ function renderSubscriptions(activeSub, allSubTiers, tierMediaMap) {
           <h4 class="font-headline font-bold text-sm text-slate-900">${t.name}</h4>
           <p class="text-xs text-slate-500">$${t.price} / ${t.billing_interval || 'mo'}</p>
         </div>
-        ${isCurrent ? `<span class="text-[10px] font-black text-primary uppercase tracking-widest bg-white px-2 py-1 rounded-md shadow-sm">Active</span>` : `<button onclick="window.location.href='settings.html'" class="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-slate-800">Upgrade</button>`}
+        ${isCurrent ? `<span class="text-[10px] font-black text-primary uppercase tracking-widest bg-white px-2 py-1 rounded-md shadow-sm">Active</span>` : `<button onclick="window.location.href='subscription.html'" class="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-slate-800">Upgrade</button>`}
       </div>
     `;
   });
