@@ -69,10 +69,9 @@
   <section class="dash-card flex items-center gap-5 relative overflow-hidden !bg-white border-slate-100">
     <div class="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full blur-3xl"></div>
     
-    <!-- Avatar Image (Left Side) - Clean, No Borders -->
+    <!-- Avatar Image (Left Side) -->
     <div class="relative flex-shrink-0 z-10 flex items-center justify-center h-32">
       <img id="heroAvatarImg" src="" alt="Avatar" class="h-28 w-auto object-contain avatar-float" style="display:none;">
-      <!-- Fallback if no image -->
       <div id="avatarFallback" class="h-28 w-24 flex items-center justify-center bg-slate-50 rounded-xl">
         <span class="material-symbols-outlined text-slate-300 text-[64px]">person</span>
       </div>
@@ -161,7 +160,7 @@
     </div>
   </section>
 
-  <!-- KINGDOM INVESTMENT (LIVE DATA) -->
+  <!-- KINGDOM INVESTMENT -->
   <section>
     <h3 class="font-headline font-bold text-lg mb-3 px-1">Your Kingdom Investment</h3>
     <div class="dash-card border-primary/20 relative overflow-hidden">
@@ -170,7 +169,7 @@
         <div class="flex justify-between items-end mb-4">
           <div>
             <p class="text-[10px] font-black text-gold uppercase tracking-widest">Your contribution</p>
-            <h2 id="statTotalContrib" class="font-headline font-black text-3xl mt-1 text-slate-900">$0.00</h2>
+            <h2 id="statTotalContrib" class="font-headline font-black text-3xl mt-1 text-slate-900">$0</h2>
           </div>
           <span class="material-symbols-outlined text-gold filled text-3xl">savings</span>
         </div>
@@ -186,7 +185,7 @@
     </div>
   </section>
 
-  <!-- GLOBAL IMPACT (LIVE DATA) -->
+  <!-- GLOBAL IMPACT -->
   <section>
     <h3 class="font-headline font-bold text-lg mb-3 px-1">Global Impact</h3>
     <div class="grid grid-cols-3 gap-3 mb-4">
@@ -264,6 +263,10 @@ function safeSetText(id, text) {
   if (el) el.textContent = text;
 }
 
+function formatMoney(amount) {
+  return '$' + Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
 document.querySelectorAll('.time-btn').forEach(btn => {
   btn.addEventListener('click', function() {
     this.parentElement.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
@@ -280,13 +283,9 @@ async function init() {
   await loadImpactData();
 }
 
-function formatMoney(amount) {
-  return '$' + Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-}
-
 async function loadImpactData() {
   try {
-    // 1. Calculate Date Cutoff if "Week" is selected
+    // 1. Timeframe Cutoff Calculation
     var dateCutoff = null;
     if (currentTimeframe === 'week') {
       var d = new Date();
@@ -302,7 +301,7 @@ async function loadImpactData() {
       .single();
     userProfile = profile || {};
 
-    // 3. Prepare queries with optional timeframe filter
+    // 3. Build Dynamic Queries (Applying Date Filter When "Week" Is Selected)
     var recruitQuery = supabaseClient
       .from('profiles')
       .select('id', { count: 'exact', head: true })
@@ -314,7 +313,21 @@ async function loadImpactData() {
       .eq('referred_by', currentUser.id)
       .not('country', 'is', null);
 
-    // Contribution queries (Replace table names with your actual schema names if different)
+    var userTrophiesQuery = supabaseClient
+      .from('user_trophies')
+      .select('tier_id, trophy_id, awarded_at')
+      .eq('user_id', currentUser.id);
+
+    var userBadgesQuery = supabaseClient
+      .from('user_badges')
+      .select('id, awarded_at', { count: 'exact', head: true })
+      .eq('user_id', currentUser.id);
+
+    var userMissionsQuery = supabaseClient
+      .from('mission_activity')
+      .select('mission_ref')
+      .eq('user_id', currentUser.id);
+
     var userDonationsQuery = supabaseClient
       .from('donations')
       .select('amount, created_at')
@@ -322,73 +335,81 @@ async function loadImpactData() {
 
     var userSubsQuery = supabaseClient
       .from('subscriptions')
-      .select('amount, status, created_at')
+      .select('price, status, created_at')
       .eq('user_id', currentUser.id);
 
     if (dateCutoff) {
       recruitQuery = recruitQuery.gte('created_at', dateCutoff);
       recruitNationsQuery = recruitNationsQuery.gte('created_at', dateCutoff);
+      userTrophiesQuery = userTrophiesQuery.gte('awarded_at', dateCutoff);
+      userBadgesQuery = userBadgesQuery.gte('awarded_at', dateCutoff);
+      userMissionsQuery = userMissionsQuery.gte('created_at', dateCutoff);
       userDonationsQuery = userDonationsQuery.gte('created_at', dateCutoff);
       userSubsQuery = userSubsQuery.gte('created_at', dateCutoff);
     }
 
-    // 4. Execute Queries in Parallel
+    // 4. Fetch All Stats in Parallel
     var [
       recruitsRes,
       userNationsRes,
-      trophiesRes,
+      userTrophiesRes,
+      userBadgesRes,
+      userMissionsRes,
+      userDonationsRes,
+      userSubsRes,
       avatarsRes,
-      donationsRes,
-      subsRes,
       globalSharesRes,
       globalWarriorsRes,
       globalNationsRes,
-      projectsRes
+      projectsRes,
+      globalDonationsRes
     ] = await Promise.all([
       recruitQuery,
       recruitNationsQuery,
-      supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
-      supabaseClient.from('avatar_stages').select('*').order('stage_order', { ascending: true }),
+      userTrophiesQuery,
+      userBadgesQuery,
+      userMissionsQuery,
       userDonationsQuery,
       userSubsQuery,
+      supabaseClient.from('avatar_stages').select('*').order('stage_order', { ascending: true }),
       supabaseClient.from('shares').select('id', { count: 'exact', head: true }),
       supabaseClient.from('profiles').select('id', { count: 'exact', head: true }),
       supabaseClient.from('profiles').select('country').not('country', 'is', null),
-      supabaseClient.from('projects').select('raised_amount').in('status', ['active', 'completed'])
+      supabaseClient.from('projects').select('raised_amount').in('status', ['active', 'completed']),
+      supabaseClient.from('donations').select('amount')
     ]);
 
-    // --- PERSONAL CONTRIBUTIONS CALCULATION ---
-    var donationTotal = (donationsRes.data || []).reduce((sum, d) => sum + Number(d.amount || 0), 0);
-    var subValue = (subsRes.data || []).reduce((sum, s) => sum + Number(s.amount || 0), 0);
-    var totalUserContrib = donationTotal + subValue;
-
-    // --- PERSONAL STATS ---
+    // --- PERSONAL IMPACT CALCULATIONS ---
     var totalShares = userProfile.total_shares || 0;
     var recruits = recruitsRes.count || 0;
-    var nationsList = (userNationsRes.data || []).map(p => p.country);
-    var nations = new Set(nationsList).size;
-    var badges = (userProfile.badges || []).length;
-    var missions = userProfile.completed_missions_count || 0;
+    var userNationsList = (userNationsRes.data || []).map(p => p.country);
+    var nations = new Set(userNationsList).size;
+    var badgesCount = userBadgesRes.count || (userProfile.badges ? userProfile.badges.length : 0);
+    
+    // Distinct missions completed
+    var missionRefs = (userMissionsRes.data || []).map(m => m.mission_ref).filter(Boolean);
+    var missionsCount = new Set(missionRefs).size;
 
-    // --- TROPHY / AVATAR LOGIC ---
-    var userProgress = trophiesRes.data || [];
+    // Kingdom Investment (User)
+    var donationTotal = (userDonationsRes.data || []).reduce((sum, d) => sum + Number(d.amount || 0), 0);
+    var subValue = (userSubsRes.data || []).reduce((sum, s) => sum + Number(s.price || 0), 0);
+    var totalUserContrib = donationTotal + subValue;
+
+    // Trophy Calculation
+    var userTrophies = userTrophiesRes.data || [];
     var tierCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     var mythicCount = 0;
-    var totalTrophies = 0;
+    var totalTrophies = userTrophies.length;
 
-    userProgress.forEach(p => {
-      var level = parseInt(p.current_tier_level || p.current_tier_id || 0);
-      if (level > 0) {
-        // If reaching level 3 means they also unlocked 1 and 2:
-        for (var i = 1; i <= level; i++) {
-          tierCounts[i] = (tierCounts[i] || 0) + 1;
-        }
-        totalTrophies++;
-        if (level === 5) mythicCount++;
+    userTrophies.forEach(t => {
+      var tier = parseInt(t.tier_id || 0);
+      if (tier >= 1 && tier <= 5) {
+        tierCounts[tier] = (tierCounts[tier] || 0) + 1;
+        if (tier === 5) mythicCount++;
       }
     });
 
-    // Avatar Progression
+    // Avatar Stages Calculation
     var allAvatars = avatarsRes.data || [];
     var currentStage = allAvatars[0] || { journey_name: 'The Seeker', stage_order: 0, image_url_male: '', image_url_female: '', mythic_required: 0 };
     var nextStage = null;
@@ -401,17 +422,19 @@ async function loadImpactData() {
       }
     }
 
-    // --- GLOBAL STATS ---
+    // --- GLOBAL CALCULATIONS ---
     var gShares = globalSharesRes.count || 0;
     var gWarriors = globalWarriorsRes.count || 0;
     var gNationsList = (globalNationsRes.data || []).map(p => p.country);
     var gNations = new Set(gNationsList).size;
-    var missionRaised = (projectsRes.data || []).reduce((sum, p) => sum + Number(p.raised_amount || 0), 0);
-    var totalRaised = missionRaised;
 
-    // --- RENDER DOM ---
+    var globalMissionRaised = (projectsRes.data || []).reduce((sum, p) => sum + Number(p.raised_amount || 0), 0);
+    var globalDirectDonations = (globalDonationsRes.data || []).reduce((sum, d) => sum + Number(d.amount || 0), 0);
+    var totalRaisedGlobal = globalMissionRaised + globalDirectDonations;
 
-    // 1. Avatar
+    // --- DOM UPDATES ---
+
+    // 1. Avatar Display
     var gender = userProfile.gender || 'male';
     var avatarImg = (gender === 'female' && currentStage.image_url_female) ? currentStage.image_url_female : currentStage.image_url_male;
     var imgEl = document.getElementById('heroAvatarImg');
@@ -434,7 +457,7 @@ async function loadImpactData() {
     if (nextStage) {
       safeSetText('nextRankName', 'Next: ' + nextStage.journey_name);
       var prevReq = currentStage.mythic_required || 0;
-      var range = nextStage.mythic_required - prevReq;
+      var range = (nextStage.mythic_required || 1) - prevReq;
       var progress = mythicCount - prevReq;
       var pct = Math.max(0, Math.min(100, (progress / range) * 100));
       safeSetText('mythicProgressText', mythicCount + '/' + nextStage.mythic_required + ' Mythic');
@@ -447,21 +470,22 @@ async function loadImpactData() {
       if (bar) bar.style.width = '100%';
     }
 
-    // 3. Trophy Counts & Personal Stats
+    // 3. Trophy Tiers
     safeSetText('tierCommon', tierCounts[1] || 0);
     safeSetText('tierUncommon', tierCounts[2] || 0);
     safeSetText('tierRare', tierCounts[3] || 0);
     safeSetText('tierEpic', tierCounts[4] || 0);
     safeSetText('tierMythic', tierCounts[5] || 0);
 
+    // 4. Personal Stats
     safeSetText('statShares', totalShares);
     safeSetText('statRecruits', recruits);
     safeSetText('statNations', nations);
-    safeSetText('statBadges', badges);
-    safeSetText('statMissions', missions);
+    safeSetText('statBadges', badgesCount);
+    safeSetText('statMissions', missionsCount);
     safeSetText('statTrophies', totalTrophies);
 
-    // 4. Kingdom Investment (Dynamic Calculation)
+    // 5. Kingdom Investment
     safeSetText('statSubValue', formatMoney(subValue));
     safeSetText('statDonations', formatMoney(donationTotal));
     safeSetText('statTotalContrib', formatMoney(totalUserContrib));
@@ -473,13 +497,13 @@ async function loadImpactData() {
     if (barSubs) barSubs.style.width = subPct + '%';
     if (barGifts) barGifts.style.width = giftPct + '%';
 
-    // 5. Global Stats
+    // 6. Global Stats
     safeSetText('globalShares', gShares.toLocaleString());
     safeSetText('globalWarriors', gWarriors.toLocaleString());
     safeSetText('globalNations', gNations.toLocaleString());
-    safeSetText('globalRaisedTotal', formatMoney(totalRaised));
-    safeSetText('globalMissionsRaised', formatMoney(missionRaised));
-    safeSetText('globalDonationsRaised', '$0');
+    safeSetText('globalRaisedTotal', formatMoney(totalRaisedGlobal));
+    safeSetText('globalMissionsRaised', formatMoney(globalMissionRaised));
+    safeSetText('globalDonationsRaised', formatMoney(globalDirectDonations));
 
   } catch (err) {
     console.error("Error loading impact data:", err);
@@ -488,3 +512,5 @@ async function loadImpactData() {
 
 init();
 </script>
+</body>
+</html>
