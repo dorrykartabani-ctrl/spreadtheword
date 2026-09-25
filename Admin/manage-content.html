@@ -250,7 +250,7 @@
 <div id="tierPickerModal" class="modal-overlay" onclick="if(event.target===this)closeTierPicker()">
   <div class="modal-box" style="max-width:560px">
     <div class="flex items-center justify-between px-6 py-4 border-b border-surface-chigh">
-      <h3 class="font-headline font-bold text-on-surface" style="font-size:16px;">Select Tiers</h3>
+      <p class="text-outline mt-1" style="font-size:10px;">Managed in Media (type = tier)</p>
       <button onclick="closeTierPicker()" class="w-8 h-8 rounded-lg hover:bg-surface-c text-outline"><span class="material-symbols-outlined">close</span></button>
     </div>
     <div class="p-6 overflow-y-auto"><div id="tierPickerList" class="space-y-2"></div></div>
@@ -516,9 +516,13 @@ async function loadMediaLibrary() {
       .filter(m => !!m.url);
   } catch (err) { mediaLibrary = []; }
 }
-async function loadTiers() {
-  const { data } = await supabaseClient.from('tiers').select('*').order('sort_order', { ascending: true });
-  if (data) allTiers = data;
+async function loadTierIcons() {
+  var result = await supabaseClient.from('media').select('label, url').eq('type', 'tier').eq('is_active', true)
+  if (result.error) {
+    console.error("Error loading tier icons:", result.error)
+  }
+  availableTierIcons = result.data || []
+  populateIconsDropdown()
 }
 
 // ─── CMS RENDERERS ─────────────────────────────────────────
