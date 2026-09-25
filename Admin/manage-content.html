@@ -377,7 +377,165 @@ window.addEventListener('message', (event) => {
     }
   }
 });
+var allMediaCache = [];
+var selectedImagePickUrl = null;
+var selectedTierPickId = null;
+var activeTargetInputId = null; // Keeps track of which input field we are updating
 
+// ════════════════════════════════════════════
+// IMAGE PICKER WIRING
+// ════════════════════════════════════════════
+async function openImagePicker(targetInputId) {
+  activeTargetInputId = targetInputId;
+  selectedImagePickUrl = null;
+  
+  // Open modal first with a loading indicator
+  document.getElementById('imagePickerGrid').innerHTML = `
+    <div class="col-span-full text-center py-8">
+      <span class="material-symbols-outlined text-primary spin" style="font-size:32px;">progress_activity</span>
+    </div>`;
+  document.getElementById('imagePickerModal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+
+  // Load files from media table if not already cached
+  if (allMediaCache.length === 0) {
+    var result = await supabaseClient.from('media').select('label, url, type').eq('is_active', true);
+    allMediaCache = result.data || [];
+  }
+
+  filterMediaGrid();
+}
+
+function filterMediaGrid() {
+  var filterValue = document.getElementById('mediaCategoryFilter').value;
+  var grid = document.getElementById('imagePickerGrid');
+  grid.innerHTML = '';
+
+  var filtered = allMediaCache.filter(function(item) {
+    return filterValue === 'all' || item.type === filterValue;
+  });
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="col-span-full text-center py-8 text-outline text-xs">No media files found in this category.</div>`;
+    return;
+  }
+
+  filtered.forEach(function(item) {
+    var tile = document.createElement('div');
+    tile.className = 'group relative aspect-square bg-surface-clow rounded-xl border-2 border-transparent hover:border-primary/40 cursor-pointer overflow-hidden p-1 flex items-center justify-center transition-all';
+    tile.onclick = function() {
+      // Clear previous borders
+      grid.querySelectorAll('.border-primary').forEach(el => {
+        el.classList.remove('border-primary');
+        el.classList.add('border-transparent');
+      });
+      // Highlight selection
+      tile.classList.remove('border-transparent');
+      tile.classList.add('border-primary');
+      selectedImagePickUrl = item.url;
+    };
+
+    // Render file preview cleanly
+    tile.innerHTML = `
+      <img src="${escapeHtml(item.url)}" class="w-full h-full object-contain rounded-lg" onerror="this.src='/favicon.ico'; this.style.opacity='0.5';">
+      <div class="absolute bottom-0 left-0 right-0 bg-inverse-surface/80 text-white p-1 text-[9px] truncate opacity-0 group-hover:opacity-100 transition-opacity">
+        ${escapeHtml(item.label || 'Unnamed')}
+      </div>
+    `;
+    grid.appendChild(tile);
+  });
+}
+
+function confirmImagePick() {
+  if (!selectedImagePickUrl) {
+    showToast('Please select an image first');
+    return;
+  }
+  var target = document.getElementById(activeTargetInputId);
+  if (target) {
+    target.value = selectedImagePickUrl;
+    // If the input element has a preview visual frame, update it here
+    var previewImg = document.getElementById(activeTargetInputId + 'Preview');
+    if (previewImg) previewImg.src = selectedImagePickUrl;
+  }
+  closeImagePicker();
+}
+
+function closeImagePicker() {
+  document.getElementById('imagePickerModal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+
+// ════════════════════════════════════════════
+// TIER PICKER WIRING
+// ════════════════════════════════════════════
+async function openTierPicker(targetInputId) {
+  activeTargetInputId = targetInputId;
+  selectedTierPickId = null;
+
+  var listContainer = document.getElementById('tierPickerList');
+  listContainer.innerHTML = `
+    <div class="text-center py-6">
+      <span class="material-symbols-outlined text-primary spin" style="font-size:32px;">progress_activity</span>
+    </div>`;
+  
+  document.getElementById('tierPickerModal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+
+  // Always reload fresh tiers from the database
+  var result = await supabaseClient.from('subscription_tiers').select('id, name, price, billing_interval').order('sort_order', { ascending: true });
+  var activeTiers = result.data || [];
+
+  if (activeTiers.length === 0) {
+    listContainer.innerHTML = `<p class="text-center text-outline text-xs py-4">No active subscription tiers found. Set them up first!</p>`;
+    return;
+  }
+
+  listContainer.innerHTML = '';
+  activeTiers.forEach(function(tier) {
+    var row = document.createElement('div');
+    row.className = 'flex items-center justify-between p-3.5 bg-surface-clow rounded-xl border-2 border-transparent hover:border-primary/30 cursor-pointer transition-all';
+    row.onclick = function() {
+      listContainer.querySelectorAll('.border-primary').forEach(el => {
+        el.classList.remove('border-primary');
+        el.classList.add('border-transparent');
+      });
+      row.classList.remove('border-transparent');
+      row.classList.add('border-primary');
+      selectedTierPickId = tier.id;
+    };
+
+    row.innerHTML = `
+      <div class="flex flex-col">
+        <span class="font-headline font-bold text-on-surface" style="font-size:13px;">${escapeHtml(tier.name)}</span>
+        <span class="font-body text-on-surface-variant text-[11px]">${escapeHtml(tier.id)}</span>
+      </div>
+      <div class="text-right">
+        <span class="font-headline font-bold text-primary" style="font-size:14px;">$${Number(tier.price).toFixed(2)}</span>
+        <span class="font-body text-outline text-[11px]">/${escapeHtml(tier.billing_interval)}</span>
+      </div>
+    `;
+    listContainer.appendChild(row);
+  });
+}
+
+function confirmTierPick() {
+  if (!selectedTierPickId) {
+    showToast('Please select a tier to link');
+    return;
+  }
+  var target = document.getElementById(activeTargetInputId);
+  if (target) {
+    target.value = selectedTierPickId;
+  }
+  closeTierPicker();
+}
+
+function closeTierPicker() {
+  document.getElementById('tierPickerModal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
 // ─── DYNAMIC STYLE ENGINE UI ────────────────────────────────
 function fieldStyleHTML(d, prefix, type = 'text') {
   const val = (k) => d[prefix+'_'+k] || '';
