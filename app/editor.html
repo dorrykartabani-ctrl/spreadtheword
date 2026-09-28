@@ -750,12 +750,29 @@ async function initEditor(){
     }else{if(qt)qt.textContent='The Word is with you today.';if(qr)qr.textContent='— GSTW'}
   }
 
+  // --- FIX: CLEAR OLD BG STORAGE IF THIS IS A NEW QUOTE ---
+  var lastEditedQuoteId = sessionStorage.getItem('gstw_last_edited_quote_id');
+  if (currentQuoteId !== lastEditedQuoteId) {
+    clearCustomizationState(); // Clear previous quote's background & styling
+    sessionStorage.setItem('gstw_last_edited_quote_id', currentQuoteId);
+    if (quoteBgUrl) {
+      selectedBgValue = quoteBgUrl;
+      sessionStorage.setItem('gstw_edit_bgUrl', quoteBgUrl);
+    }
+  } else {
+    // Same quote (e.g. coming back from customize.html), load user edits
+    loadCustomizationState();
+    if (!selectedBgValue && quoteBgUrl) {
+      selectedBgValue = quoteBgUrl;
+    }
+  }
+
   if(qt)qt.style.opacity='1'
   if(qr)qr.style.opacity='1'
   autoFitQuote()
 
   var msgEl=document.getElementById('postCaption')
-  if(msgEl && quoteContext){
+  if(msgEl && quoteContext && !msgEl.value){
     msgEl.value=quoteContext
     var hint=document.getElementById('captionHint')
     if(hint){hint.classList.remove('hidden');hint.classList.add('flex')}
@@ -771,14 +788,6 @@ async function initEditor(){
       if(tag && hashtags.indexOf(tag) === -1 && hashtags.length < MAX_TAGS) hashtags.push(tag)
     })
   }
-
-  // Load default background if none saved
-  if(quoteBgUrl && !sessionStorage.getItem('gstw_edit_bgUrl')){
-    selectedBgValue = quoteBgUrl
-  }
-
-  // Apply any customizations from sessionStorage (returning from customize page)
-  loadCustomizationState()
 
   applyBackground('image', selectedBgValue)
   setDarkness(currentDarkness)
