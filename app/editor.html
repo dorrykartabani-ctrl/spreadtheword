@@ -1510,7 +1510,24 @@ function downloadImage(){
   return false
 }
 
-async function logShare(pl){if(!currentUser||!currentQuoteId)return;try{await supabaseClient.from('shares').insert({user_id:currentUser.id,quote_id:currentQuoteId,platform:pl})}catch(e){console.error(e)}}
+var hasLoggedShareForThisQuote = false;
+
+async function logShare(pl) {
+  if (!currentUser || !currentQuoteId || hasLoggedShareForThisQuote) return;
+  
+  hasLoggedShareForThisQuote = true; // Lock it so it only counts once
+  
+  try {
+    await supabaseClient.from('shares').insert({
+      user_id: currentUser.id,
+      quote_id: currentQuoteId,
+      platform: pl
+    });
+  } catch(e) {
+    console.error(e);
+    hasLoggedShareForThisQuote = false; // Unlock if it failed
+  }
+}
 
 function showToast(msg){
   var ex=document.getElementById('editorToast');if(ex)ex.remove()
