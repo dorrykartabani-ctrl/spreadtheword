@@ -513,45 +513,61 @@ async function loadCatalog() {
     document.getElementById('earnedTrophies').innerHTML = earnedTHTML || '<p class="text-slate-400 text-xs col-span-4 py-2">No trophies unlocked yet.</p>';
     document.getElementById('lockedTrophies').innerHTML = lockedTHTML || '<p class="text-slate-400 text-xs col-span-4 py-2">All caught up!</p>';
 
-    // 3. Badges Processing
+        // 3. Badges Processing (With Multiplier Counter Support)
     var allBadges = badgesRes.data || [];
     var earnedTable = (userBadgesRes.data || []).map(b => b.badge_id);
     var earnedJson = userProfile.badges || [];
-    if(typeof earnedJson === 'string') { try { earnedJson = JSON.parse(earnedJson); } catch(e){ earnedJson = []; } }
+    if (typeof earnedJson === 'string') { try { earnedJson = JSON.parse(earnedJson); } catch(e){ earnedJson = []; } }
+    
+    // Count occurrences of each badge ID
+    var badgeCounts = {};
+    earnedTable.forEach(id => { badgeCounts[id] = (badgeCounts[id] || 0) + 1; });
     
     window.appData.badges = {};
     var earnedBHTML = '', lockedBHTML = '';
     var activeMissionsHTML = '';
 
     allBadges.forEach(b => {
-      var isEarned = earnedTable.includes(b.id) || earnedJson.includes(b.id) || earnedJson.includes(b.name);
+      var count = badgeCounts[b.id] || 0;
       
-      if(!isEarned && b.stat_target > 0) {
-        if(b.stat_type === 'recruits' && recruits >= b.stat_target) isEarned = true;
-        if(b.stat_type === 'shares' && shares >= b.stat_target) isEarned = true;
-        if(b.stat_type === 'signup') isEarned = true;
+      // Fallback check against profiles.badges JSON array
+      if (count === 0) {
+        var jsonMatches = earnedJson.filter(x => x === b.id || x === b.name).length;
+        count = Math.max(count, jsonMatches);
       }
 
+      // Dynamic stat badge fallbacks
+      if (count === 0 && b.stat_target > 0) {
+        if (b.stat_type === 'recruits' && recruits >= b.stat_target) count = 1;
+        if (b.stat_type === 'shares' && shares >= b.stat_target) count = 1;
+        if (b.stat_type === 'signup') count = 1;
+      }
+
+      var isEarned = count > 0;
       var color = isEarned ? tierColors[3] : '#cbd5e1';
 
       window.appData.badges[b.id] = {
-        name: b.name, desc: b.description, img: b.image_url, color: color, isEarned: isEarned
+        name: b.name, desc: b.description, img: b.image_url, color: color, isEarned: isEarned, count: count
       };
 
+      // Multiplier pill badge (e.g. x2, x5)
+      var multiplierBadge = count > 1 ? `<span class="absolute -top-1 -right-1 bg-gold text-slate-900 text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-md">x${count}</span>` : '';
+
       var itemHTML = `
-        <div class="reward-item ${isEarned ? '' : 'locked'}" onclick="openBadgeModal('${b.id}')">
-          <div class="w-16 h-16 flex items-center justify-center">
+        <div class="reward-item ${isEarned ? '' : 'locked'} relative" onclick="openBadgeModal('${b.id}')">
+          <div class="w-16 h-16 flex items-center justify-center relative">
             ${b.image_url ? `<img src="${b.image_url}" class="w-full h-full object-contain filter drop-shadow-md">` : `<span class="material-symbols-outlined text-4xl text-slate-300">military_tech</span>`}
+            ${multiplierBadge}
           </div>
           <p class="font-headline font-bold text-[10px] text-center leading-tight mt-1 text-slate-900 w-full truncate px-1">${b.name}</p>
         </div>
       `;
 
-      if(isEarned) earnedBHTML += itemHTML;
+      if (isEarned) earnedBHTML += itemHTML;
       else lockedBHTML += itemHTML;
 
-      // Participation Missions & Campaigns
-      if(!isEarned && b.rule_type === 'participation') {
+      // Participation Missions & Campaigns (Show in active list if ongoing or not earned)
+      if (b.rule_type === 'participation') {
         var targetUrl = 'cause.html';
         var campaignMatch = (campaignsRes.data || []).find(c => c.reward_badge_id === b.id || (b.rule_config && b.rule_config.campaign_ids && b.rule_config.campaign_ids.includes(c.id)));
         
@@ -560,8 +576,11 @@ async function loadCatalog() {
         activeMissionsHTML += `
           <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center justify-between">
             <div class="flex-1 pr-4">
-              <h4 class="font-headline font-bold text-sm text-slate-900">${b.name}</h4>
-              <p class="text-xs text-slate-500 mt-1 line-clamp-2">${b.description || 'Participate in this active campaign/mission to earn this reward.'}</p>
+              <div class="flex items-center gap-2">
+                <h4 class="font-headline font-bold text-sm text-slate-900">${b.name}</h4>
+                ${count > 0 ? `<span class="bg-gold/20 text-gold text-[9px] font-extrabold px-2 py-0.5 rounded-full">Earned x${count}</span>` : ''}
+              </div>
+              <p class="text-xs text-slate-500 mt-1 line-clamp-2">${b.description || 'Declare for your city, town, or nation to earn ongoing rewards.'}</p>
             </div>
             <a href="${targetUrl}" class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-primary flex-shrink-0 hover:bg-primary hover:text-white transition-colors">
               <span class="material-symbols-outlined text-xl">arrow_forward</span>
