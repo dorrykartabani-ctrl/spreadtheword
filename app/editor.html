@@ -3,373 +3,587 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#f2f6fa">
   <title>Create — Go Spread The Word</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Playfair+Display:ital,wght@0,700;1,700&family=Oswald:wght@600&family=Bebas+Neue&family=Merriweather:ital,wght@1,700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
 
   <script>
     tailwind.config = {
-      theme: { extend: { colors: { 'primary':'#3d6285', 'surface-cl':'#ffffff', 'surface-c':'#efeee7' } } }
+      theme: {
+        extend: {
+          colors: {
+            'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
+            'surface-c':'#efeee7','surface-chigh':'#e9e8e1',
+            'on-surface':'#31332e','on-surface-variant':'#5e6059',
+            'inverse-surface':'#0e0e0c',
+            'primary':'#3d6285','on-primary':'#f7f9ff',
+            'primary-container':'#b0d5fe','on-primary-container':'#234a6c',
+            'tertiary':'#ad332b'
+          },
+          fontFamily: {
+            'headline': ['Plus Jakarta Sans','sans-serif'],
+            'body': ['Manrope','sans-serif'],
+            'quote': ['Lora','serif'],
+          },
+          boxShadow: { 'ambient': '0 20px 40px rgba(49,51,46,0.05)', 'float': '0 20px 40px rgba(49,51,46,0.15)' }
+        }
+      }
     }
   </script>
-  <style>
-    body { font-family: 'Manrope', sans-serif; background: #f2f6fa; color: #31332e; overflow-x: hidden; user-select: none; -webkit-tap-highlight-color: transparent; }
-    .material-symbols-outlined { font-variation-settings: 'FILL' 1; display: inline-block; line-height: 1; }
-    
-    /* Engine Styles */
-    #workspace { position: relative; width: 100%; aspect-ratio: 1; border-radius: 16px; overflow: hidden; background: #0e0e0c; touch-action: none; transition: aspect-ratio 0.4s ease; }
-    #bgLayer { position: absolute; inset: 0; background-size: cover; background-position: center; transition: filter 0.2s; }
-    #darkLayer { position: absolute; inset: 0; background: rgba(0,0,0,0.3); }
-    #textNode { position: absolute; cursor: grab; padding: 12px; border: 1px solid transparent; }
-    #textNode.active { border-color: rgba(255,255,255,0.4); }
-    
-    .guide-line { position: absolute; background: #3b82f6; z-index: 50; opacity: 0; transition: opacity 0.1s; pointer-events: none; }
-    #guideV { width: 1px; top: 0; bottom: 0; left: 50%; transform: translateX(-50%); }
-    #guideH { height: 1px; left: 0; right: 0; top: 50%; transform: translateY(-50%); }
 
-    /* Bottom Sheets */
-    .tool-sheet { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-radius: 24px 24px 0 0; padding: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.1); transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1); z-index: 100; }
-    .tool-sheet.open { transform: translateY(0); }
-    .overlay-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.4); opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 99; }
+  <style>
+    body { font-family:'Manrope',sans-serif; background:#f2f6fa; color:#31332e; -webkit-tap-highlight-color:transparent; min-height:100dvh; user-select:none; margin:0; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; display: inline-block; line-height: 1; }
+    .filled { font-variation-settings: 'FILL' 1; }
+    .signature-gradient { background: linear-gradient(135deg, #3d6285, #6b9bc3); }
+    ::-webkit-scrollbar { display: none; }
+
+    /* Fonts */
+    .font-lora { font-family: 'Lora', serif !important; }
+    .font-jakarta { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+    .font-playfair { font-family: 'Playfair Display', serif !important; }
+    .font-oswald { font-family: 'Oswald', sans-serif !important; text-transform: uppercase; }
+    .font-bebas { font-family: 'Bebas Neue', sans-serif !important; letter-spacing: 0.08em; }
+    .font-merri { font-family: 'Merriweather', serif !important; }
+    .text-with-shadow { text-shadow: 0 4px 20px rgba(0,0,0,0.8), 0 2px 6px rgba(0,0,0,0.5); }
+
+    /* UI Elements */
+    .glass-header { background: rgba(242,246,250,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+    .glass-footer { background: rgba(255,255,255,0.92); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+    .post-pill { background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 12px 32px rgba(49,51,46,0.08); }
+    .post-canvas-wrap { background: #ffffff; padding: 6px 6px 0 6px; }
+    
+    /* Dynamic Aspect Ratio Canvas */
+    .preview-canvas { position: relative; width: 100%; aspect-ratio: 1/1; border-radius: 18px; overflow: hidden; background: #0e0e0c; touch-action: none; transition: aspect-ratio 0.3s ease; }
+    #bgLayer { position: absolute; inset: 0; background-size: cover; background-position: center; }
+    #darkLayer { position: absolute; inset: 0; background: rgba(0,0,0,0.3); }
+    #quoteOverlay { position: absolute; z-index: 10; touch-action: none; cursor: grab; width: 80%; left: 10%; top: 25%; }
+    
+    .action-card { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 16px; background: #ffffff; box-shadow: 0 4px 12px rgba(49,51,46,0.03); transition: all 0.15s ease; }
+    .action-card:active { transform: scale(0.97); }
+    .customize-card { background: linear-gradient(135deg, #ffffff 0%, #f0f5fa 100%); border: 1px solid rgba(61,98,133,0.15); box-shadow: 0 8px 20px rgba(61,98,133,0.08); }
+
+    /* Bottom Sheets (Constrained for Desktop) */
+    .overlay-bg { position: fixed; inset: 0; background: rgba(14,14,12,0.5); backdrop-filter: blur(4px); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
     .overlay-bg.open { opacity: 1; pointer-events: auto; }
+    .bottom-sheet { position: fixed; bottom: 0; left: 0; right: 0; z-index: 101; background: #ffffff; border-radius: 24px 24px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,0.1); transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.32,0.72,0,1); max-height: 90dvh; overflow-y: auto; max-width: 430px; margin: 0 auto; }
+    .bottom-sheet.open { transform: translateY(0); }
+
+    .color-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid transparent; transition: transform 0.1s; }
+    .color-btn.active { border-color: #3d6285; transform: scale(1.1); }
+    
+    .ratio-btn { flex: 1; display: flex; flex-direction: column; items: center; padding: 8px; border-radius: 12px; background: #f5f4ed; color: #5e6059; transition: all 0.2s; }
+    .ratio-btn.active { background: #3d6285; color: #ffffff; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { animation: spin 1s linear infinite; display: inline-block; }
   </style>
 </head>
-<body class="pb-32">
+<body>
 
-<!-- TOP NAV (WITH UNDO/REDO) -->
-<header class="fixed top-0 w-full z-50 bg-[#f2f6fa]/90 backdrop-blur-md px-4 pt-10 pb-3 flex items-center justify-between">
-  <button onclick="historyUndo()" id="btnUndo" class="p-2 text-gray-400 opacity-50"><span class="material-symbols-outlined">undo</span></button>
-  <span class="font-bold text-sm">Editor</span>
-  <button onclick="historyRedo()" id="btnRedo" class="p-2 text-gray-400 opacity-50"><span class="material-symbols-outlined">redo</span></button>
+<input type="file" id="selfieInput" accept="image/*" capture="user" class="hidden" onchange="handleImageSelect(this)">
+<input type="file" id="galleryInput" accept="image/png,image/jpeg,image/jpg,image/webp" class="hidden" onchange="handleImageSelect(this)">
+
+<!-- HEADER (WITH UNDO/REDO) -->
+<header class="fixed top-0 w-full z-50 glass-header">
+  <div class="max-w-[430px] mx-auto px-4 pt-10 pb-3 flex items-center justify-between relative">
+    <button onclick="goHome()" class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-c rounded-xl" title="Back">
+      <span class="material-symbols-outlined">home</span>
+    </button>
+    <div class="flex items-center gap-4">
+      <button id="btnUndo" onclick="editorStore.undo()" class="p-2 text-on-surface-variant opacity-30 transition-opacity"><span class="material-symbols-outlined text-[20px]">undo</span></button>
+      <span class="font-headline font-bold text-on-surface" style="font-size:15px;">Create</span>
+      <button id="btnRedo" onclick="editorStore.redo()" class="p-2 text-on-surface-variant opacity-30 transition-opacity"><span class="material-symbols-outlined text-[20px]">redo</span></button>
+    </div>
+    <button class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-c rounded-xl">
+      <span class="material-symbols-outlined">more_vert</span>
+    </button>
+  </div>
 </header>
 
-<main class="max-w-[430px] mx-auto pt-24 px-4">
-  
-  <!-- WORKSPACE CANVAs -->
-  <div class="bg-white p-2 rounded-2xl shadow-sm mb-4">
-    <div id="workspace">
-      <div id="bgLayer"></div>
-      <div id="darkLayer"></div>
-      <div id="guideV" class="guide-line"></div>
-      <div id="guideH" class="guide-line"></div>
+<div class="max-w-[430px] mx-auto flex flex-col min-h-[100dvh] pt-24 pb-32">
+
+  <!-- POST PILL -->
+  <section class="px-4 pt-4">
+    <div class="post-pill">
+      <div class="post-canvas-wrap">
+        <!-- THE CANVAS PREVIEW -->
+        <div class="preview-canvas" id="previewCanvas">
+          <div id="bgLayer"></div>
+          <div id="darkLayer"></div>
+          <div id="quoteOverlay">
+            <div class="p-4 text-center">
+              <p id="quoteText" class="font-quote font-semibold text-white leading-snug text-with-shadow" style="font-size:18px;"></p>
+              <p id="quoteRef" class="mt-3 font-body font-bold text-white/90 tracking-wider text-with-shadow" style="font-size:11px;"></p>
+            </div>
+          </div>
+        </div>
+      </div>
       
-      <div id="textNode" style="left: 10%; top: 25%; width: 80%;">
-        <p id="quoteText" class="text-center font-serif text-white text-2xl font-bold leading-snug drop-shadow-lg">The Word is with you today.</p>
-        <p id="quoteRef" class="text-center text-white/90 text-xs font-bold mt-4 tracking-wider uppercase">— GSTW</p>
+      <!-- CAPTION -->
+      <div class="p-3 bg-white rounded-b-3xl">
+        <div class="bg-[#f7f9fb] rounded-xl p-3 mb-2">
+          <textarea id="postCaption" maxlength="2200" placeholder="Add your caption..." class="w-full bg-transparent border-none resize-none font-body text-[13px] text-on-surface min-h-[52px] focus:outline-none"></textarea>
+        </div>
       </div>
     </div>
+  </section>
+
+  <!-- CAMERA / GALLERY -->
+  <section class="px-4 pt-3">
+    <div class="grid grid-cols-2 gap-2.5">
+      <button onclick="openCamera()" class="action-card border border-primary/20">
+        <div class="w-9 h-9 rounded-xl bg-primary text-on-primary flex items-center justify-center flex-shrink-0 shadow-sm">
+          <span class="material-symbols-outlined text-[19px] filled">photo_camera</span>
+        </div>
+        <div class="text-left">
+          <p class="font-headline font-bold text-on-surface" style="font-size:13px;">Camera</p>
+          <p class="font-body text-on-surface-variant" style="font-size:10px;">Take selfie</p>
+        </div>
+      </button>
+
+      <button onclick="openGallery()" class="action-card border border-primary/20">
+        <div class="w-9 h-9 rounded-xl bg-primary-container text-primary flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-[19px] filled">photo_library</span>
+        </div>
+        <div class="text-left">
+          <p class="font-headline font-bold text-on-surface" style="font-size:13px;">Gallery</p>
+          <p class="font-body text-on-surface-variant" style="font-size:10px;">Pick photo</p>
+        </div>
+      </button>
+    </div>
+  </section>
+
+  <!-- CUSTOMIZE (INLINE SHEET) -->
+  <section class="px-4 pt-2.5">
+    <button onclick="openSheet('customizeSheet')" class="action-card customize-card w-full">
+      <div class="w-9 h-9 rounded-xl signature-gradient flex items-center justify-center flex-shrink-0 shadow-sm">
+        <span class="material-symbols-outlined text-on-primary text-[19px] filled">auto_awesome</span>
+      </div>
+      <div class="text-left flex-1">
+        <p class="font-headline font-bold text-on-surface" style="font-size:13px;">Customize your post</p>
+        <p class="font-body text-on-surface-variant" style="font-size:10px;">Format, fonts, colors & more</p>
+      </div>
+      <span class="material-symbols-outlined text-primary" style="font-size:18px;">chevron_right</span>
+    </button>
+  </section>
+</div>
+
+<!-- STICKY CTA -->
+<footer class="glass-footer fixed bottom-0 left-0 right-0 z-40">
+  <div class="max-w-[430px] mx-auto px-4 pt-3 pb-6">
+    <button onclick="openShareSheet()" class="w-full py-4 signature-gradient text-on-primary font-headline font-bold rounded-xl flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-ambient text-[16px]">
+      <span>Spread The Word</span>
+      <span class="material-symbols-outlined">share</span>
+    </button>
   </div>
-
-  <!-- INLINE TOOLS (TIER 1) -->
-  <div class="grid grid-cols-4 gap-2 mb-6">
-    <button onclick="openTool('text')" class="flex flex-col items-center justify-center p-3 bg-white rounded-xl shadow-sm active:scale-95 transition-transform">
-      <span class="material-symbols-outlined text-primary mb-1">text_format</span>
-      <span class="text-[10px] font-semibold">Text</span>
-    </button>
-    <button onclick="openTool('bg')" class="flex flex-col items-center justify-center p-3 bg-white rounded-xl shadow-sm active:scale-95 transition-transform">
-      <span class="material-symbols-outlined text-primary mb-1">wallpaper</span>
-      <span class="text-[10px] font-semibold">Backdrop</span>
-    </button>
-    <button onclick="applyAutoContrast()" class="flex flex-col items-center justify-center p-3 bg-white rounded-xl shadow-sm active:scale-95 transition-transform">
-      <span class="material-symbols-outlined text-purple-500 mb-1">auto_awesome</span>
-      <span class="text-[10px] font-semibold">AI Color</span>
-    </button>
-    <button onclick="openTool('templates')" class="flex flex-col items-center justify-center p-3 bg-white rounded-xl shadow-sm active:scale-95 transition-transform">
-      <span class="material-symbols-outlined text-primary mb-1">style</span>
-      <span class="text-[10px] font-semibold">Presets</span>
-    </button>
-  </div>
-
-  <textarea id="captionBox" placeholder="Add your caption..." class="w-full bg-white rounded-xl p-4 text-sm resize-none h-24 focus:outline-none shadow-sm"></textarea>
-</main>
-
-<!-- FLOATING CTA -->
-<footer class="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md z-40 pb-safe">
-  <button onclick="openShareSheet()" class="w-full py-4 bg-gradient-to-r from-[#3d6285] to-[#6b9bc3] text-white font-bold rounded-xl shadow-lg active:scale-95 transition-transform text-lg flex items-center justify-center gap-2">
-    <span>Spread The Word</span> <span class="material-symbols-outlined text-xl">share</span>
-  </button>
 </footer>
 
-<!-- OVERLAYS -->
-<div id="overlayBg" class="overlay-bg" onclick="closeAllTools()"></div>
+<!-- ========================================================================= -->
+<!-- BOTTOM SHEETS -->
+<!-- ========================================================================= -->
+<div id="sheetOverlay" class="overlay-bg" onclick="closeAllSheets()"></div>
 
-<!-- TOOL: TEXT STYLING -->
-<div id="tool-text" class="tool-sheet pb-safe">
-  <h3 class="font-bold text-lg mb-4 flex justify-between">Typography <button onclick="closeAllTools()"><span class="material-symbols-outlined">close</span></button></h3>
-  
-  <label class="text-xs font-bold text-gray-500 uppercase">Color</label>
-  <div class="flex gap-2 mt-2 mb-4">
-    <button onclick="updateState({color: '#FFFFFF'})" class="w-8 h-8 rounded-full bg-white border border-gray-200"></button>
-    <button onclick="updateState({color: '#000000'})" class="w-8 h-8 rounded-full bg-black"></button>
-    <button onclick="updateState({color: '#FCD34D'})" class="w-8 h-8 rounded-full bg-yellow-300"></button>
-    <input type="color" id="colorPicker" class="w-8 h-8 rounded-full border-0 p-0" onchange="updateState({color: this.value})">
-  </div>
+<!-- 1. CUSTOMIZATION SHEET -->
+<div id="customizeSheet" class="bottom-sheet pb-8">
+  <div class="p-6">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="font-headline font-bold text-[18px]">Customize</h3>
+      <button onclick="closeAllSheets()" class="p-1"><span class="material-symbols-outlined">close</span></button>
+    </div>
 
-  <label class="text-xs font-bold text-gray-500 uppercase mt-2">Letter Spacing</label>
-  <input type="range" min="0" max="10" value="0" class="w-full mt-2 mb-4" oninput="updateState({letterSpacing: this.value + 'px'})">
+    <!-- Format -->
+    <p class="font-body font-bold text-[11px] text-on-surface-variant uppercase mb-2">Format</p>
+    <div class="flex gap-2 mb-6">
+      <button onclick="updateState({aspectRatio: '1:1'})" class="ratio-btn ${state.aspectRatio === '1:1' ? 'active' : ''}" id="ratio-1:1">
+        <span class="material-symbols-outlined mb-1">crop_square</span><span class="font-bold text-[10px]">Square</span>
+      </button>
+      <button onclick="updateState({aspectRatio: '4:5'})" class="ratio-btn" id="ratio-4:5">
+        <span class="material-symbols-outlined mb-1">crop_5_4</span><span class="font-bold text-[10px]">Portrait</span>
+      </button>
+      <button onclick="updateState({aspectRatio: '9:16'})" class="ratio-btn" id="ratio-9:16">
+        <span class="material-symbols-outlined mb-1">crop_portrait</span><span class="font-bold text-[10px]">Story</span>
+      </button>
+    </div>
 
-  <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
-    <span class="font-semibold text-sm">Text Outline</span>
-    <input type="checkbox" id="toggleOutline" class="w-5 h-5 rounded" onchange="updateState({outline: this.checked})">
+    <!-- Colors -->
+    <p class="font-body font-bold text-[11px] text-on-surface-variant uppercase mb-2">Text Color</p>
+    <div class="flex gap-3 mb-6">
+      <button onclick="updateState({textColor: '#FFFFFF'})" class="color-btn" style="background:#FFF; border:2px solid #e3e3db;"></button>
+      <button onclick="updateState({textColor: '#0e0e0c'})" class="color-btn" style="background:#0e0e0c;"></button>
+      <button onclick="updateState({textColor: '#FCD34D'})" class="color-btn" style="background:#FCD34D;"></button>
+      <button onclick="updateState({textShadow: !editorStore.state.textShadow})" class="ml-auto px-3 py-1 bg-surface-c rounded-lg font-bold text-[11px]">Toggle Shadow</button>
+    </div>
+
+    <!-- Font -->
+    <p class="font-body font-bold text-[11px] text-on-surface-variant uppercase mb-2">Typography</p>
+    <div class="grid grid-cols-2 gap-2 mb-6">
+      <button onclick="updateState({fontClass: 'font-lora'})" class="p-2 border rounded-lg font-lora">Lora</button>
+      <button onclick="updateState({fontClass: 'font-jakarta'})" class="p-2 border rounded-lg font-jakarta">Jakarta</button>
+      <button onclick="updateState({fontClass: 'font-playfair'})" class="p-2 border rounded-lg font-playfair">Playfair</button>
+      <button onclick="updateState({fontClass: 'font-oswald'})" class="p-2 border rounded-lg font-oswald uppercase">Oswald</button>
+      <button onclick="updateState({fontClass: 'font-bebas'})" class="p-2 border rounded-lg font-bebas uppercase">Bebas</button>
+      <button onclick="updateState({fontClass: 'font-merri'})" class="p-2 border rounded-lg font-merri">Merriweather</button>
+    </div>
+
+    <!-- Darkness -->
+    <p class="font-body font-bold text-[11px] text-on-surface-variant uppercase mb-2">Background Darkness</p>
+    <input type="range" min="0" max="80" value="30" class="w-full accent-primary" id="darknessSlider" oninput="updateState({darkness: this.value})">
   </div>
 </div>
 
-<!-- TOOL: BACKGROUND -->
-<div id="tool-bg" class="tool-sheet pb-safe">
-  <h3 class="font-bold text-lg mb-4 flex justify-between">Backdrop <button onclick="closeAllTools()"><span class="material-symbols-outlined">close</span></button></h3>
-  
-  <div class="grid grid-cols-2 gap-2 mb-4">
-    <button onclick="document.getElementById('imgUpload').click()" class="py-2 bg-blue-50 text-blue-600 rounded-lg font-semibold text-sm flex items-center justify-center gap-1"><span class="material-symbols-outlined text-sm">upload</span> Upload</button>
-    <input type="file" id="imgUpload" accept="image/*" hidden onchange="handleImageUpload(this)">
-  </div>
-
-  <label class="text-xs font-bold text-gray-500 uppercase">Darkness</label>
-  <input type="range" min="0" max="80" value="30" class="w-full mt-2 mb-4" oninput="updateState({darkness: this.value})">
-
-  <label class="text-xs font-bold text-gray-500 uppercase">Blur Effect</label>
-  <input type="range" min="0" max="20" value="0" class="w-full mt-2 mb-4" oninput="updateState({blur: this.value})">
-</div>
-
-<!-- 2026 PLATFORM SHARE SHEET -->
-<div id="tool-share" class="tool-sheet pb-safe" style="max-height: 85vh; overflow-y: auto;">
-  <div class="text-center mb-6">
-    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-400 rounded-2xl mx-auto flex items-center justify-center shadow-md mb-3"><span class="material-symbols-outlined text-white text-2xl">rocket_launch</span></div>
-    <h3 class="font-extrabold text-xl">Spread The Word</h3>
-    <p class="text-xs text-gray-500">Pick a platform and we will format it perfectly.</p>
-  </div>
-  
-  <div id="platformGrid" class="grid grid-cols-4 gap-3 mb-6">
-    <!-- Populated by JS -->
+<!-- 2. SHARE SHEET (DYNAMIC SUPABASE) -->
+<div id="shareSheet" class="bottom-sheet pb-8">
+  <div class="p-6">
+    <div class="text-center mb-6">
+      <div class="w-14 h-14 rounded-2xl signature-gradient flex items-center justify-center mx-auto mb-3 shadow-lg">
+        <span class="material-symbols-outlined text-white text-[28px] filled">share</span>
+      </div>
+      <h3 class="font-headline font-extrabold text-[20px]">Spread The Word</h3>
+      <p class="font-body text-on-surface-variant text-[13px]">Choose where to plant this seed</p>
+    </div>
+    
+    <div id="dynamicPlatformGrid" class="grid grid-cols-4 gap-3 mb-4">
+      <div class="col-span-4 text-center py-4"><span class="material-symbols-outlined spin text-primary">progress_activity</span></div>
+    </div>
   </div>
 </div>
 
 <script>
- var supabaseClient = supabase.createClient(
+// ==========================================
+// 1. SUPABASE INIT & GLOBALS
+// ==========================================
+const supabaseClient = supabase.createClient(
   'https://nhymadutuhpjgkiurify.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
 );
 
-  let currentUser = null;
-  let currentQuoteId = '123e4567-e89b-12d3-a456-426614174000'; // Replace with dynamic
-  let platformRegistry = [];
+let currentUser = null;
+let currentQuoteId = null;
+let platformRegistry = [];
 
-  // ==========================================
-  // STATE MACHINE & UNDO/REDO (TIER 1)
-  // ==========================================
-  const editorStore = {
-    history: [],
-    index: -1,
-    state: {
-      color: '#FFFFFF',
-      letterSpacing: '0px',
-      outline: false,
-      darkness: 30,
-      blur: 0,
-      bgUrl: null,
-      x: 10, y: 25, width: 80
-    },
-    push(newState) {
-      this.state = { ...this.state, ...newState };
-      this.history = this.history.slice(0, this.index + 1);
-      this.history.push(JSON.stringify(this.state));
-      this.index++;
-      this.render();
-      updateHistoryButtons();
-    },
-    undo() { if(this.index > 0) { this.index--; this.state = JSON.parse(this.history[this.index]); this.render(); updateHistoryButtons(); } },
-    redo() { if(this.index < this.history.length - 1) { this.index++; this.state = JSON.parse(this.history[this.index]); this.render(); updateHistoryButtons(); } },
-    render() {
-      const { color, letterSpacing, outline, darkness, blur, bgUrl, x, y, width } = this.state;
-      
-      const qt = document.getElementById('quoteText');
-      const qr = document.getElementById('quoteRef');
-      const bg = document.getElementById('bgLayer');
-      const dk = document.getElementById('darkLayer');
-      const node = document.getElementById('textNode');
+const fontMap = {
+  'font-lora': "'Lora', serif",
+  'font-jakarta': "'Plus Jakarta Sans', sans-serif",
+  'font-playfair': "'Playfair Display', serif",
+  'font-oswald': "'Oswald', sans-serif",
+  'font-bebas': "'Bebas Neue', sans-serif",
+  'font-merri': "'Merriweather', serif"
+};
 
-      qt.style.color = color;
-      qr.style.color = color;
-      qt.style.letterSpacing = letterSpacing;
-      
-      if(outline) qt.style.webkitTextStroke = '1px black';
-      else qt.style.webkitTextStroke = '0px';
+// ==========================================
+// 2. STATE MACHINE (Undo / Redo Engine)
+// ==========================================
+const editorStore = {
+  history: [], index: -1,
+  state: {
+    bgUrl: null,
+    darkness: 30,
+    textColor: '#FFFFFF',
+    fontClass: 'font-lora',
+    textShadow: true,
+    aspectRatio: '1:1', // 1:1, 4:5, 9:16
+    textW: 80, textX: 10, textY: 25, fontSize: 18
+  },
+  push(updates) {
+    this.state = { ...this.state, ...updates };
+    this.history = this.history.slice(0, this.index + 1);
+    this.history.push(JSON.stringify(this.state));
+    this.index++;
+    this.render();
+    this.updateUI();
+  },
+  undo() { if (this.index > 0) { this.index--; this.state = JSON.parse(this.history[this.index]); this.render(); this.updateUI(); } },
+  redo() { if (this.index < this.history.length - 1) { this.index++; this.state = JSON.parse(this.history[this.index]); this.render(); this.updateUI(); } },
+  
+  render() {
+    const s = this.state;
+    // Canvas dimensions
+    const canvas = document.getElementById('previewCanvas');
+    const ratios = { '1:1': '1/1', '4:5': '4/5', '9:16': '9/16' };
+    canvas.style.aspectRatio = ratios[s.aspectRatio] || '1/1';
 
-      dk.style.background = `rgba(0,0,0,${darkness / 100})`;
-      bg.style.filter = `blur(${blur}px)`;
-      if(bgUrl) bg.style.backgroundImage = `url('${bgUrl}')`;
+    // Background & Overlay
+    const bg = document.getElementById('bgLayer');
+    if (s.bgUrl) { bg.style.backgroundImage = `url('${s.bgUrl}')`; }
+    else { bg.style.backgroundColor = '#305678'; bg.style.backgroundImage = 'none'; }
+    document.getElementById('darkLayer').style.background = `rgba(0,0,0,${s.darkness / 100})`;
 
-      node.style.left = `${x}%`;
-      node.style.top = `${y}%`;
-      node.style.width = `${width}%`;
-    }
-  };
+    // Text Overlay
+    const overlay = document.getElementById('quoteOverlay');
+    const qt = document.getElementById('quoteText');
+    const qr = document.getElementById('quoteRef');
+    
+    overlay.style.width = s.textW + '%';
+    overlay.style.left = s.textX + '%';
+    overlay.style.top = s.textY + '%';
 
-  function updateState(updates) { editorStore.push(updates); }
-  function historyUndo() { editorStore.undo(); haptic('light'); }
-  function historyRedo() { editorStore.redo(); haptic('light'); }
-  function updateHistoryButtons() {
-    document.getElementById('btnUndo').classList.toggle('opacity-50', editorStore.index <= 0);
-    document.getElementById('btnRedo').classList.toggle('opacity-50', editorStore.index >= editorStore.history.length - 1);
+    qt.className = `text-center leading-snug ${s.fontClass} ${s.textShadow ? 'text-with-shadow' : ''}`;
+    qt.style.color = s.textColor;
+    qt.style.fontSize = s.fontSize + 'px';
+    
+    qr.className = `mt-3 text-center tracking-wider uppercase font-body font-bold ${s.fontClass} ${s.textShadow ? 'text-with-shadow' : ''}`;
+    qr.style.color = s.textColor;
+  },
+  
+  updateUI() {
+    document.getElementById('btnUndo').style.opacity = this.index > 0 ? '1' : '0.3';
+    document.getElementById('btnRedo').style.opacity = this.index < this.history.length - 1 ? '1' : '0.3';
+    
+    // Update ratio buttons visually
+    document.querySelectorAll('.ratio-btn').forEach(btn => btn.classList.remove('active'));
+    const rBtn = document.getElementById('ratio-' + this.state.aspectRatio);
+    if(rBtn) rBtn.classList.add('active');
+    
+    document.getElementById('darknessSlider').value = this.state.darkness;
+  }
+};
+
+function updateState(updates) { editorStore.push(updates); }
+
+// ==========================================
+// 3. INIT & LOAD DATA
+// ==========================================
+document.addEventListener('DOMContentLoaded', async () => {
+  const session = await supabaseClient.auth.getSession();
+  if(session.data.session) currentUser = session.data.session.user;
+
+  // Load Quote
+  const qt = document.getElementById('quoteText');
+  const qr = document.getElementById('quoteRef');
+  const cap = document.getElementById('postCaption');
+  
+  const { data: qData } = await supabaseClient.from('quotes').select('*').eq('status','live').order('published_at',{ascending:false}).limit(1);
+  if(qData && qData.length > 0) {
+    const q = qData[0];
+    currentQuoteId = q.id;
+    qt.textContent = q.text;
+    qr.textContent = '— ' + (q.source || 'GSTW').toUpperCase();
+    if(q.context) cap.value = q.context;
+    
+    // Initial State Push
+    editorStore.push({ bgUrl: q.background_url || null });
+  } else {
+    qt.textContent = 'The Word is with you today.';
+    qr.textContent = '— GSTW';
+    editorStore.push({});
   }
 
-  // ==========================================
-  // GESTURE ENGINE (Drag + Alignment Guides)
-  // ==========================================
-  const node = document.getElementById('textNode');
-  let isDragging = false, startX, startY, originX, originY;
+  setupDragAndPinch();
+  loadPlatforms();
+});
 
-  node.addEventListener('touchstart', e => {
+// ==========================================
+// 4. CAMERA & GALLERY
+// ==========================================
+function openCamera() { document.getElementById('selfieInput').click(); }
+function openGallery() { document.getElementById('galleryInput').click(); }
+
+function handleImageSelect(input) {
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    updateState({ bgUrl: e.target.result });
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+// ==========================================
+// 5. DRAG & PINCH GESTURES
+// ==========================================
+function setupDragAndPinch() {
+  const o = document.getElementById('quoteOverlay');
+  let isDragging = false, startX, startY, origX, originY;
+  
+  o.addEventListener('touchstart', e => {
     isDragging = true;
-    const t = e.touches[0];
-    startX = t.clientX; startY = t.clientY;
-    originX = editorStore.state.x; originY = editorStore.state.y;
-    node.classList.add('active');
+    startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+    origX = editorStore.state.textX; originY = editorStore.state.textY;
   }, {passive: true});
 
   document.addEventListener('touchmove', e => {
     if(!isDragging) return;
-    const ws = document.getElementById('workspace');
-    const dx = ((e.touches[0].clientX - startX) / ws.offsetWidth) * 100;
-    const dy = ((e.touches[0].clientY - startY) / ws.offsetHeight) * 100;
-    
-    let newX = originX + dx;
-    let newY = originY + dy;
-
-    // Center snapping & Guides
-    const gV = document.getElementById('guideV');
-    const gH = document.getElementById('guideH');
-    const centerX = 50 - (editorStore.state.width / 2);
-    
-    if(Math.abs(newX - centerX) < 2) { newX = centerX; gV.style.opacity = 1; haptic('light'); } 
-    else gV.style.opacity = 0;
-
-    if(Math.abs(newY - 40) < 2) { newY = 40; gH.style.opacity = 1; haptic('light'); } 
-    else gH.style.opacity = 0;
-
-    editorStore.state.x = newX;
-    editorStore.state.y = newY;
+    const canvas = document.getElementById('previewCanvas');
+    const dx = ((e.touches[0].clientX - startX) / canvas.offsetWidth) * 100;
+    const dy = ((e.touches[0].clientY - startY) / canvas.offsetHeight) * 100;
+    editorStore.state.textX = origX + dx;
+    editorStore.state.textY = originY + dy;
     editorStore.render();
   }, {passive: true});
 
   document.addEventListener('touchend', () => {
-    if(!isDragging) return;
-    isDragging = false;
-    node.classList.remove('active');
-    document.getElementById('guideV').style.opacity = 0;
-    document.getElementById('guideH').style.opacity = 0;
-    editorStore.push({}); // Save history state after drag
-  });
-
-  // ==========================================
-  // AI AUTO-CONTRAST (Tier 1)
-  // ==========================================
-  async function applyAutoContrast() {
-    haptic('medium');
-    if(!editorStore.state.bgUrl) return;
-    
-    // Create temporary canvas to read image luminance
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = editorStore.state.bgUrl;
-    img.onload = () => {
-      const c = document.createElement('canvas');
-      const ctx = c.getContext('2d');
-      c.width = 50; c.height = 50;
-      ctx.drawImage(img, 0,0,50,50);
-      const data = ctx.getImageData(0,0,50,50).data;
-      let r=0,g=0,b=0;
-      for(let i=0; i<data.length; i+=4) { r+=data[i]; g+=data[i+1]; b+=data[i+2]; }
-      const total = data.length/4;
-      const luminance = (0.299*(r/total) + 0.587*(g/total) + 0.114*(b/total))/255;
-      
-      // If image is bright, make text dark. If dark, text white.
-      if(luminance > 0.6) { updateState({ color: '#0e0e0c', outline: false, darkness: 10 }); } 
-      else { updateState({ color: '#FFFFFF', outline: false, darkness: 30 }); }
-    };
-  }
-
-  // ==========================================
-  // SHARE SHEET & PLATFORMS
-  // ==========================================
-  async function loadPlatforms() {
-    const { data } = await supabase.from('platforms').select('*').eq('is_active', true).order('display_order');
-    if(data) platformRegistry = data;
-  }
-
-  function openShareSheet() {
-    const grid = document.getElementById('platformGrid');
-    grid.innerHTML = platformRegistry.map(p => `
-      <button onclick="executeShare('${p.slug}')" class="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-gray-50 active:scale-95 transition-all">
-        <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm" style="background:${p.icon_bg}; color:${p.icon_color}">
-          <span class="text-2xl font-bold">${p.icon}</span>
-        </div>
-        <span class="text-[10px] font-semibold text-gray-700">${p.label}</span>
-      </button>
-    `).join('');
-    
-    openTool('share');
-  }
-
-  async function executeShare(slug) {
-    const platform = platformRegistry.find(p => p.slug === slug);
-    haptic('success');
-    
-    // In production, insert Canvas Generation Code here matching platform.aspect_ratio
-    // ...
-    
-    // Log Share to Supabase via the RPC Function
-    await supabase.rpc('record_quote_share', {
-      p_quote_id: currentQuoteId,
-      p_platform: slug,
-      p_aspect_ratio: platform.aspect_ratio,
-      p_confidence: 'direct_intent',
-      p_device_type: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
-    });
-
-    closeAllTools();
-    
-    // Redirect to platform
-    const url = /Mobi/i.test(navigator.userAgent) ? platform.mobile_url : platform.desktop_url;
-    if(url) window.open(url, '_blank');
-  }
-
-  // ==========================================
-  // UTILS
-  // ==========================================
-  function handleImageUpload(input) {
-    const file = input.files[0];
-    if(file) {
-      const reader = new FileReader();
-      reader.onload = e => updateState({ bgUrl: e.target.result });
-      reader.readAsDataURL(file);
+    if(isDragging) {
+      isDragging = false;
+      editorStore.push({}); // Save to history
     }
-  }
-
-  function openTool(id) {
-    document.getElementById('overlayBg').classList.add('open');
-    document.querySelectorAll('.tool-sheet').forEach(el => el.classList.remove('open'));
-    document.getElementById('tool-' + id).classList.add('open');
-    haptic('light');
-  }
-
-  function closeAllTools() {
-    document.getElementById('overlayBg').classList.remove('open');
-    document.querySelectorAll('.tool-sheet').forEach(el => el.classList.remove('open'));
-  }
-
-  function haptic(type) { if(navigator.vibrate) navigator.vibrate(type === 'light' ? 10 : 20); }
-
-  // Init
-  document.addEventListener('DOMContentLoaded', async () => {
-    const session = await supabase.auth.getSession();
-    if(session.data.session) currentUser = session.data.session.user;
-    editorStore.push({}); // Initial state push
-    loadPlatforms();
   });
+}
+
+// ==========================================
+// 6. BOTTOM SHEETS
+// ==========================================
+function openSheet(id) {
+  document.getElementById('sheetOverlay').classList.add('open');
+  document.querySelectorAll('.bottom-sheet').forEach(el => el.classList.remove('open'));
+  document.getElementById(id).classList.add('open');
+}
+
+function closeAllSheets() {
+  document.getElementById('sheetOverlay').classList.remove('open');
+  document.querySelectorAll('.bottom-sheet').forEach(el => el.classList.remove('open'));
+}
+
+// ==========================================
+// 7. SHARE ENGINE (CANVAS + SUPABASE)
+// ==========================================
+async function loadPlatforms() {
+  const { data } = await supabaseClient.from('platforms').select('*').eq('is_active', true).order('display_order');
+  if(data) platformRegistry = data;
+}
+
+function openShareSheet() {
+  const grid = document.getElementById('dynamicPlatformGrid');
+  grid.innerHTML = platformRegistry.map(p => `
+    <button onclick="executeShare('${p.slug}')" class="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-surface-clow active:scale-95 transition-transform" id="btn-${p.slug}">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm" style="background:${p.icon_bg}; color:${p.icon_color}">
+        <span class="text-[20px] font-bold" style="${p.icon_font ? 'font-family:'+p.icon_font : ''}">${p.icon}</span>
+      </div>
+      <span class="font-body font-semibold text-on-surface text-[10px] leading-tight text-center">${p.label}</span>
+    </button>
+  `).join('');
+  
+  openSheet('shareSheet');
+}
+
+async function executeShare(slug) {
+  const platform = platformRegistry.find(p => p.slug === slug);
+  const btn = document.getElementById('btn-' + slug);
+  const origHTML = btn.innerHTML;
+  btn.innerHTML = `<div class="w-12 h-12 flex items-center justify-center"><span class="material-symbols-outlined spin text-primary">progress_activity</span></div>`;
+  
+  // 1. Update app aspect ratio to match platform BEFORE generating
+  updateState({ aspectRatio: platform.aspect_ratio });
+  
+  // 2. Generate Canvas Blob
+  const result = await generateCanvasBlob(platform.width, platform.height);
+  if(!result.success) {
+    alert("Error generating image");
+    btn.innerHTML = origHTML;
+    return;
+  }
+
+  // 3. Copy Caption
+  const cap = document.getElementById('postCaption').value;
+  if(cap && navigator.clipboard) { try { await navigator.clipboard.writeText(cap); } catch(e){} }
+
+  // 4. Log to Supabase (Anti-Cheat RPC)
+  if(currentUser && currentQuoteId) {
+    await supabaseClient.rpc('record_quote_share', {
+      p_quote_id: currentQuoteId, p_platform: slug, 
+      p_aspect_ratio: platform.aspect_ratio, p_confidence: 'direct_intent', 
+      p_device_type: /Mobi/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+    });
+  }
+
+  // 5. Download & Open
+  downloadBlob(result.blob, `GSTW-${slug}.png`);
+  closeAllSheets();
+  btn.innerHTML = origHTML;
+
+  const url = /Mobi/i.test(navigator.userAgent) ? platform.mobile_url : platform.desktop_url;
+  if(url) window.open(url, '_blank');
+}
+
+// THE GENERATOR
+function generateCanvasBlob(targetW, targetH) {
+  return new Promise(async (resolve) => {
+    try {
+      const s = editorStore.state;
+      const canvas = document.createElement('canvas');
+      canvas.width = targetW; canvas.height = targetH;
+      const ctx = canvas.getContext('2d');
+
+      // BG
+      ctx.fillStyle = '#305678'; ctx.fillRect(0,0,targetW,targetH);
+      if(s.bgUrl) {
+        const img = new Image(); img.crossOrigin = 'anonymous';
+        await new Promise((res,rej) => { img.onload=res; img.onerror=rej; img.src=s.bgUrl; });
+        const scale = Math.max(targetW/img.width, targetH/img.height);
+        const w = img.width*scale, h = img.height*scale;
+        ctx.drawImage(img, (targetW-w)/2, (targetH-h)/2, w, h);
+      }
+
+      // Dark Overlay
+      ctx.fillStyle = `rgba(0,0,0,${s.darkness/100})`;
+      ctx.fillRect(0,0,targetW,targetH);
+
+      // Text Setup
+      const qt = document.getElementById('quoteText');
+      const text = qt.textContent;
+      const scaleFactor = targetW / 1080; 
+      const fSize = s.fontSize * 3.2 * scaleFactor;
+      
+      ctx.fillStyle = s.textColor;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.font = `600 ${fSize}px ${fontMap[s.fontClass]}`;
+      
+      if(s.textShadow) { ctx.shadowColor='rgba(0,0,0,0.8)'; ctx.shadowBlur=12*scaleFactor; ctx.shadowOffsetY=3*scaleFactor; }
+      if(s.fontClass === 'font-oswald' || s.fontClass === 'font-bebas') ctx.font = `600 ${fSize}px ${fontMap[s.fontClass]}`.toUpperCase();
+
+      // Wrapping Text
+      const textW = targetW * (s.textW/100);
+      const words = (s.fontClass==='font-oswald'||s.fontClass==='font-bebas') ? text.toUpperCase().split(' ') : text.split(' ');
+      let line='', lines=[];
+      for(let n=0; n<words.length; n++) {
+        let test = line + words[n] + ' ';
+        if(ctx.measureText(test).width > textW && n>0) { lines.push(line.trim()); line=words[n]+' '; }
+        else { line=test; }
+      }
+      lines.push(line.trim());
+
+      const lH = fSize * 1.45;
+      const startY = (targetH * (s.textY/100));
+      const centerX = targetW * (s.textX/100) + (textW/2);
+
+      lines.forEach((l, i) => ctx.fillText(l, centerX, startY + (i*lH)));
+
+      // Ref
+      const qr = document.getElementById('quoteRef');
+      ctx.font = `bold ${fSize*0.45}px "Plus Jakarta Sans", sans-serif`;
+      ctx.globalAlpha = 0.9;
+      ctx.fillText(qr.textContent, centerX, startY + (lines.length*lH) + (24*scaleFactor));
+      ctx.globalAlpha = 1.0;
+
+      // Watermark
+      ctx.shadowColor='transparent';
+      ctx.font = `600 ${24*scaleFactor}px "Plus Jakarta Sans", sans-serif`;
+      ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.fillText('gospreadtheword.app', targetW-(40*scaleFactor), targetH-(40*scaleFactor));
+
+      canvas.toBlob(blob => resolve({success:true, blob}), 'image/png', 0.95);
+    } catch(e) { resolve({success:false}); }
+  });
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function goHome() { window.location.href = 'index.html'; }
 </script>
 </body>
 </html>
