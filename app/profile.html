@@ -152,7 +152,59 @@
   <!-- NAV CARDS -->
   <section class="space-y-2 fade-up" id="navSection">
     <p class="font-body text-on-surface-variant mb-1" style="font-size:12px;font-weight:500;">Manage</p>
+<!-- DEFAULT SHARING PLATFORM -->
+<section class="bg-surface-cl rounded-2xl p-5 shadow-ambient fade-up">
+  <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-lg bg-primary-container/20 flex items-center justify-center">
+        <span class="material-symbols-outlined text-primary text-[18px]">share</span>
+      </div>
+      <div>
+        <h3 class="font-headline font-bold text-on-surface text-[14px]">Default Share Platform</h3>
+        <p class="font-body text-on-surface-variant text-[11px]">Choose where quotes open by default</p>
+      </div>
+    </div>
+  </div>
 
+  <!-- Platform Grid / Pill Options -->
+  <div class="grid grid-cols-3 gap-2 pt-1" id="platformGrid">
+    <button type="button" onclick="setDefaultPlatform('facebook')" data-platform="facebook"
+      class="platform-btn flex flex-col items-center justify-center p-3 rounded-xl border border-surface-chigh bg-surface-clow text-on-surface-variant transition-all active:scale-95">
+      <span class="material-symbols-outlined text-[20px] mb-1">public</span>
+      <span class="font-body text-[11px] font-semibold">Facebook</span>
+    </button>
+
+    <button type="button" onclick="setDefaultPlatform('whatsapp')" data-platform="whatsapp"
+      class="platform-btn flex flex-col items-center justify-center p-3 rounded-xl border border-surface-chigh bg-surface-clow text-on-surface-variant transition-all active:scale-95">
+      <span class="material-symbols-outlined text-[20px] mb-1">chat</span>
+      <span class="font-body text-[11px] font-semibold">WhatsApp</span>
+    </button>
+
+    <button type="button" onclick="setDefaultPlatform('instagram')" data-platform="instagram"
+      class="platform-btn flex flex-col items-center justify-center p-3 rounded-xl border border-surface-chigh bg-surface-clow text-on-surface-variant transition-all active:scale-95">
+      <span class="material-symbols-outlined text-[20px] mb-1">photo_camera</span>
+      <span class="font-body text-[11px] font-semibold">Instagram</span>
+    </button>
+
+    <button type="button" onclick="setDefaultPlatform('x')" data-platform="x"
+      class="platform-btn flex flex-col items-center justify-center p-3 rounded-xl border border-surface-chigh bg-surface-clow text-on-surface-variant transition-all active:scale-95">
+      <span class="material-symbols-outlined text-[20px] mb-1">tag</span>
+      <span class="font-body text-[11px] font-semibold">X / Twitter</span>
+    </button>
+
+    <button type="button" onclick="setDefaultPlatform('sms')" data-platform="sms"
+      class="platform-btn flex flex-col items-center justify-center p-3 rounded-xl border border-surface-chigh bg-surface-clow text-on-surface-variant transition-all active:scale-95">
+      <span class="material-symbols-outlined text-[20px] mb-1">sms</span>
+      <span class="font-body text-[11px] font-semibold">Messages</span>
+    </button>
+
+    <button type="button" onclick="setDefaultPlatform('clipboard')" data-platform="clipboard"
+      class="platform-btn flex flex-col items-center justify-center p-3 rounded-xl border border-surface-chigh bg-surface-clow text-on-surface-variant transition-all active:scale-95">
+      <span class="material-symbols-outlined text-[20px] mb-1">content_copy</span>
+      <span class="font-body text-[11px] font-semibold">Copy Link</span>
+    </button>
+  </div>
+</section>
 	<a href="rewards.html" class="nav-card">
       <div class="w-10 h-10 rounded-xl bg-primary-container/20 flex items-center justify-center flex-shrink-0">
         <span class="material-symbols-outlined text-primary text-[20px] filled">emoji_events</span>
@@ -404,7 +456,9 @@ async function init(){
     var notifications = (results[2].status==='fulfilled' && results[2].value.data) ? results[2].value.data : []
     var trophyProgress = (results[3].status==='fulfilled' && results[3].value.data) ? results[3].value.data : []
     var avatarStages = (results[4].status==='fulfilled' && results[4].value.data) ? results[4].value.data : []
-
+safeRender('hero', function(){ renderHero() });
+safeRender('navHints', function(){ renderNavHints(notifications) });
+safeRender('platform', function(){ renderDefaultPlatformUI() }); // <-- ADD THIS LINE
 safeRender('hero', function(){ renderHero() })
 safeRender('navHints', function(){ renderNavHints(notifications) })
 
@@ -420,7 +474,44 @@ setTimeout(function(){
 }
 
 function safeRender(name,fn){try{fn()}catch(e){console.error('[Profile] Render error in '+name+':',e)}}
+// 1. Highlight the currently selected platform on load
+function renderDefaultPlatformUI() {
+  var currentPlatform = userProfile.default_platform || 'facebook'; // fallback default
 
+  document.querySelectorAll('.platform-btn').forEach(function(btn) {
+    var platform = btn.getAttribute('data-platform');
+    if (platform === currentPlatform) {
+      btn.className = 'platform-btn flex flex-col items-center justify-center p-3 rounded-xl border-2 border-primary bg-primary/10 text-primary font-bold shadow-sm transition-all active:scale-95';
+    } else {
+      btn.className = 'platform-btn flex flex-col items-center justify-center p-3 rounded-xl border border-surface-chigh bg-surface-clow text-on-surface-variant transition-all active:scale-95';
+    }
+  });
+}
+
+// 2. Save the selection to Supabase when tapped
+async function setDefaultPlatform(platform) {
+  if (!currentUser) return;
+  
+  // Update local state and UI immediately for snappy response
+  userProfile.default_platform = platform;
+  renderDefaultPlatformUI();
+
+  try {
+    var { error } = await supabaseClient
+      .from('profiles')
+      .update({ 
+        default_platform: platform,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', currentUser.id);
+
+    if (error) throw error;
+    showToast('Default platform updated!');
+  } catch(e) {
+    console.error('Failed to update platform:', e);
+    showToast('Failed to save preference');
+  }
+}
 // ════════════════════════════════════════════
 // HERO
 // ════════════════════════════════════════════
