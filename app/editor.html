@@ -1400,13 +1400,21 @@ async function reshareFromSuccess(){
 }
 
 // ═══ GENERATE IMAGE ═══
+// ═══ REPLACE YOUR EXISTING generateImage() WITH THIS ═══
 function generateImage(){
   return new Promise(function(resolve){
     try{
-      var canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1080
+      var config = PLATFORM_CONFIG[currentSharePlatform] || PLATFORM_CONFIG['default'];
+      var targetW = config.w;
+      var targetH = config.h;
+      var scale = targetW / 1080; // Scale text relative to width
+
+      var canvas=document.createElement('canvas');
+      canvas.width=targetW; canvas.height=targetH;
       var ctx=canvas.getContext('2d')
       if(!ctx){resolve({success:false,error:'Canvas not supported'});return}
-      ctx.fillStyle='#0e0e0c';ctx.fillRect(0,0,1080,1080)
+      
+      ctx.fillStyle='#0e0e0c';ctx.fillRect(0,0,targetW,targetH)
       var qt=document.getElementById('quoteText'),qr=document.getElementById('quoteRef')
       var xPct=currentTextX,yPct=currentTextY,wPct=currentTextWidth
       var textColor=currentTextColor||'#FFFFFF'
@@ -1429,20 +1437,21 @@ function generateImage(){
 
       function drawContent(){
         try{
-          ctx.fillStyle='rgba(0,0,0,'+(dVal/100)+')';ctx.fillRect(0,0,1080,1080)
-          var tX=Math.round((xPct/100)*1080),tY=Math.round((yPct/100)*1080)
-          var tW=Math.round((wPct/100)*1080),pad=16
+          ctx.fillStyle='rgba(0,0,0,'+(dVal/100)+')';ctx.fillRect(0,0,targetW,targetH)
+          var tX=Math.round((xPct/100)*targetW),tY=Math.round((yPct/100)*targetH)
+          var tW=Math.round((wPct/100)*targetW),pad=16 * scale
           var cX=tX+pad,cY=tY+pad,cW=tW-(pad*2)
           ctx.textAlign=aln==='center'?'center':aln==='right'?'right':'left'
           ctx.textBaseline='top'
-          var sS=Math.round(fontSize*3.2)
+          
+          var sS=Math.round(fontSize*3.2*scale)
           ctx.font='600 '+sS+'px '+fontFam
           var qTxt=qt?qt.textContent:''
           var lines=wrap(ctx,qTxt,cW)
           var lH=sS*1.45,startY=cY+20
-          var tXA=aln==='center'?cX+cW/2:aln==='right'?cX+tW:cX
+          var tXA=aln==='center'?cX+cW/2:aln==='right'?cX+cW:cX
           if(textShadowEnabled){
-            ctx.shadowColor='rgba(0,0,0,0.8)';ctx.shadowBlur=12;ctx.shadowOffsetY=2
+            ctx.shadowColor='rgba(0,0,0,0.8)';ctx.shadowBlur=12*scale;ctx.shadowOffsetY=2*scale
           }
           for(var i=0;i<lines.length;i++){
             var ly=startY+i*lH
@@ -1450,19 +1459,19 @@ function generateImage(){
             ctx.fillText(lines[i],tXA,ly)
           }
           var endY=startY+lines.length*lH
-          var refSz=Math.round(fontSize*1.5)
+          var refSz=Math.round(fontSize*1.5*scale)
           ctx.font='bold '+refSz+'px "Plus Jakarta Sans",sans-serif'
           var refX=aln==='center'?tX+tW/2:aln==='right'?tX+tW-pad:cX
           ctx.fillStyle=textColor;ctx.globalAlpha=0.9
-          ctx.fillText(qr?qr.textContent:'',refX,endY+24)
+          ctx.fillText(qr?qr.textContent:'',refX,endY+(24*scale))
           ctx.globalAlpha=1
           ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0
 
-          ctx.font='600 26px "Plus Jakarta Sans", sans-serif'
+          ctx.font='600 '+Math.round(26*scale)+'px "Plus Jakarta Sans", sans-serif'
           ctx.textAlign='right';ctx.textBaseline='bottom'
-          ctx.shadowColor='rgba(0,0,0,0.6)';ctx.shadowBlur=8;ctx.shadowOffsetY=2
+          ctx.shadowColor='rgba(0,0,0,0.6)';ctx.shadowBlur=8*scale;ctx.shadowOffsetY=2*scale
           ctx.fillStyle='rgba(255,255,255,0.8)'
-          ctx.fillText('gospreadtheword.app',1080-48,1080-48)
+          ctx.fillText('gospreadtheword.app',targetW-(48*scale),targetH-(48*scale))
           ctx.shadowColor='transparent';ctx.shadowBlur=0
 
           try{imageDataUrl=canvas.toDataURL('image/png')}
@@ -1481,13 +1490,13 @@ function generateImage(){
       if(selectedBgValue){
         var im=new Image();im.crossOrigin='anonymous'
         im.onload=function(){
-          var sc=Math.max(1080/im.width,1080/im.height)
+          var sc=Math.max(targetW/im.width,targetH/im.height)
           var sw=im.width*sc,sh=im.height*sc
-          ctx.drawImage(im,(1080-sw)/2,(1080-sh)/2,sw,sh);drawContent()
+          ctx.drawImage(im,(targetW-sw)/2,(targetH-sh)/2,sw,sh);drawContent()
         }
-        im.onerror=function(){ctx.fillStyle='#305678';ctx.fillRect(0,0,1080,1080);drawContent()}
+        im.onerror=function(){ctx.fillStyle='#305678';ctx.fillRect(0,0,targetW,targetH);drawContent()}
         im.src=selectedBgValue
-      }else{ctx.fillStyle='#305678';ctx.fillRect(0,0,1080,1080);drawContent()}
+      }else{ctx.fillStyle='#305678';ctx.fillRect(0,0,targetW,targetH);drawContent()}
     }catch(e){console.error(e);resolve({success:false,error:'Unexpected error'})}
   })
 }
