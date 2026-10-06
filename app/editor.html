@@ -1265,58 +1265,47 @@ function closeDesktopPickerAndSucceed(){
   setTimeout(function(){ showSuccess('downloaded to your device') }, 200)
 }
 
-function openPlatform(platform){
+// ═══ REPLACE YOUR EXISTING openPlatform() ═══
+async function openPlatform(platform){
+  // 1. Change aspect ratio to match the newly clicked platform
+  applyPlatformFormat(platform);
+  
+  // 2. We MUST re-generate the image at the new dimensions
+  showToast('Formatting for ' + platform + '...');
+  var result = await generateImage();
+  if(!result.success){
+    showToast('Failed to format image');
+    return;
+  }
+
+  // 3. Log the share accurately
+  logShare(platform);
+
   var appUrl = 'https://gospreadtheword.app'
   
-  // Special handling for Facebook - show instructions modal
+  // Facebook special handling
   if(platform === 'facebook'){
-    // FIRST: Download image
     var downloadSuccess = downloadImage()
-    if(!downloadSuccess){
-      showToast('Failed to download image - please try again')
-      return
-    }
-    
-    // SECOND: Copy caption to clipboard
+    if(!downloadSuccess){ showToast('Failed to download image'); return }
     if(fullCaption && navigator.clipboard){
-      navigator.clipboard.writeText(fullCaption)
-        .then(function(){
-          // THIRD: Show instructions modal after successful copy
-          closeDesktopPicker()
-          setTimeout(function(){
-            var m = document.getElementById('fbInstructModal')
-            if(m) m.classList.remove('hidden')
-          }, 200)
-        })
-        .catch(function(e){
-          console.error('Clipboard failed:', e)
-          // Show modal anyway with warning
-          closeDesktopPicker()
-          setTimeout(function(){
-            showToast('⚠️ Could not copy caption - you may need to type it manually')
-            var m = document.getElementById('fbInstructModal')
-            if(m) m.classList.remove('hidden')
-          }, 200)
-        })
+      navigator.clipboard.writeText(fullCaption).then(function(){
+        closeDesktopPicker()
+        setTimeout(function(){ var m = document.getElementById('fbInstructModal'); if(m) m.classList.remove('hidden') }, 200)
+      }).catch(function(e){
+        closeDesktopPicker()
+        setTimeout(function(){ showToast('⚠️ Could not copy caption'); var m = document.getElementById('fbInstructModal'); if(m) m.classList.remove('hidden') }, 200)
+      })
     } else {
-      // Clipboard API not available
-      showToast('⚠️ Clipboard not available - you will need to type caption manually')
       closeDesktopPicker()
-      setTimeout(function(){
-        var m = document.getElementById('fbInstructModal')
-        if(m) m.classList.remove('hidden')
-      }, 200)
+      setTimeout(function(){ var m = document.getElementById('fbInstructModal'); if(m) m.classList.remove('hidden') }, 200)
     }
     return
   }
   
-  // For all other platforms - existing logic
+  // Standard handling
   if(fullCaption && navigator.clipboard){
-    navigator.clipboard.writeText(fullCaption).catch(function(e){ 
-      console.error('Copy failed', e) 
-    })
+    navigator.clipboard.writeText(fullCaption).catch(function(e){ console.error('Copy failed', e) })
   }
-
   downloadImage()
 
   var urls = {
@@ -1329,13 +1318,10 @@ function openPlatform(platform){
   }
 
   var url = urls[platform]
-  
   if(url){
     window.open(url, '_blank', 'noopener,noreferrer')
     closeDesktopPicker()
-    
-    var platformName = platform.charAt(0).toUpperCase() + platform.slice(1)
-    showToast('Caption copied & image downloaded! Upload on ' + platformName)
+    showToast('Formatted, Copied & Downloaded!')
     haptic('success')
   }
 }
