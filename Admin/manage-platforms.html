@@ -1,35 +1,88 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manage Platforms — Command Admin</title>
+  <title>Social Platforms — GSTW Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
-  
+  <link rel="icon" type="image/x-icon" href="/images/favicon/favicon.ico">
   <script>
     tailwind.config = {
-      darkMode: 'class',
       theme: {
         extend: {
-          fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
           colors: {
-            admin: { bg: '#0d0d0d', surface: '#161616', border: '#262626', hover: '#1f1f1f', blue: '#3b82f6', text: '#e5e5e5', muted: '#a3a3a3' }
-          }
+            'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
+            'surface-c':'#efeee7','surface-chigh':'#e9e8e1','surface-chighest':'#e3e3db',
+            'on-surface':'#31332e','on-surface-variant':'#5e6059',
+            'inverse-surface':'#0e0e0c','inverse-on-surface':'#9e9d99',
+            'outline':'#7a7b75','outline-variant':'#b2b2ab',
+            'primary':'#3d6285','on-primary':'#f7f9ff',
+            'primary-container':'#b0d5fe','on-primary-container':'#234a6c',
+            'secondary':'#41637c','tertiary':'#ad332b',
+          },
+          fontFamily: { 'headline': ['Plus Jakarta Sans','sans-serif'], 'body': ['Manrope','sans-serif'] }
         }
       }
     }
   </script>
   <style>
-    body { background-color: #0d0d0d; color: #e5e5e5; font-family: 'Plus Jakarta Sans', sans-serif; }
-    .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e;letter-spacing:-0.005em}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1;vertical-align:middle}
+    .ms-fill{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+    .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-thumb{background:rgba(49,51,46,0.15);border-radius:3px}
+    .sidebar{background:#0e0e0c;color:#f7f9ff}
+    .sidebar-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;color:rgba(247,249,255,0.6);font-size:13px;font-weight:600;transition:all .15s;text-decoration:none}
+    .sidebar-item:hover{background:#1a1a18;color:#f7f9ff}
+    .sidebar-item.active{background:#3d6285;color:#f7f9ff}
+    .sidebar-item .material-symbols-outlined{font-size:20px}
+
+    .field-label{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#5e6059;margin-bottom:6px}
+    .field-input{width:100%;padding:10px 12px;background:#fbf9f4;border:1px solid #e3e3db;border-radius:8px;font-family:'Manrope',sans-serif;font-size:13px;color:#31332e;transition:border-color .15s}
+    .field-input:focus{outline:none;border-color:#3d6285;background:#fff}
+    .field-hint{font-size:11px;color:#7a7b75;margin-top:4px}
+
+    .modal-overlay{position:fixed;inset:0;background:rgba(14,14,12,.5);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+    .modal-overlay.open{opacity:1;pointer-events:auto}
+    .modal-box{background:#fff;border-radius:16px;width:90%;max-width:640px;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;transform:translateY(12px);transition:transform .2s}
+    .modal-overlay.open .modal-box{transform:translateY(0)}
+
+    .toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:200;transform:translateY(80px);opacity:0;transition:all .3s}
+    .toast.show{transform:translateY(0);opacity:1}
+    .toast-success{background:#31332e;color:#f7f9ff}
+    .toast-error{background:#ad332b;color:#fff7f6}
+
+    .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:#7a7b75;text-align:center}
+
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spin{animation:spin 1s linear infinite;display:inline-block}
+
+    .platform-row{background:#fff;border:1px solid #e9e8e1;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;transition:all .15s}
+    .platform-row:hover{border-color:#3d6285;box-shadow:0 6px 18px rgba(49,51,46,.06)}
+    .platform-row.inactive{opacity:.55}
+
+    .toggle{position:relative;width:42px;height:24px;border-radius:9999px;background:#e3e3db;transition:background .2s;cursor:pointer;flex-shrink:0}
+    .toggle.on{background:#3d6285}
+    .toggle-knob{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+    .toggle.on .toggle-knob{transform:translateX(18px)}
+
+    .icon-preview{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+    .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:9999px;font-size:11px;font-weight:700}
+    .badge-ratio{background:#f0f5fa;color:#234a6c}
+    .badge-upload{background:#fff4e5;color:#9a6700}
+    .badge-api{background:#e8f5e9;color:#2e7d32}
   </style>
 </head>
-<body class="flex h-screen overflow-hidden">
+<body class="min-h-screen flex">
 
-  <!-- ADMIN SIDEBAR (Matches your screenshot) -->
+<!-- SIDEBAR -->
 <aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 hidden md:flex">
   <div class="mb-6 px-2 pt-2">
     <div class="flex items-center gap-2.5">
@@ -73,80 +126,493 @@
     </div>
   </div>
 </aside>
-  <!-- MAIN CONTENT -->
-  <main class="flex-1 flex flex-col h-screen overflow-hidden">
-    <header class="h-16 border-b border-admin-border flex items-center justify-between px-8 bg-admin-bg">
-      <h2 class="font-semibold text-lg">Social Media Platforms</h2>
-      <button onclick="openModal()" class="bg-admin-blue hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
-        <span class="material-symbols-outlined text-[18px]">add</span> Add Platform
-      </button>
-    </header>
 
-    <div class="flex-1 overflow-y-auto p-8">
-      <div class="bg-admin-surface border border-admin-border rounded-xl overflow-hidden">
-        <table class="w-full text-left text-sm">
-          <thead class="bg-admin-hover text-admin-muted border-b border-admin-border uppercase text-[11px] tracking-wider">
-            <tr>
-              <th class="px-6 py-4 font-semibold">Platform</th>
-              <th class="px-6 py-4 font-semibold">Aspect Ratio</th>
-              <th class="px-6 py-4 font-semibold">Type</th>
-              <th class="px-6 py-4 font-semibold">Status</th>
-              <th class="px-6 py-4 font-semibold text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="platformTable" class="divide-y divide-admin-border">
-            <tr><td colspan="5" class="p-8 text-center text-admin-muted">Loading platforms...</td></tr>
-          </tbody>
-        </table>
+<div id="sidebarOverlay" class="fixed inset-0 bg-inverse-surface/60 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<!-- MAIN -->
+<main class="flex-1 md:ml-64 min-h-screen flex flex-col">
+  <header class="sticky top-0 z-20 bg-surface/85 backdrop-blur-xl border-b border-surface-chigh">
+    <div class="flex items-center gap-4 px-6 lg:px-8 py-4">
+      <button onclick="toggleSidebar()" class="md:hidden text-on-surface"><span class="material-symbols-outlined">menu</span></button>
+      <div class="flex-1 min-w-0">
+        <h2 class="font-headline font-bold text-on-surface" style="font-size:22px;">Social Platforms</h2>
+        <p class="font-body text-on-surface-variant" style="font-size:12px;">Manage share destinations, aspect ratios & deep links</p>
+      </div>
+      <button onclick="openPlatformModal()" class="flex items-center gap-1.5 px-4 py-2 rounded-lg signature-gradient text-white font-headline font-semibold" style="font-size:13px;">
+        <span class="material-symbols-outlined" style="font-size:16px;">add</span>Add Platform
+      </button>
+    </div>
+  </header>
+
+  <div class="p-6 lg:p-8 max-w-[1100px] w-full mx-auto">
+    <!-- STATS -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div class="bg-white border border-surface-chigh rounded-xl p-4">
+        <p class="font-body text-on-surface-variant" style="font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;">Total</p>
+        <p id="statTotal" class="font-headline font-extrabold text-on-surface mt-1" style="font-size:24px;">—</p>
+      </div>
+      <div class="bg-white border border-surface-chigh rounded-xl p-4">
+        <p class="font-body text-on-surface-variant" style="font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;">Active</p>
+        <p id="statActive" class="font-headline font-extrabold text-primary mt-1" style="font-size:24px;">—</p>
+      </div>
+      <div class="bg-white border border-surface-chigh rounded-xl p-4">
+        <p class="font-body text-on-surface-variant" style="font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;">Manual Upload</p>
+        <p id="statUpload" class="font-headline font-extrabold text-on-surface mt-1" style="font-size:24px;">—</p>
+      </div>
+      <div class="bg-white border border-surface-chigh rounded-xl p-4">
+        <p class="font-body text-on-surface-variant" style="font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;">Direct API</p>
+        <p id="statApi" class="font-headline font-extrabold text-on-surface mt-1" style="font-size:24px;">—</p>
       </div>
     </div>
-  </main>
 
-  <script>
-  var supabaseClient = supabase.createClient(
+    <!-- FILTERS -->
+    <div class="flex flex-col md:flex-row gap-3 mb-5">
+      <div class="flex-1 relative">
+        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" style="font-size:20px;">search</span>
+        <input type="text" id="searchInput" oninput="renderPlatforms()" placeholder="Search platforms…" class="w-full pl-10 pr-4 py-3 bg-white border border-surface-chigh rounded-xl font-body text-sm focus:outline-none focus:border-primary">
+      </div>
+      <label class="flex items-center gap-2 px-4 bg-white border border-surface-chigh rounded-xl cursor-pointer">
+        <input type="checkbox" id="showInactive" onchange="renderPlatforms()" class="accent-primary w-4 h-4">
+        <span class="font-body text-sm text-on-surface">Show inactive</span>
+      </label>
+    </div>
+
+    <!-- PLATFORM LIST -->
+    <div id="platformList" class="space-y-2.5">
+      <div class="empty-state">
+        <span class="material-symbols-outlined text-primary spin" style="font-size:32px;">progress_activity</span>
+        <p class="font-body text-on-surface-variant mt-3 text-sm">Loading platforms…</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ADD / EDIT MODAL -->
+<div id="platformModal" class="modal-overlay" onclick="if(event.target===this)closePlatformModal()">
+  <div class="modal-box">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-surface-chigh">
+      <h3 id="modalTitle" class="font-headline font-bold text-on-surface" style="font-size:16px;">Add Platform</h3>
+      <button onclick="closePlatformModal()" class="w-8 h-8 rounded-lg hover:bg-surface-c flex items-center justify-center">
+        <span class="material-symbols-outlined text-outline" style="font-size:20px;">close</span>
+      </button>
+    </div>
+
+    <div class="p-6 overflow-y-auto space-y-4">
+      <!-- Live Preview -->
+      <div class="flex items-center gap-3 p-3 bg-surface-clow rounded-xl border border-surface-chigh">
+        <div id="liveIconPreview" class="icon-preview" style="background:#3d6285;color:#fff;">?</div>
+        <div>
+          <p class="font-headline font-bold text-on-surface" style="font-size:13px;">Live Preview</p>
+          <p class="font-body text-on-surface-variant" style="font-size:11px;">How this icon appears in the share sheet</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="field-label">Label <span class="text-tertiary">*</span></label>
+          <input type="text" id="fLabel" class="field-input" placeholder="Instagram" oninput="updateLivePreview()">
+        </div>
+        <div>
+          <label class="field-label">Slug <span class="text-tertiary">*</span></label>
+          <input type="text" id="fSlug" class="field-input" placeholder="instagram" oninput="updateLivePreview()">
+          <p class="field-hint">Lowercase, no spaces. Used in analytics.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3">
+        <div>
+          <label class="field-label">Icon <span class="text-tertiary">*</span></label>
+          <input type="text" id="fIcon" class="field-input" placeholder="📸 or f" oninput="updateLivePreview()">
+        </div>
+        <div>
+          <label class="field-label">Icon BG</label>
+          <input type="text" id="fIconBg" class="field-input" placeholder="#E1306C" oninput="updateLivePreview()">
+        </div>
+        <div>
+          <label class="field-label">Icon Color</label>
+          <input type="text" id="fIconColor" class="field-input" placeholder="#FFFFFF" oninput="updateLivePreview()">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3">
+        <div>
+          <label class="field-label">Aspect Ratio</label>
+          <select id="fAspect" class="field-input" onchange="syncDimensions()">
+            <option value="1:1">1:1 Square</option>
+            <option value="4:5">4:5 Portrait</option>
+            <option value="9:16">9:16 Story</option>
+            <option value="16:9">16:9 Landscape</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Width (px)</label>
+          <input type="number" id="fWidth" class="field-input" value="1080">
+        </div>
+        <div>
+          <label class="field-label">Height (px)</label>
+          <input type="number" id="fHeight" class="field-input" value="1080">
+        </div>
+      </div>
+
+      <div>
+        <label class="field-label">Character Limit</label>
+        <input type="number" id="fCharLimit" class="field-input" value="2200">
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="field-label">Mobile Deep Link</label>
+          <input type="text" id="fMobileUrl" class="field-input" placeholder="instagram://">
+        </div>
+        <div>
+          <label class="field-label">Desktop URL</label>
+          <input type="text" id="fDesktopUrl" class="field-input" placeholder="https://www.instagram.com/">
+        </div>
+      </div>
+
+      <div>
+        <label class="field-label">Share Intent URL (optional)</label>
+        <input type="text" id="fShareUrl" class="field-input" placeholder="https://twitter.com/intent/tweet?text={text}">
+        <p class="field-hint">Use {text} and {url} as placeholders.</p>
+      </div>
+
+      <div>
+        <label class="field-label">Instructions (for manual upload platforms)</label>
+        <textarea id="fInstructions" class="field-input" rows="2" placeholder="Create a post, upload the image, paste the caption"></textarea>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="field-label">Display Order</label>
+          <input type="number" id="fOrder" class="field-input" value="100">
+        </div>
+        <div class="flex items-end pb-1">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="fRequiresUpload" class="accent-primary w-4 h-4" checked>
+            <span class="font-body text-sm text-on-surface font-semibold">Requires manual upload</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-6 py-4 border-t border-surface-chigh flex justify-between">
+      <button id="deleteBtn" onclick="deletePlatform()" class="hidden px-4 py-2 rounded-lg text-tertiary hover:bg-red-50 font-body font-semibold text-xs">Delete</button>
+      <div class="flex gap-2 ml-auto">
+        <button onclick="closePlatformModal()" class="px-4 py-2 rounded-lg bg-surface-c text-on-surface font-body font-semibold text-xs">Cancel</button>
+        <button onclick="savePlatform()" id="saveBtn" class="px-5 py-2 rounded-lg signature-gradient text-white font-body font-semibold text-xs">Save Platform</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast toast-success"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// SUPABASE + STATE
+// ═══════════════════════════════════════════════════════════
+const supabaseClient = supabase.createClient(
   'https://nhymadutuhpjgkiurify.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
 );
 
-    async function loadPlatforms() {
-      const { data, error } = await supabase.from('platforms').select('*').order('display_order');
-      const tbody = document.getElementById('platformTable');
-      
-      if (error) { tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-400">Error loading data</td></tr>`; return; }
-      
-      tbody.innerHTML = data.map(p => `
-        <tr class="hover:bg-admin-hover/50 transition-colors">
-          <td class="px-6 py-4 flex items-center gap-3">
-            <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style="background:${p.icon_bg}; color:${p.icon_color}; font-family:${p.icon_font || 'inherit'}">
-              <span class="text-xl font-bold">${p.icon}</span>
-            </div>
-            <div>
-              <p class="font-semibold text-white">${p.label}</p>
-              <p class="text-xs text-admin-muted">${p.slug}</p>
-            </div>
-          </td>
-          <td class="px-6 py-4"><span class="px-2.5 py-1 bg-admin-hover rounded-md text-xs font-semibold text-admin-muted">${p.aspect_ratio}</span></td>
-          <td class="px-6 py-4">
-            ${p.requires_upload ? '<span class="text-orange-400 text-xs flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">upload</span> Manual Upload</span>' : '<span class="text-green-400 text-xs flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">link</span> Direct API</span>'}
-          </td>
-          <td class="px-6 py-4">
-            <button onclick="toggleStatus('${p.id}', ${p.is_active})" class="w-10 h-6 rounded-full transition-colors relative ${p.is_active ? 'bg-admin-blue' : 'bg-admin-border'}">
-              <div class="absolute top-1 bg-white w-4 h-4 rounded-full transition-transform ${p.is_active ? 'left-5' : 'left-1'}"></div>
-            </button>
-          </td>
-          <td class="px-6 py-4 text-right">
-            <button class="text-admin-muted hover:text-white p-2"><span class="material-symbols-outlined text-[18px]">edit</span></button>
-          </td>
-        </tr>
-      `).join('');
-    }
+let platforms = [];
+let editingId = null;
 
-    async function toggleStatus(id, currentStatus) {
-      await supabase.from('platforms').update({ is_active: !currentStatus }).eq('id', id);
-      loadPlatforms();
-    }
+const RATIO_DIMS = {
+  '1:1':  { w: 1080, h: 1080 },
+  '4:5':  { w: 1080, h: 1350 },
+  '9:16': { w: 1080, h: 1920 },
+  '16:9': { w: 1920, h: 1080 }
+};
 
-    document.addEventListener('DOMContentLoaded', loadPlatforms);
-  </script>
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+  const session = await supabaseClient.auth.getSession();
+  if (!session.data.session) { window.location.href = 'login.html'; return; }
+
+  // Load admin name if available
+  try {
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('full_name, is_admin')
+      .eq('id', session.data.session.user.id)
+      .single();
+    if (profile) {
+      if (profile.full_name) {
+        document.querySelectorAll('.admin-name').forEach(el => el.textContent = profile.full_name);
+        const initials = profile.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        document.querySelectorAll('.admin-initials').forEach(el => el.textContent = initials);
+      }
+      if (profile.is_admin === false) {
+        showToast('Admin access required', true);
+      }
+    }
+  } catch (e) {}
+
+  await loadPlatforms();
+});
+
+async function loadPlatforms() {
+  const { data, error } = await supabaseClient
+    .from('platforms')
+    .select('*')
+    .order('display_order', { ascending: true });
+
+  if (error) {
+    console.error(error);
+    document.getElementById('platformList').innerHTML = `
+      <div class="empty-state">
+        <span class="material-symbols-outlined text-tertiary" style="font-size:36px;">error</span>
+        <p class="font-body text-on-surface-variant mt-3 text-sm">Failed to load platforms</p>
+        <p class="font-body text-outline mt-1" style="font-size:11px;">${error.message}</p>
+      </div>`;
+    return;
+  }
+
+  platforms = data || [];
+  updateStats();
+  renderPlatforms();
+}
+
+function updateStats() {
+  document.getElementById('statTotal').textContent = platforms.length;
+  document.getElementById('statActive').textContent = platforms.filter(p => p.is_active).length;
+  document.getElementById('statUpload').textContent = platforms.filter(p => p.requires_upload).length;
+  document.getElementById('statApi').textContent = platforms.filter(p => !p.requires_upload).length;
+}
+
+function renderPlatforms() {
+  const list = document.getElementById('platformList');
+  const q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+  const showInactive = document.getElementById('showInactive').checked;
+
+  let filtered = platforms.filter(p => {
+    if (!showInactive && !p.is_active) return false;
+    if (!q) return true;
+    return (p.label || '').toLowerCase().includes(q) ||
+           (p.slug || '').toLowerCase().includes(q);
+  });
+
+  if (!filtered.length) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <span class="material-symbols-outlined text-outline" style="font-size:36px;">share</span>
+        <p class="font-body text-on-surface-variant mt-3 text-sm">No platforms found</p>
+        <button onclick="openPlatformModal()" class="mt-4 px-4 py-2 rounded-lg signature-gradient text-white font-body font-semibold text-xs">Add your first platform</button>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(p => `
+    <div class="platform-row ${p.is_active ? '' : 'inactive'}">
+      <div class="icon-preview" style="background:${p.icon_bg || '#3d6285'};color:${p.icon_color || '#fff'};">
+        ${escapeHtml(p.icon || '?')}
+      </div>
+
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <p class="font-headline font-bold text-on-surface" style="font-size:14px;">${escapeHtml(p.label)}</p>
+          <span class="font-body text-outline" style="font-size:11px;">${escapeHtml(p.slug)}</span>
+        </div>
+        <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+          <span class="badge badge-ratio">${escapeHtml(p.aspect_ratio)} · ${p.width}×${p.height}</span>
+          ${p.requires_upload
+            ? '<span class="badge badge-upload"><span class="material-symbols-outlined" style="font-size:12px;">upload</span> Manual</span>'
+            : '<span class="badge badge-api"><span class="material-symbols-outlined" style="font-size:12px;">link</span> Direct API</span>'}
+          <span class="font-body text-outline" style="font-size:11px;">Order ${p.display_order ?? 100}</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <div class="toggle ${p.is_active ? 'on' : ''}" onclick="togglePlatform('${p.id}', ${p.is_active})" title="${p.is_active ? 'Disable' : 'Enable'}">
+          <div class="toggle-knob"></div>
+        </div>
+        <button onclick="editPlatform('${p.id}')" class="w-9 h-9 rounded-lg hover:bg-surface-c flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors" title="Edit">
+          <span class="material-symbols-outlined" style="font-size:18px;">edit</span>
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// TOGGLE / CRUD
+// ═══════════════════════════════════════════════════════════
+async function togglePlatform(id, currentStatus) {
+  const { error } = await supabaseClient
+    .from('platforms')
+    .update({ is_active: !currentStatus })
+    .eq('id', id);
+
+  if (error) {
+    showToast(error.message || 'Could not update status', true);
+    return;
+  }
+  showToast(!currentStatus ? 'Platform enabled' : 'Platform disabled');
+  await loadPlatforms();
+}
+
+function openPlatformModal(platform = null) {
+  editingId = platform ? platform.id : null;
+  document.getElementById('modalTitle').textContent = platform ? 'Edit Platform' : 'Add Platform';
+  document.getElementById('deleteBtn').classList.toggle('hidden', !platform);
+
+  document.getElementById('fLabel').value = platform?.label || '';
+  document.getElementById('fSlug').value = platform?.slug || '';
+  document.getElementById('fIcon').value = platform?.icon || '';
+  document.getElementById('fIconBg').value = platform?.icon_bg || '#3d6285';
+  document.getElementById('fIconColor').value = platform?.icon_color || '#FFFFFF';
+  document.getElementById('fAspect').value = platform?.aspect_ratio || '1:1';
+  document.getElementById('fWidth').value = platform?.width || 1080;
+  document.getElementById('fHeight').value = platform?.height || 1080;
+  document.getElementById('fCharLimit').value = platform?.char_limit || 2200;
+  document.getElementById('fMobileUrl').value = platform?.mobile_url || '';
+  document.getElementById('fDesktopUrl').value = platform?.desktop_url || '';
+  document.getElementById('fShareUrl').value = platform?.share_url || '';
+  document.getElementById('fInstructions').value = platform?.instructions || '';
+  document.getElementById('fOrder').value = platform?.display_order ?? 100;
+  document.getElementById('fRequiresUpload').checked = platform?.requires_upload !== false;
+
+  updateLivePreview();
+  document.getElementById('platformModal').classList.add('open');
+}
+
+function closePlatformModal() {
+  document.getElementById('platformModal').classList.remove('open');
+  editingId = null;
+}
+
+function editPlatform(id) {
+  const p = platforms.find(x => x.id === id);
+  if (p) openPlatformModal(p);
+}
+
+function syncDimensions() {
+  const ratio = document.getElementById('fAspect').value;
+  const dims = RATIO_DIMS[ratio];
+  if (dims) {
+    document.getElementById('fWidth').value = dims.w;
+    document.getElementById('fHeight').value = dims.h;
+  }
+}
+
+function updateLivePreview() {
+  const icon = document.getElementById('fIcon').value || '?';
+  const bg = document.getElementById('fIconBg').value || '#3d6285';
+  const color = document.getElementById('fIconColor').value || '#FFFFFF';
+  const el = document.getElementById('liveIconPreview');
+  el.textContent = icon;
+  el.style.background = bg;
+  el.style.color = color;
+}
+
+async function savePlatform() {
+  const label = document.getElementById('fLabel').value.trim();
+  const slug = document.getElementById('fSlug').value.trim().toLowerCase().replace(/\s+/g, '_');
+  const icon = document.getElementById('fIcon').value.trim();
+
+  if (!label || !slug || !icon) {
+    showToast('Label, slug and icon are required', true);
+    return;
+  }
+
+  const payload = {
+    label,
+    slug,
+    icon,
+    icon_bg: document.getElementById('fIconBg').value.trim() || '#3d6285',
+    icon_color: document.getElementById('fIconColor').value.trim() || '#FFFFFF',
+    aspect_ratio: document.getElementById('fAspect').value,
+    width: parseInt(document.getElementById('fWidth').value) || 1080,
+    height: parseInt(document.getElementById('fHeight').value) || 1080,
+    char_limit: parseInt(document.getElementById('fCharLimit').value) || 2200,
+    mobile_url: document.getElementById('fMobileUrl').value.trim() || null,
+    desktop_url: document.getElementById('fDesktopUrl').value.trim() || null,
+    share_url: document.getElementById('fShareUrl').value.trim() || null,
+    instructions: document.getElementById('fInstructions').value.trim() || null,
+    display_order: parseInt(document.getElementById('fOrder').value) || 100,
+    requires_upload: document.getElementById('fRequiresUpload').checked,
+    is_active: true
+  };
+
+  const btn = document.getElementById('saveBtn');
+  btn.textContent = 'Saving…';
+  btn.style.pointerEvents = 'none';
+
+  let error;
+  if (editingId) {
+    ({ error } = await supabaseClient.from('platforms').update(payload).eq('id', editingId));
+  } else {
+    ({ error } = await supabaseClient.from('platforms').insert(payload));
+  }
+
+  btn.textContent = 'Save Platform';
+  btn.style.pointerEvents = '';
+
+  if (error) {
+    showToast(error.message || 'Save failed', true);
+    return;
+  }
+
+  showToast(editingId ? 'Platform updated' : 'Platform added');
+  closePlatformModal();
+  await loadPlatforms();
+}
+
+async function deletePlatform() {
+  if (!editingId) return;
+  if (!confirm('Delete this platform permanently? Users will no longer see it in the share sheet.')) return;
+
+  const { error } = await supabaseClient.from('platforms').delete().eq('id', editingId);
+  if (error) {
+    showToast(error.message || 'Delete failed', true);
+    return;
+  }
+  showToast('Platform deleted');
+  closePlatformModal();
+  await loadPlatforms();
+}
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (isError ? 'toast-error' : 'toast-success');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sidebarOverlay');
+  const isHidden = sb.classList.contains('hidden');
+  if (isHidden) {
+    sb.classList.remove('hidden');
+    sb.classList.add('flex');
+    ov.classList.remove('hidden');
+  } else {
+    sb.classList.add('hidden');
+    sb.classList.remove('flex');
+    ov.classList.add('hidden');
+  }
+}
+
+async function handleLogout() {
+  await supabaseClient.auth.signOut();
+  window.location.href = 'login.html';
+}
+</script>
 </body>
 </html>
