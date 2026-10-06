@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Platforms — Command Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
+          colors: {
+            admin: { bg: '#0d0d0d', surface: '#161616', border: '#262626', hover: '#1f1f1f', blue: '#3b82f6', text: '#e5e5e5', muted: '#a3a3a3' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0d0d0d; color: #e5e5e5; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+  </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+  <!-- ADMIN SIDEBAR (Matches your screenshot) -->
+  <aside class="w-64 bg-admin-surface border-r border-admin-border flex flex-col">
+    <div class="p-5 flex items-center gap-3">
+      <span class="material-symbols-outlined text-white text-3xl">camera_enhance</span>
+      <div>
+        <h1 class="font-bold text-white leading-tight">Command</h1>
+        <p class="text-[10px] font-bold text-admin-muted tracking-widest uppercase">Admin Panel</p>
+      </div>
+    </div>
+    
+    <nav class="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
+      <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-admin-muted hover:bg-admin-hover hover:text-white rounded-lg transition-colors">
+        <span class="material-symbols-outlined">dashboard</span> <span class="font-medium text-sm">Dashboard</span>
+      </a>
+      <a href="#" class="flex items-center gap-3 px-3 py-2.5 bg-[#2c4b6e] text-white rounded-lg transition-colors shadow-sm">
+        <span class="material-symbols-outlined">share</span> <span class="font-medium text-sm">Share Platforms</span>
+      </a>
+      <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-admin-muted hover:bg-admin-hover hover:text-white rounded-lg transition-colors">
+        <span class="material-symbols-outlined">format_quote</span> <span class="font-medium text-sm">Manage Quotes</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-1 flex flex-col h-screen overflow-hidden">
+    <header class="h-16 border-b border-admin-border flex items-center justify-between px-8 bg-admin-bg">
+      <h2 class="font-semibold text-lg">Social Media Platforms</h2>
+      <button onclick="openModal()" class="bg-admin-blue hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
+        <span class="material-symbols-outlined text-[18px]">add</span> Add Platform
+      </button>
+    </header>
+
+    <div class="flex-1 overflow-y-auto p-8">
+      <div class="bg-admin-surface border border-admin-border rounded-xl overflow-hidden">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-admin-hover text-admin-muted border-b border-admin-border uppercase text-[11px] tracking-wider">
+            <tr>
+              <th class="px-6 py-4 font-semibold">Platform</th>
+              <th class="px-6 py-4 font-semibold">Aspect Ratio</th>
+              <th class="px-6 py-4 font-semibold">Type</th>
+              <th class="px-6 py-4 font-semibold">Status</th>
+              <th class="px-6 py-4 font-semibold text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="platformTable" class="divide-y divide-admin-border">
+            <tr><td colspan="5" class="p-8 text-center text-admin-muted">Loading platforms...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Initialize your Supabase client here
+    const supabase = supabase.createClient('YOUR_URL', 'YOUR_ANON_KEY');
+
+    async function loadPlatforms() {
+      const { data, error } = await supabase.from('platforms').select('*').order('display_order');
+      const tbody = document.getElementById('platformTable');
+      
+      if (error) { tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-400">Error loading data</td></tr>`; return; }
+      
+      tbody.innerHTML = data.map(p => `
+        <tr class="hover:bg-admin-hover/50 transition-colors">
+          <td class="px-6 py-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style="background:${p.icon_bg}; color:${p.icon_color}; font-family:${p.icon_font || 'inherit'}">
+              <span class="text-xl font-bold">${p.icon}</span>
+            </div>
+            <div>
+              <p class="font-semibold text-white">${p.label}</p>
+              <p class="text-xs text-admin-muted">${p.slug}</p>
+            </div>
+          </td>
+          <td class="px-6 py-4"><span class="px-2.5 py-1 bg-admin-hover rounded-md text-xs font-semibold text-admin-muted">${p.aspect_ratio}</span></td>
+          <td class="px-6 py-4">
+            ${p.requires_upload ? '<span class="text-orange-400 text-xs flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">upload</span> Manual Upload</span>' : '<span class="text-green-400 text-xs flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">link</span> Direct API</span>'}
+          </td>
+          <td class="px-6 py-4">
+            <button onclick="toggleStatus('${p.id}', ${p.is_active})" class="w-10 h-6 rounded-full transition-colors relative ${p.is_active ? 'bg-admin-blue' : 'bg-admin-border'}">
+              <div class="absolute top-1 bg-white w-4 h-4 rounded-full transition-transform ${p.is_active ? 'left-5' : 'left-1'}"></div>
+            </button>
+          </td>
+          <td class="px-6 py-4 text-right">
+            <button class="text-admin-muted hover:text-white p-2"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function toggleStatus(id, currentStatus) {
+      await supabase.from('platforms').update({ is_active: !currentStatus }).eq('id', id);
+      loadPlatforms();
+    }
+
+    document.addEventListener('DOMContentLoaded', loadPlatforms);
+  </script>
+</body>
+</html>
