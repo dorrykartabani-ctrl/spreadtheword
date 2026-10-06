@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -78,6 +77,19 @@
     .pass-toggle{cursor:pointer;color:#b2b2ab;transition:color 0.15s}
     .pass-toggle:hover{color:#5e6059}
 
+    .social-btn{
+      background:#ffffff;
+      border:1px solid #e9e8e1;
+      transition:all 0.2s ease;
+    }
+    .social-btn:hover{
+      background:#f5f4ed;
+      border-color:#d4d3cc;
+    }
+    .social-btn:active{
+      transform:scale(0.98);
+    }
+
     @keyframes fadeUp{
       from{opacity:0;transform:translateY(12px)}
       to{opacity:1;transform:translateY(0)}
@@ -87,9 +99,6 @@
 
     @keyframes spin{to{transform:rotate(360deg)}}
     .spin{animation:spin 1s linear infinite;display:inline-block}
-
-    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
-    .shake{animation:shake 0.3s ease}
 
     /* Custom checkbox */
     .custom-check{
@@ -140,19 +149,48 @@
         <p id="signupErrorMsg" class="font-body font-semibold text-tertiary" style="font-size:12px;"></p>
       </div>
 
-      <form onsubmit="handleSignup(event)" class="space-y-3">
+      <!-- ═══════════════════════════════════ -->
+      <!-- SOCIAL SIGN-IN BUTTONS -->
+      <!-- ═══════════════════════════════════ -->
+      <div class="space-y-2.5 mb-5">
 
-        <!-- Full Name -->
-        <div>
-          <label class="font-body text-on-surface-variant block mb-1.5" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Full Name <span class="text-tertiary">*</span></label>
-          <div class="relative">
-            <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline" style="font-size:18px;">person</span>
-            <input id="signupName" type="text" required autocomplete="name"
-              placeholder="Your full name"
-              class="auth-input w-full rounded-xl pl-11 pr-4 py-3 font-body bg-surface-clow"
-              style="font-size:14px;">
-          </div>
-        </div>
+        <!-- Google -->
+        <button type="button" onclick="signInWithProvider('google')"
+          class="social-btn w-full py-3 rounded-xl flex items-center justify-center gap-3 font-body font-semibold text-on-surface"
+          style="font-size:14px;">
+          <img src="/images/auth/google.svg" alt="Google" class="w-5 h-5 object-contain">
+          Continue with Google
+        </button>
+
+        <!-- Apple -->
+        <button type="button" onclick="signInWithProvider('apple')"
+          class="social-btn w-full py-3 rounded-xl flex items-center justify-center gap-3 font-body font-semibold text-on-surface"
+          style="font-size:14px;">
+          <img src="/images/auth/apple.svg" alt="Apple" class="w-5 h-5 object-contain">
+          Continue with Apple
+        </button>
+
+        <!-- Facebook -->
+        <button type="button" onclick="signInWithProvider('facebook')"
+          class="social-btn w-full py-3 rounded-xl flex items-center justify-center gap-3 font-body font-semibold text-on-surface"
+          style="font-size:14px;">
+          <img src="/images/auth/facebook.svg" alt="Facebook" class="w-5 h-5 object-contain">
+          Continue with Facebook
+        </button>
+
+      </div>
+
+      <!-- Divider -->
+      <div class="flex items-center gap-3 mb-5">
+        <div class="flex-1 h-px bg-surface-chigh"></div>
+        <span class="font-body text-outline" style="font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;">or continue with email</span>
+        <div class="flex-1 h-px bg-surface-chigh"></div>
+      </div>
+
+      <!-- ═══════════════════════════════════ -->
+      <!-- EMAIL + PASSWORD FORM -->
+      <!-- ═══════════════════════════════════ -->
+      <form onsubmit="handleSignup(event)" class="space-y-4">
 
         <!-- Email -->
         <div>
@@ -187,30 +225,6 @@
               <div id="str4" class="flex-1 h-1 rounded-full bg-surface-chigh"></div>
             </div>
             <p id="strLabel" class="font-body text-outline mt-0.5" style="font-size:10px;"></p>
-          </div>
-        </div>
-
-        <!-- Country + City -->
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="font-body text-on-surface-variant block mb-1.5" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Country</label>
-            <div class="relative">
-              <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline" style="font-size:16px;">public</span>
-              <input id="signupCountry" type="text" autocomplete="country-name"
-                placeholder="Country"
-                class="auth-input w-full rounded-xl pl-10 pr-3 py-3 font-body bg-surface-clow"
-                style="font-size:13px;">
-            </div>
-          </div>
-          <div>
-            <label class="font-body text-on-surface-variant block mb-1.5" style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">City</label>
-            <div class="relative">
-              <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline" style="font-size:16px;">location_city</span>
-              <input id="signupCity" type="text" autocomplete="address-level2"
-                placeholder="City"
-                class="auth-input w-full rounded-xl pl-10 pr-3 py-3 font-body bg-surface-clow"
-                style="font-size:13px;">
-            </div>
           </div>
         </div>
 
@@ -259,6 +273,7 @@
   </div>
 
 </div>
+
 <script>
 var supabaseClient = supabase.createClient(
   'https://nhymadutuhpjgkiurify.supabase.co',
@@ -268,16 +283,44 @@ var supabaseClient = supabase.createClient(
 var termsAccepted = false
 var referralCode = null
 
-function generateInviteCode() {
-  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // No confusing chars
-  var code = '';
-  for (var i = 0; i < 8; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+// ─────────────────────────────────────────────
+// SOCIAL / OAUTH SIGN-IN
+// ─────────────────────────────────────────────
+async function signInWithProvider(provider) {
+  try {
+    var { data, error } = await supabaseClient.auth.signInWithOAuth({
+      provider: provider, // 'google' | 'apple' | 'facebook'
+      options: {
+        redirectTo: window.location.origin + '/app/onboarding.html',
+        queryParams: {
+          // Optional: force account picker on Google
+          access_type: 'offline',
+          prompt: 'select_account'
+        }
+      }
+    })
+
+    if (error) {
+      showError(error.message || 'Could not start social sign-in. Please try again.')
+    }
+    // On success Supabase redirects the browser automatically
+  } catch (err) {
+    console.error('OAuth error:', err)
+    showError('Something went wrong. Please try again.')
   }
-  return code;
 }
 
-// Check existing session
+function showError(msg) {
+  var errorEl = document.getElementById('signupError')
+  var errorMsg = document.getElementById('signupErrorMsg')
+  errorMsg.textContent = msg
+  errorEl.classList.remove('hidden')
+  errorEl.className = 'bg-tertiary/10 rounded-xl p-3 flex items-center gap-3 mb-4'
+}
+
+// ─────────────────────────────────────────────
+// EXISTING SESSION CHECK
+// ─────────────────────────────────────────────
 async function checkExistingSession() {
   try {
     var result = await supabaseClient.auth.getSession()
@@ -286,10 +329,11 @@ async function checkExistingSession() {
     }
   } catch(e) {}
 }
-
 checkExistingSession()
 
-// Check for referral code in URL
+// ─────────────────────────────────────────────
+// REFERRAL CODE
+// ─────────────────────────────────────────────
 function checkReferralCode() {
   var params = new URLSearchParams(window.location.search)
   var ref = params.get('ref')
@@ -299,10 +343,11 @@ function checkReferralCode() {
     document.getElementById('referralBanner').classList.remove('hidden')
   }
 }
-
 checkReferralCode()
 
-// Password strength
+// ─────────────────────────────────────────────
+// PASSWORD STRENGTH
+// ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   var passInput = document.getElementById('signupPassword')
   passInput.addEventListener('input', function() {
@@ -322,19 +367,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     for (var i = 1; i <= 4; i++) {
       var bar = document.getElementById('str' + i)
-      if (i <= score) {
-        bar.style.background = colors[score]
-      } else {
-        bar.style.background = '#e9e8e1'
-      }
+      bar.style.background = (i <= score) ? colors[score] : '#e9e8e1'
     }
-
     document.getElementById('strLabel').textContent = labels[score]
     document.getElementById('strLabel').style.color = colors[score]
   })
 })
 
-// Terms toggle
+// ─────────────────────────────────────────────
+// TERMS + PASSWORD TOGGLE
+// ─────────────────────────────────────────────
 function toggleTerms() {
   termsAccepted = !termsAccepted
   var check = document.getElementById('termsCheck')
@@ -360,15 +402,14 @@ function togglePassword(inputId, iconId) {
   }
 }
 
-// Signup
+// ─────────────────────────────────────────────
+// EMAIL + PASSWORD SIGNUP
+// ─────────────────────────────────────────────
 async function handleSignup(e) {
   e.preventDefault()
 
-  var name = document.getElementById('signupName').value.trim()
   var email = document.getElementById('signupEmail').value.trim()
   var password = document.getElementById('signupPassword').value
-  var country = document.getElementById('signupCountry').value.trim()
-  var city = document.getElementById('signupCity').value.trim()
   var btn = document.getElementById('signupBtn')
   var icon = document.getElementById('signupBtnIcon')
   var label = document.getElementById('signupBtnLabel')
@@ -378,9 +419,7 @@ async function handleSignup(e) {
   errorEl.classList.add('hidden')
   document.querySelectorAll('.auth-input').forEach(function(i) { i.classList.remove('error') })
 
-  // Validation
   var hasError = false
-  if (!name) { document.getElementById('signupName').classList.add('error'); hasError = true }
   if (!email) { document.getElementById('signupEmail').classList.add('error'); hasError = true }
   if (!password || password.length < 8) {
     document.getElementById('signupPassword').classList.add('error')
@@ -410,16 +449,13 @@ async function handleSignup(e) {
   btn.disabled = true
 
   try {
-    // Create auth user
+    var onboardingRedirectUrl = window.location.origin + '/app/onboarding.html'
+
     var authResult = await supabaseClient.auth.signUp({
       email: email,
       password: password,
       options: {
-        data: {
-          full_name: name,
-          country: country || null,
-          city: city || null
-        }
+        emailRedirectTo: onboardingRedirectUrl
       }
     })
 
@@ -432,16 +468,12 @@ async function handleSignup(e) {
 
     var userId = authResult.data.user.id
 
-// Wait for trigger to create profile
-await new Promise(resolve => setTimeout(resolve, 800))
+    // Wait for profile trigger
+    await new Promise(resolve => setTimeout(resolve, 1500))
 
-  // Trigger creates the profile automatically - just wait a moment
-await new Promise(resolve => setTimeout(resolve, 500))
-
-    // Handle referral
+    // Referral handling
     if (referralCode) {
       try {
-        // Find referrer by invite code
         var referrerResult = await supabaseClient
           .from('profiles')
           .select('id')
@@ -449,7 +481,6 @@ await new Promise(resolve => setTimeout(resolve, 500))
           .single()
 
         if (referrerResult.data) {
-          // Create referral record
           await supabaseClient.from('referrals').insert({
             referrer_id: referrerResult.data.id,
             referred_id: userId,
@@ -457,31 +488,24 @@ await new Promise(resolve => setTimeout(resolve, 500))
             status: 'signed_up',
             signed_up_at: new Date().toISOString()
           })
-
-          // Update referred_by on profile
           await supabaseClient.from('profiles').update({
             referred_by: referrerResult.data.id
           }).eq('id', userId)
-
-          // Increment referrer's recruit count
           await supabaseClient.rpc('increment_recruit_count', { user_id: referrerResult.data.id })
         }
       } catch(refError) {
         console.error('Referral tracking error:', refError)
-        // Don't block signup if referral fails
       }
     }
 
-    // Success
     icon.classList.remove('spin')
     icon.textContent = 'check_circle'
     label.textContent = 'Welcome!'
 
-    // Check if email confirmation is required
     if (authResult.data.session) {
-      // Auto-confirmed — go to onboarding
+      // Auto-confirmed → go straight to onboarding
       setTimeout(function() {
-        window.location.href = 'index.html'
+        window.location.href = 'onboarding.html'
       }, 700)
     } else {
       // Email confirmation required
@@ -491,11 +515,10 @@ await new Promise(resolve => setTimeout(resolve, 500))
         btn.disabled = false
 
         errorEl.classList.remove('hidden')
-        errorMsg.textContent = ''
         errorEl.className = 'bg-primary-container/20 rounded-xl p-3.5 flex items-center gap-3 mb-5'
         errorEl.innerHTML =
           '<span class="material-symbols-outlined text-primary filled flex-shrink-0" style="font-size:18px;">mail</span>'
-          + '<p class="font-body font-semibold text-primary" style="font-size:12px;">Check your email to verify your account, then come back to sign in.</p>'
+          + '<p class="font-body font-semibold text-primary" style="font-size:12px;">We sent an activation link. Confirm your email, then click it to begin your onboarding!</p>'
       }, 700)
     }
 
