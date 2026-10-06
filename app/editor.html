@@ -1513,10 +1513,19 @@ function downloadImage(){
 var hasLoggedShareForThisQuote = false;
 
 async function logShare(pl) {
-  if (!currentUser || !currentQuoteId || hasLoggedShareForThisQuote) return;
-  
-  hasLoggedShareForThisQuote = true; // Lock it so it only counts once
-  
+  if (!currentUser || !currentQuoteId) return;
+
+  // Prevent logging multiple share rows for the same quote within 30 seconds
+  var sessionKey = currentUser.id + '_' + currentQuoteId;
+  var now = Date.now();
+  if (window._lastShareTime && (now - window._lastShareTime < 30000) && window._lastShareKey === sessionKey) {
+    console.log('Share already recorded for this quote session. Skipping duplicate row.');
+    return;
+  }
+
+  window._lastShareTime = now;
+  window._lastShareKey = sessionKey;
+
   try {
     await supabaseClient.from('shares').insert({
       user_id: currentUser.id,
@@ -1524,11 +1533,9 @@ async function logShare(pl) {
       platform: pl
     });
   } catch(e) {
-    console.error(e);
-    hasLoggedShareForThisQuote = false; // Unlock if it failed
+    console.error('Error logging share:', e);
   }
 }
-
 function showToast(msg){
   var ex=document.getElementById('editorToast');if(ex)ex.remove()
   var t=document.createElement('div');t.id='editorToast'
