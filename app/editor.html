@@ -306,6 +306,11 @@
   <section class="px-4 pt-4">
     <div class="post-pill">
       <div class="post-canvas-wrap">
+        <div class="flex items-center justify-between mb-2 px-2">
+  <span id="platformFormatLabel" class="font-body text-primary font-bold" style="font-size:11px; text-transform:uppercase; letter-spacing:0.05em;">
+    Optimized for Instagram
+  </span>
+</div>
         <div class="preview-canvas" id="previewCanvas">
           <div id="bgLayer" class="absolute inset-0 bg-cover bg-center"></div>
           <div id="darkLayer" class="absolute inset-0" style="background:rgba(0,0,0,0.3)"></div>
@@ -673,17 +678,31 @@ const PLATFORM_CONFIG = {
   'default':   { ratio: '1/1', w: 1080, h: 1080 }
 };
 
-// Helper function to resize the canvas dynamically
-function applyPlatformFormat(platformKey) {
-  currentSharePlatform = platformKey.toLowerCase();
-  var config = PLATFORM_CONFIG[currentSharePlatform] || PLATFORM_CONFIG['default'];
+function applyPlatformFormat(platformStr) {
+  if (!platformStr) platformStr = 'instagram';
+  
+  var key = platformStr.toLowerCase();
+  if (key.includes('story') || key.includes('tiktok')) currentSharePlatform = 'tiktok';
+  else if (key.includes('twitter') || key.includes('x')) currentSharePlatform = 'twitter';
+  else if (key.includes('whatsapp')) currentSharePlatform = 'whatsapp';
+  else if (key.includes('facebook')) currentSharePlatform = 'facebook';
+  else currentSharePlatform = 'instagram'; // defaults to 4:5
+
+  var config = PLATFORM_CONFIG[currentSharePlatform] || PLATFORM_CONFIG['instagram'];
   
   var canvasEl = document.getElementById('previewCanvas');
   if(canvasEl) {
     canvasEl.style.transition = 'aspect-ratio 0.4s ease';
-    canvasEl.style.aspectRatio = config.ratio;
+    canvasEl.style.setProperty('aspect-ratio', config.ratio, 'important');
+  }
+
+  var labelEl = document.getElementById('platformFormatLabel');
+  if(labelEl) {
+    var displayNames = { 'tiktok': 'STORY / REEL', 'twitter': 'X (TWITTER)', 'whatsapp': 'SQUARE', 'facebook': 'FACEBOOK', 'instagram': 'INSTAGRAM' };
+    labelEl.textContent = 'Optimized for ' + (displayNames[currentSharePlatform] || currentSharePlatform.toUpperCase());
   }
 }
+  
 // ═══ STATE ═══
 var selectedBgType = 'image'
 var selectedBgValue = ''
@@ -1199,6 +1218,7 @@ function openConfirmShare(){
   var seed=document.getElementById('seedIcon')
   if(seed){seed.classList.remove('seed-icon-animate');void seed.offsetWidth;seed.classList.add('seed-icon-animate')}
 }
+  
 function closeConfirmShare(){
   document.getElementById('confirmShareSheet').classList.remove('open')
   setTimeout(function(){document.getElementById('confirmShareOverlay').classList.add('hidden')},300)
@@ -1210,41 +1230,45 @@ async function confirmedShare(){
   goBtn.style.pointerEvents='none'
   haptic('medium')
 
-  var result=await generateImage()
-  if(!result.success){
-    goBtn.innerHTML='Share now';goBtn.style.pointerEvents=''
-    showToast(result.error||'Error generating image');return
-  }
-
+  // 1. COPY CLIPBOARD IMMEDIATELY (Fixes the browser security block)
   if(fullCaption && navigator.clipboard){
-    try{await navigator.clipboard.writeText(fullCaption)}catch(e){}
+    try{ await navigator.clipboard.writeText(fullCaption); } catch(e){}
   }
-  goBtn.innerHTML='Share now';goBtn.style.pointerEvents=''
 
+  // 2. Generate Image
+  var result = await generateImage();
+  if(!result.success){
+    goBtn.innerHTML='Share now'; goBtn.style.pointerEvents='';
+    showToast(result.error||'Error generating image'); return;
+  }
+
+  goBtn.innerHTML='Share now'; goBtn.style.pointerEvents='';
+
+  // 3. Mobile Native Share
   if(isMobileDevice()){
     if(imageFile && navigator.canShare && navigator.canShare({files:[imageFile]})){
       try{
         await navigator.share({files:[imageFile],title:'Go Spread The Word',text:fullCaption})
-        await logShare(currentSharePlatform);
+        await logShare(currentSharePlatform)
         closeConfirmShare()
-        setTimeout(function(){showSuccess('shared via your device')},300)
-        return  // ✅ EXIT HERE - don't continue to desktop path
+        setTimeout(function(){showSuccess('shared via your device')}, 300)
+        return  
       }catch(e){if(e.name==='AbortError'){showToast('Share cancelled');return}}
     }
     if(navigator.share){
       try{
         await navigator.share({title:'Go Spread The Word',text:fullCaption})
-        await logShare(currentSharePlatform);
+        await logShare(currentSharePlatform)
         closeConfirmShare()
-        setTimeout(function(){showSuccess('shared via your device')},300)
-        return  // ✅ EXIT HERE
+        setTimeout(function(){showSuccess('shared via your device')}, 300)
+        return
       }catch(e){if(e.name==='AbortError'){showToast('Share cancelled');return}}
     }
   }
   
-  // ✅ Desktop path - only runs if mobile sharing didn't happen or wasn't available
+  // 4. Desktop Path (Opens picker)
   downloadImage()
-  await logShare(currentSharePlatform);
+  await logShare(currentSharePlatform) 
   closeConfirmShare()
   setTimeout(function(){ openDesktopPicker() }, 300)
 }
@@ -1266,48 +1290,39 @@ function closeDesktopPickerAndSucceed(){
 }
 
 // ═══ REPLACE YOUR EXISTING openPlatform() ═══
+// ═══ REPLACE openPlatform() WITH THIS ═══
 async function openPlatform(platform){
-  // 1. Change aspect ratio to match the newly clicked platform
+  // 1. COPY IMMEDIATELY! (Fixes desktop clipboard block)
+  if(fullCaption && navigator.clipboard){
+    try { await navigator.clipboard.writeText(fullCaption); } catch(e) {}
+  }
+
+  // 2. Change format and UI
   applyPlatformFormat(platform);
-  
-  // 2. We MUST re-generate the image at the new dimensions
   showToast('Formatting for ' + platform + '...');
+  
+  // 3. Generate new image for this specific platform
   var result = await generateImage();
-  if(!result.success){
-    showToast('Failed to format image');
+  if(!result.success){ showToast('Failed to format image'); return; }
+
+  // 4. Log the new share
+  logShare(platform);
+  
+  var appUrl = 'https://gospreadtheword.app'
+
+  // Facebook special handling
+  if(platform === 'facebook'){
+    downloadImage();
+    closeDesktopPicker();
+    setTimeout(function(){ 
+      var m = document.getElementById('fbInstructModal'); 
+      if(m) m.classList.remove('hidden'); 
+    }, 200);
     return;
   }
 
-  // 3. Log the share accurately
-  logShare(platform);
-
-  var appUrl = 'https://gospreadtheword.app'
-  
-  // Facebook special handling
-  if(platform === 'facebook'){
-    var downloadSuccess = downloadImage()
-    if(!downloadSuccess){ showToast('Failed to download image'); return }
-    if(fullCaption && navigator.clipboard){
-      navigator.clipboard.writeText(fullCaption).then(function(){
-        closeDesktopPicker()
-        setTimeout(function(){ var m = document.getElementById('fbInstructModal'); if(m) m.classList.remove('hidden') }, 200)
-      }).catch(function(e){
-        closeDesktopPicker()
-        setTimeout(function(){ showToast('⚠️ Could not copy caption'); var m = document.getElementById('fbInstructModal'); if(m) m.classList.remove('hidden') }, 200)
-      })
-    } else {
-      closeDesktopPicker()
-      setTimeout(function(){ var m = document.getElementById('fbInstructModal'); if(m) m.classList.remove('hidden') }, 200)
-    }
-    return
-  }
-  
-  // Standard handling
-  if(fullCaption && navigator.clipboard){
-    navigator.clipboard.writeText(fullCaption).catch(function(e){ console.error('Copy failed', e) })
-  }
-  downloadImage()
-
+  // Other platforms
+  downloadImage();
   var urls = {
     twitter:  'https://twitter.com/intent/tweet?text=' + encodeURIComponent(fullCaption),
     whatsapp: 'https://api.whatsapp.com/send?text=' + encodeURIComponent(fullCaption + '\n\n' + appUrl),
@@ -1317,15 +1332,14 @@ async function openPlatform(platform){
     email:    'mailto:?subject=' + encodeURIComponent('A word to spread') + '&body=' + encodeURIComponent(fullCaption + '\n\n' + appUrl)
   }
 
-  var url = urls[platform]
+  var url = urls[platform];
   if(url){
-    window.open(url, '_blank', 'noopener,noreferrer')
-    closeDesktopPicker()
-    showToast('Formatted, Copied & Downloaded!')
-    haptic('success')
+    window.open(url, '_blank', 'noopener,noreferrer');
+    closeDesktopPicker();
+    // SHOW SUCCESS MODAL!
+    setTimeout(function(){ showSuccess('shared to ' + platform.charAt(0).toUpperCase() + platform.slice(1)); }, 500);
   }
 }
-
 async function copyLinkOnly(){
   if(navigator.clipboard){
     try{ await navigator.clipboard.writeText(fullCaption); showToast('Caption copied again'); haptic('success') }
@@ -1335,13 +1349,10 @@ async function copyLinkOnly(){
 
 function openFacebookAndClose(){
   window.open('https://www.facebook.com/', '_blank', 'noopener,noreferrer')
-  logShare('desktop-facebook')
   closeFbInstructions()
   
-  // Show reminder toast
-  setTimeout(function(){
-    showToast('💡 Upload image from Downloads, then paste caption')
-  }, 1000)
+  // Show success modal!
+  setTimeout(function(){ showSuccess('shared to Facebook'); }, 500);
 }
 
 function closeFbInstructions(){
