@@ -1,286 +1,170 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Go Spread The Word — Share Scripture Daily</title>
-  <meta name="description" content="A faith-based PWA for sharing scripture quotes beautifully on social media." />
-  <link rel="icon" type="image/x-icon" href="/images/favicon/favicon.ico" />
-  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-  <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#fbf9f4" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A Call to Arms. Become a digital soldier for the Great Commission.">
+  <title>Go Spread The Word — A Call to Arms</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
-
+  <!-- Tailwind CSS & Supabase -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500;1,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind Configuration (From Old Design) -->
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed','surface-c':'#efeee7','surface-chigh':'#e9e8e1',
-            'on-surface':'#31332e','on-surface-variant':'#5e6059','inverse-surface':'#0e0e0c','inverse-on-surface':'#9e9d99',
-            'outline':'#7a7b75','outline-variant':'#b2b2ab','primary':'#3d6285','on-primary':'#f7f9ff',
-            'primary-container':'#b0d5fe','on-primary-container':'#234a6c','secondary':'#41637c','tertiary':'#ad332b',
+            'primary': '#1E4060', 'primary-dim': '#152E45', 'primary-light': '#2B5780',
+            'action': '#E25B4D', 'action-dim': '#C84A3E',
+            'gold': '#D4A24C', 'gold-dim': '#B88A3D',
+            'cream': '#F7F4ED', 'cream-warm': '#FBF8F2',
+            'dark': '#16202A', 'dark-soft': '#1F2A35',
+            'text-dark': '#1A1A1A', 'text-muted': '#5C6B7A', 'text-light': '#8E9AA8',
           },
-          fontFamily: { headline: ['Plus Jakarta Sans', 'sans-serif'], body: ['Manrope', 'sans-serif'], quote: ['Lora', 'serif'] }
-        }
-      }
+          fontFamily: {
+            'headline': ['Plus Jakarta Sans', 'sans-serif'],
+            'body': ['Manrope', 'sans-serif'],
+          },
+          boxShadow: {
+            'natural': '0 4px 16px rgba(26, 32, 42, 0.06)',
+            'lifted': '0 8px 32px rgba(26, 32, 42, 0.10)',
+            'ambient': '0 20px 40px rgba(26, 32, 42, 0.05)',
+            'tactical': '0 4px 20px rgba(30, 64, 96, 0.25)',
+            'action-glow': '0 4px 20px rgba(226, 91, 77, 0.35)',
+          },
+        },
+      },
     }
   </script>
 
   <style>
-    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: 'Manrope', sans-serif; background-color: #F7F4ED; color: #1A1A1A; -webkit-font-smoothing: antialiased; }
+    .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .tactical-gradient { background: linear-gradient(145deg, #152E45, #1E4060); }
+    .action-gradient { background: linear-gradient(145deg, #E25B4D, #C84A3E); }
+    .ghost-border { border: 1px solid rgba(92, 107, 122, 0.15); }
+    .scripture-mark { font-family: Georgia, 'Times New Roman', serif; }
     html { scroll-behavior: smooth; }
-    body { font-family: 'Manrope', sans-serif; background-color: #fbf9f4; color: #31332e; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
-    .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.02em; }
-    .font-body { font-family: 'Manrope', sans-serif; letter-spacing: -0.005em; }
-    .font-quote { font-family: 'Lora', serif; }
-    .ms { font-family: 'Material Symbols Outlined'; font-size: 1.25rem; line-height: 1; display: inline-block; vertical-align: middle; font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-    .ms-fill { font-variation-settings: 'FILL' 1; }
-    .grad { background: linear-gradient(135deg, #3d6285, #6b9bc3); }
-    .grad-text { background: linear-gradient(135deg, #3d6285, #6b9bc3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .shadow-a { box-shadow: 0 20px 40px rgba(49,51,46,0.05); }
-    .shadow-am { box-shadow: 0 12px 28px rgba(49,51,46,0.08); }
-    .shadow-al { box-shadow: 0 32px 64px rgba(49,51,46,0.12); }
-    .nav-glass { background: rgba(251, 249, 244, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
-    .nav-link { position: relative; padding-bottom: 2px; transition: color 0.2s ease; }
-    .nav-link::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 0; height: 1px; background: linear-gradient(135deg, #3d6285, #6b9bc3); transition: width 0.25s ease; }
-    .nav-link:hover { color: #31332e; }
-    .nav-link:hover::after { width: 100%; }
-    .orb { position: absolute; border-radius: 9999px; filter: blur(72px); pointer-events: none; }
-    @keyframes phoneFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-    .phone-float { animation: phoneFloat 6s ease-in-out infinite; }
-    @keyframes livePulse { 0%, 100% { opacity: 0.4; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.1); } }
-    .live-dot { animation: livePulse 2.5s ease-in-out infinite; }
-    
-    body.cms-preview-mode [data-cms-id] { position: relative; cursor: pointer; transition: outline 0.15s ease, background-color 0.15s ease; }
-    body.cms-preview-mode [data-cms-id]:hover { outline: 2px dashed #3d6285; outline-offset: -2px; background-color: rgba(61, 98, 133, 0.02); }
+    .scroll-mt { scroll-margin-top: 80px; }
   </style>
 </head>
 <body>
 
-<header id="site-nav" class="nav-glass fixed top-0 inset-x-0 z-50 transition-shadow duration-300">
-  <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-8">
-    <a href="/" class="flex items-center gap-2.5 shrink-0 group">
-      <div class="w-8 h-8 rounded-xl grad flex items-center justify-center shrink-0">
-        <span class="ms ms-fill text-white" style="font-size:1rem;">menu_book</span>
-      </div>
-      <div class="leading-[1.15]">
-        <span class="font-headline font-700 text-on-surface text-[13px] block">Go Spread</span>
-        <span class="font-headline font-700 text-[13px] grad-text block">The Word</span>
-      </div>
+<!-- STATIC HEADER -->
+<header class="fixed top-0 left-0 w-full z-50 bg-cream/90 backdrop-blur-xl ghost-border border-t-0 border-l-0 border-r-0">
+  <div class="max-w-7xl mx-auto px-6 lg:px-8 h-[72px] flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2 flex-shrink-0">
+      <img src="/images/logo/logo-full-dark.png" alt="GSTW" class="h-10 object-contain" style="mix-blend-mode:multiply;">
+      <span class="font-headline font-bold text-primary">GSTW</span>
     </a>
-    <nav class="hidden md:flex items-center gap-7">
-      <a href="#how-it-works" class="nav-link font-body text-sm font-500 text-on-surface-variant">How It Works</a>
-      <a href="#pricing" class="nav-link font-body text-sm font-500 text-on-surface-variant">Pricing</a>
-      <a href="#cause" class="nav-link font-body text-sm font-500 text-on-surface-variant">The Cause</a>
+    <nav class="hidden lg:flex items-center gap-8">
+      <a href="#home" class="font-body font-semibold text-sm text-text-muted hover:text-primary transition-colors">Home</a>
+      <a href="#features" class="font-body font-semibold text-sm text-text-muted hover:text-primary transition-colors">Mission</a>
+      <a href="#pricing" class="font-body font-semibold text-sm text-text-muted hover:text-primary transition-colors">Enlist</a>
+      <a href="Admin/login.html" class="font-body font-semibold text-sm text-text-muted hover:text-primary transition-colors">Admin</a>
     </nav>
-    <div class="flex items-center gap-3 shrink-0">
-      <a href="/app/login.html" class="hidden md:block font-body text-sm font-500 text-on-surface-variant hover:text-on-surface transition-colors">Sign in</a>
-      <a href="/app/signup.html" class="grad text-white font-headline font-600 text-sm px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity shadow-am">Enlist Now</a>
-    </div>
   </div>
 </header>
 
-<!-- CMS INJECTED CONTENT -->
-<div id="cms-sections" class="pt-16">
-  <div class="py-24 text-center">
-    <span class="ms animate-spin text-primary" style="font-size: 2rem;">progress_activity</span>
-    <p class="font-body text-on-surface-variant mt-3">Loading Mission Briefing...</p>
-  </div>
-</div>
+<!-- DYNAMIC CMS CONTAINER -->
+<div id="cms-sections"></div>
 
-<footer class="bg-inverse-surface py-16">
-  <div class="max-w-6xl mx-auto px-6">
-    <div class="grid md:grid-cols-4 gap-10 mb-14">
-      <div class="md:col-span-2">
-        <div class="flex items-center gap-2.5 mb-5">
-          <div class="w-8 h-8 rounded-xl grad flex items-center justify-center shrink-0">
-            <span class="ms ms-fill text-white" style="font-size:1rem;">menu_book</span>
-          </div>
-          <span class="font-headline font-700 text-on-primary text-sm">Go Spread The Word</span>
-        </div>
-        <p class="font-body text-sm font-400 text-inverse-on-surface leading-relaxed max-w-xs mb-7">
-          A faith-based PWA for sharing God's Word beautifully across social media. Built on mission. Powered by community.
-        </p>
-        <div id="footer-socials" class="flex flex-wrap gap-2.5"></div>
-      </div>
-      <div>
-        <p class="font-body text-[10px] font-700 text-on-primary opacity-35 uppercase tracking-[0.12em] mb-5">Product</p>
-        <ul class="space-y-3">
-          <li><a href="#how-it-works" class="font-body text-sm text-inverse-on-surface hover:text-on-primary transition-colors">How It Works</a></li>
-          <li><a href="#pricing" class="font-body text-sm text-inverse-on-surface hover:text-on-primary transition-colors">Pricing</a></li>
-        </ul>
-      </div>
-      <div>
-        <p class="font-body text-[10px] font-700 text-on-primary opacity-35 uppercase tracking-[0.12em] mb-5">Legal</p>
-        <ul class="space-y-3">
-          <li><a href="/app/privacy.html" class="font-body text-sm text-inverse-on-surface hover:text-on-primary transition-colors">Privacy Policy</a></li>
-          <li><a href="/app/terms.html" class="font-body text-sm text-inverse-on-surface hover:text-on-primary transition-colors">Terms of Service</a></li>
-        </ul>
-      </div>
+<!-- STATIC FOOTER -->
+<footer class="bg-dark py-16 px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto text-center">
+    <div class="flex justify-center items-center gap-4 mb-8" id="footer-socials">
+      <!-- Live Social Icons will inject here -->
     </div>
-    <div class="flex flex-col md:flex-row items-center justify-between gap-4 pt-8 border-t border-white/[0.07]">
-      <p class="font-body text-xs text-inverse-on-surface">© 2025 Go Spread The Word. All rights reserved.</p>
-    </div>
+    <div class="h-px bg-white/10 mb-6 max-w-lg mx-auto"></div>
+    <p class="font-body text-xs text-white/40">© 2024 Go Spread The Word. Made for the Great Commission.</p>
   </div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+  // ─── INIT SUPABASE ───
   const supabaseClient = supabase.createClient(
     'https://nhymadutuhpjgkiurify.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
   );
 
-  const isPreview = new URLSearchParams(location.search).get('preview') === '1';
   const container = document.getElementById('cms-sections');
   let allTiers = [];
 
-  if (isPreview) document.body.classList.add('cms-preview-mode');
-
   function esc(s) {
     if (!s) return '';
-    const d = document.createElement('div');
-    d.textContent = s;
-    return d.innerHTML;
+    const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
   }
 
-  // ─── STYLE ENGINE ──────────────────────────────────────────
-  function tx(d, prefix, defaultClass) {
-    let cls = defaultClass + ' ';
-    if (d[prefix+'_size']) cls += `text-${d[prefix+'_size']} `;
-    if (d[prefix+'_color']) cls += d[prefix+'_color'] === 'white' ? 'text-white ' : `text-${d[prefix+'_color']} `;
-    if (d[prefix+'_font']) cls += `font-${d[prefix+'_font']} `;
-    if (d[prefix+'_align']) cls += `text-${d[prefix+'_align']} `;
-    return cls.trim();
-  }
+  // ─── DYNAMIC RENDERERS (STYLED WITH OLD DESIGN) ───
 
-  function btnStyle(d, prefix, baseClass = 'inline-flex items-center justify-center gap-2 font-headline font-700 uppercase tracking-wider rounded-full shadow-am transition-all') {
-    let cls = baseClass + ' ';
-    const variant = d[prefix+'_variant'] || 'grad';
-    const size = d[prefix+'_size'] || 'base';
-
-    if (variant === 'grad') cls += 'grad text-white hover:opacity-90 ';
-    else if (variant === 'primary') cls += 'bg-primary text-white hover:bg-primary-dim ';
-    else if (variant === 'tertiary') cls += 'bg-tertiary text-white hover:bg-tertiary-dim ';
-    else if (variant === 'outline') cls += 'bg-transparent border-2 border-primary text-primary hover:bg-surface-c ';
-    else if (variant === 'ghost') cls += 'bg-surface-cl border border-outline-variant text-on-surface hover:bg-surface-clow ';
-
-    if (size === 'sm') cls += 'px-6 py-3 text-xs ';
-    else if (size === 'lg') cls += 'px-10 py-5 text-base ';
-    else cls += 'px-8 py-4 text-sm '; // base
-
-    return cls;
-  }
-
-  // ─── RENDERERS ─────────────────────────────────────────────
-  
   function renderHero(d, id) {
-    const layout = d.layout || 'right-aligned';
-    const overlay = d.overlay_style || 'light';
     const bg = d.background_image || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80';
-    
-    const overlayCss = overlay === 'dark'
-      ? 'background: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.25) 40%, rgba(0,0,0,0.65) 100%);'
-      : 'background: linear-gradient(180deg, rgba(251,249,244,0.35) 0%, rgba(251,249,244,0.65) 100%);';
-
-    const isDark = overlay === 'dark';
-    const defaultHead = isDark ? 'text-white' : 'text-on-surface';
-    const defaultSub = isDark ? 'text-white/85' : 'text-on-surface-variant';
-    const defaultQuote = isDark ? 'text-white/90' : 'text-on-surface';
-
-    const wrapperAlign = layout === 'centered' ? 'items-center text-center max-w-4xl mx-auto' : 'items-end text-right ml-auto max-w-2xl';
-    const ctaAlign = layout === 'centered' ? 'justify-center' : 'justify-end';
-
-    const headlineHtml = d.headline ? d.headline.replace(/\|/g, '<br>') : 'Spread the Word.<br>Change the World.';
-    const headCls = tx(d, 'headline', `font-headline font-800 ${defaultHead} text-5xl md:text-[72px] leading-[1.05] tracking-tight`);
-    const subheadCls = tx(d, 'subheadline', `font-body text-lg ${defaultSub} mt-4 ${layout === 'centered' ? 'max-w-xl mx-auto' : 'max-w-md ml-auto'}`);
-
-    const hasScripture = d.scripture_intro || d.scripture_quote || d.scripture_ref;
-    const scriptureBlock = hasScripture ? `
-      <div class="mt-8 ${layout === 'centered' ? 'max-w-xl mx-auto' : 'max-w-md ml-auto'}">
-        ${d.scripture_intro ? `<p class="font-body text-sm ${defaultSub} mb-2">${esc(d.scripture_intro)}</p>` : ''}
-        ${d.scripture_quote ? `<p class="font-quote italic text-lg md:text-xl leading-relaxed ${defaultQuote}">${esc(d.scripture_quote)}</p>` : ''}
-        ${d.scripture_ref ? `<p class="font-quote italic text-sm ${defaultSub} mt-3">${esc(d.scripture_ref)}</p>` : ''}
-      </div>
-    ` : '';
-
     return `
-      <section data-cms-id="${id}" class="relative min-h-[90vh] flex items-center overflow-hidden pb-12">
+      <section id="home" data-cms-id="${id}" class="relative min-h-screen flex flex-col justify-end overflow-hidden pt-[72px]">
         <div class="absolute inset-0 z-0">
           <img src="${esc(bg)}" class="w-full h-full object-cover">
-          <div class="absolute inset-0" style="${overlayCss}"></div>
         </div>
-        <div class="relative z-10 w-full max-w-6xl mx-auto px-6 lg:px-10 pt-32">
-          <div class="flex flex-col ${wrapperAlign}">
-            <h1 class="${headCls}">${headlineHtml}</h1>
-            ${d.subheadline ? `<p class="${subheadCls}">${esc(d.subheadline)}</p>` : ''}
-            ${scriptureBlock}
-            
-            <div class="mt-10 flex flex-col sm:flex-row gap-4 ${ctaAlign} w-full">
-              ${d.cta_text ? `<a href="${esc(d.cta_link || '#')}" class="${btnStyle(d, 'cta')}">${esc(d.cta_text)}</a>` : ''}
-              ${d.secondary_cta_text ? `<a href="${esc(d.secondary_cta_link || '#')}" class="${btnStyle(d, 'secondary_cta', 'inline-flex items-center justify-center gap-2 font-headline font-700 uppercase tracking-wider rounded-full transition-all bg-white/10 border border-white/30 text-white hover:bg-white/20 px-8 py-4 text-sm')}">${esc(d.secondary_cta_text)}</a>` : ''}
-            </div>
+        <div class="absolute inset-0 z-[1] bg-gradient-to-t from-black/80 via-black/40 to-black/10"></div>
+        
+        <div class="relative z-10 w-full max-w-3xl mx-auto px-6 pb-20 pt-32 text-center">
+          <h1 class="font-headline font-extrabold text-4xl md:text-6xl text-white leading-tight tracking-tight mb-5" style="text-shadow:0 2px 20px rgba(0,0,0,0.6);">
+            ${d.headline ? d.headline.replace(/\|/g, '<br>') : 'Spread the Word.<br>Change the World.'}
+          </h1>
+          <p class="font-body font-medium text-base md:text-lg text-white/85 leading-relaxed max-w-lg mx-auto mb-10 italic">
+            "${esc(d.scripture_quote || 'Go therefore and make disciples of all nations.')}" — ${esc(d.scripture_ref || 'Matthew 28:19')}
+          </p>
+          <div>
+            <a href="${esc(d.cta_link || '#pricing')}" class="inline-block bg-gold text-dark font-headline font-bold text-sm uppercase tracking-wider px-10 py-4 rounded-xl shadow-action-glow hover:bg-gold-dim hover:scale-[1.02] transition-all">
+              ${esc(d.cta_text || 'Enlist in the Mission')}
+            </a>
           </div>
         </div>
       </section>`;
   }
 
- function renderStats(d, id) {
-  const items = Array.isArray(d.items) && d.items.length
-    ? d.items
-    : [
-        { metric: 'warriors', label: 'Warriors Enlisted', fallback: '1248' },
-        { metric: 'shares', label: 'Words Deployed', fallback: '47892' },
-        { metric: 'countries', label: 'Countries Reached', fallback: '38' }
-      ];
-
-  const cols = Math.min(Math.max(items.length, 1), 5);
-
-  return `
-    <section data-cms-id="${id}" class="bg-surface-clow py-14 border-y border-surface-chigh">
-      <div class="max-w-6xl mx-auto px-6">
-        ${(d.section_title || d.section_subtitle) ? `
-          <div class="text-center max-w-2xl mx-auto mb-10">
-            ${d.section_title ? `<span class="font-body font-bold text-xs text-primary uppercase tracking-widest mb-3 block">${esc(d.section_title)}</span>` : ''}
-            ${d.section_subtitle ? `<h2 class="font-headline font-extrabold text-2xl md:text-4xl text-on-surface">${esc(d.section_subtitle)}</h2>` : ''}
-          </div>` : ''}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${cols} gap-8" data-stats-root="${id}">
-          ${items.map((item, i) => `
-            <div class="text-center ${i > 0 ? 'lg:border-l lg:border-surface-chigh' : ''}">
-              <span class="font-headline font-extrabold text-4xl text-primary block"
-                    data-stat-metric="${esc(item.metric || 'custom')}"
-                    data-stat-fallback="${esc(item.fallback || '0')}">—</span>
-              <span class="font-body font-semibold text-xs text-on-surface-variant tracking-wider uppercase mt-1.5 block">
-                ${esc(item.label || 'Stat')}
-              </span>
-            </div>
-          `).join('')}
+  function renderStats(d, id) {
+    const items = Array.isArray(d.items) && d.items.length ? d.items : [
+      { metric: 'warriors', label: 'Warriors Enlisted', fallback: '1248' },
+      { metric: 'shares', label: 'Words Deployed', fallback: '47892' },
+      { metric: 'countries', label: 'Countries Reached', fallback: '38' }
+    ];
+    return `
+      <section data-cms-id="${id}" class="bg-dark py-10">
+        <div class="max-w-5xl mx-auto px-6">
+          <div class="grid grid-cols-1 md:grid-cols-${Math.min(items.length, 4)} gap-5">
+            ${items.map((item, i) => `
+              <div class="text-center ${i > 0 ? 'md:border-l md:border-white/10' : ''}">
+                <span class="font-headline font-extrabold text-4xl text-gold block" data-stat-metric="${esc(item.metric)}" data-stat-fallback="${esc(item.fallback)}">—</span>
+                <span class="font-body font-semibold text-sm text-white/70 uppercase tracking-widest mt-1 block">${esc(item.label)}</span>
+              </div>
+            `).join('')}
+          </div>
         </div>
-      </div>
-    </section>`;
-}
+      </section>`;
+  }
 
   function renderFeatures(d, id) {
     return `
-      <section data-cms-id="${id}" class="py-24 bg-surface">
+      <section data-cms-id="${id}" class="py-20 lg:py-24 bg-cream scroll-mt">
         <div class="max-w-7xl mx-auto px-6 lg:px-8">
           <div class="text-center max-w-2xl mx-auto mb-16">
             <span class="font-body font-bold text-xs text-primary uppercase tracking-widest mb-3 block">${esc(d.section_title)}</span>
-            <h2 class="${tx(d, 'section_subtitle', 'font-headline font-extrabold text-3xl md:text-5xl text-on-surface')}">${esc(d.section_subtitle)}</h2>
+            <h2 class="font-headline font-extrabold text-3xl md:text-5xl text-text-dark mb-4">${esc(d.section_subtitle)}</h2>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            ${(d.items || []).map(item => `
-              <article class="bg-surface-cl rounded-3xl overflow-hidden shadow-a hover:-translate-y-1 transition-transform">
-                ${item.image ? `<div class="h-56 overflow-hidden bg-surface-c"><img src="${esc(item.image)}" class="w-full h-full object-cover"></div>` : ''}
-                <div class="p-8">
-                  <h3 class="font-headline font-bold text-xl text-on-surface mb-3">${esc(item.title)}</h3>
-                  <p class="font-body text-sm text-on-surface-variant leading-relaxed">${esc(item.description)}</p>
+            ${(d.items || []).map((item, i) => `
+              <article class="bg-white rounded-2xl overflow-hidden shadow-natural ghost-border hover:shadow-lifted hover:-translate-y-1 transition-all ${i === 1 ? 'border-2 border-gold shadow-lifted' : ''}">
+                ${item.image ? `<div class="h-48 overflow-hidden"><img src="${esc(item.image)}" class="w-full h-full object-cover"></div>` : ''}
+                <div class="p-6">
+                  <h3 class="font-headline font-bold text-xl text-text-dark mb-3">${esc(item.title)}</h3>
+                  <p class="font-body text-sm text-text-muted leading-relaxed">${esc(item.description)}</p>
                 </div>
               </article>
             `).join('')}
@@ -289,47 +173,46 @@
       </section>`;
   }
 
-  function renderTextBlock(d, id) {
+  function renderSteps(d, id) {
     return `
-      <section data-cms-id="${id}" class="py-24 bg-surface-clow">
-        <div class="max-w-4xl mx-auto px-6">
-          <div class="text-center mb-10">
+      <section id="features" data-cms-id="${id}" class="py-20 lg:py-24 bg-white scroll-mt">
+        <div class="max-w-6xl mx-auto px-6 lg:px-8">
+          <div class="text-center max-w-2xl mx-auto mb-16">
             <span class="font-body font-bold text-xs text-primary uppercase tracking-widest mb-3 block">${esc(d.section_title)}</span>
-            <h2 class="${tx(d, 'section_subtitle', 'font-headline font-extrabold text-3xl md:text-5xl text-on-surface')}">${esc(d.section_subtitle)}</h2>
+            <h2 class="font-headline font-extrabold text-3xl md:text-5xl text-text-dark mb-4">${esc(d.section_subtitle)}</h2>
           </div>
-          <div class="${tx(d, 'body_text', 'font-body text-base text-on-surface-variant leading-relaxed space-y-4')}">
-            ${d.body_text ? d.body_text.split('\\n').map(p => `<p>${esc(p)}</p>`).join('') : ''}
+          <div class="space-y-16 lg:space-y-20 mb-16">
+            ${(d.items || []).map((item, i) => `
+              <div class="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
+                <div class="${i % 2 !== 0 ? 'md:order-2' : ''} rounded-2xl overflow-hidden shadow-lifted">
+                  <img src="${esc(item.image)}" class="w-full h-72 object-cover">
+                </div>
+                <div class="${i % 2 !== 0 ? 'md:order-1' : ''}">
+                  <span class="font-headline font-extrabold text-6xl text-gold/40 leading-none block mb-2">0${i+1}</span>
+                  <h3 class="font-headline font-bold text-2xl md:text-3xl text-text-dark mb-3">${esc(item.title)}</h3>
+                  <p class="font-body text-base text-text-muted leading-relaxed">${esc(item.description)}</p>
+                </div>
+              </div>
+            `).join('')}
           </div>
-          ${d.cta_text ? `<div class="mt-10 text-center"><a href="${esc(d.cta_link||'#')}" class="${btnStyle(d, 'cta')}">${esc(d.cta_text)}</a></div>` : ''}
         </div>
       </section>`;
   }
 
   function renderPricing(d, id) {
-  // Match by UUID id OR name OR slug (covers both old and new data)
-  const activeTiers = (d.tier_ids || []).map(tid => {
-    const key = String(tid).toLowerCase().trim();
-    return allTiers.find(t =>
-      String(t.id) === String(tid) ||
-      String(t.name || '').toLowerCase().trim() === key ||
-      String(t.slug || '').toLowerCase().trim() === key
-    );
-  }).filter(Boolean);
+    const activeTiers = (d.tier_ids || []).map(tid => {
+      const key = String(tid).toLowerCase().trim();
+      return allTiers.find(t => String(t.id) === String(tid) || String(t.name||'').toLowerCase().trim() === key || String(t.slug||'').toLowerCase().trim() === key);
+    }).filter(Boolean);
 
-  if (activeTiers.length === 0) return '';
-
-    const getFeatureText = (f) => {
-      if (typeof f === 'string') return f;
-      if (f && typeof f === 'object') return f.text || f.label || f.name || f.feature || '';
-      return String(f || '');
-    };
+    if (activeTiers.length === 0) return '';
 
     return `
-      <section data-cms-id="${id}" id="pricing" class="py-24 bg-surface-clow">
-        <div class="max-w-6xl mx-auto px-6">
+      <section id="pricing" data-cms-id="${id}" class="py-20 lg:py-24 bg-cream scroll-mt">
+        <div class="max-w-6xl mx-auto px-6 lg:px-8">
           <div class="text-center max-w-2xl mx-auto mb-16">
             <span class="font-body font-bold text-xs text-primary uppercase tracking-widest mb-3 block">${esc(d.section_title)}</span>
-            <h2 class="${tx(d, 'section_subtitle', 'font-headline font-extrabold text-3xl md:text-5xl text-on-surface')}">${esc(d.section_subtitle)}</h2>
+            <h2 class="font-headline font-extrabold text-3xl md:text-5xl text-text-dark mb-4">${esc(d.section_subtitle)}</h2>
           </div>
           <div class="grid md:grid-cols-${Math.min(activeTiers.length, 3)} gap-6 max-w-5xl mx-auto items-stretch">
             ${activeTiers.map((t, idx) => {
@@ -337,24 +220,26 @@
               const isFree = !t.price || Number(t.price) === 0;
               const rawFeatures = Array.isArray(t.features) ? t.features : [];
               return `
-                <div class="${isPopular ? 'grad text-white md:-my-4 md:py-4 relative' : 'bg-surface-cl text-on-surface'} rounded-3xl p-8 shadow-am flex flex-col justify-between">
-                  ${isPopular ? `<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-tertiary text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-am">Most Popular</div>` : ''}
+                <div class="bg-white rounded-2xl p-8 shadow-lifted flex flex-col justify-between border-2 ${isPopular ? 'border-gold shadow-action-glow' : 'border-transparent ghost-border'}">
                   <div>
-                    <p class="font-headline font-700 ${isPopular ? 'text-on-primary' : 'text-on-surface'} text-lg mb-1">${esc(t.name)}</p>
-                    <p class="font-body text-sm ${isPopular ? 'text-on-primary opacity-70' : 'text-on-surface-variant'} mb-6 min-h-[20px]">${esc(t.description || '')}</p>
-                    <div class="flex items-end gap-1 mb-8">
-                      <span class="font-headline font-800 text-4xl">${isFree ? 'Free' : '$' + t.price}</span>
-                      ${!isFree ? `<span class="font-body text-sm opacity-75 mb-1.5">/month</span>` : ''}
+                    <h3 class="font-headline font-extrabold text-2xl text-text-dark text-center mb-2">${esc(t.name)}</h3>
+                    <div class="text-center mb-5">
+                      <span class="font-headline font-extrabold text-5xl ${isPopular ? 'text-primary' : 'text-text-dark'}">${isFree ? 'Free' : '$' + t.price}</span>
+                      ${!isFree ? `<span class="font-body text-base text-text-muted">/${t.interval||'month'}</span>` : ''}
                     </div>
+                    <div class="h-px bg-cream mb-5"></div>
                     <ul class="space-y-3 mb-8">
-                      ${rawFeatures.map(f => {
-                        const text = getFeatureText(f);
-                        if (!text) return '';
-                        return `<li class="flex items-start gap-3 font-body text-sm ${isPopular ? 'text-on-primary' : 'text-on-surface-variant'}"><span class="ms ms-fill ${isPopular ? 'text-on-primary' : 'text-primary'} shrink-0 mt-0.5" style="font-size:1rem;">check_circle</span><span>${esc(text)}</span></li>`;
-                      }).join('')}
+                      ${rawFeatures.map(f => `
+                        <li class="flex items-start gap-2.5">
+                          <span class="text-gold font-bold flex-shrink-0">✓</span>
+                          <span class="font-body text-sm text-text-dark leading-snug">${esc(typeof f === 'string' ? f : (f.text||''))}</span>
+                        </li>
+                      `).join('')}
                     </ul>
                   </div>
-                  <a href="/app/signup.html" class="block text-center font-headline font-700 text-sm py-3.5 rounded-full transition-colors ${isPopular ? 'text-on-surface bg-surface-cl hover:opacity-95' : 'text-white grad hover:opacity-90'}">${isFree ? 'Get Started Free' : 'Enlist Now'}</a>
+                  <a href="${isFree ? '/app/signup.html' : (t.checkout_url || '/app/signup.html')}" class="${isPopular ? 'action-gradient text-white' : 'tactical-gradient text-white'} block text-center font-headline font-bold text-sm uppercase tracking-wider px-6 py-4 rounded-xl shadow-natural hover:scale-[1.02] transition-transform">
+                    ${isFree ? 'Get Started' : 'Enlist Now'}
+                  </a>
                 </div>`;
             }).join('')}
           </div>
@@ -364,158 +249,114 @@
 
   function renderWaitlist(d, id) {
     return `
-      <section data-cms-id="${id}" class="py-24 bg-surface">
-        <div class="max-w-4xl mx-auto px-6">
-          <div class="bg-surface-clow rounded-3xl p-10 md:p-16 text-center shadow-a border border-dashed border-outline-variant">
-            <span class="inline-block font-body font-bold text-xs text-tertiary uppercase tracking-widest bg-tertiary/10 px-4 py-1.5 rounded-full mb-6">${esc(d.section_title)}</span>
-            <h2 class="${tx(d, 'section_subtitle', 'font-headline font-extrabold text-3xl md:text-4xl text-on-surface mb-6')}">${esc(d.section_subtitle)}</h2>
-            <p class="font-body text-base text-on-surface-variant leading-relaxed max-w-xl mx-auto mb-10">${esc(d.body_text)}</p>
-            <form id="waitlistForm-${id}" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto" onsubmit="event.preventDefault(); this.innerHTML = '<p class=\\'font-body text-primary font-bold w-full p-4 bg-primary-container/30 rounded-xl\\'>Received. You are on the list.</p>';">
-              <input type="email" placeholder="Email address" required class="flex-1 h-14 px-6 bg-surface-cl rounded-full border border-surface-chigh font-body text-sm text-on-surface focus:outline-none focus:border-primary">
-              <button type="submit" class="${btnStyle(d, 'cta')}">${esc(d.button_text)}</button>
-            </form>
-          </div>
+      <section data-cms-id="${id}" class="py-20 lg:py-24 bg-primary relative overflow-hidden scroll-mt">
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full opacity-30" style="background: radial-gradient(circle, rgba(212,162,76,0.15) 0%, transparent 70%);"></div>
+        <div class="relative max-w-3xl mx-auto px-6 lg:px-8 text-center">
+          <span class="inline-block font-body font-bold text-xs text-gold uppercase tracking-widest bg-gold/10 px-3 py-1.5 rounded-full mb-5">${esc(d.section_title)}</span>
+          <h2 class="font-headline font-extrabold text-3xl md:text-5xl text-white mb-4">${esc(d.section_subtitle)}</h2>
+          <p class="font-body text-base md:text-lg text-white/85 leading-relaxed max-w-xl mx-auto mb-10">${esc(d.body_text)}</p>
+          <form class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto" onsubmit="event.preventDefault(); this.innerHTML = '<p class=\\'font-body text-gold font-bold w-full p-4 bg-gold/10 rounded-xl\\'>Received. You are on the list.</p>';">
+            <input type="email" placeholder="Your email address" required class="flex-1 h-12 px-5 bg-white/10 rounded-xl border border-white/20 font-body text-sm text-white focus:outline-none focus:border-gold transition-colors">
+            <button type="submit" class="h-12 px-6 bg-gold text-primary font-headline font-bold text-sm rounded-xl hover:bg-gold-dim transition-colors whitespace-nowrap">${esc(d.button_text || 'Join')}</button>
+          </form>
         </div>
       </section>`;
   }
 
-  function renderFooterSocials(items, id) {
+  // Footer Socials (Direct from Database)
+  function renderFooterSocials(platforms) {
     const host = document.getElementById('footer-socials');
     if (!host) return;
-    const icons = { instagram: 'instagram', facebook: 'facebook', x: 'x', twitter: 'x', youtube: 'youtube', tiktok: 'tiktok', linkedin: 'linkedin', whatsapp: 'whatsapp', telegram: 'telegram', threads: 'threads', snapchat: 'snapchat', truthsocial: 'truthsocial' };
     
-    const links = (items || []).filter(i => i && i.url && String(i.url).trim());
+    const icons = { instagram: 'instagram', facebook: 'facebook', x: 'x', twitter: 'x', youtube: 'youtube', tiktok: 'tiktok' };
+    const links = (platforms || []).filter(p => p.desktop_url || p.mobile_url);
+    
     if (links.length === 0) { host.innerHTML = ''; return; }
 
-    host.innerHTML = links.map(i => {
-      const key = String(i.platform || '').toLowerCase().trim().replace(/\s/g, '');
+    host.innerHTML = links.map(p => {
+      const key = String(p.slug || '').toLowerCase().trim().replace(/\s/g, '');
       const icon = icons[key] || 'x';
-      return `<a href="${esc(i.url.trim())}" target="_blank" rel="noopener noreferrer" data-cms-id="${id}" class="w-8 h-8 rounded-full bg-white/[0.08] flex items-center justify-center hover:bg-white/20 transition-colors"><img src="https://cdn.simpleicons.org/${icon}/ffffff" alt="" class="w-4 h-4 opacity-60" /></a>`;
+      const url = p.desktop_url || p.mobile_url || '#';
+      return `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" 
+                 class="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110 shadow-natural"
+                 style="background: ${p.icon_bg || '#1E4060'};">
+                <img src="https://cdn.simpleicons.org/${icon}/${(p.icon_color || '#ffffff').replace('#', '')}" alt="${esc(p.label)}" class="w-5 h-5" />
+              </a>`;
     }).join('');
   }
 
-  const RENDERERS = {
-    hero: renderHero, stats: renderStats, features: renderFeatures, 
-    pricing: renderPricing, waitlist: renderWaitlist, text_block: renderTextBlock,
-    socials: () => '', custom: (d, id) => `<section data-cms-id="${id}">${d.html_content || ''}</section>`
-  };
+  const RENDERERS = { hero: renderHero, stats: renderStats, features: renderFeatures, steps: renderSteps, pricing: renderPricing, waitlist: renderWaitlist, socials: () => '', custom: (d, id) => `<section data-cms-id="${id}">${d.html_content || ''}</section>` };
 
-  // ─── INITIALIZATION & LIVE UPDATES ────────────────────────
+  // ─── INITIALIZATION ───
+
   function renderSections(sectionsList) {
     const visible = sectionsList.filter(s => s.is_visible !== false).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
-    
-    const socialSection = visible.find(s => s.section_type === 'socials');
-    renderFooterSocials(socialSection?.data?.items || [], socialSection?.id);
-
     const pageSections = visible.filter(s => s.section_type !== 'socials');
+    
     container.innerHTML = pageSections.map(s => {
       const renderer = RENDERERS[s.section_type] || RENDERERS.custom;
       return renderer(s.data || {}, s.id);
     }).join('');
     
-    // Always attempt to trigger live stats if grid exists
-    if(document.getElementById('landingStatWarriors')) loadLiveStats();
+    if(document.querySelector('[data-stat-metric]')) loadLiveStats();
   }
 
- async function loadPage() {
-  const { data: tiers, error: tiersErr } = await supabaseClient
-    .from('subscription_tiers')
-    .select('*')
-    .order('sort_order', { ascending: true });
+  async function loadPage() {
+    // Load Subscription Tiers
+    const { data: tiers } = await supabaseClient.from('subscription_tiers').select('*').order('sort_order', { ascending: true });
+    if (tiers) allTiers = tiers;
 
-  if (tiersErr) console.error('Tiers error:', tiersErr);
-  if (tiers) allTiers = tiers;
+    // Load Live Social Platforms
+    const { data: platforms } = await supabaseClient.from('platforms').select('*').eq('is_active', true).order('display_order', { ascending: true });
+    if (platforms) renderFooterSocials(platforms);
 
-  const { data, error } = await supabaseClient
-    .from('landing_sections')
-    .select('*')
-    .order('sort_order', { ascending: true });
-
-  if (!error && data) renderSections(data);
-}
-
- async function loadLiveStats() {
-  const nodes = document.querySelectorAll('[data-stat-metric]');
-  if (!nodes.length) return;
-
-  let warriors = 0, shares = 0, countries = 0, trending = 0, mostShared = 0;
-
-  try {
-    const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-
-    const [pRes, sRes, cRes] = await Promise.all([
-      supabaseClient.from('profiles').select('id', { count: 'exact', head: true }),
-      supabaseClient.from('shares').select('id', { count: 'exact', head: true }),
-      supabaseClient.from('profiles').select('country').not('country', 'is', null)
-    ]);
-
-    warriors = pRes.count || 0;
-    shares = sRes.count || 0;
-
-    const countrySet = new Set();
-    (cRes.data || []).forEach(r => { if (r.country) countrySet.add(r.country); });
-    countries = countrySet.size;
-
-    // Optional 24h metrics queries
-    const optional = await Promise.allSettled([
-      supabaseClient.from('shares').select('id', { count: 'exact', head: true }).gte('created_at', since24h),
-      supabaseClient.from('shares').select('quote_id').gte('created_at', since24h).limit(5000)
-    ]);
-
-    if (optional[0].status === 'fulfilled') trending = optional[0].value.count || 0;
-    if (optional[1].status === 'fulfilled') {
-      const counts = {};
-      (optional[1].value.data || []).forEach(r => {
-        const k = r.quote_id || 'unknown';
-        counts[k] = (counts[k] || 0) + 1;
-      });
-      mostShared = Object.values(counts).reduce((a, b) => Math.max(a, b), 0);
-    }
-  } catch (e) {
-    console.error('[Stats] Live fetch error:', e);
+    // Load CMS Content
+    const { data, error } = await supabaseClient.from('landing_sections').select('*').order('sort_order', { ascending: true });
+    if (!error && data) renderSections(data);
   }
 
-  const map = { warriors, shares, countries, trending, most_shared: mostShared };
+  // ─── LIVE STATS LOGIC ───
+  async function loadLiveStats() {
+    const nodes = document.querySelectorAll('[data-stat-metric]');
+    if (!nodes.length) return;
+    
+    let warriors = 0, shares = 0, countries = 0;
+    try {
+      const [pRes, sRes, cRes] = await Promise.all([
+        supabaseClient.from('profiles').select('id', { count: 'exact', head: true }),
+        supabaseClient.from('shares').select('id', { count: 'exact', head: true }),
+        supabaseClient.from('profiles').select('country').not('country', 'is', null)
+      ]);
+      warriors = pRes.count || 0;
+      shares = sRes.count || 0;
+      const countrySet = new Set();
+      (cRes.data || []).forEach(r => { if (r.country) countrySet.add(r.country); });
+      countries = countrySet.size;
+    } catch (e) { console.error(e); }
 
-  nodes.forEach(el => {
-    const metric = el.getAttribute('data-stat-metric') || 'custom';
-    const fallback = parseInt(el.getAttribute('data-stat-fallback') || '0', 10) || 0;
-    let value = map[metric];
+    const map = { warriors, shares, countries };
 
-    if ((value === undefined || value === null || value === 0) && fallback > 0 && metric !== 'custom') {
-      value = fallback;
-    }
-    if (metric === 'custom' || value === undefined || value === null) {
-      value = fallback;
-    }
-
-    animateStat(el, Number(value) || 0, 900);
-  });
-}
-
-function animateStat(el, target, duration) {
-  if (!el) return;
-  let start = 0;
-  const step = Math.max(target / (duration / 16), 0.01);
-  const timer = setInterval(() => {
-    start += step;
-    if (start >= target) {
-      start = target;
-      clearInterval(timer);
-    }
-    el.textContent = Math.floor(start).toLocaleString();
-  }, 16);
-}
+    nodes.forEach(el => {
+      const metric = el.getAttribute('data-stat-metric');
+      const fallback = parseInt(el.getAttribute('data-stat-fallback') || '0', 10);
+      let value = map[metric];
+      if (!value || value === 0) value = fallback;
+      animateStat(el, Number(value) || 0, 1500);
+    });
+  }
 
   function animateStat(el, target, duration) {
     if (!el) return;
-    let start = 0; const step = target / (duration / 16);
+    let start = 0; const step = Math.max(target / (duration / 16), 1);
     const timer = setInterval(() => {
       start += step;
       if (start >= target) { start = target; clearInterval(timer); }
       el.textContent = Math.floor(start).toLocaleString();
     }, 16);
   }
+
+  // Start the page
+  loadPage();
 </script>
 </body>
 </html>
