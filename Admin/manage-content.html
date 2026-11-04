@@ -435,6 +435,44 @@ const SECTION_TYPES = {
   pwa_install: { label: 'App Install (PWA)', icon: 'install_mobile', chipClass: 'chip-cta', description: 'Home screen install instructions', defaultData: { section_title: 'JOIN THE MISSION', section_subtitle: 'Deploy to Mobile', ios_text: 'Launch Safari. Tap Share...', android_text: 'Open Chrome. Tap menu...' } },
   waitlist: { label: 'Waitlist Form', icon: 'group_add', chipClass: 'chip-gallery', description: 'Email capture block', defaultData: { section_title: 'Phase 2', section_subtitle: 'Coming Soon', body_text: 'Join the waitlist.', button_text: 'Join Waitlist' } },
   socials: { label: 'Footer Social Links', icon: 'share', chipClass: 'chip-cta', description: 'Footer social icons', defaultData: { items: [{ platform: 'instagram', label: 'Instagram', url: '' }] } },
+    header: {
+    label: 'Site Header',
+    icon: 'web_asset',
+    chipClass: 'chip-cta',
+    description: 'Logo, brand name & nav labels',
+    defaultData: {
+      brand_name: 'GSTW',
+      logo_url: '/images/logo/logo-full-dark.png',
+      nav_home_label: 'Home',
+      nav_features_label: 'Mission',
+      nav_pricing_label: 'Enlist',
+      nav_admin_label: 'Admin',
+      nav_admin_url: 'Admin/login.html',
+      show_admin: 'true'
+    }
+  },
+  footer: {
+    label: 'Site Footer',
+    icon: 'bottom_panel_close',
+    chipClass: 'chip-cta',
+    description: 'Brand, scripture, links & copyright',
+    defaultData: {
+      brand_name: 'Go Spread The Word',
+      tagline: 'Spreading the Word. One Selfie at a Time.',
+      scripture_quote: 'Go therefore and make disciples of all nations…',
+      scripture_ref: 'Matthew 28:19',
+      support_email: 'support@gospreadtheword.app',
+      copyright: '© 2024 Go Spread The Word. All rights reserved.',
+      made_for: 'Made for the Great Commission',
+      version_label: 'PWA v1.0',
+      privacy_url: '#',
+      terms_url: '#',
+      support_url: '#',
+      show_quick_links: 'true',
+      show_socials: 'true',
+      show_legal: 'true'
+    }
+  },
   custom: { label: 'Custom HTML', icon: 'code', chipClass: 'chip-custom', description: 'Direct HTML injection', defaultData: { section_title: '', html_content: '' } }
 };
 
@@ -446,13 +484,56 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function loadSections() {
-  const { data, error } = await supabaseClient.from('landing_sections').select('*').order('sort_order', { ascending: true });
+  const { data, error } = await supabaseClient
+    .from('landing_sections')
+    .select('*')
+    .order('sort_order', { ascending: true });
+
   if (error) {
     showToast('Failed to load sections', 'error');
     return;
   }
+
   sections = (data || []).map(s => ({ ...s, data: s.data || {} }));
+
+  // Ensure header + footer always exist
+  let needsSave = false;
+
+  if (!sections.some(s => s.section_type === 'header')) {
+    sections.unshift({
+      id: 'temp-header-' + Date.now(),
+      section_type: 'header',
+      title: 'Site Header',
+      data: JSON.parse(JSON.stringify(SECTION_TYPES.header.defaultData)),
+      sort_order: -100,
+      is_visible: true
+    });
+    needsSave = true;
+  }
+
+  if (!sections.some(s => s.section_type === 'footer')) {
+    sections.push({
+      id: 'temp-footer-' + Date.now(),
+      section_type: 'footer',
+      title: 'Site Footer',
+      data: JSON.parse(JSON.stringify(SECTION_TYPES.footer.defaultData)),
+      sort_order: 9999,
+      is_visible: true
+    });
+    needsSave = true;
+  }
+
+  // Keep header first, footer last
+  sections.sort((a, b) => {
+    if (a.section_type === 'header') return -1;
+    if (b.section_type === 'header') return 1;
+    if (a.section_type === 'footer') return 1;
+    if (b.section_type === 'footer') return -1;
+    return (a.sort_order || 0) - (b.sort_order || 0);
+  });
+
   renderSectionList();
+  if (needsSave) markDirty();
 }
 
 async function loadMediaLibrary() {
@@ -560,7 +641,74 @@ function renderEditor() {
       
     case 'socials':
       fieldsHTML = `<div class="field-group"><label class="field-label">Footer Socials</label><div id="repeater-socials-items">${(d.items||[]).map((item, i) => socialItemHTML('socials', i, item)).join('')}</div><button onclick="addRepeaterItem('socials','items',socialItemHTML)" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-c text-[11px] font-bold"><span class="material-symbols-outlined text-[14px]">add</span>Add Platform</button></div>`; break;
-      
+          case 'header':
+      fieldsHTML = `
+        <p class="field-label font-bold text-primary mb-2">Brand</p>
+        ${fieldText('Brand Name', 'brand_name', d)}
+        ${fieldImage('Logo Image', 'logo_url', d)}
+        <hr class="border-surface-chigh my-5">
+        <p class="field-label font-bold text-primary mb-2">Navigation Labels</p>
+        <div class="grid grid-cols-2 gap-4">
+          ${fieldText('Home Label', 'nav_home_label', d)}
+          ${fieldText('Mission / Features Label', 'nav_features_label', d)}
+          ${fieldText('Pricing / Enlist Label', 'nav_pricing_label', d)}
+          ${fieldText('Admin Label', 'nav_admin_label', d)}
+        </div>
+        ${fieldText('Admin URL', 'nav_admin_url', d, 'e.g. Admin/login.html')}
+        <div class="field-group mt-3">
+          <label class="field-label">Show Admin Link</label>
+          <select class="field-input" data-field="show_admin" onchange="markDirty()">
+            <option value="true" ${String(d.show_admin) !== 'false' ? 'selected' : ''}>Yes</option>
+            <option value="false" ${String(d.show_admin) === 'false' ? 'selected' : ''}>No</option>
+          </select>
+        </div>`;
+      break;
+
+    case 'footer':
+      fieldsHTML = `
+        <p class="field-label font-bold text-primary mb-2">Brand Block</p>
+        ${fieldText('Brand Name', 'brand_name', d)}
+        ${fieldText('Tagline', 'tagline', d)}
+        ${fieldTextarea('Scripture Quote', 'scripture_quote', d, '', 2)}
+        ${fieldText('Scripture Reference', 'scripture_ref', d)}
+        <hr class="border-surface-chigh my-5">
+        <p class="field-label font-bold text-primary mb-2">Contact & Legal</p>
+        ${fieldText('Support Email', 'support_email', d)}
+        ${fieldText('Privacy Policy URL', 'privacy_url', d)}
+        ${fieldText('Terms of Service URL', 'terms_url', d)}
+        ${fieldText('Contact Support URL', 'support_url', d)}
+        <hr class="border-surface-chigh my-5">
+        <p class="field-label font-bold text-primary mb-2">Bottom Bar</p>
+        ${fieldText('Copyright Text', 'copyright', d)}
+        ${fieldText('Made For Line', 'made_for', d)}
+        ${fieldText('Version Label', 'version_label', d)}
+        <hr class="border-surface-chigh my-5">
+        <p class="field-label font-bold text-primary mb-2">Visibility Toggles</p>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="field-group">
+            <label class="field-label">Quick Links</label>
+            <select class="field-input" data-field="show_quick_links" onchange="markDirty()">
+              <option value="true" ${String(d.show_quick_links) !== 'false' ? 'selected' : ''}>Show</option>
+              <option value="false" ${String(d.show_quick_links) === 'false' ? 'selected' : ''}>Hide</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Social Icons</label>
+            <select class="field-input" data-field="show_socials" onchange="markDirty()">
+              <option value="true" ${String(d.show_socials) !== 'false' ? 'selected' : ''}>Show</option>
+              <option value="false" ${String(d.show_socials) === 'false' ? 'selected' : ''}>Hide</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Legal Links</label>
+            <select class="field-input" data-field="show_legal" onchange="markDirty()">
+              <option value="true" ${String(d.show_legal) !== 'false' ? 'selected' : ''}>Show</option>
+              <option value="false" ${String(d.show_legal) === 'false' ? 'selected' : ''}>Hide</option>
+            </select>
+          </div>
+        </div>
+        <p class="field-hint mt-2">Social icon URLs still come from the <b>platforms</b> table / Footer Social Links section.</p>`;
+      break;
     case 'custom': fieldsHTML = `${fieldTextarea('HTML', 'html_content', d, '', 8)}`; break;
   }
 
@@ -639,9 +787,59 @@ function openAddSectionModal() { $('sectionTypeGrid').innerHTML = Object.entries
 function closeAddSectionModal() { $('addSectionModal').classList.remove('open'); }
 function addSection(type) { const t=SECTION_TYPES[type]; const id='temp-'+Date.now(); sections.push({id, section_type:type, title:t.label, data:JSON.parse(JSON.stringify(t.defaultData)), sort_order:sections.length, is_visible:true}); selectSection(id); closeAddSectionModal(); markDirty(); }
 function toggleVisibility(id) { const s=sections.find(x=>x.id===id); if(s){ s.is_visible=!s.is_visible; renderSectionList(); markDirty(); } }
-function deleteSection(id) { if(!confirm('Delete section?'))return; sections=sections.filter(x=>x.id!==id); if(activeSectionId===id){ activeSectionId=null; renderEmptyEditor(); } renderSectionList(); markDirty(); }
-function onDrop(e, tIdx) { e.preventDefault(); if(dragIndex===null||dragIndex===tIdx)return; const [m]=sections.splice(dragIndex,1); sections.splice(tIdx,0,m); sections.forEach((x,i)=>x.sort_order=i); renderSectionList(); markDirty(); }
+function deleteSection(id) {
+  const s = sections.find(x => x.id === id);
+  if (!s) return;
+  if (s.section_type === 'header' || s.section_type === 'footer') {
+    showToast('Header and Footer cannot be deleted — hide them instead.', 'error');
+    return;
+  }
+  if (!confirm('Delete section?')) return;
+  sections = sections.filter(x => x.id !== id);
+  if (activeSectionId === id) {
+    activeSectionId = null;
+    renderEditor();
+  }
+  renderSectionList();
+  markDirty();
+}
 
+function onDrop(e, tIdx) {
+  e.preventDefault();
+  if (dragIndex === null || dragIndex === tIdx) return;
+
+  const moving = sections[dragIndex];
+  const target = sections[tIdx];
+
+  // Lock header at top, footer at bottom
+  if (moving?.section_type === 'header' || moving?.section_type === 'footer') {
+    showToast('Header/Footer position is locked', 'error');
+    dragIndex = null;
+    return;
+  }
+  if (target?.section_type === 'header' || target?.section_type === 'footer') {
+    showToast('Cannot place a section above Header or below Footer', 'error');
+    dragIndex = null;
+    return;
+  }
+
+  const [m] = sections.splice(dragIndex, 1);
+  sections.splice(tIdx, 0, m);
+
+  // Re-assert header first / footer last
+  sections.sort((a, b) => {
+    if (a.section_type === 'header') return -1;
+    if (b.section_type === 'header') return 1;
+    if (a.section_type === 'footer') return 1;
+    if (b.section_type === 'footer') return -1;
+    return 0;
+  });
+  sections.forEach((x, i) => x.sort_order = i);
+
+  dragIndex = null;
+  renderSectionList();
+  markDirty();
+}
 function openImagePicker(field, isRep=false) { imagePickerTarget={field, isRep}; $('imagePickerGrid').innerHTML=mediaLibrary.map(m=>`<div onclick="selectImage('${m.id}')" class="cursor-pointer group"><img src="${escapeAttr(m.url)}" class="img-thumb w-full h-20" id="imgpick-${m.id}"><p class="text-[9px] truncate mt-1">${escapeHtml(m.name)}</p></div>`).join(''); $('imagePickerModal').classList.add('open'); }
 function selectImage(id) { selectedImageId=id; document.querySelectorAll('.img-thumb').forEach(e=>e.classList.remove('selected')); $(`imgpick-${id}`).classList.add('selected'); }
 function confirmImagePick() {
