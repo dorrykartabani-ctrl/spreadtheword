@@ -306,9 +306,18 @@
   }
 
   function renderPricing(d, id) {
-    const activeTiers = (d.tier_ids || []).map(tid => allTiers.find(t => t.id === tid)).filter(Boolean);
-    if (activeTiers.length === 0) return '';
-    
+  // Match by UUID id OR name OR slug (covers both old and new data)
+  const activeTiers = (d.tier_ids || []).map(tid => {
+    const key = String(tid).toLowerCase().trim();
+    return allTiers.find(t =>
+      String(t.id) === String(tid) ||
+      String(t.name || '').toLowerCase().trim() === key ||
+      String(t.slug || '').toLowerCase().trim() === key
+    );
+  }).filter(Boolean);
+
+  if (activeTiers.length === 0) return '';
+
     const getFeatureText = (f) => {
       if (typeof f === 'string') return f;
       if (f && typeof f === 'object') return f.text || f.label || f.name || f.feature || '';
