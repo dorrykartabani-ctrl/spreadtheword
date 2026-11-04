@@ -123,7 +123,7 @@
     </div>
   </header>
 
-  <div class="p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
+  <div class="p-6 lg:p-8 max-w-7xl mx-auto space-y-8 pb-20">
 
     <!-- KPI ROW -->
     <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -224,6 +224,67 @@
       <div id="countryCloud" class="flex flex-wrap gap-2"></div>
     </section>
 
+    <!-- ─── LIVE METRICS SOURCE OF TRUTH ─── -->
+    <section class="chart-card">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div>
+          <h3 class="font-headline font-bold text-on-surface">Landing Page Metrics (Source of Truth)</h3>
+          <p class="text-xs text-outline">These values power the real-time counters on the public landing page grid.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="syncDerivedMetrics()" id="btnSyncMetrics" class="px-3 py-2 rounded-lg bg-surface-c hover:bg-surface-clow border border-surface-c font-bold text-[11px] text-on-surface transition-colors flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined" style="font-size:14px">sync</span> Sync Live Counts
+          </button>
+          <button onclick="openMetricForm()" class="px-3 py-2 rounded-lg bg-primary hover:bg-primary/90 font-bold text-[11px] text-white transition-colors flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined" style="font-size:14px">add</span> Add Custom
+          </button>
+        </div>
+      </div>
+
+      <!-- Inline Add/Edit Form -->
+      <div id="metricForm" class="hidden mb-5 p-5 rounded-xl bg-surface-clow border border-surface-c">
+        <h4 class="font-headline font-bold text-sm text-on-surface mb-4" id="metricFormTitle">Add Custom Metric</h4>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Key (ID)</label>
+            <input type="text" id="mId" placeholder="e.g. twitter_users" class="w-full bg-white border border-surface-c rounded-lg px-3 py-2 text-xs outline-none focus:border-primary font-mono transition-colors">
+            <p class="text-[10px] text-outline mt-1">Lowercase, no spaces.</p>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Value</label>
+            <input type="number" id="mValue" placeholder="e.g. 5000" class="w-full bg-white border border-surface-c rounded-lg px-3 py-2 text-xs outline-none focus:border-primary transition-colors">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Display Label</label>
+            <input type="text" id="mLabel" placeholder="e.g. Twitter / X Reach" class="w-full bg-white border border-surface-c rounded-lg px-3 py-2 text-xs outline-none focus:border-primary transition-colors">
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="saveMetric()" class="px-5 py-2 rounded-full bg-primary text-white text-xs font-bold hover:opacity-90 transition-opacity">Save Metric</button>
+          <button onclick="cancelMetricForm()" class="px-5 py-2 rounded-full bg-surface-c text-on-surface-variant text-xs font-bold hover:bg-surface-chigh transition-colors">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Metrics Table -->
+      <div class="overflow-x-auto rounded-xl border border-surface-c">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-surface-c/40 text-[10px] uppercase tracking-wider text-outline border-b border-surface-c">
+              <th class="py-3 px-4 font-bold">Metric Key (ID)</th>
+              <th class="py-3 px-4 font-bold">Label</th>
+              <th class="py-3 px-4 font-bold">Value</th>
+              <th class="py-3 px-4 font-bold">Source</th>
+              <th class="py-3 px-4 font-bold text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="metricsTableBody" class="text-sm">
+            <!-- Injected via JS -->
+            <tr><td colspan="5" class="py-6 text-center text-outline text-xs">Loading Source of Truth...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
   </div>
 </main>
 
@@ -237,6 +298,9 @@ var currentRange = 90
 var growthChart = null
 var platformChart = null
 var chartColors = ['#3d6285','#6b9bc3','#D4A24C','#41637c','#ad332b','#16a34a','#9333ea','#64748b']
+
+// Metrics Cache
+var metricsCache = []
 
 function toggleSidebar() {
   var s = document.getElementById('sidebar'), o = document.getElementById('sidebarOverlay')
@@ -344,7 +408,6 @@ async function loadAnalytics() {
   document.getElementById('kpiPaid').textContent = fmt(paid)
   document.getElementById('kpiPaidPct').textContent = totalWarriors ? Math.round((paid / totalWarriors) * 100) + '% of warriors' : '—'
 
-  // Growth chart buckets
   var buckets = buildDayBuckets(currentRange === 'all' ? 90 : currentRange)
   periodProfiles.forEach(function(p) {
     var k = dayKey(p.created_at)
@@ -587,9 +650,155 @@ function escapeHtml(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
 }
 
+// ─── SOURCE OF TRUTH METRICS LOGIC ───
+
+async function loadMetricsTable() {
+  var tbody = document.getElementById('metricsTableBody')
+  tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-outline text-xs">Loading Source of Truth...</td></tr>'
+
+  var { data, error } = await supabaseClient.from('analytics').select('*').order('id', {ascending: true})
+  if (error) {
+    tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-tertiary text-xs">Failed to load analytics table. Ensure table exists.</td></tr>'
+    return
+  }
+  
+  metricsCache = data || []
+  renderMetricsTable()
+}
+
+function renderMetricsTable() {
+  var tbody = document.getElementById('metricsTableBody')
+  if (!metricsCache.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-outline text-xs">No metrics stored yet. Run "Sync Live Counts" or add a custom one.</td></tr>'
+    return
+  }
+
+  tbody.innerHTML = metricsCache.map(function(m) {
+    var isManual = m.source === 'manual'
+    var sourceBadge = isManual
+      ? '<span class="bg-surface-c border border-outline/20 px-2.5 py-1 rounded-md text-[10px] font-bold text-on-surface-variant">Manual</span>'
+      : '<span class="bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-md text-[10px] font-bold text-primary">Derived</span>'
+
+    var actions = isManual
+      ? '<button onclick="editMetric(\'' + m.id + '\')" class="text-outline hover:text-primary p-1.5 transition-colors" title="Edit"><span class="material-symbols-outlined text-[16px]">edit</span></button>' +
+        '<button onclick="deleteMetric(\'' + m.id + '\')" class="text-outline hover:text-tertiary p-1.5 transition-colors" title="Delete"><span class="material-symbols-outlined text-[16px]">delete</span></button>'
+      : '<span class="text-[10px] text-outline italic px-2">Auto-synced</span>'
+
+    return '<tr class="border-b border-surface-c last:border-0 hover:bg-surface-clow/50 transition-colors">'
+      + '<td class="py-3 px-4 font-mono text-[11px] font-bold text-on-surface">' + escapeHtml(m.id) + '</td>'
+      + '<td class="py-3 px-4 text-xs text-on-surface-variant">' + escapeHtml(m.label || '—') + '</td>'
+      + '<td class="py-3 px-4 text-sm font-headline font-extrabold text-on-surface">' + fmt(m.value) + '</td>'
+      + '<td class="py-3 px-4">' + sourceBadge + '</td>'
+      + '<td class="py-3 px-4 text-right w-24">' + actions + '</td>'
+      + '</tr>'
+  }).join('')
+}
+
+async function syncDerivedMetrics() {
+  var btn = document.getElementById('btnSyncMetrics')
+  var oldHtml = btn.innerHTML
+  btn.innerHTML = '<span class="material-symbols-outlined spin" style="font-size:14px">sync</span> Syncing...'
+  btn.disabled = true
+
+  try {
+    var upserts = []
+    
+    // 1. Warriors (Profiles)
+    var { count: wCount } = await supabaseClient.from('profiles').select('id', {count: 'exact', head: true})
+    if (wCount != null) upserts.push({ id: 'warriors', value: wCount, label: 'Warriors Enlisted', source: 'derived' })
+
+    // 2. Shares
+    var { count: sCount } = await supabaseClient.from('shares').select('id', {count: 'exact', head: true})
+    if (sCount != null) upserts.push({ id: 'shares', value: sCount, label: 'Words Deployed', source: 'derived' })
+
+    // 3. Projects Raised
+    var { data: pData } = await supabaseClient.from('projects').select('raised_amount')
+    if (pData) {
+      var raised = pData.reduce(function(s, m) { return s + Number(m.raised_amount || 0)}, 0)
+      upserts.push({ id: 'money_raised', value: raised, label: 'Given to Missions', source: 'derived' })
+    }
+
+    // 4. Countries
+    var { data: cData } = await supabaseClient.from('profiles').select('country').not('country', 'is', null)
+    if (cData) {
+      var set = {}
+      cData.forEach(function(r) { if(r.country) set[r.country.trim()] = 1 })
+      upserts.push({ id: 'countries', value: Object.keys(set).length, label: 'Countries Reached', source: 'derived' })
+    }
+
+    if (upserts.length) {
+      await supabaseClient.from('analytics').upsert(upserts, { onConflict: 'id' })
+    }
+    await loadMetricsTable()
+  } catch(e) {
+    console.error(e)
+    alert("Sync failed: " + e.message)
+  } finally {
+    btn.innerHTML = oldHtml
+    btn.disabled = false
+  }
+}
+
+function openMetricForm() {
+  var form = document.getElementById('metricForm')
+  form.classList.remove('hidden')
+  document.getElementById('metricFormTitle').textContent = 'Add Custom Metric'
+  document.getElementById('mId').value = ''
+  document.getElementById('mId').disabled = false
+  document.getElementById('mValue').value = ''
+  document.getElementById('mLabel').value = ''
+}
+
+function cancelMetricForm() {
+  document.getElementById('metricForm').classList.add('hidden')
+}
+
+function editMetric(id) {
+  var m = metricsCache.find(function(x) { return x.id === id })
+  if (!m) return
+  document.getElementById('metricForm').classList.remove('hidden')
+  document.getElementById('metricFormTitle').textContent = 'Edit Metric'
+  document.getElementById('mId').value = m.id
+  document.getElementById('mId').disabled = true
+  document.getElementById('mValue').value = m.value
+  document.getElementById('mLabel').value = m.label || ''
+  document.getElementById('metricForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+}
+
+async function saveMetric() {
+  var idInput = document.getElementById('mId')
+  var id = idInput.value.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
+  var value = Number(document.getElementById('mValue').value)
+  var label = document.getElementById('mLabel').value.trim()
+
+  if (!id) return alert('Key is required. Please use snake_case (e.g. twitter_users)')
+  if (Number.isNaN(value)) return alert('Value must be a valid number.')
+
+  var payload = { id: id, value: value, label: label, source: 'manual' }
+  var { error } = await supabaseClient.from('analytics').upsert(payload, { onConflict: 'id' })
+  if (error) {
+    alert('Save failed: ' + error.message)
+    return
+  }
+
+  cancelMetricForm()
+  await loadMetricsTable()
+}
+
+async function deleteMetric(id) {
+  if(!confirm("Delete metric '" + id + "'?\n\nAny public landing page card relying on this will fall back to its backup number.")) return
+  var {error} = await supabaseClient.from('analytics').delete().eq('id', id)
+  if(error) {
+    alert('Delete failed: ' + error.message)
+    return
+  }
+  await loadMetricsTable()
+}
+
 async function init() {
   if (!(await checkAdmin())) return
   await loadAnalytics()
+  await loadMetricsTable() // Loads Source of Truth
 }
 
 init()
