@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Landing Page Builder — GSTW Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -22,9 +22,9 @@ body{font-family:'Manrope',sans-serif;background:#fbf9f4;margin:0}
 .section-body{padding:16px;display:none}
 .section-body.open{display:block}
 .field-label{display:block;font-size:11px;font-weight:700;color:#41637c;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
-.field-input{width:100%;padding:10px 12px;border:1px solid #e5e1d8;border-radius:8px;font-size:14px;font-family:'Manrope',sans-serif;background:#fbf9f4;transition:border .2s;margin-bottom:10px}
+.field-input{width:100%;padding:10px 12px;border:1px solid #e5e1d8;border-radius:8px;font-size:14px;font-family:'Manrope',sans-serif;background:#fbf9f4;transition:border .2s;margin-bottom:12px}
 .field-input:focus{outline:none;border-color:#3d6285;background:#fff}
-textarea.field-input{min-height:70px;resize:vertical}
+textarea.field-input{min-height:80px;resize:vertical}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;border:none;transition:all .2s}
 .btn-primary{background:linear-gradient(135deg,#3d6285,#6b9bc3);color:#fff}
 .btn-primary:hover{opacity:.9;transform:translateY(-1px)}
@@ -42,101 +42,35 @@ textarea.field-input{min-height:70px;resize:vertical}
 .toast.show{transform:translateX(0)}
 .toast.success{background:#2d7a4f}
 .toast.error{background:#ad332b}
-.metric-card{background:#fbf9f4;border:1px solid #e5e1d8;border-radius:10px;padding:12px;text-align:center}
-.metric-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:#3d6285}
-.metric-label{font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
-.img-preview{width:100%;height:120px;object-fit:cover;border-radius:8px;border:1px solid #e5e1d8;margin-bottom:10px}
-.card-item{background:#fbf9f4;border:1px solid #e5e1d8;border-radius:8px;padding:12px;margin-bottom:10px;position:relative}
-.card-item .remove-btn{position:absolute;top:8px;right:8px;color:#ad332b;cursor:pointer;font-size:18px}
+.img-preview{width:100%;height:140px;object-fit:cover;border-radius:8px;border:1px solid #e5e1d8;margin-bottom:10px}
 .order-item{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fbf9f4;border-radius:8px;margin-bottom:6px;font-size:13px;font-weight:600}
 .order-item span{flex:1}
-
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px}
-.modal.open{display:flex}
-.modal-box{background:#fff;border-radius:16px;max-width:700px;width:100%;max-height:80vh;overflow-y:auto;padding:20px}
-.media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;margin-top:16px}
-.media-grid img{width:100%;height:100px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all .2s}
-.media-grid img:hover{border-color:#3d6285;transform:scale(1.03)}
-
+/* Mobile Support */
 @media(max-width:1024px){
   .builder-wrap{flex-direction:column}
   .builder-controls{width:100%;height:100%}
   .builder-preview{display:none}
-  .mobile-preview-btn{display:inline-flex!important}
 }
-@media(min-width:1025px){
-  .mobile-preview-btn{display:none!important}
-}
-.preview-modal{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.6);display:none;flex-direction:column}
-.preview-modal.open{display:flex}
-.preview-modal-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#fff}
-.preview-modal iframe{flex:1;border:none;width:100%}
 </style>
 </head>
 <body>
 
 <div id="toast" class="toast"></div>
 
-<!-- Media Picker Modal -->
-<div id="mediaModal" class="modal">
-  <div class="modal-box">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <h3 style="margin:0;font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:700">Select Image from Media Library</h3>
-      <button class="btn btn-secondary btn-sm" onclick="closeMediaModal()">✕ Close</button>
-    </div>
-    <div class="media-grid" id="mediaGrid">Loading media…</div>
-  </div>
-</div>
-
-<!-- Mobile Preview Modal -->
-<div id="previewModal" class="preview-modal">
-  <div class="preview-modal-header">
-    <h3 style="margin:0;font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:700">Live Preview</h3>
-    <button class="btn btn-secondary btn-sm" onclick="closeMobilePreview()">✕ Close</button>
-  </div>
-  <iframe id="previewFrameMobile"></iframe>
-</div>
-
 <div class="builder-wrap">
-  <!-- CONTROLS PANEL -->
+  <!-- LEFT: CONTROLS -->
   <div class="builder-controls">
-    <div style="position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid #e5e1d8;padding:14px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div style="position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid #e5e1d8;padding:16px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
       <a href="index.html" style="color:#41637c;text-decoration:none;display:flex;align-items:center">
         <span class="material-symbols-outlined" style="font-size:20px">arrow_back</span>
       </a>
       <h1 style="margin:0;font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:800;color:#0e0e0c;flex:1">Landing Page Builder</h1>
-      <button class="btn btn-secondary btn-sm" onclick="forceRefreshPreview()">
-        <span class="material-symbols-outlined" style="font-size:16px">refresh</span> Refresh Preview
-      </button>
-      <button class="btn btn-secondary mobile-preview-btn" onclick="openMobilePreview()">
-        <span class="material-symbols-outlined" style="font-size:16px">visibility</span> Preview
-      </button>
       <button class="btn btn-primary" id="btnSave" onclick="saveAndPublish()">
         <span class="material-symbols-outlined" style="font-size:16px">publish</span> Save &amp; Publish
       </button>
     </div>
 
     <div style="padding:20px">
-
-      <!-- STYLING & TYPOGRAPHY -->
-      <div class="section-card">
-        <div class="section-header" onclick="toggleCard(this)">
-          <span class="material-symbols-outlined" style="font-size:18px;color:#3d6285">palette</span>
-          <h3>Global Styling &amp; Fonts</h3>
-          <span class="material-symbols-outlined" style="font-size:18px;color:#9ca3af">expand_more</span>
-        </div>
-        <div class="section-body">
-          <label class="field-label">Headline Font Family</label>
-          <select class="field-input" id="f_style_font" onchange="onFieldChange()">
-            <option value="Plus Jakarta Sans">Plus Jakarta Sans (Modern Sans)</option>
-            <option value="Lora">Lora (Classic Serif)</option>
-            <option value="Playfair Display">Playfair Display (Editorial Serif)</option>
-            <option value="Manrope">Manrope (Clean Geometric)</option>
-          </select>
-          <label class="field-label">Primary Theme Color</label>
-          <input type="color" class="field-input" id="f_style_color" style="height:40px;padding:2px" onchange="onFieldChange()">
-        </div>
-      </div>
 
       <!-- SECTION ORDER & VISIBILITY -->
       <div class="section-card">
@@ -146,15 +80,15 @@ textarea.field-input{min-height:70px;resize:vertical}
           <span class="material-symbols-outlined" style="font-size:18px;color:#9ca3af">expand_more</span>
         </div>
         <div class="section-body open">
-          <p style="font-size:12px;color:#6b7280;margin:0 0 10px">Toggle visibility or reorder sections up/down.</p>
+          <p style="font-size:12px;color:#6b7280;margin:0 0 12px">Toggle sections on/off or reorder them.</p>
           <div id="sectionOrderList"></div>
-          <button class="btn btn-secondary btn-sm" style="margin-top:10px;width:100%" onclick="addCustomSection()">
-            <span class="material-symbols-outlined" style="font-size:16px">add</span> Add Custom Section Block
+          <button class="btn btn-secondary btn-sm" style="margin-top:12px;width:100%" onclick="addCustomSection()">
+            <span class="material-symbols-outlined" style="font-size:16px">add</span> Add Custom Section
           </button>
         </div>
       </div>
 
-      <!-- HERO SECTION -->
+      <!-- HERO -->
       <div class="section-card">
         <div class="section-header" onclick="toggleCard(this)">
           <span class="material-symbols-outlined" style="font-size:18px;color:#3d6285">hero</span>
@@ -163,80 +97,25 @@ textarea.field-input{min-height:70px;resize:vertical}
         </div>
         <div class="section-body">
           <label class="field-label">Headline (HTML allowed)</label>
-          <textarea class="field-input" id="f_hero_headline" rows="2" oninput="onFieldChange()"></textarea>
+          <textarea class="field-input" id="f_hero_headline" oninput="onFieldChange()"></textarea>
 
           <label class="field-label">Subheadline</label>
-          <textarea class="field-input" id="f_hero_subheadline" rows="2" oninput="onFieldChange()"></textarea>
+          <textarea class="field-input" id="f_hero_subheadline" oninput="onFieldChange()"></textarea>
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <div>
-              <label class="field-label">CTA Button Text</label>
-              <input class="field-input" id="f_hero_cta_text" oninput="onFieldChange()">
-            </div>
-            <div>
-              <label class="field-label">CTA Link</label>
-              <input class="field-input" id="f_hero_cta_link" oninput="onFieldChange()">
-            </div>
-          </div>
+          <label class="field-label">CTA Button Text</label>
+          <input class="field-input" id="f_hero_cta_text" oninput="onFieldChange()">
 
-          <label class="field-label">Hero Image</label>
-          <img id="preview_hero_image" class="img-preview" style="display:none">
-          <div style="display:flex;gap:8px">
-            <input class="field-input" id="f_hero_image_url" placeholder="Image URL" oninput="onFieldChange()">
-            <button class="btn btn-secondary btn-sm" style="height:42px" onclick="openMediaModal('hero','image_url')">Choose Media</button>
-          </div>
-          <input type="file" accept="image/*" class="field-input" id="f_hero_image_file" onchange="uploadImage('hero','image_url',this)">
+          <label class="field-label">CTA Link</label>
+          <input class="field-input" id="f_hero_cta_link" oninput="onFieldChange()">
+
+          <label class="field-label">Background Image</label>
+          <input type="file" accept="image/*" class="field-input" onchange="uploadImage('hero','image_url',this)">
+          <input class="field-input" id="f_hero_image_url" placeholder="Or paste URL here" oninput="onFieldChange()">
+          <img id="preview_hero_image_url" class="img-preview" style="display:none">
         </div>
       </div>
 
-      <!-- MARQUEE TICKER -->
-      <div class="section-card">
-        <div class="section-header" onclick="toggleCard(this)">
-          <span class="material-symbols-outlined" style="font-size:18px;color:#3d6285">view_carousel</span>
-          <h3>Marquee Ticker Items</h3>
-          <span class="material-symbols-outlined" style="font-size:18px;color:#9ca3af">expand_more</span>
-        </div>
-        <div class="section-body">
-          <div id="marqueeList"></div>
-          <button class="btn btn-secondary btn-sm" onclick="addMarqueeItem()">+ Add Item</button>
-        </div>
-      </div>
-
-      <!-- HOW IT WORKS -->
-      <div class="section-card">
-        <div class="section-header" onclick="toggleCard(this)">
-          <span class="material-symbols-outlined" style="font-size:18px;color:#3d6285">format_list_numbered</span>
-          <h3>How It Works Steps</h3>
-          <span class="material-symbols-outlined" style="font-size:18px;color:#9ca3af">expand_more</span>
-        </div>
-        <div class="section-body">
-          <label class="field-label">Section Subtitle</label>
-          <input class="field-input" id="f_how_subtitle" oninput="onFieldChange()">
-          <label class="field-label">Section Title</label>
-          <input class="field-input" id="f_how_title" oninput="onFieldChange()">
-          <div id="stepsList"></div>
-          <button class="btn btn-secondary btn-sm" onclick="addStepCard()">+ Add Step</button>
-        </div>
-      </div>
-
-      <!-- FEATURES GRID -->
-      <div class="section-card">
-        <div class="section-header" onclick="toggleCard(this)">
-          <span class="material-symbols-outlined" style="font-size:18px;color:#3d6285">grid_view</span>
-          <h3>Features Grid</h3>
-          <span class="material-symbols-outlined" style="font-size:18px;color:#9ca3af">expand_more</span>
-        </div>
-        <div class="section-body">
-          <label class="field-label">Section Subtitle</label>
-          <input class="field-input" id="f_feat_subtitle" oninput="onFieldChange()">
-          <label class="field-label">Section Title</label>
-          <input class="field-input" id="f_feat_title" oninput="onFieldChange()">
-          <div id="featuresList"></div>
-          <button class="btn btn-secondary btn-sm" onclick="addFeatureCard()">+ Add Feature Card</button>
-        </div>
-      </div>
-
-      <!-- MISSION SECTION -->
+      <!-- MISSION -->
       <div class="section-card">
         <div class="section-header" onclick="toggleCard(this)">
           <span class="material-symbols-outlined" style="font-size:18px;color:#3d6285">volunteer_activism</span>
@@ -247,9 +126,9 @@ textarea.field-input{min-height:70px;resize:vertical}
           <label class="field-label">Heading</label>
           <textarea class="field-input" id="f_mission_heading" rows="2" oninput="onFieldChange()"></textarea>
           <label class="field-label">Body Paragraph 1</label>
-          <textarea class="field-input" id="f_mission_body_1" rows="3" oninput="onFieldChange()"></textarea>
+          <textarea class="field-input" id="f_mission_body_1" oninput="onFieldChange()"></textarea>
           <label class="field-label">Body Paragraph 2</label>
-          <textarea class="field-input" id="f_mission_body_2" rows="3" oninput="onFieldChange()"></textarea>
+          <textarea class="field-input" id="f_mission_body_2" oninput="onFieldChange()"></textarea>
         </div>
       </div>
 
@@ -266,7 +145,7 @@ textarea.field-input{min-height:70px;resize:vertical}
           <label class="field-label">Headline</label>
           <input class="field-input" id="f_cta_headline" oninput="onFieldChange()">
           <label class="field-label">Subheadline</label>
-          <textarea class="field-input" id="f_cta_subheadline" rows="2" oninput="onFieldChange()"></textarea>
+          <textarea class="field-input" id="f_cta_subheadline" oninput="onFieldChange()"></textarea>
           <label class="field-label">Button Text</label>
           <input class="field-input" id="f_cta_button_text" oninput="onFieldChange()">
           <label class="field-label">Button Link</label>
@@ -274,45 +153,29 @@ textarea.field-input{min-height:70px;resize:vertical}
         </div>
       </div>
 
-      <!-- CUSTOM SECTIONS LIST -->
+      <!-- CUSTOM SECTIONS CONTAINER -->
       <div id="customSectionsContainer"></div>
 
-      <!-- SOCIAL PLATFORMS INFO -->
+      <!-- INFO CARDS (READ-ONLY) -->
       <div class="section-card">
         <div class="section-header" onclick="toggleCard(this)">
-          <span class="material-symbols-outlined" style="font-size:18px;color:#3d6285">share</span>
-          <h3>Social Platforms (DB Table)</h3>
+          <span class="material-symbols-outlined" style="font-size:18px;color:#3d6285">info</span>
+          <h3>Data Connections (Auto-Updated)</h3>
           <span class="material-symbols-outlined" style="font-size:18px;color:#9ca3af">expand_more</span>
         </div>
-        <div class="section-body">
-          <p style="font-size:12px;color:#6b7280;margin:0 0 10px">Social links are pulled live from your <code style="background:#f3f4f6;padding:2px 4px;border-radius:4px">platforms</code> database table.</p>
-          <div id="socialPlatformsList" style="font-size:13px;color:#41637c">Loading platforms…</div>
-        </div>
-      </div>
-
-      <!-- LIVE DB METRICS -->
-      <div class="section-card">
-        <div class="section-header" onclick="toggleCard(this)">
-          <span class="material-symbols-outlined" style="font-size:18px;color:#3d6285">monitoring</span>
-          <h3>Live Database Metrics</h3>
-          <span class="material-symbols-outlined" style="font-size:18px;color:#9ca3af">expand_more</span>
-        </div>
-        <div class="section-body">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <div class="metric-card"><div class="metric-val" id="m_warriors">—</div><div class="metric-label">Profiles</div></div>
-            <div class="metric-card"><div class="metric-val" id="m_shares">—</div><div class="metric-label">Shares</div></div>
-            <div class="metric-card"><div class="metric-val" id="m_donated">—</div><div class="metric-label">Total Raised</div></div>
-            <div class="metric-card"><div class="metric-val" id="m_countries">—</div><div class="metric-label">Countries</div></div>
-          </div>
+        <div class="section-body" style="font-size:13px;color:#41637c;line-height:1.6">
+          <p><strong>Pricing:</strong> Pulled directly from your <code>subscription_tiers</code> table.</p>
+          <p><strong>Social Links:</strong> Pulled directly from your <code>platforms</code> table.</p>
+          <p><strong>Live Metrics:</strong> Auto-calculated from <code>profiles</code>, <code>shares</code>, and <code>projects</code>.</p>
         </div>
       </div>
 
     </div>
   </div>
 
-  <!-- PREVIEW PANEL -->
+  <!-- RIGHT: PREVIEW -->
   <div class="builder-preview">
-    <iframe id="previewFrame" title="Landing Page Live Preview"></iframe>
+    <iframe id="previewFrame" title="Landing Page Preview"></iframe>
   </div>
 </div>
 
@@ -322,70 +185,57 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const DEFAULTS = {
-  styles:{headline_font:'Plus Jakarta Sans',primary_color:'#3d6285',bg_color:'#fbf9f4'},
-  hero:{headline:'',subheadline:'',cta_text:'',cta_link:'',image_url:''},
-  marquee:{items:['Spread The Word','Daily Scripture']},
-  how_it_works:{title:'How It Works',subtitle:'Simple Process',steps:[]},
-  features:{title:'Built for Modern Evangelism',subtitle:'Features',items:[]},
-  mission:{heading:'',body_1:'',body_2:'',allocations:[]},
-  pricing:{title:'Choose Your Mission Level',subtitle:'Membership'},
-  cta:{eyebrow:'',headline:'',subheadline:'',button_text:'',button_link:''},
-  custom_sections:[],
-  sections_order:['hero','marquee','how_it_works','features','pricing','mission','final_cta','footer'],
-  sections_visible:{hero:true,marquee:true,how_it_works:true,features:true,pricing:true,mission:true,final_cta:true,footer:true}
+  hero: {headline:'', subheadline:'', cta_text:'', cta_link:'', image_url:''},
+  mission: {heading:'', body_1:'', body_2:''},
+  cta: {eyebrow:'', headline:'', subheadline:'', button_text:'', button_link:''},
+  custom_sections: [],
+  sections_order: ['hero', 'marquee', 'how_it_works', 'features', 'pricing', 'mission', 'final_cta', 'footer'],
+  sections_visible: {hero:true, marquee:true, how_it_works:true, features:true, pricing:true, mission:true, final_cta:true, footer:true}
 };
 
 const SECTION_NAMES = {
-  hero:'Hero',marquee:'Marquee',how_it_works:'How It Works',
-  features:'Features',pricing:'Pricing',mission:'Mission',
-  final_cta:'Final CTA',footer:'Footer'
+  hero:'Hero', marquee:'Marquee', how_it_works:'How It Works',
+  features:'Features', pricing:'Pricing', mission:'Mission',
+  final_cta:'Final CTA', footer:'Footer'
 };
 
 let config = JSON.parse(JSON.stringify(DEFAULTS));
 let previewReady = false;
-let mediaTarget = null;
 
 async function init(){
   await loadConfig();
   populateForm();
   renderSectionOrder();
-  renderMarqueeItems();
-  renderStepCards();
-  renderFeatureCards();
   renderCustomSections();
-  loadLiveMetrics();
-  loadSocialPlatforms();
   setupPreview();
 }
 
+// 1. Load Config properly using JSON.parse
 async function loadConfig(){
-  const {data, error} = await sb.from('site_settings').select('value').eq('id','landing_page_config').single();
+  const {data} = await sb.from('site_settings').select('value').eq('id','landing_page_config').single();
   if(data && data.value){
     try{
       const parsed = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
       config = {...DEFAULTS, ...parsed};
-    }catch(e){console.error('Config load failed:', e)}
+    }catch(e){console.error('Config parse error:', e)}
   }
 }
 
+// 2. Populate Form
 function populateForm(){
-  const set=(id,val)=>{const el=document.getElementById(id);if(el)el.value=val||''};
-  set('f_style_font', config.styles.headline_font);
-  set('f_style_color', config.styles.primary_color);
+  const set = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
   set('f_hero_headline', config.hero.headline);
   set('f_hero_subheadline', config.hero.subheadline);
   set('f_hero_cta_text', config.hero.cta_text);
   set('f_hero_cta_link', config.hero.cta_link);
   set('f_hero_image_url', config.hero.image_url);
-  const img = document.getElementById('preview_hero_image');
-  if(config.hero.image_url){img.src=config.hero.image_url;img.style.display='block'}
-  set('f_how_title', config.how_it_works.title);
-  set('f_how_subtitle', config.how_it_works.subtitle);
-  set('f_feat_title', config.features.title);
-  set('f_feat_subtitle', config.features.subtitle);
+  const imgPrev = document.getElementById('preview_hero_image_url');
+  if(config.hero.image_url){ imgPrev.src = config.hero.image_url; imgPrev.style.display = 'block'; }
+
   set('f_mission_heading', config.mission.heading);
   set('f_mission_body_1', config.mission.body_1);
   set('f_mission_body_2', config.mission.body_2);
+
   set('f_cta_eyebrow', config.cta.eyebrow);
   set('f_cta_headline', config.cta.headline);
   set('f_cta_subheadline', config.cta.subheadline);
@@ -393,22 +243,19 @@ function populateForm(){
   set('f_cta_button_link', config.cta.button_link);
 }
 
+// 3. Collect form data back to config
 function collectConfig(){
-  const g=id=>(document.getElementById(id)||{}).value||'';
-  config.styles.headline_font = g('f_style_font');
-  config.styles.primary_color = g('f_style_color');
+  const g = id => (document.getElementById(id)||{}).value || '';
   config.hero.headline = g('f_hero_headline');
   config.hero.subheadline = g('f_hero_subheadline');
   config.hero.cta_text = g('f_hero_cta_text');
   config.hero.cta_link = g('f_hero_cta_link');
   config.hero.image_url = g('f_hero_image_url');
-  config.how_it_works.title = g('f_how_title');
-  config.how_it_works.subtitle = g('f_how_subtitle');
-  config.features.title = g('f_feat_title');
-  config.features.subtitle = g('f_feat_subtitle');
+
   config.mission.heading = g('f_mission_heading');
   config.mission.body_1 = g('f_mission_body_1');
   config.mission.body_2 = g('f_mission_body_2');
+
   config.cta.eyebrow = g('f_cta_eyebrow');
   config.cta.headline = g('f_cta_headline');
   config.cta.subheadline = g('f_cta_subheadline');
@@ -416,28 +263,21 @@ function collectConfig(){
   config.cta.button_link = g('f_cta_button_link');
 }
 
+// 4. Save and Publish using JSON.stringify
 async function saveAndPublish(){
   const btn = document.getElementById('btnSave');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px">hourglass_empty</span> Saving…';
+  btn.disabled = true; btn.innerHTML = 'Saving...';
   collectConfig();
 
-  const jsonString = JSON.stringify(config);
   const {error} = await sb.from('site_settings').upsert({
     id: 'landing_page_config',
-    value: jsonString,
+    value: JSON.stringify(config), // Fix applied here
     updated_at: new Date().toISOString()
   });
 
-  btn.disabled = false;
-  btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px">publish</span> Save &amp; Publish';
-
-  if(error){
-    showToast('Save failed: ' + error.message, 'error');
-    console.error('Save error:', error);
-    return;
-  }
-  showToast('Landing page published successfully!', 'success');
+  btn.disabled = false; btn.innerHTML = 'Save & Publish';
+  if(error) { showToast('Save failed: ' + error.message, 'error'); return; }
+  showToast('Landing page updated!', 'success');
   updatePreview();
 }
 
@@ -447,15 +287,55 @@ function onFieldChange(){
   previewTimer = setTimeout(() => { collectConfig(); updatePreview(); }, 300);
 }
 
-// Section Reorder & Visibility
+// Custom Sections
+function addCustomSection(){
+  const id = 'custom_' + Date.now();
+  if(!config.custom_sections) config.custom_sections = [];
+  config.custom_sections.push({id, title:'New Section', body:'Text goes here...'});
+  config.sections_order.push(id);
+  config.sections_visible[id] = true;
+  renderSectionOrder();
+  renderCustomSections();
+  onFieldChange();
+}
+
+function renderCustomSections(){
+  const container = document.getElementById('customSectionsContainer');
+  container.innerHTML = (config.custom_sections || []).map((cs, i) => `
+    <div class="section-card">
+      <div class="section-header" onclick="toggleCard(this)">
+        <span class="material-symbols-outlined" style="font-size:18px;color:#3d6285">extension</span>
+        <h3>${cs.title || 'Custom Section'}</h3>
+        <span class="material-symbols-outlined" style="font-size:18px;color:#9ca3af">expand_more</span>
+      </div>
+      <div class="section-body">
+        <label class="field-label">Section Heading</label>
+        <input class="field-input" value="${cs.title||''}" oninput="config.custom_sections[${i}].title=this.value;onFieldChange()">
+        <label class="field-label">Body Text (HTML allowed)</label>
+        <textarea class="field-input" oninput="config.custom_sections[${i}].body=this.value;onFieldChange()">${cs.body||''}</textarea>
+        <button class="btn btn-danger btn-sm" onclick="removeCustomSection('${cs.id}', ${i})">Delete Section</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function removeCustomSection(id, idx){
+  config.custom_sections.splice(idx, 1);
+  config.sections_order = config.sections_order.filter(s => s !== id);
+  delete config.sections_visible[id];
+  renderSectionOrder();
+  renderCustomSections();
+  onFieldChange();
+}
+
+// Section Ordering & Visibility
 function renderSectionOrder(){
   const list = document.getElementById('sectionOrderList');
   list.innerHTML = '';
   config.sections_order.forEach((sid, i) => {
     const vis = config.sections_visible[sid] !== false;
-    const name = SECTION_NAMES[sid] || (sid.startsWith('custom_') ? 'Custom Section Block' : sid);
-    const div = document.createElement('div');
-    div.className = 'order-item';
+    const name = SECTION_NAMES[sid] || (sid.startsWith('custom_') ? 'Custom Block' : sid);
+    const div = document.createElement('div'); div.className = 'order-item';
     div.innerHTML = `
       <div class="toggle ${vis ? 'active' : ''}" onclick="toggleVis('${sid}', this)"></div>
       <span>${name}</span>
@@ -479,215 +359,40 @@ function moveSection(idx, dir){
   onFieldChange();
 }
 
-// Marquee items editor
-function renderMarqueeItems(){
-  const el = document.getElementById('marqueeList');
-  el.innerHTML = (config.marquee.items || []).map((item, i) => `
-    <div style="display:flex;gap:6px;margin-bottom:6px">
-      <input class="field-input" value="${item}" style="margin:0" oninput="config.marquee.items[${i}]=this.value;onFieldChange()">
-      <button class="btn btn-secondary btn-sm" onclick="config.marquee.items.splice(${i},1);renderMarqueeItems();onFieldChange()">✕</button>
-    </div>
-  `).join('');
-}
-function addMarqueeItem(){
-  config.marquee.items.push('New Ticker Item');
-  renderMarqueeItems();
-  onFieldChange();
-}
-
-// Step Cards Editor
-function renderStepCards(){
-  const el = document.getElementById('stepsList');
-  el.innerHTML = (config.how_it_works.steps || []).map((s, i) => `
-    <div class="card-item">
-      <span class="remove-btn" onclick="config.how_it_works.steps.splice(${i},1);renderStepCards();onFieldChange()">✕</span>
-      <label class="field-label">Icon Name (Material Symbol)</label>
-      <input class="field-input" value="${s.icon||''}" oninput="config.how_it_works.steps[${i}].icon=this.value;onFieldChange()">
-      <label class="field-label">Title</label>
-      <input class="field-input" value="${s.title||''}" oninput="config.how_it_works.steps[${i}].title=this.value;onFieldChange()">
-      <label class="field-label">Description</label>
-      <textarea class="field-input" oninput="config.how_it_works.steps[${i}].desc=this.value;onFieldChange()">${s.desc||''}</textarea>
-    </div>
-  `).join('');
-}
-function addStepCard(){
-  config.how_it_works.steps.push({icon:'star', title:'New Step', desc:'Description'});
-  renderStepCards();
-  onFieldChange();
-}
-
-// Feature Cards Editor
-function renderFeatureCards(){
-  const el = document.getElementById('featuresList');
-  el.innerHTML = (config.features.items || []).map((f, i) => `
-    <div class="card-item">
-      <span class="remove-btn" onclick="config.features.items.splice(${i},1);renderFeatureCards();onFieldChange()">✕</span>
-      <label class="field-label">Icon Name (Material Symbol)</label>
-      <input class="field-input" value="${f.icon||''}" oninput="config.features.items[${i}].icon=this.value;onFieldChange()">
-      <label class="field-label">Feature Title</label>
-      <input class="field-input" value="${f.title||''}" oninput="config.features.items[${i}].title=this.value;onFieldChange()">
-      <label class="field-label">Description</label>
-      <textarea class="field-input" oninput="config.features.items[${i}].desc=this.value;onFieldChange()">${f.desc||''}</textarea>
-    </div>
-  `).join('');
-}
-function addFeatureCard(){
-  config.features.items.push({icon:'verified', title:'New Feature', desc:'Feature details...'});
-  renderFeatureCards();
-  onFieldChange();
-}
-
-// Add/Delete Custom Section Blocks
-function addCustomSection(){
-  const id = 'custom_' + Date.now();
-  const cs = {id, title:'Custom Section Title', body:'Custom section text body...', image_url:''};
-  config.custom_sections.push(cs);
-  config.sections_order.push(id);
-  config.sections_visible[id] = true;
-  renderSectionOrder();
-  renderCustomSections();
-  onFieldChange();
-}
-function renderCustomSections(){
-  const container = document.getElementById('customSectionsContainer');
-  container.innerHTML = (config.custom_sections || []).map((cs, i) => `
-    <div class="section-card">
-      <div class="section-header" onclick="toggleCard(this)">
-        <span class="material-symbols-outlined" style="font-size:18px;color:#3d6285">extension</span>
-        <h3>${cs.title || 'Custom Section Block'}</h3>
-        <span class="material-symbols-outlined" style="font-size:18px;color:#9ca3af">expand_more</span>
-      </div>
-      <div class="section-body">
-        <label class="field-label">Section Heading</label>
-        <input class="field-input" value="${cs.title||''}" oninput="config.custom_sections[${i}].title=this.value;onFieldChange()">
-        <label class="field-label">Body Text (HTML allowed)</label>
-        <textarea class="field-input" rows="3" oninput="config.custom_sections[${i}].body=this.value;onFieldChange()">${cs.body||''}</textarea>
-        <button class="btn btn-danger btn-sm" onclick="removeCustomSection('${cs.id}', ${i})">Delete Custom Section</button>
-      </div>
-    </div>
-  `).join('');
-}
-function removeCustomSection(id, idx){
-  config.custom_sections.splice(idx, 1);
-  config.sections_order = config.sections_order.filter(s => s !== id);
-  delete config.sections_visible[id];
-  renderSectionOrder();
-  renderCustomSections();
-  onFieldChange();
-}
-
-// Media Picker Modal
-async function openMediaModal(section, field){
-  mediaTarget = {section, field};
-  document.getElementById('mediaModal').classList.add('open');
-  const grid = document.getElementById('mediaGrid');
-  grid.innerHTML = 'Loading images…';
-
-  try{
-    const {data} = await sb.storage.from('landing-assets').list();
-    if(!data || !data.length){grid.innerHTML='<em>No media uploaded yet. Use file uploader below.</em>';return}
-    grid.innerHTML = data.map(f => {
-      const {data:{publicUrl}} = sb.storage.from('landing-assets').getPublicUrl(f.name);
-      return `<img src="${publicUrl}" onclick="selectMedia('${publicUrl}')">`;
-    }).join('');
-  }catch(e){grid.innerHTML='Error loading media bucket.'}
-}
-function closeMediaModal(){document.getElementById('mediaModal').classList.remove('open')}
-function selectMedia(url){
-  if(mediaTarget){
-    config[mediaTarget.section][mediaTarget.field] = url;
-    document.getElementById(`f_${mediaTarget.section}_${mediaTarget.field}`).value = url;
-    const img = document.getElementById(`preview_${mediaTarget.section}_${mediaTarget.field}`);
-    if(img){img.src = url; img.style.display = 'block'}
-    onFieldChange();
-  }
-  closeMediaModal();
-}
-
+// Image Upload
 async function uploadImage(section, field, input){
   const file = input.files[0]; if(!file) return;
   const path = `${section}/${Date.now()}_${file.name}`;
-  const {error: upErr} = await sb.storage.from('landing-assets').upload(path, file, {upsert:true});
-  if(upErr){showToast('Upload failed: '+upErr.message,'error'); return}
+  const {error} = await sb.storage.from('landing-assets').upload(path, file, {upsert:true});
+  if(error){showToast('Upload failed', 'error'); return;}
   const {data:{publicUrl}} = sb.storage.from('landing-assets').getPublicUrl(path);
   config[section][field] = publicUrl;
   document.getElementById(`f_${section}_${field}`).value = publicUrl;
   const img = document.getElementById(`preview_${section}_${field}`);
-  if(img){img.src = publicUrl; img.style.display = 'block'}
+  if(img){ img.src = publicUrl; img.style.display = 'block'; }
   onFieldChange();
-  showToast('Image uploaded','success');
+  showToast('Image uploaded', 'success');
 }
 
-// Load Platforms DB Preview
-async function loadSocialPlatforms(){
-  const el = document.getElementById('socialPlatformsList');
-  try{
-    const {data, error} = await sb.from('platforms').select('*');
-    if(error || !data || !data.length){
-      el.innerHTML = '<em>No platforms configured in database.</em>';
-      return;
-    }
-    el.innerHTML = data.map(p => `
-      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #e5e1d8">
-        <strong>${p.name || p.id}</strong>
-        <span>${p.url || p.profile_url || p.link || 'Active'}</span>
-      </div>
-    `).join('');
-  }catch(e){
-    el.innerHTML = '<em>Unable to query platforms table.</em>';
-  }
-}
-
-// Live Metrics
-async function loadLiveMetrics(){
-  try{
-    const [{count:warriors},{count:shares},{data:projects}] = await Promise.all([
-      sb.from('profiles').select('*',{count:'exact',head:true}),
-      sb.from('shares').select('*',{count:'exact',head:true}),
-      sb.from('projects').select('raised_amount,country')
-    ]);
-    const totalDonated = (projects||[]).reduce((s,p) => s + (parseFloat(p.raised_amount)||0), 0);
-    const countries = new Set((projects||[]).filter(p => p.country).map(p => p.country)).size;
-    document.getElementById('m_warriors').textContent = fmtNum(warriors||0);
-    document.getElementById('m_shares').textContent = fmtNum(shares||0);
-    document.getElementById('m_donated').textContent = '$' + fmtNum(totalDonated);
-    document.getElementById('m_countries').textContent = countries || 1;
-  }catch(e){console.warn('Metrics error:', e)}
-}
-function fmtNum(n){
-  if(n >= 1e6) return (n/1e6).toFixed(1) + 'M';
-  if(n >= 1e3) return (n/1e3).toFixed(1) + 'k';
-  return String(n);
-}
-
-// Live Iframe Preview setup
+// Live Preview Setup (Race Condition Fixed)
 function setupPreview(){
   const frame = document.getElementById('previewFrame');
+  // Listen for the iframe to say "I'm ready" before sending config
+  window.addEventListener('message', (e) => {
+    if(e.data && e.data.type === 'preview-ready'){
+      previewReady = true;
+      updatePreview();
+    }
+  });
   frame.src = '../index.html?preview=true';
-  frame.onload = () => { previewReady = true; updatePreview() };
 }
+
 function updatePreview(){
   if(!previewReady) return;
   const msg = { type: 'gstw-preview', config: JSON.parse(JSON.stringify(config)) };
-  const f1 = document.getElementById('previewFrame');
-  const f2 = document.getElementById('previewFrameMobile');
-  if(f1 && f1.contentWindow) f1.contentWindow.postMessage(msg, '*');
-  if(f2 && f2.contentWindow) f2.contentWindow.postMessage(msg, '*');
+  const frame = document.getElementById('previewFrame');
+  if(frame && frame.contentWindow) frame.contentWindow.postMessage(msg, '*');
 }
-function forceRefreshPreview(){
-  const f1 = document.getElementById('previewFrame');
-  f1.src = '../index.html?preview=true&t=' + Date.now();
-  showToast('Preview refreshed', 'success');
-}
-
-function openMobilePreview(){
-  const modal = document.getElementById('previewModal');
-  const frame = document.getElementById('previewFrameMobile');
-  if(!frame.src) frame.src = '../index.html?preview=true';
-  modal.classList.add('open');
-  setTimeout(updatePreview, 400);
-}
-function closeMobilePreview(){ document.getElementById('previewModal').classList.remove('open') }
 
 function toggleCard(header){
   const body = header.nextElementSibling;
