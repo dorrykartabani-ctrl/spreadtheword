@@ -606,18 +606,31 @@ function removeRepeaterItem(type, key, i) {
 
 function collectEditorData() {
   const s = sections.find(x => x.id === activeSectionId);
-  if(!s||!s.data)return;
-  document.querySelectorAll('[data-field]').forEach(el => { if(el.dataset.field==='title') s.title=el.value; else s.data[el.dataset.field]=el.value; });
+  if(!s||!s.data) return;
+  
+  // Standard fields
+  document.querySelectorAll('[data-field]').forEach(el => { 
+    if(el.dataset.field === 'title') s.title = el.value; 
+    else s.data[el.dataset.field] = el.value; 
+  });
+  
+  // Repeater Arrays (Stats, Testimonials, Features)
   const reps = document.querySelectorAll('[data-repeater]');
   if(reps.length > 0){
     const g = {};
     reps.forEach(el => {
       const p = el.dataset.repeater.split('-');
       const type = p[0], key = p[1], idx = p[2], f = p.slice(3).join('-');
-      if(!g[key]) g[key]={}; if(!g[key][idx]) g[key][idx]={};
+      if(!g[key]) g[key] = {}; 
+      if(!g[key][idx]) g[key][idx] = {};
       g[key][idx][f] = el.value;
     });
-    Object.keys(g).forEach(k => s.data[k] = Object.values(g[k]));
+    
+    // Convert objects back to clean arrays
+    Object.keys(g).forEach(k => {
+      const sortedKeys = Object.keys(g[k]).sort((a,b) => Number(a) - Number(b));
+      s.data[k] = sortedKeys.map(idx => g[k][idx]);
+    });
   }
 }
 
