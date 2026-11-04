@@ -97,24 +97,37 @@
   const isPreview = new URLSearchParams(location.search).get('preview') === '1';
   let allTiers = [];
 
-  if (isPreview) document.body.classList.add('cms-preview-mode');
+  // Enable visual feedback in preview mode
+  if (isPreview) {
+    document.body.classList.add('cms-preview-mode');
+    const style = document.createElement('style');
+    style.textContent = `
+      .cms-preview-mode section[data-cms-id] { position: relative; transition: all 0.2s; cursor: pointer; }
+      .cms-preview-mode section[data-cms-id]:hover::after {
+        content: 'Click to Edit'; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(30, 64, 96, 0.1); border: 2px dashed #D4A24C; z-index: 50;
+        display: flex; align-items: center; justify-content: center;
+        color: #1E4060; font-weight: bold; font-family: sans-serif; font-size: 1.5rem; text-transform: uppercase;
+      }
+    `;
+    document.head.appendChild(style);
+  }
 
   function esc(s) {
     if (!s) return '';
     const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
   }
 
-  // ─── DYNAMIC RENDERERS ───
+  // ─── DYNAMIC RENDERERS (TACTICAL DESIGN) ───
 
   function renderHero(d, id) {
     const bg = d.background_image || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80';
     return `
-      <section id="home" data-cms-id="${id}" class="relative min-h-screen flex flex-col justify-end overflow-hidden pt-[72px]">
+      <section data-cms-id="${id}" class="relative min-h-[90vh] flex flex-col justify-end overflow-hidden pt-[72px]">
         <div class="absolute inset-0 z-0">
           <img src="${esc(bg)}" class="w-full h-full object-cover">
         </div>
         <div class="absolute inset-0 z-[1] bg-gradient-to-t from-black/80 via-black/40 to-black/10"></div>
-        
         <div class="relative z-10 w-full max-w-3xl mx-auto px-6 pb-20 pt-32 text-center">
           <h1 class="font-headline font-extrabold text-4xl md:text-6xl text-white leading-tight tracking-tight mb-5" style="text-shadow:0 2px 20px rgba(0,0,0,0.6);">
             ${d.headline ? d.headline.replace(/\|/g, '<br>') : 'Spread the Word.<br>Change the World.'}
@@ -123,7 +136,7 @@
             "${esc(d.scripture_quote || 'Go therefore and make disciples of all nations.')}" — ${esc(d.scripture_ref || 'Matthew 28:19')}
           </p>
           <div>
-            <a href="${esc(d.cta_link || '#pricing')}" class="inline-block bg-gold text-dark font-headline font-bold text-sm uppercase tracking-wider px-10 py-4 rounded-xl shadow-action-glow hover:bg-gold-dim hover:scale-[1.02] transition-all">
+            <a href="${esc(d.cta_link || '#pricing')}" class="inline-block bg-gold text-dark font-headline font-bold text-sm uppercase tracking-wider px-10 py-4 rounded-xl shadow-action-glow hover:bg-gold-dim hover:scale-[1.02] transition-all relative z-20">
               ${esc(d.cta_text || 'Enlist in the Mission')}
             </a>
           </div>
@@ -138,7 +151,7 @@
       { metric: 'countries', label: 'Countries Reached', fallback: '38' }
     ];
     return `
-      <section data-cms-id="${id}" class="bg-dark py-10">
+      <section data-cms-id="${id}" class="bg-dark py-10 border-y border-white/5">
         <div class="max-w-5xl mx-auto px-6">
           <div class="grid grid-cols-1 md:grid-cols-${Math.min(items.length, 4)} gap-5">
             ${items.map((item, i) => `
@@ -177,7 +190,7 @@
 
   function renderSteps(d, id) {
     return `
-      <section id="features" data-cms-id="${id}" class="py-20 lg:py-24 bg-white scroll-mt">
+      <section data-cms-id="${id}" class="py-20 lg:py-24 bg-white scroll-mt">
         <div class="max-w-6xl mx-auto px-6 lg:px-8">
           <div class="text-center max-w-2xl mx-auto mb-16">
             <span class="font-body font-bold text-xs text-primary uppercase tracking-widest mb-3 block">${esc(d.section_title)}</span>
@@ -187,7 +200,7 @@
             ${(d.items || []).map((item, i) => `
               <div class="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
                 <div class="${i % 2 !== 0 ? 'md:order-2' : ''} rounded-2xl overflow-hidden shadow-lifted">
-                  <img src="${esc(item.image)}" class="w-full h-72 object-cover">
+                  <img src="${esc(item.image)}" class="w-full h-72 object-cover bg-cream">
                 </div>
                 <div class="${i % 2 !== 0 ? 'md:order-1' : ''}">
                   <span class="font-headline font-extrabold text-6xl text-gold/40 leading-none block mb-2">0${i+1}</span>
@@ -196,6 +209,81 @@
                 </div>
               </div>
             `).join('')}
+          </div>
+        </div>
+      </section>`;
+  }
+
+  // --- MISSING SECTION: Text / About Block ---
+  function renderTextBlock(d, id) {
+    return `
+      <section data-cms-id="${id}" class="py-20 lg:py-24 bg-cream scroll-mt">
+        <div class="max-w-4xl mx-auto px-6 text-center">
+          <span class="font-body font-bold text-xs text-primary uppercase tracking-widest mb-3 block">${esc(d.section_title)}</span>
+          <h2 class="font-headline font-extrabold text-3xl md:text-5xl text-text-dark mb-8">${esc(d.section_subtitle)}</h2>
+          <div class="font-body text-base md:text-lg text-text-muted leading-relaxed space-y-6 text-left max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-natural ghost-border">
+            ${(d.body_text || '').split('\n').map(p => p.trim() ? `<p>${esc(p)}</p>` : '').join('')}
+          </div>
+          ${d.cta_text ? `
+          <div class="mt-10">
+            <a href="${esc(d.cta_link || '#')}" class="action-gradient text-white font-headline font-bold text-sm uppercase tracking-wider px-10 py-4 rounded-xl shadow-action-glow hover:scale-[1.02] transition-transform inline-block relative z-20">
+              ${esc(d.cta_text)}
+            </a>
+          </div>` : ''}
+        </div>
+      </section>`;
+  }
+
+  // --- MISSING SECTION: Testimonials / Field Report ---
+  function renderTestimonials(d, id) {
+    return `
+      <section data-cms-id="${id}" class="py-20 lg:py-24 bg-dark scroll-mt">
+        <div class="max-w-6xl mx-auto px-6 lg:px-8">
+          <div class="text-center max-w-2xl mx-auto mb-12">
+            <span class="font-body font-bold text-xs text-gold uppercase tracking-widest mb-3 block">${esc(d.section_title)}</span>
+            <h2 class="font-headline font-extrabold text-3xl md:text-5xl text-white mb-4">${esc(d.section_subtitle)}</h2>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            ${(d.items || []).map((item) => `
+              <div class="bg-white/[0.06] border border-white/10 rounded-2xl p-8 hover:bg-white/10 hover:border-gold/30 transition-all">
+                <div class="scripture-mark text-gold/40 text-5xl leading-none mb-2">"</div>
+                <p class="font-body italic text-white/90 text-base leading-relaxed mb-6">${esc(item.quote)}</p>
+                <div class="flex items-center gap-4">
+                  ${item.avatar ? `<img src="${esc(item.avatar)}" class="w-12 h-12 rounded-full object-cover border-2 border-gold">` : `<div class="w-12 h-12 rounded-full border-2 border-gold bg-primary flex items-center justify-center text-white font-bold">${esc((item.author||'A')[0])}</div>`}
+                  <div>
+                    <span class="block font-headline font-semibold text-sm text-white">${esc(item.author)}</span>
+                    <span class="block font-body text-xs text-white/50">${esc(item.role)}</span>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </section>`;
+  }
+
+  // --- MISSING SECTION: PWA Install Guide ---
+  function renderPwaInstall(d, id) {
+    return `
+      <section data-cms-id="${id}" class="py-20 lg:py-24 bg-white scroll-mt">
+        <div class="max-w-5xl mx-auto px-6 lg:px-8">
+          <div class="text-center max-w-2xl mx-auto mb-12">
+            <span class="font-body font-bold text-xs text-primary uppercase tracking-widest mb-3 block">${esc(d.section_title)}</span>
+            <h2 class="font-headline font-extrabold text-3xl md:text-5xl text-text-dark mb-4">${esc(d.section_subtitle)}</h2>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            <div class="bg-cream rounded-2xl p-8 border-t-4 border-primary shadow-natural">
+              <h4 class="font-headline font-bold text-xl text-text-dark mb-4 flex items-center gap-3">
+                <span class="text-2xl">🍎</span> iOS (iPhone/iPad)
+              </h4>
+              <p class="font-body text-text-muted leading-relaxed text-sm">${(d.ios_text || '1. Open in Safari\\n2. Tap Share\\n3. Add to Home Screen').replace(/\n/g, '<br>')}</p>
+            </div>
+            <div class="bg-cream rounded-2xl p-8 border-t-4 border-gold shadow-natural">
+              <h4 class="font-headline font-bold text-xl text-text-dark mb-4 flex items-center gap-3">
+                <span class="text-2xl">🤖</span> Android
+              </h4>
+              <p class="font-body text-text-muted leading-relaxed text-sm">${(d.android_text || '1. Open in Chrome\\n2. Tap Menu (⋮)\\n3. Install App').replace(/\n/g, '<br>')}</p>
+            </div>
           </div>
         </div>
       </section>`;
@@ -210,7 +298,7 @@
     if (activeTiers.length === 0) return '';
 
     return `
-      <section id="pricing" data-cms-id="${id}" class="py-20 lg:py-24 bg-cream scroll-mt">
+      <section data-cms-id="${id}" class="py-20 lg:py-24 bg-cream scroll-mt">
         <div class="max-w-6xl mx-auto px-6 lg:px-8">
           <div class="text-center max-w-2xl mx-auto mb-16">
             <span class="font-body font-bold text-xs text-primary uppercase tracking-widest mb-3 block">${esc(d.section_title)}</span>
@@ -220,9 +308,24 @@
             ${activeTiers.map((t, idx) => {
               const isPopular = activeTiers.length > 1 && idx === 1;
               const isFree = !t.price || Number(t.price) === 0;
-              const rawFeatures = Array.isArray(t.features) ? t.features : [];
+              
+              // Robust Feature Parser
+              let features = [];
+              try {
+                if (Array.isArray(t.features)) features = t.features;
+                else if (typeof t.features === 'string') {
+                  const parsed = JSON.parse(t.features);
+                  features = Array.isArray(parsed) ? parsed : [];
+                } else if (t.features && typeof t.features === 'object') {
+                  features = Object.values(t.features);
+                }
+              } catch(e) {
+                features = typeof t.features === 'string' ? t.features.split(',').map(s=>s.trim()) : [];
+              }
+
               return `
-                <div class="bg-white rounded-2xl p-8 shadow-lifted flex flex-col justify-between border-2 ${isPopular ? 'border-gold shadow-action-glow' : 'border-transparent ghost-border'}">
+                <div class="bg-white rounded-2xl p-8 shadow-lifted flex flex-col justify-between border-2 ${isPopular ? 'border-gold shadow-action-glow relative' : 'border-transparent ghost-border'}">
+                  ${isPopular ? `<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold text-dark text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full">Recommended</div>` : ''}
                   <div>
                     <h3 class="font-headline font-extrabold text-2xl text-text-dark text-center mb-2">${esc(t.name)}</h3>
                     <div class="text-center mb-5">
@@ -231,15 +334,18 @@
                     </div>
                     <div class="h-px bg-cream mb-5"></div>
                     <ul class="space-y-3 mb-8">
-                      ${rawFeatures.map(f => `
+                      ${features.map(f => {
+                        const txt = typeof f === 'string' ? f : (f.text || f.label || '');
+                        if(!txt) return '';
+                        return `
                         <li class="flex items-start gap-2.5">
                           <span class="text-gold font-bold flex-shrink-0">✓</span>
-                          <span class="font-body text-sm text-text-dark leading-snug">${esc(typeof f === 'string' ? f : (f.text||''))}</span>
-                        </li>
-                      `).join('')}
+                          <span class="font-body text-sm text-text-dark leading-snug">${esc(txt)}</span>
+                        </li>`;
+                      }).join('')}
                     </ul>
                   </div>
-                  <a href="${isFree ? '/app/signup.html' : (t.checkout_url || '/app/signup.html')}" class="${isPopular ? 'action-gradient text-white' : 'tactical-gradient text-white'} block text-center font-headline font-bold text-sm uppercase tracking-wider px-6 py-4 rounded-xl shadow-natural hover:scale-[1.02] transition-transform">
+                  <a href="${isFree ? '/app/signup.html' : (t.checkout_url || '/app/signup.html')}" class="${isPopular ? 'action-gradient text-white' : 'tactical-gradient text-white'} block text-center font-headline font-bold text-sm uppercase tracking-wider px-6 py-4 rounded-xl shadow-natural hover:scale-[1.02] transition-transform relative z-20">
                     ${isFree ? 'Get Started' : 'Enlist Now'}
                   </a>
                 </div>`;
@@ -253,11 +359,11 @@
     return `
       <section data-cms-id="${id}" class="py-20 lg:py-24 bg-primary relative overflow-hidden scroll-mt">
         <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full opacity-30" style="background: radial-gradient(circle, rgba(212,162,76,0.15) 0%, transparent 70%);"></div>
-        <div class="relative max-w-3xl mx-auto px-6 lg:px-8 text-center">
+        <div class="relative max-w-3xl mx-auto px-6 lg:px-8 text-center z-10">
           <span class="inline-block font-body font-bold text-xs text-gold uppercase tracking-widest bg-gold/10 px-3 py-1.5 rounded-full mb-5">${esc(d.section_title)}</span>
           <h2 class="font-headline font-extrabold text-3xl md:text-5xl text-white mb-4">${esc(d.section_subtitle)}</h2>
           <p class="font-body text-base md:text-lg text-white/85 leading-relaxed max-w-xl mx-auto mb-10">${esc(d.body_text)}</p>
-          <form class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto" onsubmit="event.preventDefault(); this.innerHTML = '<p class=\\'font-body text-gold font-bold w-full p-4 bg-gold/10 rounded-xl\\'>Received. You are on the list.</p>';">
+          <form class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto relative z-20" onsubmit="event.preventDefault(); this.innerHTML = '<p class=\\'font-body text-gold font-bold w-full p-4 bg-gold/10 rounded-xl\\'>Received. You are on the list.</p>';">
             <input type="email" placeholder="Your email address" required class="flex-1 h-12 px-5 bg-white/10 rounded-xl border border-white/20 font-body text-sm text-white focus:outline-none focus:border-gold transition-colors">
             <button type="submit" class="h-12 px-6 bg-gold text-primary font-headline font-bold text-sm rounded-xl hover:bg-gold-dim transition-colors whitespace-nowrap">${esc(d.button_text || 'Join')}</button>
           </form>
@@ -265,30 +371,22 @@
       </section>`;
   }
 
-  function renderFooterSocials(platforms) {
-    const host = document.getElementById('footer-socials');
-    if (!host) return;
-    
-    const icons = { instagram: 'instagram', facebook: 'facebook', x: 'x', twitter: 'x', youtube: 'youtube', tiktok: 'tiktok' };
-    const links = (platforms || []).filter(p => p.desktop_url || p.mobile_url);
-    
-    if (links.length === 0) { host.innerHTML = ''; return; }
+  // Define Renderer Map
+  const RENDERERS = { 
+    hero: renderHero, 
+    stats: renderStats, 
+    features: renderFeatures, 
+    steps: renderSteps, 
+    text_block: renderTextBlock,       // <-- Added
+    testimonials: renderTestimonials,  // <-- Added
+    pwa_install: renderPwaInstall,     // <-- Added
+    pricing: renderPricing, 
+    waitlist: renderWaitlist, 
+    socials: () => '', 
+    custom: (d, id) => `<section data-cms-id="${id}">${d.html_content || ''}</section>` 
+  };
 
-    host.innerHTML = links.map(p => {
-      const key = String(p.slug || '').toLowerCase().trim().replace(/\s/g, '');
-      const icon = icons[key] || 'x';
-      const url = p.desktop_url || p.mobile_url || '#';
-      return `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" 
-                 class="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110 shadow-natural"
-                 style="background: ${p.icon_bg || '#1E4060'};">
-                <img src="https://cdn.simpleicons.org/${icon}/${(p.icon_color || '#ffffff').replace('#', '')}" alt="${esc(p.label)}" class="w-5 h-5" />
-              </a>`;
-    }).join('');
-  }
-
-  const RENDERERS = { hero: renderHero, stats: renderStats, features: renderFeatures, steps: renderSteps, pricing: renderPricing, waitlist: renderWaitlist, socials: () => '', custom: (d, id) => `<section data-cms-id="${id}">${d.html_content || ''}</section>` };
-
-  // ─── INITIALIZATION & LIVE PREVIEW ───
+  // ─── CORE RENDERING LOGIC ───
 
   function renderSections(sectionsList) {
     const visible = sectionsList.filter(s => s.is_visible !== false).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
@@ -306,14 +404,11 @@
     const { data: tiers } = await supabaseClient.from('subscription_tiers').select('*').order('sort_order', { ascending: true });
     if (tiers) allTiers = tiers;
 
-    const { data: platforms } = await supabaseClient.from('platforms').select('*').eq('is_active', true).order('display_order', { ascending: true });
-    if (platforms) renderFooterSocials(platforms);
-
     const { data, error } = await supabaseClient.from('landing_sections').select('*').order('sort_order', { ascending: true });
     if (!error && data) renderSections(data);
   }
 
-  // Live Preview Event Listener for Content Builder
+  // ─── CLICK TO EDIT (PREVIEW MODE) ───
   if (isPreview) {
     window.addEventListener('message', (event) => {
       if (event.data?.type === 'CMS_UPDATE') {
@@ -322,13 +417,16 @@
       }
     });
 
+    // Enforce capture phase to guarantee clicks are intercepted
     window.addEventListener('click', (e) => {
-      const sectionEl = e.target.closest('[data-cms-id]');
+      const sectionEl = e.target.closest('section[data-cms-id]');
       if (sectionEl) {
         e.preventDefault();
-        window.parent.postMessage({ type: 'CMS_SELECT_SECTION', id: sectionEl.dataset.cmsId }, '*');
+        e.stopPropagation();
+        const cmsId = sectionEl.getAttribute('data-cms-id');
+        window.parent.postMessage({ type: 'CMS_SELECT_SECTION', id: cmsId }, '*');
       }
-    }, true);
+    }, true); 
 
     window.parent?.postMessage({ type: 'PREVIEW_READY' }, '*');
   }
@@ -373,7 +471,6 @@
     }, 16);
   }
 
-  // Boot up page
   loadPage();
 </script>
 
