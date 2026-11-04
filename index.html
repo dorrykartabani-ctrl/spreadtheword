@@ -308,39 +308,46 @@
             ${activeTiers.map((t, idx) => {
               const isPopular = activeTiers.length > 1 && idx === 1;
               const isFree = !t.price || Number(t.price) === 0;
+              const tierImg = t.image_url || t.tier_image || t.image; // Pulls the image from DB
               
-              // Robust Feature Parser
-              let features = [];
+              // Smart Feature Parser (Filters out unchecked items)
+              let rawFeatures = [];
               try {
-                if (Array.isArray(t.features)) features = t.features;
-                else if (typeof t.features === 'string') {
-                  const parsed = JSON.parse(t.features);
-                  features = Array.isArray(parsed) ? parsed : [];
-                } else if (t.features && typeof t.features === 'object') {
-                  features = Object.values(t.features);
-                }
-              } catch(e) {
-                features = typeof t.features === 'string' ? t.features.split(',').map(s=>s.trim()) : [];
-              }
+                if (typeof t.features === 'string') rawFeatures = JSON.parse(t.features);
+                else rawFeatures = t.features || [];
+              } catch(e) {}
+
+              // Only keep features that are explicitly checked/included
+              const validFeatures = Array.isArray(rawFeatures) ? rawFeatures.filter(f => {
+                if (typeof f === 'string') return true;
+                // Checks common boolean keys from your Admin panel
+                return f.included === true || f.is_included === true || f.active === true || f.checked === true;
+              }) : [];
 
               return `
                 <div class="bg-white rounded-2xl p-8 shadow-lifted flex flex-col justify-between border-2 ${isPopular ? 'border-gold shadow-action-glow relative' : 'border-transparent ghost-border'}">
                   ${isPopular ? `<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold text-dark text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full">Recommended</div>` : ''}
                   <div>
-                    <h3 class="font-headline font-extrabold text-2xl text-text-dark text-center mb-2">${esc(t.name)}</h3>
+                    <div class="flex items-center justify-center gap-3 mb-2">
+                      ${tierImg ? `<img src="${esc(tierImg)}" class="w-8 h-8 rounded-full object-cover">` : ''}
+                      <h3 class="font-headline font-extrabold text-2xl text-text-dark text-center">${esc(t.name)}</h3>
+                    </div>
+                    <p class="font-body text-sm text-text-muted text-center mb-4">${esc(t.description || '')}</p>
                     <div class="text-center mb-5">
                       <span class="font-headline font-extrabold text-5xl ${isPopular ? 'text-primary' : 'text-text-dark'}">${isFree ? 'Free' : '$' + t.price}</span>
-                      ${!isFree ? `<span class="font-body text-base text-text-muted">/${t.interval||'month'}</span>` : ''}
+                      ${!isFree ? `<span class="font-body text-base text-text-muted">/${t.interval||'monthly'}</span>` : ''}
                     </div>
                     <div class="h-px bg-cream mb-5"></div>
                     <ul class="space-y-3 mb-8">
-                      ${features.map(f => {
+                      ${validFeatures.map(f => {
                         const txt = typeof f === 'string' ? f : (f.text || f.label || '');
+                        const isSoon = typeof f === 'object' && f.soon === true;
                         if(!txt) return '';
                         return `
                         <li class="flex items-start gap-2.5">
                           <span class="text-gold font-bold flex-shrink-0">✓</span>
                           <span class="font-body text-sm text-text-dark leading-snug">${esc(txt)}</span>
+                          ${isSoon ? `<span class="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase font-bold tracking-wider ml-1">Soon</span>` : ''}
                         </li>`;
                       }).join('')}
                     </ul>
@@ -354,7 +361,6 @@
         </div>
       </section>`;
   }
-
   function renderWaitlist(d, id) {
     return `
       <section data-cms-id="${id}" class="py-20 lg:py-24 bg-primary relative overflow-hidden scroll-mt">
