@@ -233,12 +233,15 @@ const supabaseClient = supabase.createClient(
 let sections = [], activeSectionId = null, mediaLibrary = [], allTiers = [];
 let imagePickerTarget = null, tierPickerTarget = null, selectedImageId = null, selectedTierIds = [];
 let previewOpen = false, previewLoaded = false, previewTimer = null;
+let isDirty = false; // Fixed: explicitly declared to prevent crashes
+let dragIndex = null;
 
 function $(id) { return document.getElementById(id); }
 function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function escapeAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function markDirty() { const b = $('saveBtnText'); if(b) b.textContent = 'Save Changes *'; clearTimeout(previewTimer); previewTimer = setTimeout(pushPreviewUpdate, 400); }
-let toastTimer=null; function showToast(m,t='success'){const x=$('toast');if(!x)return;x.textContent=m;x.className='toast toast-'+t+' show';clearTimeout(toastTimer);toastTimer=setTimeout(()=>x.classList.remove('show'),3500);}
+function markDirty() { isDirty = true; const b = $('saveBtnText'); if(b) b.textContent = 'Save Changes *'; clearTimeout(previewTimer); previewTimer = setTimeout(pushPreviewUpdate, 400); }
+let toastTimer=null; 
+function showToast(m,t='success'){const x=$('toast');if(!x)return;x.textContent=m;x.className='toast toast-'+t+' show';clearTimeout(toastTimer);toastTimer=setTimeout(()=>x.classList.remove('show'),3500);}
 
 // ─── NAVIGATION & PREVIEW HANDLERS ─────────────────────────
 function toggleSidebar() {
@@ -423,7 +426,7 @@ function fieldImage(label, field, d) {
 // ─── SECTION TEMPLATES ─────────────────────────────────────
 const SECTION_TYPES = {
   hero: { label: 'Hero', icon: 'flag', chipClass: 'chip-hero', description: 'Scripture banner & title', defaultData: { layout: 'right-aligned', overlay_style: 'light', headline: 'Spread the Word.|Change the World.', scripture_intro: 'And He said to them,', scripture_quote: 'Go into all the world and preach the gospel to every creature', scripture_ref: 'Mark 16:15', cta_text: 'Enlist in the Mission', cta_link: '#pricing' } },
-  stats: { label: 'Live Stats Grid', icon: 'monitoring', chipClass: 'chip-features', description: 'Dynamic counters', defaultData: { label_1: 'Warriors Enlisted', label_2: 'Words Deployed', label_3: 'Countries Reached' } },
+  stats: { label: 'Live Stats Grid', icon: 'monitoring', chipClass: 'chip-features', description: 'Dynamic counters', defaultData: { items: [{ metric: 'warriors', label: 'Warriors Enlisted', fallback: '1248' }, { metric: 'shares', label: 'Words Deployed', fallback: '47892' }, { metric: 'countries', label: 'Countries Reached', fallback: '38' }] } },
   features: { label: 'Card Grid', icon: 'view_agenda', chipClass: 'chip-features', description: '3-Column image cards', defaultData: { section_title: 'WHY ENLIST?', section_subtitle: 'Soldiers, Not Spectators.', items: [] } },
   steps: { label: 'Steps / Orders', icon: 'format_list_numbered', chipClass: 'chip-about', description: 'Alternating zig-zag blocks', defaultData: { section_title: 'YOUR ORDERS', section_subtitle: 'How It Works', items: [] } },
   text_block: { label: 'Text / About Block', icon: 'subject', chipClass: 'chip-about', description: 'Centered narrative text', defaultData: { section_title: 'THE STRATEGY', section_subtitle: 'About Us', body_text: 'Your mission narrative here.' } },
@@ -444,7 +447,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadSections() {
   const { data, error } = await supabaseClient.from('landing_sections').select('*').order('sort_order', { ascending: true });
-  if (error) return;
+  if (error) {
+    showToast('Failed to load sections', 'error');
+    return;
+  }
   sections = (data || []).map(s => ({ ...s, data: s.data || {} }));
   renderSectionList();
 }
@@ -460,6 +466,7 @@ async function loadMediaLibrary() {
       .filter(m => !!m.url);
   } catch (err) { mediaLibrary = []; }
 }
+
 async function loadTiers() {
   const { data } = await supabaseClient.from('tiers').select('*').order('sort_order', { ascending: true });
   if (data) allTiers = data;
@@ -514,25 +521,36 @@ function renderEditor() {
         <hr class="border-surface-chigh my-5">
         <div class="grid grid-cols-2 gap-4">${fieldCta('Primary', 'cta', d)} ${fieldCta('Secondary', 'secondary_cta', d)}</div>
         ${fieldImage('Background Image', 'background_image', d)}`; break;
-    case 'stats': fieldsHTML = `${fieldText('Stat 1 Label', 'label_1', d)} ${fieldText('Stat 2 Label', 'label_2', d)} ${fieldText('Stat 3 Label', 'label_3', d)}`; break;
+        
+    case 'stats': 
+      fieldsHTML = `${fieldText('Section Eyebrow', 'section_title', d)} ${fieldText('Main Headline', 'section_subtitle', d)}
+        <div class="field-group"><label class="field-label">Live Data Cards</label><div id="repeater-stats-items">${(d.items||[]).map((item, i) => statItemHTML('stats', i, item)).join('')}</div><button onclick="addRepeaterItem('stats','items',statItemHTML)" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-c text-[11px] font-bold"><span class="material-symbols-outlined text-[14px]">add</span>Add Stat Block</button></div>`; break;
+        
     case 'features':
     case 'steps':
       fieldsHTML = `${fieldText('Section Eyebrow', 'section_title', d)} ${fieldText('Main Headline', 'section_subtitle', d)}
         <div class="field-group"><label class="field-label">Cards/Steps</label><div id="repeater-${s.section_type}-items">${(d.items||[]).map((item, i) => cardItemHTML(s.section_type, i, item)).join('')}</div><button onclick="addRepeaterItem('${s.section_type}','items',cardItemHTML)" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-c text-[11px] font-bold"><span class="material-symbols-outlined text-[14px]">add</span>Add Block</button></div>`; break;
+        
     case 'text_block':
       fieldsHTML = `${fieldText('Section Eyebrow', 'section_title', d)} ${fieldText('Main Headline', 'section_subtitle', d)} ${fieldTextarea('Body Paragraphs', 'body_text', d, 'Use Enter for new paragraphs', 6)} ${fieldCta('Action', 'cta', d)}`; break;
+      
     case 'testimonials':
       fieldsHTML = `${fieldText('Section Eyebrow', 'section_title', d)} ${fieldText('Main Headline', 'section_subtitle', d)}
-        <div class="field-group"><label class="field-label">Testimonials</label><div id="repeater-testimonials-items">${(d.items||[]).map((item, i) => testimonialItemHTML(i, item)).join('')}</div><button onclick="addRepeaterItem('testimonials','items',testimonialItemHTML)" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-c text-[11px] font-bold"><span class="material-symbols-outlined text-[14px]">add</span>Add Witness</button></div>`; break;
+        <div class="field-group"><label class="field-label">Testimonials</label><div id="repeater-testimonials-items">${(d.items||[]).map((item, i) => testimonialItemHTML('testimonials', i, item)).join('')}</div><button onclick="addRepeaterItem('testimonials','items',testimonialItemHTML)" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-c text-[11px] font-bold"><span class="material-symbols-outlined text-[14px]">add</span>Add Witness</button></div>`; break;
+        
     case 'pricing':
       fieldsHTML = `${fieldText('Section Eyebrow', 'section_title', d)} ${fieldText('Main Headline', 'section_subtitle', d)}
         <div class="field-group"><label class="field-label">Tiers</label><button onclick="openTierPicker()" class="px-3 py-1.5 rounded-lg bg-surface-c text-[11px] font-bold">Select Tiers</button></div>`; break;
+        
     case 'pwa_install':
       fieldsHTML = `${fieldText('Section Eyebrow', 'section_title', d)} ${fieldText('Main Headline', 'section_subtitle', d)} ${fieldTextarea('iOS Instructions', 'ios_text', d, '', 2)} ${fieldTextarea('Android Instructions', 'android_text', d, '', 2)}`; break;
+      
     case 'waitlist':
       fieldsHTML = `${fieldText('Section Eyebrow', 'section_title', d)} ${fieldText('Main Headline', 'section_subtitle', d)} ${fieldTextarea('Body', 'body_text', d, '', 3)} ${fieldText('Button Text', 'button_text', d)}`; break;
+      
     case 'socials':
-      fieldsHTML = `<div class="field-group"><label class="field-label">Footer Socials</label><div id="repeater-socials-items">${(d.items||[]).map((item, i) => socialItemHTML(i, item)).join('')}</div><button onclick="addSocialItem()" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-c text-[11px] font-bold"><span class="material-symbols-outlined text-[14px]">add</span>Add Platform</button></div>`; break;
+      fieldsHTML = `<div class="field-group"><label class="field-label">Footer Socials</label><div id="repeater-socials-items">${(d.items||[]).map((item, i) => socialItemHTML('socials', i, item)).join('')}</div><button onclick="addRepeaterItem('socials','items',socialItemHTML)" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-c text-[11px] font-bold"><span class="material-symbols-outlined text-[14px]">add</span>Add Platform</button></div>`; break;
+      
     case 'custom': fieldsHTML = `${fieldTextarea('HTML', 'html_content', d, '', 8)}`; break;
   }
 
@@ -544,14 +562,20 @@ function cardItemHTML(type, i, item = {}) {
   return `<div class="repeater-item" data-index="${i}"><div class="remove-btn" onclick="removeRepeaterItem('${type}','items',${i})"><span class="material-symbols-outlined text-[14px]">close</span></div><div class="field-group"><label class="field-label">Image URL</label><div class="flex gap-2"><input type="text" class="field-input flex-1" data-repeater="${type}-items-${i}-image" value="${escapeAttr(item.image||'')}" oninput="markDirty()"><button onclick="openImagePicker('${type}-items-${i}-image', true)" class="px-3 py-2 bg-surface-chigh rounded-lg text-xs font-bold">Pick</button></div></div><div class="grid grid-cols-2 gap-3"><input type="text" class="field-input" data-repeater="${type}-items-${i}-title" value="${escapeAttr(item.title||'')}" placeholder="Title" oninput="markDirty()"><input type="text" class="field-input" data-repeater="${type}-items-${i}-description" value="${escapeAttr(item.description||'')}" placeholder="Description" oninput="markDirty()"></div></div>`;
 }
 
-function testimonialItemHTML(i, item = {}) {
-  return `<div class="repeater-item" data-index="${i}"><div class="remove-btn" onclick="removeRepeaterItem('testimonials','items',${i})"><span class="material-symbols-outlined text-[14px]">close</span></div><textarea class="field-textarea mb-2" data-repeater="testimonials-items-${i}-quote" rows="2" placeholder="Quote..." oninput="markDirty()">${escapeHtml(item.quote||'')}</textarea><div class="grid grid-cols-3 gap-3"><input type="text" class="field-input" data-repeater="testimonials-items-${i}-author" value="${escapeAttr(item.author||'')}" placeholder="Author" oninput="markDirty()"><input type="text" class="field-input" data-repeater="testimonials-items-${i}-role" value="${escapeAttr(item.role||'')}" placeholder="Role" oninput="markDirty()"><input type="text" class="field-input" data-repeater="testimonials-items-${i}-avatar" value="${escapeAttr(item.avatar||'')}" placeholder="Avatar URL" oninput="markDirty()"></div></div>`;
+function testimonialItemHTML(type, i, item = {}) {
+  return `<div class="repeater-item" data-index="${i}"><div class="remove-btn" onclick="removeRepeaterItem('${type}','items',${i})"><span class="material-symbols-outlined text-[14px]">close</span></div><textarea class="field-textarea mb-2" data-repeater="${type}-items-${i}-quote" rows="2" placeholder="Quote..." oninput="markDirty()">${escapeHtml(item.quote||'')}</textarea><div class="grid grid-cols-3 gap-3"><input type="text" class="field-input" data-repeater="${type}-items-${i}-author" value="${escapeAttr(item.author||'')}" placeholder="Author" oninput="markDirty()"><input type="text" class="field-input" data-repeater="${type}-items-${i}-role" value="${escapeAttr(item.role||'')}" placeholder="Role" oninput="markDirty()"><input type="text" class="field-input" data-repeater="${type}-items-${i}-avatar" value="${escapeAttr(item.avatar||'')}" placeholder="Avatar URL" oninput="markDirty()"></div></div>`;
 }
 
-function socialItemHTML(i, item = {}) {
+function socialItemHTML(type, i, item = {}) {
   const p = item.platform || 'instagram';
   const opts = ['instagram','facebook','x','youtube','tiktok','linkedin','whatsapp','telegram','threads','snapchat','truthsocial'].map(x => `<option value="${x}" ${p===x?'selected':''}>${x}</option>`).join('');
-  return `<div class="repeater-item" data-index="${i}"><div class="remove-btn" onclick="removeRepeaterItem('socials','items',${i})"><span class="material-symbols-outlined text-[14px]">close</span></div><div class="grid grid-cols-3 gap-3"><select class="field-input" data-repeater="socials-items-${i}-platform" onchange="markDirty()">${opts}</select><input type="text" class="field-input" data-repeater="socials-items-${i}-label" value="${escapeAttr(item.label||'')}" placeholder="Label" oninput="markDirty()"><input type="url" class="field-input" data-repeater="socials-items-${i}-url" value="${escapeAttr(item.url||'')}" placeholder="https://" oninput="markDirty()"></div></div>`;
+  return `<div class="repeater-item" data-index="${i}"><div class="remove-btn" onclick="removeRepeaterItem('${type}','items',${i})"><span class="material-symbols-outlined text-[14px]">close</span></div><div class="grid grid-cols-3 gap-3"><select class="field-input" data-repeater="${type}-items-${i}-platform" onchange="markDirty()">${opts}</select><input type="text" class="field-input" data-repeater="${type}-items-${i}-label" value="${escapeAttr(item.label||'')}" placeholder="Label" oninput="markDirty()"><input type="url" class="field-input" data-repeater="${type}-items-${i}-url" value="${escapeAttr(item.url||'')}" placeholder="https://" oninput="markDirty()"></div></div>`;
+}
+
+function statItemHTML(type, i, item = {}) {
+  const m = item.metric || 'warriors';
+  const opts = ['warriors','shares','countries','trending','most_shared','custom'].map(x => `<option value="${x}" ${m===x?'selected':''}>${x}</option>`).join('');
+  return `<div class="repeater-item" data-index="${i}"><div class="remove-btn" onclick="removeRepeaterItem('${type}','items',${i})"><span class="material-symbols-outlined text-[14px]">close</span></div><div class="grid grid-cols-3 gap-3"><div><label class="field-label text-[10px] mb-1">Data Source</label><select class="field-input" data-repeater="${type}-items-${i}-metric" onchange="markDirty()">${opts}</select></div><div><label class="field-label text-[10px] mb-1">Display Label</label><input type="text" class="field-input" data-repeater="${type}-items-${i}-label" value="${escapeAttr(item.label||'')}" placeholder="E.g. Warriors" oninput="markDirty()"></div><div><label class="field-label text-[10px] mb-1">Fallback #</label><input type="text" class="field-input" data-repeater="${type}-items-${i}-fallback" value="${escapeAttr(item.fallback||'0')}" placeholder="E.g. 1000" oninput="markDirty()"></div></div></div>`;
 }
 
 function addRepeaterItem(type, key, fn) {
@@ -559,15 +583,10 @@ function addRepeaterItem(type, key, fn) {
   if(!s||!s.data)return; if(!s.data[key])s.data[key]=[];
   const i = s.data[key].length; s.data[key].push({});
   const c = $(`repeater-${type}-${key}`);
-  if(c){ try { c.insertAdjacentHTML('beforeend', fn(type, i, {})); } catch(e) { c.insertAdjacentHTML('beforeend', fn(i, {})); } }
+  if(c){
+    c.insertAdjacentHTML('beforeend', fn(type, i, {}));
+  }
   markDirty();
-}
-
-function addSocialItem() {
-  const s = sections.find(x => x.id === activeSectionId);
-  if(!s)return; if(!s.data)s.data={}; if(!s.data.items)s.data.items=[];
-  s.data.items.push({ platform: 'instagram', label: 'Instagram', url: '' });
-  renderEditor(); markDirty();
 }
 
 function removeRepeaterItem(type, key, i) {
@@ -612,7 +631,7 @@ function closeImagePicker() { $('imagePickerModal').classList.remove('open'); }
 
 function openTierPicker() {
   const s=sections.find(x=>x.id===activeSectionId); selectedTierIds=[...(s?.data?.tier_ids||[])];
-  $('tierPickerList').innerHTML=allTiers.map(t=>`<label class="flex items-center gap-3 p-3 border rounded-lg"><input type="checkbox" value="${t.id}" ${selectedTierIds.includes(t.id)?'checked':''} onchange="toggleTierSelection('${t.id}')"><div><p class="font-bold text-[13px]">${escapeHtml(t.name)}</p></div></label>`).join('');
+  $('tierPickerList').innerHTML=allTiers.map(t=>`<label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer"><input type="checkbox" value="${t.id}" ${selectedTierIds.includes(t.id)?'checked':''} onchange="toggleTierSelection('${t.id}')"><div><p class="font-bold text-[13px]">${escapeHtml(t.name)}</p><p class="text-[11px] text-on-surface-variant">$${t.price||0} / ${t.interval||'month'}</p></div></label>`).join('');
   $('tierPickerModal').classList.add('open');
 }
 function toggleTierSelection(id) { if(selectedTierIds.includes(id)) selectedTierIds=selectedTierIds.filter(x=>x!==id); else selectedTierIds.push(id); }
@@ -620,10 +639,13 @@ function confirmTierPick() { const s=sections.find(x=>x.id===activeSectionId); i
 function closeTierPicker() { $('tierPickerModal').classList.remove('open'); }
 function removeTierFromSection(tid) { const s=sections.find(x=>x.id===activeSectionId); if(s){ s.data.tier_ids=(s.data.tier_ids||[]).filter(x=>x!==tid); renderEditor(); markDirty(); } }
 
+// ─── ROBUST SAVE FUNCTION ──────────────────────────────────
 async function saveAllSections() {
   collectEditorData();
-  $('saveBtn').disabled = true;
-  $('saveBtnText').textContent = 'Saving...';
+  const saveBtn = $('saveBtn');
+  const saveText = $('saveBtnText');
+  if (saveBtn) saveBtn.disabled = true;
+  if (saveText) saveText.textContent = 'Saving...';
 
   try {
     for (let i = 0; i < sections.length; i++) {
@@ -638,62 +660,48 @@ async function saveAllSections() {
       };
 
       if (String(s.id).startsWith('temp-')) {
-        // ── INSERT new section ──
         const { data, error } = await supabaseClient
           .from('landing_sections')
           .insert(payload)
           .select()
           .single();
-
-        if (error) {
-          console.error('Insert failed:', error);
-          throw new Error(`Insert failed: ${error.message}`);
-        }
-        s.id = data.id;
+          
+        if (error) throw new Error(error.message);
+        if (data) s.id = data.id; // Only map if success
       } else {
-        // ── UPDATE existing section ──
         const { error } = await supabaseClient
           .from('landing_sections')
           .update(payload)
           .eq('id', s.id);
-
-        if (error) {
-          console.error('Update failed:', error);
-          throw new Error(`Update failed: ${error.message}`);
-        }
+          
+        if (error) throw new Error(error.message);
       }
     }
 
-    // ── DELETE removed sections ──
-    const { data: dbSec, error: fetchErr } = await supabaseClient
-      .from('landing_sections')
-      .select('id');
-
-    if (fetchErr) {
-      console.error('Fetch for cleanup failed:', fetchErr);
-    } else if (dbSec) {
-      const localIds = new Set(sections.map(x => x.id));
-      const toDelete = dbSec.filter(x => !localIds.has(x.id)).map(x => x.id);
-      if (toDelete.length) {
-        const { error: delErr } = await supabaseClient
-          .from('landing_sections')
-          .delete()
-          .in('id', toDelete);
-        if (delErr) console.error('Delete failed:', delErr);
+    // Cleanup deleted sections
+    const { data: dbSec, error: fetchErr } = await supabaseClient.from('landing_sections').select('id');
+    if (!fetchErr && dbSec) {
+      const loc = new Set(sections.map(x => x.id));
+      const del = dbSec.filter(x => !loc.has(x.id)).map(x => x.id);
+      if (del.length) {
+        const { error: delErr } = await supabaseClient.from('landing_sections').delete().in('id', del);
+        if (delErr) console.error('Cleanup delete failed:', delErr);
       }
     }
 
-    $('saveBtnText').textContent = 'Save Changes';
+    isDirty = false;
+    if (saveText) saveText.textContent = 'Save Changes';
     renderSectionList();
-    showToast('All changes saved!', 'success');
+    showToast('Saved successfully!', 'success');
 
   } catch (e) {
-    console.error('Save error:', e);
+    console.error('Save Failure:', e);
     showToast('Save failed: ' + e.message, 'error');
-    $('saveBtnText').textContent = 'Save Changes *';
+    if (saveText) saveText.textContent = 'Save Changes *';
   } finally {
-    $('saveBtn').disabled = false;
+    if (saveBtn) saveBtn.disabled = false;
   }
-}</script>
+}
+</script>
 </body>
 </html>
