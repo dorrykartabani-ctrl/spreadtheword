@@ -585,21 +585,88 @@
   }
 
   async function loadLiveStats() {
-    const nodes = document.querySelectorAll('[data-stat-metric]');
-    if (!nodes.length) return;
-    const statsMap = {};
-    try {
-      const { data: dbStats, error } = await supabaseClient.from('analytics').select('id, value');
-      if (!error && dbStats) dbStats.forEach(row => { statsMap[row.id] = Number(row.value) || 0; });
-    } catch (e) {}
-    nodes.forEach(el => {
-      const metric = el.getAttribute('data-stat-metric');
-      const fallback = parseInt(el.getAttribute('data-stat-fallback') || '0', 10);
-      let value = statsMap[metric];
-      if (value === undefined || value === null) value = fallback;
-      animateStat(el, Number(value) || 0, 1500);
-    });
+  const nodes = document.querySelectorAll('[data-stat-metric]');
+  if (!nodes.length) return;
+
+  const statsMap = {};
+
+  // A) Custom + stored metrics from analytics table
+  try {
+    const { data: dbStats, error } = await supabaseClient
+      .from('analytics')
+      .select('id, value');
+    if (!error && dbStats) {
+      dbStats.forEach(row => {
+        statsMap[String(row.id).toLowerCase()] = Number(row.value) || 0;
+      });
+    }
+  } catch (e) {
+    console.warn('analytics fetch failed', e);
   }
+
+  // B) Built-in live queries (override analytics when available)
+  try {
+    const tasks = [];
+
+    // warriors → profiles count
+    tasks.push(
+      supabaseClient.from('profiles').select('*', { count: 'exact', head: true })
+        .then(({ count, error }) => {
+          if (!error && count != null) statsMap.warriors = count;
+        })
+    );
+
+    // shares → shares count
+    tasks.push(
+      supabaseClient.from('shares').select('*', { count: 'exact', head: true })
+        .then(({ count, error }) => {
+          if (!error && count != null) {
+            statsMap.shares = count;
+            statsMap.words_deployed = count;
+          }
+        })
+    );
+
+    // money_raised → sum projects.raised_amount
+    tasks.push(
+      supabaseClient.from('projects').select('raised_amount')
+        .then(({ data, error }) => {
+          if (!error && Array.isArray(data)) {
+            statsMap.money_raised = data.reduce((sum, p) => sum + (Number(p.raised_amount) || 0), 0);
+          }
+        })
+    );
+
+    // countries → distinct country on profiles if column exists (safe fallback)
+    tasks.push(
+      supabaseClient.from('profiles').select('country')
+        .then(({ data, error }) => {
+          if (!error && Array.isArray(data)) {
+            const set = new Set(data.map(r => (r.country || '').trim()).filter(Boolean));
+            if (set.size) statsMap.countries = set.size;
+          }
+        })
+    );
+
+    await Promise.allSettled(tasks);
+  } catch (e) {
+    console.warn('built-in stats failed', e);
+  }
+
+  // C) Paint nodes
+  nodes.forEach(el => {
+    const metric = String(el.getAttribute('data-stat-metric') || '')
+      .toLowerCase()
+      .trim();
+    const fallback = parseInt(el.getAttribute('data-stat-fallback') || '0', 10);
+
+    let value = statsMap[metric];
+    if (value === undefined || value === null || Number.isNaN(Number(value))) {
+      value = fallback;
+    }
+    animateStat(el, Number(value) || 0, 1500);
+  });
+}
 
   function animateStat(el, target, duration) {
     if (!el) return;
