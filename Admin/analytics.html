@@ -1,715 +1,598 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Analytics — GSTW Command</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics — GSTW Admin</title>
 
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
-
-  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
   <script>
-    tailwindcss.config = {
+    tailwind.config = {
       theme: {
         extend: {
           colors: {
-            canvas: '#fbf9f4',
-            ink: '#31332e',
-            sidebar: '#0e0e0c',
-            sidebarHover: '#1a1a17',
-            primary: '#3d6285',
-            primaryLight: '#4e7a9e',
-            danger: '#ad332b',
-            dangerLight: '#c44a42',
-            gold: '#d4a24c',
-            goldLight: '#e0b96f',
-            muted: '#8a8b86',
-            border: '#e4e1da',
-            cardBg: '#ffffff',
+            'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
+            'surface-c':'#efeee7','on-surface':'#31332e','on-surface-variant':'#5e6059',
+            'outline':'#7a7b75','primary':'#3d6285','on-primary':'#f7f9ff',
+            'primary-container':'#b0d5fe','secondary':'#41637c','tertiary':'#ad332b',
+            'gold':'#D4A24C',
           },
           fontFamily: {
-            headline: ['"Plus Jakarta Sans"', 'sans-serif'],
-            body: ['"Manrope"', 'sans-serif'],
-          },
-        },
-      },
-    };
+            'headline': ['Plus Jakarta Sans', 'sans-serif'],
+            'body': ['Manrope', 'sans-serif'],
+          }
+        }
+      }
+    }
   </script>
-
-  <!-- Supabase JS v2 -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
   <style>
-    body{font-family:'Manrope',sans-serif}
-    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle}
-    ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#d4d1ca;border-radius:3px}::-webkit-scrollbar-thumb:hover{background:#b0ada6}
-    @keyframes skeletonPulse{0%,100%{opacity:.45}50%{opacity:.85}}.skeleton{animation:skeletonPulse 1.4s ease-in-out infinite;background:#e4e1da;border-radius:6px}
-    @keyframes toastIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
-    @keyframes toastOut{from{transform:translateX(0);opacity:1}to{transform:translateX(120%);opacity:0}}
-    .toast-in{animation:toastIn .35s ease-out forwards}.toast-out{animation:toastOut .3s ease-in forwards}
-    @keyframes spin{to{transform:rotate(360deg)}}.spinner{animation:spin .7s linear infinite}
-    .progress-fill{transition:width .8s cubic-bezier(.4,0,.2,1)}
-    .sidebar-link{transition:background .15s,color .15s}.sidebar-link:hover,.sidebar-link.active{background:#1a1a17;color:#d4a24c}
-    .btn-primary:hover{background:#4e7a9e}.btn-danger:hover{background:#c44a42}.btn-gold:hover{background:#e0b96f}
-    @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.fade-up{animation:fadeUp .4s ease-out forwards}
-    .pulse-dot{width:8px;height:8px;border-radius:50%;display:inline-block;position:relative}
-    .pulse-dot::after{content:'';position:absolute;inset:-3px;border-radius:50%;border:2px solid currentColor;opacity:.4;animation:pulseDot 1.6s ease-out infinite}
-    @keyframes pulseDot{0%{transform:scale(1);opacity:.4}100%{transform:scale(1.8);opacity:0}}
-    .metric-row:hover{background:rgba(61,98,133,.03)}
-    .sync-badge{font-size:10px;padding:1px 6px;border-radius:9999px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+    body{font-family:'Manrope',sans-serif;background:#fbf9f4;color:#31332e}
+    .font-headline{font-family:'Plus Jakarta Sans',sans-serif}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
+    .filled{font-variation-settings:'FILL' 1}
+    .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
+
+    .sidebar{background:#0e0e0c;color:#f7f9ff}
+    .sidebar-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;color:rgba(247,249,255,0.6);font-size:13px;font-weight:600;transition:all 0.15s;text-decoration:none}
+    .sidebar-item:hover{background:#1a1a18;color:#f7f9ff}
+    .sidebar-item.active{background:#3d6285;color:#f7f9ff}
+
+    .stat-card{background:#fff;border-radius:20px;padding:20px;border:1px solid #efeee7;transition:transform .15s}
+    .stat-card:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(49,51,46,.06)}
+    .chart-card{background:#fff;border-radius:20px;padding:24px;border:1px solid #efeee7}
+    .range-btn{padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;color:#5e6059;background:#f5f4ed;transition:all .15s;cursor:pointer}
+    .range-btn.active{background:#3d6285;color:#f7f9ff}
+    .platform-bar{height:8px;border-radius:99px;background:#f5f4ed;overflow:hidden}
+    .platform-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#3d6285,#6b9bc3)}
+
+    .skeleton{background:linear-gradient(90deg,#f0eee6 25%,#f7f5ee 50%,#f0eee6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:12px}
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spin{animation:spin 1s linear infinite;display:inline-block}
   </style>
 </head>
-<body class="bg-canvas text-ink min-h-screen flex">
+<body class="min-h-screen flex">
 
-  <!-- ===== SIDEBAR ===== -->
-  <aside class="w-64 min-h-screen bg-sidebar text-gray-400 flex flex-col fixed top-0 left-0 bottom-0 z-30">
-    <div class="px-6 py-5 border-b border-white/5 flex items-center gap-3">
-      <div class="w-9 h-9 rounded-lg bg-gold flex items-center justify-center">
-        <span class="material-symbols-outlined text-sidebar text-[20px]">bolt</span>
+<aside id="sidebar" class="sidebar fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 hidden md:flex">
+  <div class="mb-8 px-2 pt-2">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0">
+        <img src="/images/icon/icon-light-512.png" alt="GSTW" class="w-full h-full object-contain">
       </div>
       <div>
-        <p class="font-headline font-[800] text-white text-sm tracking-tight leading-none">GSTW</p>
-        <p class="text-[11px] text-muted tracking-wide uppercase mt-0.5">Command Center</p>
+        <h1 class="font-headline font-bold text-white" style="font-size:16px">Command</h1>
+        <p class="text-white/40 font-body" style="font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase">Admin Panel</p>
       </div>
     </div>
-    <nav class="flex-1 py-4 px-3 space-y-0.5 text-[13.5px] font-medium overflow-y-auto">
-      <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg"><span class="material-symbols-outlined text-[20px]">dashboard</span>Dashboard</a>
-      <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg"><span class="material-symbols-outlined text-[20px]">format_quote</span>Quotes</a>
-      <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg"><span class="material-symbols-outlined text-[20px]">flag</span>Missions</a>
-      <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg"><span class="material-symbols-outlined text-[20px]">group</span>Users</a>
-      <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg"><span class="material-symbols-outlined text-[20px]">workspace_premium</span>Tiers</a>
-      <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg"><span class="material-symbols-outlined text-[20px]">share</span>Social Platforms</a>
-      <a href="#" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg"><span class="material-symbols-outlined text-[20px]">analytics</span>Analytics</a>
-    </nav>
-    <div class="px-5 py-4 border-t border-white/5 text-[12px] text-muted">&copy; 2025 Go Spread The Word</div>
-  </aside>
+  </div>
 
-  <!-- ===== MAIN CONTENT ===== -->
-  <main class="ml-64 flex-1 min-h-screen">
-    <!-- Top Bar -->
-    <header class="sticky top-0 z-20 bg-canvas/80 backdrop-blur-md border-b border-border px-8 py-4 flex items-center justify-between">
-      <div>
-        <h1 class="font-headline font-[800] text-xl tracking-tight text-ink">Analytics</h1>
-        <p class="text-[13px] text-muted mt-0.5">Live metrics from Supabase &middot; auto-synced to landing page</p>
+<nav class="flex flex-col gap-1 flex-1 overflow-y-auto">
+    <a href="index.html" class="sidebar-item"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
+    <a href="quotes.html" class="sidebar-item"><span class="material-symbols-outlined">add_circle</span>Create Quote</a>
+    <a href="manage-quotes.html" class="sidebar-item"><span class="material-symbols-outlined">format_quote</span>Manage Quotes</a>
+    <a href="schedule.html" class="sidebar-item"><span class="material-symbols-outlined">calendar_today</span>Schedule</a>
+    <a href="campaigns.html" class="sidebar-item"><span class="material-symbols-outlined">campaign</span>Campaigns</a>
+    <a href="projects.html" class="sidebar-item"><span class="material-symbols-outlined">volunteer_activism</span>Missions</a>
+    <a href="manage-media.html" class="sidebar-item"><span class="material-symbols-outlined">perm_media</span>Media Library</a>
+    <a href="warriors.html" class="sidebar-item"><span class="material-symbols-outlined">group</span>Users</a>
+    <a href="manage-tiers.html" class="sidebar-item"><span class="material-symbols-outlined">workspace_premium</span>Tiers</a>
+    <a href="manage-rewards.html" class="sidebar-item"><span class="material-symbols-outlined">emoji_events</span>Rewards</a>
+    <a href="notifications.html" class="sidebar-item"><span class="material-symbols-outlined">notifications</span>Broadcasts</a>
+    <a href="manage-content.html" class="sidebar-item"><span class="material-symbols-outlined">web</span>Page Builder</a>  
+    <a href="analytics.html" class="sidebar-item active"><span class="material-symbols-outlined">analytics</span>Analytics</a>
+  </nav>
+
+  <div class="mt-4 pt-4 border-t border-white/10 space-y-2 shrink-0">
+    <a href="settings.html" class="sidebar-item"><span class="material-symbols-outlined">settings</span>Settings</a>
+    <div class="flex items-center gap-3 px-2 py-2">
+      <div class="w-9 h-9 rounded-lg signature-gradient flex items-center justify-center text-on-primary font-headline font-bold admin-initials" style="font-size:13px">AD</div>
+      <div class="flex-1 min-w-0">
+        <p class="font-body font-semibold text-white truncate admin-name" style="font-size:12px">Admin</p>
+        <p class="text-white/40 font-body" style="font-size:10px">Super Admin</p>
       </div>
+      <button onclick="handleLogout()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white" title="Log out">
+        <span class="material-symbols-outlined" style="font-size:16px">logout</span>
+      </button>
+    </div>
+  </div>
+</aside>
+<div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+<main class="flex-1 md:ml-64 min-h-screen">
+  <header class="sticky top-0 z-20 bg-surface/90 backdrop-blur-xl border-b border-surface-c">
+    <div class="flex flex-wrap items-center justify-between gap-4 px-6 lg:px-8 py-4">
       <div class="flex items-center gap-3">
-        <div id="syncStatus" class="hidden items-center gap-2 text-[12px] text-muted">
-          <span class="pulse-dot text-emerald-500 bg-emerald-500"></span>
-          <span>Synced <span id="lastSyncTime" class="font-semibold text-ink"></span></span>
+        <button onclick="toggleSidebar()" class="md:hidden text-on-surface"><span class="material-symbols-outlined">menu</span></button>
+        <div>
+          <h2 class="font-headline font-bold text-on-surface text-xl">Analytics</h2>
+          <p class="text-[11px] font-bold text-outline uppercase tracking-widest">Live mission intelligence</p>
         </div>
-        <button id="syncBtn" onclick="runFullSync()" class="btn-primary inline-flex items-center gap-2 bg-primary text-white text-[13px] font-semibold px-5 py-2.5 rounded-lg shadow-sm transition-all">
-          <span id="syncIcon" class="material-symbols-outlined text-[18px]">sync</span>
-          <span id="syncLabel">Sync Analytics</span>
-        </button>
       </div>
-    </header>
+      <div class="flex bg-white rounded-full p-1 gap-1 border border-surface-c">
+        <button type="button" class="range-btn" data-range="7" onclick="setRange(7,this)">7D</button>
+        <button type="button" class="range-btn" data-range="30" onclick="setRange(30,this)">30D</button>
+        <button type="button" class="range-btn active" data-range="90" onclick="setRange(90,this)">90D</button>
+        <button type="button" class="range-btn" data-range="all" onclick="setRange('all',this)">All</button>
+      </div>
+    </div>
+  </header>
 
-    <div class="px-8 py-6 space-y-8 max-w-[1320px]">
+  <div class="p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
 
-      <!-- ===== KPI CARDS ===== -->
-      <section>
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4" id="kpiGrid">
-          <!-- Card: Warriors -->
-          <div class="bg-cardBg rounded-xl border border-border p-5 shadow-sm fade-up" style="animation-delay:.05s">
-            <div class="flex items-center justify-between mb-3">
-              <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary"><span class="material-symbols-outlined text-[22px]">group</span></span>
-              <span class="sync-badge text-primary bg-primary/10">auto</span>
-            </div>
-            <p class="text-[12.5px] text-muted font-medium">Total Warriors</p>
-            <p id="kpi-warriors" class="font-headline font-[800] text-2xl mt-1 tracking-tight"><span class="skeleton inline-block w-16 h-7"></span></p>
-            <p class="text-[11px] text-muted mt-1.5">from <code class="bg-gray-100 px-1 rounded text-[10px]">profiles</code></p>
-          </div>
-          <!-- Card: Shares -->
-          <div class="bg-cardBg rounded-xl border border-border p-5 shadow-sm fade-up" style="animation-delay:.1s">
-            <div class="flex items-center justify-between mb-3">
-              <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gold/10 text-gold"><span class="material-symbols-outlined text-[22px]">share</span></span>
-              <span class="sync-badge text-gold bg-gold/10">auto</span>
-            </div>
-            <p class="text-[12.5px] text-muted font-medium">Words Deployed</p>
-            <p id="kpi-shares" class="font-headline font-[800] text-2xl mt-1 tracking-tight"><span class="skeleton inline-block w-16 h-7"></span></p>
-            <p class="text-[11px] text-muted mt-1.5">from <code class="bg-gray-100 px-1 rounded text-[10px]">shares</code></p>
-          </div>
-          <!-- Card: Countries -->
-          <div class="bg-cardBg rounded-xl border border-border p-5 shadow-sm fade-up" style="animation-delay:.15s">
-            <div class="flex items-center justify-between mb-3">
-              <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-600"><span class="material-symbols-outlined text-[22px]">public</span></span>
-              <span class="sync-badge text-emerald-600 bg-emerald-500/10">auto</span>
-            </div>
-            <p class="text-[12.5px] text-muted font-medium">Countries Reached</p>
-            <p id="kpi-countries" class="font-headline font-[800] text-2xl mt-1 tracking-tight"><span class="skeleton inline-block w-12 h-7"></span></p>
-            <p class="text-[11px] text-muted mt-1.5">unique in <code class="bg-gray-100 px-1 rounded text-[10px]">profiles.country</code></p>
-          </div>
-          <!-- Card: Revenue -->
-          <div class="bg-cardBg rounded-xl border border-border p-5 shadow-sm fade-up" style="animation-delay:.2s">
-            <div class="flex items-center justify-between mb-3">
-              <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-danger/10 text-danger"><span class="material-symbols-outlined text-[22px]">paid</span></span>
-              <span class="sync-badge text-danger bg-danger/10">auto</span>
-            </div>
-            <p class="text-[12.5px] text-muted font-medium">Money Raised</p>
-            <p id="kpi-money" class="font-headline font-[800] text-2xl mt-1 tracking-tight"><span class="skeleton inline-block w-20 h-7"></span></p>
-            <p class="text-[11px] text-muted mt-1.5">subscriptions &times; tiers</p>
-          </div>
-          <!-- Card: Trending -->
-          <div class="bg-cardBg rounded-xl border border-border p-5 shadow-sm fade-up" style="animation-delay:.25s">
-            <div class="flex items-center justify-between mb-3">
-              <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-amber-500/10 text-amber-600"><span class="material-symbols-outlined text-[22px]">trending_up</span></span>
-              <span class="sync-badge text-amber-600 bg-amber-500/10">auto</span>
-            </div>
-            <p class="text-[12.5px] text-muted font-medium">Shares (24h)</p>
-            <p id="kpi-trending" class="font-headline font-[800] text-2xl mt-1 tracking-tight"><span class="skeleton inline-block w-12 h-7"></span></p>
-            <p class="text-[11px] text-muted mt-1.5">last 24 hours</p>
-          </div>
+    <!-- KPI ROW -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="stat-card">
+        <div class="flex justify-between items-start mb-3">
+          <p class="text-[10px] font-bold text-outline uppercase tracking-wider">Warriors</p>
+          <span class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center"><span class="material-symbols-outlined text-primary text-[18px]">group</span></span>
         </div>
-      </section>
-
-      <!-- ===== PLATFORM BREAKDOWN + COMPUTATION LOG ===== -->
-      <section class="grid grid-cols-1 lg:grid-cols-5 gap-5">
-        <!-- Platform Distribution -->
-        <div class="lg:col-span-3 bg-cardBg rounded-xl border border-border p-6 shadow-sm fade-up" style="animation-delay:.3s">
-          <div class="flex items-center justify-between mb-1">
-            <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-primary text-[20px]">pie_chart</span>
-              <h3 class="font-headline font-[700] text-[15px]">Platform Distribution</h3>
-            </div>
-            <span id="platformTotal" class="text-[12px] text-muted"></span>
-          </div>
-          <p class="text-[12.5px] text-muted mb-5">All-time breakdown of shares by social platform</p>
-          <div id="platformBars" class="space-y-3">
-            <div class="skeleton w-full h-6 rounded"></div>
-            <div class="skeleton w-full h-6 rounded"></div>
-            <div class="skeleton w-full h-6 rounded"></div>
-            <div class="skeleton w-3/4 h-6 rounded"></div>
-          </div>
+        <p id="kpiWarriors" class="font-headline font-extrabold text-3xl text-on-surface">—</p>
+        <p id="kpiWarriorsDelta" class="text-xs font-semibold text-outline mt-1">Loading…</p>
+      </div>
+      <div class="stat-card">
+        <div class="flex justify-between items-start mb-3">
+          <p class="text-[10px] font-bold text-outline uppercase tracking-wider">Shares</p>
+          <span class="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center"><span class="material-symbols-outlined text-secondary text-[18px]">share</span></span>
         </div>
-
-        <!-- Metric Registry / Computation Log -->
-        <div class="lg:col-span-2 bg-cardBg rounded-xl border border-border p-6 shadow-sm fade-up" style="animation-delay:.35s">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="material-symbols-outlined text-gold text-[20px]">manufacturing</span>
-            <h3 class="font-headline font-[700] text-[15px]">Metric Registry</h3>
-          </div>
-          <p class="text-[12.5px] text-muted mb-4">Computed metrics that auto-sync on each run</p>
-          <div id="registryList" class="space-y-2 text-[12.5px]">
-            <div class="flex items-center justify-between py-2 border-b border-border">
-              <div class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-primary">group</span><code class="font-mono text-[11px] bg-gray-100 px-1.5 py-0.5 rounded">warriors</code></div>
-              <span class="text-muted">COUNT profiles</span>
-            </div>
-            <div class="flex items-center justify-between py-2 border-b border-border">
-              <div class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-gold">share</span><code class="font-mono text-[11px] bg-gray-100 px-1.5 py-0.5 rounded">shares</code></div>
-              <span class="text-muted">COUNT shares</span>
-            </div>
-            <div class="flex items-center justify-between py-2 border-b border-border">
-              <div class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-emerald-600">public</span><code class="font-mono text-[11px] bg-gray-100 px-1.5 py-0.5 rounded">countries</code></div>
-              <span class="text-muted">DISTINCT country</span>
-            </div>
-            <div class="flex items-center justify-between py-2 border-b border-border">
-              <div class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-danger">paid</span><code class="font-mono text-[11px] bg-gray-100 px-1.5 py-0.5 rounded">money_raised</code></div>
-              <span class="text-muted">SUM(price &times; months)</span>
-            </div>
-            <div class="flex items-center justify-between py-2">
-              <div class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-amber-600">trending_up</span><code class="font-mono text-[11px] bg-gray-100 px-1.5 py-0.5 rounded">trending</code></div>
-              <span class="text-muted">COUNT shares 24h</span>
-            </div>
-          </div>
-          <div class="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/10 text-[11.5px] text-primary">
-            <span class="material-symbols-outlined text-[14px] mr-1 align-text-bottom">info</span>
-            These 5 computed keys are <strong>upserted</strong> into the <code class="font-mono bg-primary/10 px-1 rounded">analytics</code> table on every sync. Your landing page reads from that table in real time.
-          </div>
+        <p id="kpiShares" class="font-headline font-extrabold text-3xl text-on-surface">—</p>
+        <p id="kpiSharesDelta" class="text-xs font-semibold text-outline mt-1">Loading…</p>
+      </div>
+      <div class="stat-card">
+        <div class="flex justify-between items-start mb-3">
+          <p class="text-[10px] font-bold text-outline uppercase tracking-wider">Active Missions</p>
+          <span class="w-8 h-8 rounded-lg bg-gold/15 flex items-center justify-center"><span class="material-symbols-outlined text-gold text-[18px]">volunteer_activism</span></span>
         </div>
-      </section>
+        <p id="kpiMissions" class="font-headline font-extrabold text-3xl text-on-surface">—</p>
+        <p id="kpiRaised" class="text-xs font-semibold text-outline mt-1">$0 raised</p>
+      </div>
+      <div class="stat-card">
+        <div class="flex justify-between items-start mb-3">
+          <p class="text-[10px] font-bold text-outline uppercase tracking-wider">Paid Warriors</p>
+          <span class="w-8 h-8 rounded-lg bg-primary-container/40 flex items-center justify-center"><span class="material-symbols-outlined text-primary text-[18px]">workspace_premium</span></span>
+        </div>
+        <p id="kpiPaid" class="font-headline font-extrabold text-3xl text-on-surface">—</p>
+        <p id="kpiPaidPct" class="text-xs font-semibold text-outline mt-1">— of total</p>
+      </div>
+    </section>
 
-      <!-- ===== ANALYTICS KEY-VALUE TABLE ===== -->
-      <section class="bg-cardBg rounded-xl border border-border shadow-sm overflow-hidden fade-up" style="animation-delay:.4s">
-        <div class="px-6 py-5 border-b border-border flex items-center justify-between flex-wrap gap-3">
+    <!-- CHARTS ROW -->
+    <section class="grid lg:grid-cols-5 gap-6">
+      <div class="chart-card lg:col-span-3">
+        <div class="flex items-center justify-between mb-4">
           <div>
-            <h3 class="font-headline font-[700] text-[15px] flex items-center gap-2">
-              <span class="material-symbols-outlined text-[20px] text-primary">table_chart</span>
-              Analytics Key-Value Store
-            </h3>
-            <p class="text-[12.5px] text-muted mt-0.5">Central table consumed by <code class="bg-gray-100 px-1.5 py-0.5 rounded text-[11px] font-mono">index.html</code>. Computed rows sync automatically; add manual rows below.</p>
+            <h3 class="font-headline font-bold text-on-surface">Growth & Shares</h3>
+            <p class="text-xs text-outline">New warriors vs shares over time</p>
           </div>
-          <button onclick="openAddModal()" class="btn-gold inline-flex items-center gap-1.5 bg-gold text-white text-[13px] font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors">
-            <span class="material-symbols-outlined text-[16px]">add</span> Add Custom Metric
-          </button>
         </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-[13px]">
-            <thead>
-              <tr class="bg-canvas text-muted text-[11px] uppercase tracking-wider font-semibold">
-                <th class="text-left px-6 py-3">Key (ID)</th>
-                <th class="text-left px-6 py-3">Label</th>
-                <th class="text-right px-6 py-3">Value</th>
-                <th class="text-left px-6 py-3">Source</th>
-                <th class="text-left px-6 py-3">Last Updated</th>
-                <th class="text-center px-6 py-3 w-28">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="kvTableBody">
-              <tr><td colspan="6" class="px-6 py-10 text-center text-muted"><span class="skeleton inline-block w-48 h-5"></span></td></tr>
-            </tbody>
-          </table>
+        <div class="relative h-64">
+          <canvas id="growthChart"></canvas>
         </div>
-      </section>
-
-    </div>
-  </main>
-
-  <!-- ===== TOAST CONTAINER ===== -->
-  <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
-
-  <!-- ===== ADD / EDIT MODAL ===== -->
-  <div id="metricModal" class="hidden fixed inset-0 z-40 flex items-center justify-center">
-    <div onclick="closeModal()" class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
-    <div class="relative bg-cardBg rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 z-10">
-      <h3 id="modalTitle" class="font-headline font-[700] text-lg mb-4">Add Custom Metric</h3>
-      <form id="metricForm" onsubmit="saveMetric(event)" class="space-y-4">
-        <div>
-          <label class="block text-[12px] font-semibold text-muted mb-1 uppercase tracking-wide">Key (ID)</label>
-          <input id="metricId" type="text" required placeholder="e.g. bibles_printed" class="w-full border border-border rounded-lg px-3.5 py-2.5 text-[13.5px] bg-canvas focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-shadow"/>
-        </div>
-        <div>
-          <label class="block text-[12px] font-semibold text-muted mb-1 uppercase tracking-wide">Label</label>
-          <input id="metricLabel" type="text" required placeholder="e.g. Bibles Printed" class="w-full border border-border rounded-lg px-3.5 py-2.5 text-[13.5px] bg-canvas focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-shadow"/>
-        </div>
-        <div>
-          <label class="block text-[12px] font-semibold text-muted mb-1 uppercase tracking-wide">Value</label>
-          <input id="metricValue" type="number" step="any" required placeholder="0" class="w-full border border-border rounded-lg px-3.5 py-2.5 text-[13.5px] bg-canvas focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-shadow"/>
-        </div>
-        <div class="flex items-center gap-3 pt-2">
-          <button type="submit" class="btn-primary flex-1 bg-primary text-white font-semibold text-[13px] py-2.5 rounded-lg transition-colors">Save Metric</button>
-          <button type="button" onclick="closeModal()" class="flex-1 bg-canvas border border-border text-ink font-semibold text-[13px] py-2.5 rounded-lg hover:bg-gray-100 transition-colors">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- ===== CONFIRM DELETE MODAL ===== -->
-  <div id="deleteModal" class="hidden fixed inset-0 z-40 flex items-center justify-center">
-    <div onclick="closeDeleteModal()" class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
-    <div class="relative bg-cardBg rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 z-10 text-center">
-      <div class="w-14 h-14 rounded-full bg-danger/10 flex items-center justify-center mx-auto mb-4">
-        <span class="material-symbols-outlined text-danger text-[28px]">delete_forever</span>
       </div>
-      <h3 class="font-headline font-[700] text-lg mb-2">Delete Metric?</h3>
-      <p class="text-[13px] text-muted mb-1">You are about to permanently remove:</p>
-      <p id="deleteMetricName" class="font-mono text-[13px] bg-gray-100 inline-block px-3 py-1 rounded mb-5 font-semibold text-danger"></p>
-      <div class="flex items-center gap-3">
-        <button onclick="confirmDelete()" class="btn-danger flex-1 bg-danger text-white font-semibold text-[13px] py-2.5 rounded-lg transition-colors">Yes, Delete</button>
-        <button onclick="closeDeleteModal()" class="flex-1 bg-canvas border border-border text-ink font-semibold text-[13px] py-2.5 rounded-lg hover:bg-gray-100 transition-colors">Cancel</button>
+      <div class="chart-card lg:col-span-2">
+        <h3 class="font-headline font-bold text-on-surface mb-1">Share Platforms</h3>
+        <p class="text-xs text-outline mb-4">Where the Word is deployed</p>
+        <div class="relative h-56 flex items-center justify-center">
+          <canvas id="platformChart"></canvas>
+        </div>
+        <div id="platformLegend" class="mt-4 space-y-2"></div>
       </div>
-    </div>
+    </section>
+
+    <!-- SECONDARY ROW -->
+    <section class="grid lg:grid-cols-2 gap-6">
+      <!-- Top Quotes -->
+      <div class="chart-card">
+        <h3 class="font-headline font-bold text-on-surface mb-1">Top Shared Quotes</h3>
+        <p class="text-xs text-outline mb-4">Most deployed in selected window</p>
+        <div id="topQuotes" class="space-y-3">
+          <div class="skeleton h-14"></div>
+          <div class="skeleton h-14"></div>
+          <div class="skeleton h-14"></div>
+        </div>
+      </div>
+
+      <!-- Tier Mix + Recent -->
+      <div class="space-y-6">
+        <div class="chart-card">
+          <h3 class="font-headline font-bold text-on-surface mb-1">Tier Mix</h3>
+          <p class="text-xs text-outline mb-4">Warriors by subscription</p>
+          <div id="tierMix" class="space-y-3"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="font-headline font-bold text-on-surface mb-1">Recent Signups</h3>
+          <p class="text-xs text-outline mb-4">Latest enlisted warriors</p>
+          <div id="recentSignups" class="space-y-2"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GEO / EXTRA -->
+    <section class="chart-card">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div>
+          <h3 class="font-headline font-bold text-on-surface">Nations in the Field</h3>
+          <p class="text-xs text-outline">Countries with registered warriors</p>
+        </div>
+        <span id="countryCount" class="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-full">0</span>
+      </div>
+      <div id="countryCloud" class="flex flex-wrap gap-2"></div>
+    </section>
+
   </div>
+</main>
 
-  <!-- ===== SCRIPTS ===== -->
-  <script>
-    /* ────────────────────────────────────────────────────────────
-       SUPABASE INIT
-    ──────────────────────────────────────────────────────────── */
-    const SUPABASE_URL = 'https://nhymadutuhpjgkiurify.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM';
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<script>
+var supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+)
 
-    /* ────────────────────────────────────────────────────────────
-       METRIC REGISTRY — extensible computed-metric definitions
-       Add new entries here; they auto-compute & auto-sync.
-    ──────────────────────────────────────────────────────────── */
-    const METRIC_REGISTRY = [
-      {
-        id: 'warriors',
-        label: 'Total Warriors',
-        kpiEl: 'kpi-warriors',
-        format: 'number',
-        compute: async () => {
-          const { count, error } = await sb.from('profiles').select('*', { count: 'exact', head: true });
-          if (error) throw error;
-          return count || 0;
+var currentRange = 90
+var growthChart = null
+var platformChart = null
+var chartColors = ['#3d6285','#6b9bc3','#D4A24C','#41637c','#ad332b','#16a34a','#9333ea','#64748b']
+
+function toggleSidebar() {
+  var s = document.getElementById('sidebar'), o = document.getElementById('sidebarOverlay')
+  s.classList.toggle('hidden'); s.classList.toggle('flex'); o.classList.toggle('hidden')
+}
+
+async function handleLogout() {
+  try { await supabaseClient.auth.signOut() } catch(e) {}
+  window.location.href = 'login.html'
+}
+
+async function checkAdmin() {
+  var { data } = await supabaseClient.auth.getSession()
+  if (!data.session) { window.location.href = 'login.html'; return false }
+  var p = await supabaseClient.from('profiles').select('role, full_name').eq('id', data.session.user.id).single()
+  if (!p.data || p.data.role !== 'admin') { window.location.href = '../app/index.html'; return false }
+  var name = p.data.full_name || data.session.user.email || 'Admin'
+  var initials = name.substring(0, 2).toUpperCase()
+  if (p.data.full_name) {
+    var parts = p.data.full_name.trim().split(/\s+/)
+    initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase() : parts[0].substring(0,2).toUpperCase()
+  }
+  document.querySelectorAll('.admin-initials').forEach(function(el) { el.textContent = initials })
+  document.querySelectorAll('.admin-name').forEach(function(el) { el.textContent = name })
+  return true
+}
+
+function sinceISO(days) {
+  if (days === 'all') return '1970-01-01T00:00:00.000Z'
+  var d = new Date()
+  d.setDate(d.getDate() - Number(days))
+  return d.toISOString()
+}
+
+function setRange(range, btn) {
+  currentRange = range
+  document.querySelectorAll('.range-btn').forEach(function(b) { b.classList.remove('active') })
+  if (btn) btn.classList.add('active')
+  loadAnalytics()
+}
+
+function fmt(n) {
+  return Number(n || 0).toLocaleString()
+}
+
+function money(n) {
+  return '$' + Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })
+}
+
+function dayKey(iso) {
+  return new Date(iso).toISOString().slice(0, 10)
+}
+
+function buildDayBuckets(days) {
+  var buckets = {}
+  var n = days === 'all' ? 90 : Number(days)
+  for (var i = n - 1; i >= 0; i--) {
+    var d = new Date()
+    d.setDate(d.getDate() - i)
+    buckets[d.toISOString().slice(0, 10)] = { signups: 0, shares: 0 }
+  }
+  return buckets
+}
+
+async function loadAnalytics() {
+  var since = sinceISO(currentRange)
+
+  var results = await Promise.allSettled([
+    supabaseClient.from('profiles').select('id, created_at, subscription_tier, country, full_name, email, nickname').gte('created_at', since === '1970-01-01T00:00:00.000Z' ? '1970-01-01' : since),
+    supabaseClient.from('profiles').select('id', { count: 'exact', head: true }),
+    supabaseClient.from('shares').select('id, shared_at, platform, quote_id').gte('shared_at', since),
+    supabaseClient.from('shares').select('id', { count: 'exact', head: true }),
+    supabaseClient.from('projects').select('id, title, status, raised_amount, goal_amount').eq('status', 'active'),
+    supabaseClient.from('quotes').select('id, text, source'),
+    supabaseClient.from('profiles').select('id, full_name, email, nickname, created_at, country').order('created_at', { ascending: false }).limit(8),
+    supabaseClient.from('profiles').select('subscription_tier')
+  ])
+
+  function ok(i, fb) {
+    return results[i].status === 'fulfilled' && results[i].value ? results[i].value : fb
+  }
+
+  var periodProfiles = ok(0, {}).data || []
+  var totalWarriors = ok(1, {}).count || 0
+  var periodShares = ok(2, {}).data || []
+  var totalShares = ok(3, {}).count || 0
+  var missions = ok(4, {}).data || []
+  var quotes = ok(5, {}).data || []
+  var recent = ok(6, {}).data || []
+  var allTiers = ok(7, {}).data || []
+
+  // KPIs
+  var raised = missions.reduce(function(s, m) { return s + Number(m.raised_amount || 0) }, 0)
+  var paid = allTiers.filter(function(p) {
+    var t = (p.subscription_tier || 'free').toLowerCase()
+    return t && t !== 'free'
+  }).length
+
+  document.getElementById('kpiWarriors').textContent = fmt(totalWarriors)
+  document.getElementById('kpiWarriorsDelta').textContent = '+' + fmt(periodProfiles.length) + ' in window'
+  document.getElementById('kpiShares').textContent = fmt(totalShares)
+  document.getElementById('kpiSharesDelta').textContent = '+' + fmt(periodShares.length) + ' in window'
+  document.getElementById('kpiMissions').textContent = fmt(missions.length)
+  document.getElementById('kpiRaised').textContent = money(raised) + ' raised active'
+  document.getElementById('kpiPaid').textContent = fmt(paid)
+  document.getElementById('kpiPaidPct').textContent = totalWarriors ? Math.round((paid / totalWarriors) * 100) + '% of warriors' : '—'
+
+  // Growth chart buckets
+  var buckets = buildDayBuckets(currentRange === 'all' ? 90 : currentRange)
+  periodProfiles.forEach(function(p) {
+    var k = dayKey(p.created_at)
+    if (buckets[k]) buckets[k].signups++
+  })
+  periodShares.forEach(function(s) {
+    var k = dayKey(s.shared_at)
+    if (buckets[k]) buckets[k].shares++
+  })
+
+  var labels = Object.keys(buckets).sort()
+  var signupData = labels.map(function(k) { return buckets[k].signups })
+  var shareData = labels.map(function(k) { return buckets[k].shares })
+  var labelShort = labels.map(function(k) {
+    var p = k.split('-')
+    return p[1] + '/' + p[2]
+  })
+
+  renderGrowthChart(labelShort, signupData, shareData)
+  renderPlatformChart(periodShares)
+  renderTopQuotes(periodShares, quotes)
+  renderTierMix(allTiers)
+  renderRecent(recent)
+  renderCountries(allTiers.length ? await fetchCountries() : [])
+}
+
+async function fetchCountries() {
+  var r = await supabaseClient.from('profiles').select('country').not('country', 'is', null).limit(2000)
+  return r.data || []
+}
+
+function renderGrowthChart(labels, signups, shares) {
+  var ctx = document.getElementById('growthChart')
+  if (growthChart) growthChart.destroy()
+  growthChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'New Warriors',
+          data: signups,
+          borderColor: '#3d6285',
+          backgroundColor: 'rgba(61,98,133,0.12)',
+          fill: true,
+          tension: 0.35,
+          pointRadius: 0,
+          borderWidth: 2
+        },
+        {
+          label: 'Shares',
+          data: shares,
+          borderColor: '#D4A24C',
+          backgroundColor: 'rgba(212,162,76,0.1)',
+          fill: true,
+          tension: 0.35,
+          pointRadius: 0,
+          borderWidth: 2
         }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'Manrope', size: 11 } } }
       },
-      {
-        id: 'shares',
-        label: 'Words Deployed',
-        kpiEl: 'kpi-shares',
-        format: 'number',
-        compute: async () => {
-          const { count, error } = await sb.from('shares').select('*', { count: 'exact', head: true });
-          if (error) throw error;
-          return count || 0;
-        }
-      },
-      {
-        id: 'countries',
-        label: 'Countries Reached',
-        kpiEl: 'kpi-countries',
-        format: 'number',
-        compute: async () => {
-          const { data, error } = await sb.from('profiles').select('country').not('country', 'is', null);
-          if (error) throw error;
-          const unique = new Set((data || []).map(r => (r.country || '').trim().toLowerCase()).filter(Boolean));
-          return unique.size;
-        }
-      },
-      {
-        id: 'money_raised',
-        label: 'Money Raised ($)',
-        kpiEl: 'kpi-money',
-        format: 'money',
-        compute: async () => {
-          /* Fetch active subscriptions */
-          const { data: subs, error: subErr } = await sb
-            .from('subscriptions')
-            .select('id, tier_id, status, created_at')
-            .eq('status', 'active');
-          if (subErr) throw subErr;
-          if (!subs || subs.length === 0) return 0;
-
-          /* Fetch all tiers into a map */
-          const { data: tiers, error: tierErr } = await sb
-            .from('subscription_tiers')
-            .select('id, price, interval');
-          if (tierErr) throw tierErr;
-          const tierMap = {};
-          (tiers || []).forEach(t => { tierMap[t.id] = t; });
-
-          let total = 0;
-          const now = Date.now();
-          subs.forEach(sub => {
-            const tier = tierMap[sub.tier_id];
-            if (!tier || !tier.price) return;
-            const createdMs = new Date(sub.created_at).getTime();
-            const diffMs = Math.max(0, now - createdMs);
-            const interval = (tier.interval || 'month').toLowerCase();
-            let intervalMs;
-            if (['year', 'yearly', 'annual', 'annually'].includes(interval)) {
-              intervalMs = 365.25 * 86400000;
-            } else if (['week', 'weekly'].includes(interval)) {
-              intervalMs = 7 * 86400000;
-            } else {
-              intervalMs = 30.44 * 86400000;
-            }
-            const periods = Math.max(1, Math.ceil(diffMs / intervalMs));
-            total += periods * parseFloat(tier.price);
-          });
-          return Math.round(total * 100) / 100;
-        }
-      },
-      {
-        id: 'trending',
-        label: 'Shares (24h)',
-        kpiEl: 'kpi-trending',
-        format: 'number',
-        compute: async () => {
-          const since = new Date(Date.now() - 86400000).toISOString();
-          const { count, error } = await sb
-            .from('shares')
-            .select('*', { count: 'exact', head: true })
-            .gte('created_at', since);
-          if (error) throw error;
-          return count || 0;
-        }
-      },
-    ];
-
-    // Set of auto-computed keys (used to label rows in the KV table)
-    const AUTO_KEYS = new Set(METRIC_REGISTRY.map(m => m.id));
-
-    /* ────────────────────────────────────────────────────────────
-       HELPERS
-    ──────────────────────────────────────────────────────────── */
-    const $ = (s) => document.querySelector(s);
-    const fmtNum = (n) => n == null ? '—' : Number(n).toLocaleString('en-US');
-    const fmtMoney = (n) => n == null ? '$0.00' : '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    function fmtValue(val, format) {
-      if (format === 'money') return fmtMoney(val);
-      return fmtNum(val);
-    }
-    function relTime(iso) {
-      if (!iso) return '—';
-      const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-      if (s < 5) return 'just now';
-      if (s < 60) return s + 's ago';
-      const m = Math.floor(s / 60);
-      if (m < 60) return m + 'm ago';
-      const h = Math.floor(m / 60);
-      if (h < 24) return h + 'h ago';
-      return Math.floor(h / 24) + 'd ago';
-    }
-    function timeStamp() {
-      return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    }
-
-    /* ────────────────────────────────────────────────────────────
-       TOAST SYSTEM
-    ──────────────────────────────────────────────────────────── */
-    function showToast(msg, type = 'success') {
-      const c = $('#toastContainer');
-      const colors = { success: 'bg-emerald-600', error: 'bg-danger', info: 'bg-primary' };
-      const icons = { success: 'check_circle', error: 'error', info: 'info' };
-      const el = document.createElement('div');
-      el.className = `toast-in pointer-events-auto flex items-center gap-2.5 ${colors[type]} text-white px-5 py-3 rounded-xl shadow-lg text-[13px] font-semibold min-w-[280px]`;
-      el.innerHTML = `<span class="material-symbols-outlined text-[18px]">${icons[type]}</span><span>${msg}</span>`;
-      c.appendChild(el);
-      setTimeout(() => { el.classList.remove('toast-in'); el.classList.add('toast-out'); el.addEventListener('animationend', () => el.remove()); }, 3800);
-    }
-
-    /* ────────────────────────────────────────────────────────────
-       PLATFORM BREAKDOWN
-    ──────────────────────────────────────────────────────────── */
-    const PLAT_COLORS = {
-      instagram:  { bg:'bg-pink-500',    light:'bg-pink-100',    icon:'📸' },
-      whatsapp:   { bg:'bg-emerald-500', light:'bg-emerald-100', icon:'💬' },
-      tiktok:     { bg:'bg-gray-800',    light:'bg-gray-200',    icon:'🎵' },
-      facebook:   { bg:'bg-blue-600',    light:'bg-blue-100',    icon:'👍' },
-      twitter:    { bg:'bg-sky-500',     light:'bg-sky-100',     icon:'🐦' },
-      x:          { bg:'bg-gray-900',    light:'bg-gray-200',    icon:'✖️' },
-      telegram:   { bg:'bg-cyan-500',    light:'bg-cyan-100',    icon:'✈️' },
-      linkedin:   { bg:'bg-blue-700',    light:'bg-blue-100',    icon:'💼' },
-      snapchat:   { bg:'bg-yellow-400',  light:'bg-yellow-100',  icon:'👻' },
-      email:      { bg:'bg-amber-500',   light:'bg-amber-100',   icon:'📧' },
-      sms:        { bg:'bg-green-500',   light:'bg-green-100',   icon:'📱' },
-      copy:       { bg:'bg-indigo-500',  light:'bg-indigo-100',  icon:'📋' },
-    };
-    const DEFAULT_C = { bg:'bg-primary', light:'bg-primary/10', icon:'🔗' };
-    function getPC(p) { return PLAT_COLORS[p.toLowerCase().replace(/\s+/g,'')] || DEFAULT_C; }
-
-    async function fetchPlatformBreakdown() {
-      const { data, error } = await sb.from('shares').select('platform');
-      if (error) throw error;
-      if (!data || data.length === 0) return [];
-      const counts = {};
-      data.forEach(r => { const p = (r.platform || 'Unknown').trim(); counts[p] = (counts[p] || 0) + 1; });
-      const total = data.length;
-      return Object.entries(counts)
-        .map(([platform, count]) => ({ platform, count, pct: Math.round(count / total * 1000) / 10 }))
-        .sort((a, b) => b.count - a.count);
-    }
-
-    function renderPlatformBars(breakdown) {
-      const container = $('#platformBars');
-      const totalLabel = $('#platformTotal');
-      if (!breakdown || breakdown.length === 0) {
-        container.innerHTML = '<p class="text-muted text-[13px] py-4">No share data recorded yet.</p>';
-        totalLabel.textContent = '';
-        return;
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 8, font: { size: 10 } } },
+        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { precision: 0, font: { size: 10 } } }
       }
-      const total = breakdown.reduce((s, b) => s + b.count, 0);
-      totalLabel.textContent = fmtNum(total) + ' total shares';
-      container.innerHTML = breakdown.map(b => {
-        const c = getPC(b.platform);
-        return `
-          <div class="flex items-center gap-3">
-            <span class="text-[16px] w-6 text-center flex-shrink-0">${c.icon}</span>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between mb-1">
-                <span class="text-[12.5px] font-semibold truncate">${b.platform}</span>
-                <span class="text-[12px] text-muted flex-shrink-0 ml-2">${fmtNum(b.count)} · ${b.pct}%</span>
-              </div>
-              <div class="w-full h-[7px] rounded-full ${c.light}">
-                <div class="progress-fill h-[7px] rounded-full ${c.bg}" style="width:0%"></div>
-              </div>
-            </div>
-          </div>`;
-      }).join('');
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          container.querySelectorAll('.progress-fill').forEach((bar, i) => { bar.style.width = breakdown[i].pct + '%'; });
-        }, 60);
-      });
     }
+  })
+}
 
-    /* ────────────────────────────────────────────────────────────
-       KV TABLE
-    ──────────────────────────────────────────────────────────── */
-    async function loadKVTable() {
-      const { data, error } = await sb.from('analytics').select('*').order('id');
-      const tbody = $('#kvTableBody');
-      if (error) { tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-danger text-[13px]">Error: ${error.message}</td></tr>`; return; }
-      if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-10 text-center text-muted text-[13px]">No metrics stored yet. Click <strong>Sync Analytics</strong> to compute live values.</td></tr>'; return; }
-      tbody.innerHTML = data.map(row => {
-        const isAuto = AUTO_KEYS.has(row.id);
-        const srcBadge = isAuto
-          ? '<span class="sync-badge text-emerald-600 bg-emerald-500/10">computed</span>'
-          : '<span class="sync-badge text-amber-600 bg-amber-500/10">manual</span>';
-        const displayVal = row.id === 'money_raised' ? fmtMoney(row.value) : fmtNum(row.value);
-        return `
-          <tr class="metric-row border-t border-border transition-colors">
-            <td class="px-6 py-3.5"><code class="bg-gray-100 text-[11.5px] px-2 py-0.5 rounded font-mono text-primary font-semibold">${row.id}</code></td>
-            <td class="px-6 py-3.5 text-[13px]">${row.label || '—'}</td>
-            <td class="px-6 py-3.5 text-right font-headline font-[700] text-[14px] tabular-nums">${displayVal}</td>
-            <td class="px-6 py-3.5">${srcBadge}</td>
-            <td class="px-6 py-3.5 text-[12px] text-muted">${relTime(row.updated_at)}</td>
-            <td class="px-6 py-3.5 text-center">
-              <div class="flex items-center justify-center gap-1">
-                <button onclick="openEditModal('${row.id}','${(row.label||'').replace(/'/g,"\\'")}',${row.value||0})" class="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-primary/10 text-muted hover:text-primary transition-colors" title="Edit"><span class="material-symbols-outlined text-[17px]">edit</span></button>
-                <button onclick="promptDelete('${row.id}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-danger/10 text-muted hover:text-danger transition-colors" title="Delete"><span class="material-symbols-outlined text-[17px]">delete</span></button>
-              </div>
-            </td>
-          </tr>`;
-      }).join('');
+function renderPlatformChart(shares) {
+  var counts = {}
+  shares.forEach(function(s) {
+    var p = (s.platform || 'unknown').toString()
+    p = p.replace('native-share', 'Share Sheet').replace('desktop-download', 'Desktop')
+    counts[p] = (counts[p] || 0) + 1
+  })
+  var keys = Object.keys(counts).sort(function(a, b) { return counts[b] - counts[a] })
+  var values = keys.map(function(k) { return counts[k] })
+  var total = values.reduce(function(a, b) { return a + b }, 0) || 1
+
+  var ctx = document.getElementById('platformChart')
+  if (platformChart) platformChart.destroy()
+
+  if (!keys.length) {
+    document.getElementById('platformLegend').innerHTML = '<p class="text-sm text-outline text-center py-6">No share data in this window</p>'
+    platformChart = new Chart(ctx, { type: 'doughnut', data: { labels: ['None'], datasets: [{ data: [1], backgroundColor: ['#e9e8e1'] }] }, options: { plugins: { legend: { display: false } } } })
+    return
+  }
+
+  platformChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: keys,
+      datasets: [{
+        data: values,
+        backgroundColor: keys.map(function(_, i) { return chartColors[i % chartColors.length] }),
+        borderWidth: 0,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: { legend: { display: false } }
     }
+  })
 
-    /* ────────────────────────────────────────────────────────────
-       ADD / EDIT MODAL
-    ──────────────────────────────────────────────────────────── */
-    let isEditing = false, editingKey = null;
-    function openAddModal() {
-      isEditing = false; editingKey = null;
-      $('#modalTitle').textContent = 'Add Custom Metric';
-      $('#metricId').value = ''; $('#metricId').disabled = false;
-      $('#metricLabel').value = ''; $('#metricValue').value = '';
-      $('#metricModal').classList.remove('hidden');
-    }
-    function openEditModal(id, label, value) {
-      isEditing = true; editingKey = id;
-      $('#modalTitle').textContent = 'Edit Metric';
-      $('#metricId').value = id; $('#metricId').disabled = true;
-      $('#metricLabel').value = label; $('#metricValue').value = value;
-      $('#metricModal').classList.remove('hidden');
-    }
-    function closeModal() { $('#metricModal').classList.add('hidden'); }
-    async function saveMetric(e) {
-      e.preventDefault();
-      const id = ($('#metricId').value || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
-      const label = $('#metricLabel').value.trim();
-      const value = parseFloat($('#metricValue').value) || 0;
-      if (!id) { showToast('Key ID is required', 'error'); return; }
-      const { error } = await sb.from('analytics').upsert({ id, label, value, updated_at: new Date().toISOString() }, { onConflict: 'id' });
-      if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
-      showToast(isEditing ? `"${id}" updated` : `"${id}" created`, 'success');
-      closeModal();
-      await loadKVTable();
-    }
+  var legend = document.getElementById('platformLegend')
+  legend.innerHTML = keys.slice(0, 6).map(function(k, i) {
+    var pct = Math.round((counts[k] / total) * 100)
+    return '<div class="flex items-center gap-2">'
+      + '<span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:' + chartColors[i % chartColors.length] + '"></span>'
+      + '<span class="text-xs font-semibold text-on-surface flex-1 truncate">' + escapeHtml(k) + '</span>'
+      + '<span class="text-xs font-bold text-outline">' + fmt(counts[k]) + ' · ' + pct + '%</span>'
+      + '</div>'
+  }).join('')
+}
 
-    /* ────────────────────────────────────────────────────────────
-       DELETE MODAL
-    ──────────────────────────────────────────────────────────── */
-    let pendingDeleteId = null;
-    function promptDelete(id) {
-      pendingDeleteId = id;
-      $('#deleteMetricName').textContent = id;
-      $('#deleteModal').classList.remove('hidden');
-    }
-    function closeDeleteModal() { $('#deleteModal').classList.add('hidden'); pendingDeleteId = null; }
-    async function confirmDelete() {
-      if (!pendingDeleteId) return;
-      const id = pendingDeleteId;
-      closeDeleteModal();
-      const { error } = await sb.from('analytics').delete().eq('id', id);
-      if (error) { showToast('Delete failed: ' + error.message, 'error'); return; }
-      showToast(`"${id}" removed`, 'info');
-      await loadKVTable();
-    }
+function renderTopQuotes(shares, quotes) {
+  var byQuote = {}
+  shares.forEach(function(s) {
+    if (!s.quote_id) return
+    byQuote[s.quote_id] = (byQuote[s.quote_id] || 0) + 1
+  })
+  var quoteMap = {}
+  quotes.forEach(function(q) { quoteMap[q.id] = q })
 
-    /* ────────────────────────────────────────────────────────────
-       SYNC BUTTON STATE
-    ──────────────────────────────────────────────────────────── */
-    function setSyncLoading(on) {
-      const btn = $('#syncBtn'), icon = $('#syncIcon'), label = $('#syncLabel');
-      if (on) { btn.disabled = true; btn.classList.add('opacity-70','cursor-not-allowed'); icon.classList.add('spinner'); label.textContent = 'Computing…'; }
-      else    { btn.disabled = false; btn.classList.remove('opacity-70','cursor-not-allowed'); icon.classList.remove('spinner'); label.textContent = 'Sync Analytics'; }
-    }
+  var ranked = Object.keys(byQuote).map(function(id) {
+    return { id: id, count: byQuote[id], q: quoteMap[id] }
+  }).sort(function(a, b) { return b.count - a.count }).slice(0, 6)
 
-    /* ────────────────────────────────────────────────────────────
-       FULL SYNC PIPELINE
-    ──────────────────────────────────────────────────────────── */
-    async function runFullSync() {
-      setSyncLoading(true);
-      const now = new Date().toISOString();
-      const upsertRows = [];
-      let errorCount = 0;
+  var el = document.getElementById('topQuotes')
+  if (!ranked.length) {
+    el.innerHTML = '<p class="text-sm text-outline text-center py-8">No quote shares in this window yet</p>'
+    return
+  }
 
-      /* 1 — Run every registered metric concurrently */
-      const results = await Promise.allSettled(
-        METRIC_REGISTRY.map(async (m) => {
-          const value = await m.compute();
-          return { ...m, value };
-        })
-      );
+  var max = ranked[0].count || 1
+  el.innerHTML = ranked.map(function(r, i) {
+    var text = r.q ? r.q.text : 'Quote ' + r.id.slice(0, 8)
+    var source = r.q ? r.q.source : ''
+    var pct = Math.round((r.count / max) * 100)
+    return '<div class="p-3 rounded-xl bg-surface-clow border border-surface-c">'
+      + '<div class="flex justify-between gap-2 mb-1">'
+      + '<p class="text-sm font-semibold text-on-surface line-clamp-1 flex-1">"' + escapeHtml(safeTruncate(text, 60)) + '"</p>'
+      + '<span class="text-xs font-extrabold text-primary shrink-0">#' + (i + 1) + '</span>'
+      + '</div>'
+      + '<div class="flex justify-between text-[11px] text-outline mb-2">'
+      + '<span class="font-bold text-primary">' + escapeHtml(source || '—') + '</span>'
+      + '<span class="font-bold">' + fmt(r.count) + ' shares</span>'
+      + '</div>'
+      + '<div class="platform-bar"><div class="platform-fill" style="width:' + pct + '%"></div></div>'
+      + '</div>'
+  }).join('')
+}
 
-      results.forEach(r => {
-        if (r.status === 'fulfilled') {
-          const m = r.value;
-          /* Update KPI card */
-          const el = document.getElementById(m.kpiEl);
-          if (el) el.textContent = fmtValue(m.value, m.format);
-          /* Prepare upsert row */
-          upsertRows.push({ id: m.id, label: m.label, value: m.value, updated_at: now });
-        } else {
-          errorCount++;
-          console.error('Metric computation error', r.reason);
-        }
-      });
+function renderTierMix(profiles) {
+  var counts = {}
+  profiles.forEach(function(p) {
+    var t = (p.subscription_tier || 'free').toLowerCase()
+    counts[t] = (counts[t] || 0) + 1
+  })
+  var total = profiles.length || 1
+  var keys = Object.keys(counts).sort(function(a, b) { return counts[b] - counts[a] })
+  var el = document.getElementById('tierMix')
+  if (!keys.length) {
+    el.innerHTML = '<p class="text-sm text-outline">No tier data</p>'
+    return
+  }
+  el.innerHTML = keys.map(function(k, i) {
+    var pct = Math.round((counts[k] / total) * 100)
+    var label = k.charAt(0).toUpperCase() + k.slice(1)
+    return '<div>'
+      + '<div class="flex justify-between text-xs font-bold mb-1"><span class="text-on-surface">' + escapeHtml(label) + '</span><span class="text-outline">' + fmt(counts[k]) + ' · ' + pct + '%</span></div>'
+      + '<div class="platform-bar"><div class="platform-fill" style="width:' + pct + '%;background:' + chartColors[i % chartColors.length] + '"></div></div>'
+      + '</div>'
+  }).join('')
+}
 
-      /* 2 — Platform breakdown (not synced to KV — visual only) */
-      try {
-        const breakdown = await fetchPlatformBreakdown();
-        renderPlatformBars(breakdown);
-      } catch (err) {
-        console.error('Platform breakdown error', err);
-        errorCount++;
-      }
+function renderRecent(users) {
+  var el = document.getElementById('recentSignups')
+  if (!users.length) {
+    el.innerHTML = '<p class="text-sm text-outline text-center py-4">No recent signups</p>'
+    return
+  }
+  el.innerHTML = users.map(function(u) {
+    var name = u.full_name || u.nickname || u.email || 'Warrior'
+    var initials = name.substring(0, 2).toUpperCase()
+    var when = u.created_at ? timeAgo(u.created_at) : '—'
+    return '<div class="flex items-center gap-3 p-2 rounded-xl hover:bg-surface-clow">'
+      + '<div class="w-9 h-9 rounded-xl signature-gradient flex items-center justify-center text-white text-xs font-bold shrink-0">' + escapeHtml(initials) + '</div>'
+      + '<div class="flex-1 min-w-0"><p class="text-sm font-semibold text-on-surface truncate">' + escapeHtml(name) + '</p>'
+      + '<p class="text-[11px] text-outline">' + escapeHtml(u.country || 'Unknown nation') + ' · ' + when + '</p></div>'
+      + '</div>'
+  }).join('')
+}
 
-      /* 3 — Upsert computed metrics to analytics table */
-      if (upsertRows.length > 0) {
-        const { error } = await sb.from('analytics').upsert(upsertRows, { onConflict: 'id' });
-        if (error) {
-          console.error('Upsert error', error);
-          showToast('Computed values ready but upsert failed: ' + error.message, 'error');
-        } else {
-          showToast(
-            errorCount > 0
-              ? `Synced with ${errorCount} warning(s)`
-              : `${upsertRows.length} metrics synced to database`,
-            errorCount > 0 ? 'info' : 'success'
-          );
-        }
-      }
+function renderCountries(rows) {
+  var set = {}
+  rows.forEach(function(r) {
+    var c = (r.country || '').trim()
+    if (c) set[c] = (set[c] || 0) + 1
+  })
+  var keys = Object.keys(set).sort(function(a, b) { return set[b] - set[a] })
+  document.getElementById('countryCount').textContent = keys.length + ' nations'
+  var cloud = document.getElementById('countryCloud')
+  if (!keys.length) {
+    cloud.innerHTML = '<p class="text-sm text-outline">No country data yet</p>'
+    return
+  }
+  cloud.innerHTML = keys.slice(0, 40).map(function(c) {
+    return '<span class="inline-flex items-center gap-1.5 bg-white border border-surface-c px-3 py-1.5 rounded-full text-xs font-semibold text-on-surface-variant">'
+      + '🌍 ' + escapeHtml(c) + ' <span class="text-primary font-bold">' + set[c] + '</span></span>'
+  }).join('')
+}
 
-      /* 4 — Refresh KV table */
-      await loadKVTable();
+function timeAgo(iso) {
+  var mins = Math.floor((Date.now() - new Date(iso)) / 60000)
+  if (mins < 60) return mins + 'm ago'
+  var hrs = Math.floor(mins / 60)
+  if (hrs < 24) return hrs + 'h ago'
+  var days = Math.floor(hrs / 24)
+  if (days < 14) return days + 'd ago'
+  return new Date(iso).toLocaleDateString()
+}
 
-      /* 5 — Update sync status */
-      $('#syncStatus').classList.remove('hidden');
-      $('#syncStatus').classList.add('flex');
-      $('#lastSyncTime').textContent = timeStamp();
+function safeTruncate(t, n) {
+  t = String(t || '')
+  return t.length <= n ? t : t.slice(0, n).trim() + '…'
+}
 
-      setSyncLoading(false);
-    }
+function escapeHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
 
-    /* ────────────────────────────────────────────────────────────
-       INITIAL LOAD
-    ──────────────────────────────────────────────────────────── */
-    async function init() {
-      /* Quick-paint from existing analytics rows while we compute */
-      const kv = loadKVTable();
-      const { data: cached } = await sb.from('analytics').select('*');
-      if (cached && cached.length > 0) {
-        const map = {};
-        cached.forEach(r => { map[r.id] = r; });
-        METRIC_REGISTRY.forEach(m => {
-          if (map[m.id]) {
-            const el = document.getElementById(m.kpiEl);
-            if (el) el.textContent = fmtValue(map[m.id].value, m.format);
-          }
-        });
-        const latest = cached.reduce((a, b) => new Date(b.updated_at) > new Date(a.updated_at) ? b : a, cached[0]);
-        if (latest?.updated_at) {
-          $('#syncStatus').classList.remove('hidden');
-          $('#syncStatus').classList.add('flex');
-          $('#lastSyncTime').textContent = relTime(latest.updated_at);
-        }
-      }
-      await kv;
+async function init() {
+  if (!(await checkAdmin())) return
+  await loadAnalytics()
+}
 
-      /* Auto-sync fresh values */
-      await runFullSync();
-    }
-
-    document.addEventListener('DOMContentLoaded', init);
-  </script>
+init()
+</script>
 </body>
 </html>
