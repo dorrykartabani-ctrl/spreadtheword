@@ -180,7 +180,7 @@
     const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
   }
 
-  // ─── DYNAMIC RENDERERS (screenshot styling) ───
+  // ─── DYNAMIC RENDERERS ───
 
   function renderHero(d, id) {
     const bg = d.background_image || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80';
@@ -371,19 +371,33 @@
               const isComingSoon = nameLower.includes('commander') || nameLower.includes('coming');
               const tierImg = t.image_url || t.tier_image || t.image;
               
-              // Smart Feature Parser
+              // ── ROBUST FEATURE PARSER ──
               let rawFeatures = [];
-              try {
-                if (typeof t.features === 'string') rawFeatures = JSON.parse(t.features);
-                else rawFeatures = t.features || [];
-              } catch(e) {}
+              if (Array.isArray(t.features)) {
+                rawFeatures = t.features;
+              } else if (typeof t.features === 'string') {
+                const trimmed = t.features.trim();
+                if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+                  try { rawFeatures = JSON.parse(trimmed); } catch(e) { rawFeatures = []; }
+                } else if (trimmed.length > 0) {
+                  rawFeatures = trimmed.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+                }
+              }
 
-              const validFeatures = Array.isArray(rawFeatures) ? rawFeatures.filter(f => {
-                if (typeof f === 'string') return true;
-                return f.included === true || f.is_included === true || f.active === true || f.checked === true;
-              }) : [];
+              if (!Array.isArray(rawFeatures)) rawFeatures = [rawFeatures];
 
-              // ── Featured (middle) card — denim blue like screenshot ──
+              const validFeatures = rawFeatures.map(f => {
+                if (!f) return null;
+                if (typeof f === 'string') return f.trim();
+                if (typeof f === 'number') return String(f);
+                if (f.included === false || f.is_included === false || f.active === false || f.checked === false) {
+                  return null;
+                }
+                const txt = f.text || f.label || f.name || f.title || f.feature || f.description || '';
+                return typeof txt === 'string' ? txt.trim() : String(txt);
+              }).filter(Boolean);
+
+              // ── Featured (middle) card — denim blue ──
               if (isPopular) {
                 return `
                 <div class="bg-primary text-white rounded-[32px] p-8 sm:p-9 flex flex-col justify-between shadow-lifted relative transform md:-translate-y-2">
@@ -399,15 +413,12 @@
                       <span class="font-body text-base text-white/80">/${t.interval || t.billing_interval || 'month'}</span>
                     </div>
                     <ul class="space-y-3.5 mb-8">
-                      ${validFeatures.map(f => {
-                        const txt = typeof f === 'string' ? f : (f.text || f.label || '');
-                        if (!txt) return '';
-                        return `
+                      ${validFeatures.map(fText => `
                         <li class="flex items-center gap-3">
                           <span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">✓</span>
-                          <span class="font-body text-sm text-white leading-snug">${esc(txt)}</span>
-                        </li>`;
-                      }).join('')}
+                          <span class="font-body text-sm text-white leading-snug">${esc(fText)}</span>
+                        </li>
+                      `).join('')}
                     </ul>
                   </div>
                   <a href="${isFree ? '/app/signup.html' : (t.checkout_url || '/app/signup.html')}" class="block text-center bg-white hover:bg-slate-50 text-primary font-headline font-bold text-sm px-6 py-3.5 rounded-full shadow-sm hover:scale-[1.02] transition-all relative z-20">
@@ -431,17 +442,12 @@
                       <span class="font-body text-base text-text-muted">/${t.interval || t.billing_interval || 'month'}</span>
                     </div>
                     <ul class="space-y-3.5 mb-8">
-                      ${validFeatures.map(f => {
-                        const txt = typeof f === 'string' ? f : (f.text || f.label || '');
-                        const isSoon = typeof f === 'object' && f.soon === true;
-                        if (!txt) return '';
-                        return `
+                      ${validFeatures.map(fText => `
                         <li class="flex items-center gap-3">
                           <span class="w-5 h-5 rounded-full bg-[#ECE9E0] flex items-center justify-center text-xs font-bold text-text-dark flex-shrink-0">✓</span>
-                          <span class="font-body text-sm text-text-dark leading-snug">${esc(txt)}</span>
-                          ${isSoon ? `<span class="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase font-bold tracking-wider ml-1">Soon</span>` : ''}
-                        </li>`;
-                      }).join('')}
+                          <span class="font-body text-sm text-text-dark leading-snug">${esc(fText)}</span>
+                        </li>
+                      `).join('')}
                     </ul>
                   </div>
                   <a href="${isComingSoon ? '#' : (isFree ? '/app/signup.html' : (t.checkout_url || '/app/signup.html'))}"
