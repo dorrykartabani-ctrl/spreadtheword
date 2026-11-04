@@ -86,7 +86,6 @@
     <p class="font-body text-xs text-white/40">© 2024 Go Spread The Word. Made for the Great Commission.</p>
   </div>
 </footer>
-
 <script>
   // ─── INIT SUPABASE ───
   const supabaseClient = supabase.createClient(
@@ -95,14 +94,17 @@
   );
 
   const container = document.getElementById('cms-sections');
+  const isPreview = new URLSearchParams(location.search).get('preview') === '1';
   let allTiers = [];
+
+  if (isPreview) document.body.classList.add('cms-preview-mode');
 
   function esc(s) {
     if (!s) return '';
     const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
   }
 
-  // ─── DYNAMIC RENDERERS (STYLED WITH OLD DESIGN) ───
+  // ─── DYNAMIC RENDERERS ───
 
   function renderHero(d, id) {
     const bg = d.background_image || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80';
@@ -263,7 +265,6 @@
       </section>`;
   }
 
-  // Footer Socials (Direct from Database)
   function renderFooterSocials(platforms) {
     const host = document.getElementById('footer-socials');
     if (!host) return;
@@ -287,7 +288,7 @@
 
   const RENDERERS = { hero: renderHero, stats: renderStats, features: renderFeatures, steps: renderSteps, pricing: renderPricing, waitlist: renderWaitlist, socials: () => '', custom: (d, id) => `<section data-cms-id="${id}">${d.html_content || ''}</section>` };
 
-  // ─── INITIALIZATION ───
+  // ─── INITIALIZATION & LIVE PREVIEW ───
 
   function renderSections(sectionsList) {
     const visible = sectionsList.filter(s => s.is_visible !== false).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
@@ -302,17 +303,34 @@
   }
 
   async function loadPage() {
-    // Load Subscription Tiers
     const { data: tiers } = await supabaseClient.from('subscription_tiers').select('*').order('sort_order', { ascending: true });
     if (tiers) allTiers = tiers;
 
-    // Load Live Social Platforms
     const { data: platforms } = await supabaseClient.from('platforms').select('*').eq('is_active', true).order('display_order', { ascending: true });
     if (platforms) renderFooterSocials(platforms);
 
-    // Load CMS Content
     const { data, error } = await supabaseClient.from('landing_sections').select('*').order('sort_order', { ascending: true });
     if (!error && data) renderSections(data);
+  }
+
+  // Live Preview Event Listener for Content Builder
+  if (isPreview) {
+    window.addEventListener('message', (event) => {
+      if (event.data?.type === 'CMS_UPDATE') {
+        allTiers = event.data.tiers || allTiers;
+        renderSections(event.data.sections || []);
+      }
+    });
+
+    window.addEventListener('click', (e) => {
+      const sectionEl = e.target.closest('[data-cms-id]');
+      if (sectionEl) {
+        e.preventDefault();
+        window.parent.postMessage({ type: 'CMS_SELECT_SECTION', id: sectionEl.dataset.cmsId }, '*');
+      }
+    }, true);
+
+    window.parent?.postMessage({ type: 'PREVIEW_READY' }, '*');
   }
 
   // ─── LIVE STATS LOGIC ───
@@ -355,8 +373,9 @@
     }, 16);
   }
 
-  // Start the page
+  // Boot up page
   loadPage();
 </script>
+
 </body>
 </html>
