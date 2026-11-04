@@ -78,12 +78,61 @@
 
 <!-- STATIC FOOTER -->
 <footer class="bg-dark py-16 px-6 lg:px-8">
-  <div class="max-w-7xl mx-auto text-center">
-    <div class="flex justify-center items-center gap-4 mb-8" id="footer-socials">
-      <!-- Live Social Icons will inject here -->
+  <div class="max-w-7xl mx-auto">
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
+      <!-- Brand -->
+      <div>
+        <div class="flex items-center gap-2.5 mb-3">
+          <div class="w-9 h-9 rounded-lg border-2 border-primary-light flex items-center justify-center">
+            <span class="font-headline font-extrabold text-primary-light text-[10px]">GSTW</span>
+          </div>
+          <span class="font-headline font-bold text-lg text-white">Go Spread The Word</span>
+        </div>
+        <p class="font-body italic text-sm text-white/50 mb-4">Spreading the Word. One Selfie at a Time.</p>
+        <p class="font-body italic text-xs text-white/35 leading-relaxed max-w-xs">
+          "Go therefore and make disciples of all nations…" — Matthew 28:19
+        </p>
+      </div>
+
+      <!-- Quick Links -->
+      <div>
+        <h4 class="font-body font-bold text-xs text-white/90 uppercase tracking-widest mb-4">Quick Links</h4>
+        <nav class="flex flex-col gap-2.5">
+          <a href="#home" class="font-body text-sm text-white/60 hover:text-white transition-colors">Home</a>
+          <a href="#features" class="font-body text-sm text-white/60 hover:text-white transition-colors">Features</a>
+          <a href="#pricing" class="font-body text-sm text-white/60 hover:text-white transition-colors">Enlist</a>
+          <a href="app/signup.html" class="font-body text-sm text-white/60 hover:text-white transition-colors">App Login</a>
+          <a href="Admin/login.html" class="font-body font-semibold text-sm text-gold hover:text-white transition-colors">Admin Portal</a>
+        </nav>
+      </div>
+
+      <!-- Socials & Support -->
+      <div>
+        <h4 class="font-body font-bold text-xs text-white/90 uppercase tracking-widest mb-4">Connect With Us</h4>
+        
+        <!-- DYNAMIC SOCIALS INJECT HERE -->
+        <div class="flex items-center gap-3 mb-6" id="footer-socials"></div>
+
+        <nav class="flex flex-col gap-2.5">
+          <a href="#" class="font-body text-sm text-white/60 hover:text-white transition-colors">Privacy Policy</a>
+          <a href="#" class="font-body text-sm text-white/60 hover:text-white transition-colors">Terms of Service</a>
+          <a href="#" class="font-body text-sm text-white/60 hover:text-white transition-colors">Contact Support</a>
+        </nav>
+        <p class="font-body text-xs text-white/40 mt-4">support@gospreadtheword.app</p>
+      </div>
     </div>
-    <div class="h-px bg-white/10 mb-6 max-w-lg mx-auto"></div>
-    <p class="font-body text-xs text-white/40">© 2024 Go Spread The Word. Made for the Great Commission.</p>
+
+    <!-- Divider -->
+    <div class="h-px bg-white/10 mb-6"></div>
+
+    <!-- Bottom Bar -->
+    <div class="flex flex-col md:flex-row justify-between items-center gap-3 text-center md:text-left">
+      <span class="font-body text-xs text-white/40">© 2024 Go Spread The Word. All rights reserved.</span>
+      <span class="font-body italic text-xs text-white/30">Made for the Great Commission</span>
+      <span class="font-body text-xs text-white/30">PWA v1.0</span>
+    </div>
+
   </div>
 </footer>
 <script>
@@ -214,7 +263,6 @@
       </section>`;
   }
 
-  // --- MISSING SECTION: Text / About Block ---
   function renderTextBlock(d, id) {
     return `
       <section data-cms-id="${id}" class="py-20 lg:py-24 bg-cream scroll-mt">
@@ -234,7 +282,6 @@
       </section>`;
   }
 
-  // --- MISSING SECTION: Testimonials / Field Report ---
   function renderTestimonials(d, id) {
     return `
       <section data-cms-id="${id}" class="py-20 lg:py-24 bg-dark scroll-mt">
@@ -262,7 +309,6 @@
       </section>`;
   }
 
-  // --- MISSING SECTION: PWA Install Guide ---
   function renderPwaInstall(d, id) {
     return `
       <section data-cms-id="${id}" class="py-20 lg:py-24 bg-white scroll-mt">
@@ -438,31 +484,39 @@
   }
 
   // ─── LIVE STATS LOGIC ───
+   // ─── CENTRALIZED ANALYTICS ENGINE ───
   async function loadLiveStats() {
     const nodes = document.querySelectorAll('[data-stat-metric]');
     if (!nodes.length) return;
-    
-    let warriors = 0, shares = 0, countries = 0;
+
+    const statsMap = {};
+
     try {
-      const [pRes, sRes, cRes] = await Promise.all([
-        supabaseClient.from('profiles').select('id', { count: 'exact', head: true }),
-        supabaseClient.from('shares').select('id', { count: 'exact', head: true }),
-        supabaseClient.from('profiles').select('country').not('country', 'is', null)
-      ]);
-      warriors = pRes.count || 0;
-      shares = sRes.count || 0;
-      const countrySet = new Set();
-      (cRes.data || []).forEach(r => { if (r.country) countrySet.add(r.country); });
-      countries = countrySet.size;
-    } catch (e) { console.error(e); }
+      // 1. Single fast query to fetch all analytics metrics
+      const { data: dbStats, error } = await supabaseClient
+        .from('analytics')
+        .select('id, value');
 
-    const map = { warriors, shares, countries };
+      if (!error && dbStats) {
+        dbStats.forEach(row => {
+          statsMap[row.id] = Number(row.value) || 0;
+        });
+      }
+    } catch (e) {
+      console.warn('Central analytics fetch fallback:', e);
+    }
 
+    // 2. Animate every stat node based on what was typed in the Content Builder
     nodes.forEach(el => {
-      const metric = el.getAttribute('data-stat-metric');
+      const metric = el.getAttribute('data-stat-metric'); // e.g. "money_raised"
       const fallback = parseInt(el.getAttribute('data-stat-fallback') || '0', 10);
-      let value = map[metric];
-      if (!value || value === 0) value = fallback;
+
+      // Check if metric exists in analytics table; otherwise, use Content Builder fallback
+      let value = statsMap[metric];
+      if (value === undefined || value === null) {
+        value = fallback;
+      }
+
       animateStat(el, Number(value) || 0, 1500);
     });
   }
