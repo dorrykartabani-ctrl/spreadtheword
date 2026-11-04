@@ -408,33 +408,22 @@
     if(document.getElementById('landingStatWarriors')) loadLiveStats();
   }
 
-  async function loadPage() {
-    const { data: tiers } = await supabaseClient.from('tiers').select('*').order('sort_order', { ascending: true });
-    if (tiers) allTiers = tiers;
+ async function loadPage() {
+  const { data: tiers, error: tiersErr } = await supabaseClient
+    .from('subscription_tiers')
+    .select('*')
+    .order('sort_order', { ascending: true });
 
-    const { data, error } = await supabaseClient.from('landing_sections').select('*').order('sort_order', { ascending: true });
-    if (!error && data) renderSections(data);
-  }
+  if (tiersErr) console.error('Tiers error:', tiersErr);
+  if (tiers) allTiers = tiers;
 
-  if (isPreview) {
-    window.addEventListener('message', (event) => {
-      if (event.data?.type === 'CMS_UPDATE') {
-        allTiers = event.data.tiers || [];
-        renderSections(event.data.sections || []);
-      }
-    });
+  const { data, error } = await supabaseClient
+    .from('landing_sections')
+    .select('*')
+    .order('sort_order', { ascending: true });
 
-    window.addEventListener('click', (e) => {
-      const sectionEl = e.target.closest('[data-cms-id]');
-      if (sectionEl) {
-        e.preventDefault();
-        window.parent.postMessage({ type: 'CMS_SELECT_SECTION', id: sectionEl.dataset.cmsId }, '*');
-      }
-    }, true);
-    window.parent?.postMessage({ type: 'PREVIEW_READY' }, '*');
-  }
-
-  loadPage();
+  if (!error && data) renderSections(data);
+}
 
  async function loadLiveStats() {
   const nodes = document.querySelectorAll('[data-stat-metric]');
