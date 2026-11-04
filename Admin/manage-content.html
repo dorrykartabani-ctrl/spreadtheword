@@ -640,9 +640,56 @@ function confirmImagePick() {
 function closeImagePicker() { $('imagePickerModal').classList.remove('open'); }
 
 function openTierPicker() {
-  const s=sections.find(x=>x.id===activeSectionId); selectedTierIds=[...(s?.data?.tier_ids||[])];
-  $('tierPickerList').innerHTML=allTiers.map(t=>`<label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer"><input type="checkbox" value="${t.id}" ${selectedTierIds.includes(t.id)?'checked':''} onchange="toggleTierSelection('${t.id}')"><div><p class="font-bold text-[13px]">${escapeHtml(t.name)}</p><p class="text-[11px] text-on-surface-variant">$${t.price||0} / ${t.interval||'month'}</p></div></label>`).join('');
+  const s = sections.find(x => x.id === activeSectionId);
+  selectedTierIds = [...(s?.data?.tier_ids || [])];
+
+  if (!allTiers.length) {
+    $('tierPickerList').innerHTML = `
+      <div class="p-6 text-center text-on-surface-variant text-sm">
+        No rows found in <b>subscription_tiers</b>. Add tiers in Admin first.
+      </div>`;
+    $('tierPickerModal').classList.add('open');
+    return;
+  }
+
+  $('tierPickerList').innerHTML = allTiers.map(t => {
+    const checked = selectedTierIds.includes(t.id) ||
+      selectedTierIds.includes(t.name) ||
+      selectedTierIds.includes(t.slug);
+    return `
+      <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer">
+        <input type="checkbox" value="${escapeAttr(t.id)}"
+          ${checked ? 'checked' : ''}
+          onchange="toggleTierSelection('${t.id}')">
+        <div>
+          <p class="font-bold text-[13px]">${escapeHtml(t.name)}</p>
+          <p class="text-[11px] text-on-surface-variant">
+            $${t.price ?? 0} / ${escapeHtml(t.interval || 'month')}
+          </p>
+        </div>
+      </label>`;
+  }).join('');
+
   $('tierPickerModal').classList.add('open');
+}
+
+function toggleTierSelection(id) {
+  if (selectedTierIds.includes(id)) {
+    selectedTierIds = selectedTierIds.filter(x => x !== id);
+  } else {
+    selectedTierIds.push(id);
+  }
+}
+
+function confirmTierPick() {
+  const s = sections.find(x => x.id === activeSectionId);
+  if (s) {
+    // Always save real UUIDs from now on
+    s.data.tier_ids = [...selectedTierIds];
+    renderEditor();
+    markDirty();
+  }
+  closeTierPicker();
 }
 function toggleTierSelection(id) { if(selectedTierIds.includes(id)) selectedTierIds=selectedTierIds.filter(x=>x!==id); else selectedTierIds.push(id); }
 function confirmTierPick() { const s=sections.find(x=>x.id===activeSectionId); if(s){ s.data.tier_ids=[...selectedTierIds]; renderEditor(); markDirty(); } closeTierPicker(); }
