@@ -315,6 +315,20 @@ let scheduledDatesList = [];
 let toastTimer;
 
 async function init() {
+  try {
+    const { data: session } = await supabaseClient.auth.getSession();
+    if (!session?.session) return window.location.href = 'login.html';
+    currentUser = session.session.user;
+
+    var p = await supabaseClient.from('profiles').select('role, full_name').eq('id', currentUser.id).single();
+    if (!p.data || p.data.role !== 'admin') return window.location.href = '../app/index.html';
+    
+    document.querySelectorAll('.admin-name').forEach(el => el.textContent = p.data.full_name || currentUser.email);
+    document.querySelectorAll('.admin-initials').forEach(el => el.textContent = (p.data.full_name || 'AD').substring(0,2).toUpperCase());
+
+    await Promise.all([loadMedia(), loadBadges(), fetchMissions()]);
+    filterList('active');
+  }
   await loadCampaigns();
   renderCategoryChips();
   await loadScheduledDates();
