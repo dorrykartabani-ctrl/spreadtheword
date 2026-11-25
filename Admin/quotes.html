@@ -492,22 +492,52 @@ function selectMode(mode) {
   if (btnText) btnText.textContent = editQuoteId ? 'Save Changes' : (mode === 'live' ? 'Publish Live Now' : 'Create Quote');
   if (statusPreview) statusPreview.textContent = modeNames[mode] || mode;
 }
+// Helper to detect video URLs
+function isVideoUrl(url) {
+  if (!url) return false;
+  const clean = url.split('?')[0].toLowerCase();
+  return clean.endsWith('.mp4') || clean.endsWith('.webm') || clean.endsWith('.mov') || clean.endsWith('.m4v');
+}
 
 function updatePreview() {
   const text = document.getElementById('quoteText').value;
   const source = document.getElementById('quoteSource').value;
-  const bgUrl = document.getElementById('quoteBgUrl').value;
+  const bgUrl = (document.getElementById('quoteBgUrl').value || '').trim();
+  
   document.getElementById('charCount').textContent = `${text.length} / 500`;
   document.getElementById('previewText').textContent = text || 'Your quote will appear here...';
   document.getElementById('previewSource').textContent = source || 'SOURCE';
   document.getElementById('previewText').style.fontSize = document.getElementById('quoteFontSize').value || '22px';
   document.getElementById('previewText').style.textAlign = document.getElementById('quoteTextAlign').value || 'center';
+
   const bgEl = document.getElementById('previewBg');
-  if (bgUrl) { bgEl.style.backgroundImage = `url('${bgUrl}')`; bgEl.style.backgroundColor = 'transparent'; }
-  else { bgEl.style.backgroundImage = 'none'; bgEl.style.backgroundColor = '#3d6285'; }
+  const videoEl = document.getElementById('previewVideo');
+
+  if (bgUrl && isVideoUrl(bgUrl)) {
+    // Media is a Video
+    bgEl.classList.add('hidden');
+    videoEl.classList.remove('hidden');
+    if (videoEl.src !== bgUrl) {
+      videoEl.src = bgUrl;
+      videoEl.play().catch(() => {});
+    }
+  } else {
+    // Media is an Image or default color
+    videoEl.classList.add('hidden');
+    videoEl.pause();
+    videoEl.removeAttribute('src');
+    bgEl.classList.remove('hidden');
+    
+    if (bgUrl) {
+      bgEl.style.backgroundImage = `url('${bgUrl}')`;
+      bgEl.style.backgroundColor = 'transparent';
+    } else {
+      bgEl.style.backgroundImage = 'none';
+      bgEl.style.backgroundColor = '#3d6285';
+    }
+  }
 }
 
-// PUBLISH
 // ==========================================
 // PUBLISH / UPDATE (Bulletproof Sanitized)
 // ==========================================
