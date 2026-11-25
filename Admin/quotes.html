@@ -393,6 +393,7 @@ function openMediaLibrary() {
   loadMediaLibrary();
 }
 function closeMediaLibrary() { document.getElementById('mediaModal').classList.add('hidden'); }
+  
 async function loadMediaLibrary() {
   const grid = document.getElementById('mediaGrid');
   const folder = document.getElementById('mediaFolderFilter')?.value || 'background';
@@ -402,16 +403,32 @@ async function loadMediaLibrary() {
     if (folder) query = query.eq('type', folder);
     const { data, error } = await query;
     if (error) throw error;
-    if (!data.length) { grid.innerHTML = `<div class="col-span-full text-center text-slate-400">No images in ${folder}.</div>`; return; }
+    if (!data.length) { grid.innerHTML = `<div class="col-span-full text-center text-slate-400">No media in ${folder}.</div>`; return; }
     
     grid.innerHTML = data.map(m => {
       const url = m.url || '';
       if (!url) return '';
       const safe = String(url).replace(/'/g, "\\'");
-      return `<button type="button" onclick="selectMediaImage('${safe}')" class="aspect-square bg-slate-100 rounded-xl overflow-hidden border border-slate-200 hover:border-primary relative group"><img src="${m.thumbnail_url || url}" class="w-full h-full object-cover"><div class="absolute inset-x-0 bottom-0 bg-black/60 text-white text-[10px] px-2 py-1 truncate opacity-0 group-hover:opacity-100">${escapeHtml(m.label || m.name || 'Image')}</div></button>`;
+      const isVid = isVideoUrl(url) || m.type === 'video';
+      
+      const mediaPreview = isVid 
+        ? `<video src="${url}#t=0.1" class="w-full h-full object-cover" muted preload="metadata"></video><span class="material-symbols-outlined absolute top-2 right-2 text-white bg-black/50 p-1 rounded-md text-sm">videocam</span>`
+        : `<img src="${m.thumbnail_url || url}" class="w-full h-full object-cover">`;
+
+      return `
+        <button type="button" onclick="selectMediaImage('${safe}')" class="aspect-square bg-slate-100 rounded-xl overflow-hidden border border-slate-200 hover:border-primary relative group">
+          ${mediaPreview}
+          <div class="absolute inset-x-0 bottom-0 bg-black/60 text-white text-[10px] px-2 py-1 truncate opacity-0 group-hover:opacity-100">
+            ${escapeHtml(m.label || m.name || (isVid ? 'Video' : 'Image'))}
+          </div>
+        </button>
+      `;
     }).join('');
-  } catch(e) { grid.innerHTML = `<div class="col-span-full text-center text-rose-500">Error loading media.</div>`; }
-}
+  } catch(e) { 
+    grid.innerHTML = `<div class="col-span-full text-center text-rose-500">Error loading media.</div>`; 
+  }
+}  
+
 function selectMediaImage(url) {
   document.getElementById('quoteBgUrl').value = url;
   updatePreview();
