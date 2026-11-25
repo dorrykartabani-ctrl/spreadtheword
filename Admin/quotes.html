@@ -512,7 +512,7 @@ function selectMode(mode) {
 // Helper to detect video URLs
 function isVideoUrl(url) {
   if (!url) return false;
-  const clean = url.split('?')[0].toLowerCase();
+  const clean = url.split('?')[0].split('#')[0].toLowerCase().trim();
   return clean.endsWith('.mp4') || clean.endsWith('.webm') || clean.endsWith('.mov') || clean.endsWith('.m4v');
 }
 
@@ -531,20 +531,32 @@ function updatePreview() {
   const videoEl = document.getElementById('previewVideo');
 
   if (bgUrl && isVideoUrl(bgUrl)) {
-    // Media is a Video
-    bgEl.classList.add('hidden');
+    // 1. Hide image background, show video
+    bgEl.style.display = 'none';
     videoEl.classList.remove('hidden');
+    videoEl.style.display = 'block';
+
+    // 2. Strict mute required by browsers for autoplay
+    videoEl.muted = true;
+    videoEl.defaultMuted = true;
+
     if (videoEl.src !== bgUrl) {
       videoEl.src = bgUrl;
-      videoEl.play().catch(() => {});
+      videoEl.load();
+      videoEl.play().catch(err => {
+        console.warn("Autoplay prevented:", err);
+      });
     }
   } else {
-    // Media is an Image or default color
-    videoEl.classList.add('hidden');
-    videoEl.pause();
-    videoEl.removeAttribute('src');
-    bgEl.classList.remove('hidden');
+    // Media is an Image or default background
+    if (videoEl) {
+      videoEl.classList.add('hidden');
+      videoEl.style.display = 'none';
+      videoEl.pause();
+      videoEl.removeAttribute('src');
+    }
     
+    bgEl.style.display = 'block';
     if (bgUrl) {
       bgEl.style.backgroundImage = `url('${bgUrl}')`;
       bgEl.style.backgroundColor = 'transparent';
