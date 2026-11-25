@@ -313,22 +313,21 @@ const coreCategories = ['General', 'Faith', 'Hope', 'Courage', 'Wisdom', 'Missio
 let currentBibleVersion = 'web';
 let scheduledDatesList = [];
 let toastTimer;
-
 async function init() {
   try {
     const { data: session } = await supabaseClient.auth.getSession();
     if (!session?.session) return window.location.href = 'login.html';
-
-    currentUser = session.session.user;
+    
+    const currentUser = session.session.user;
     var p = await supabaseClient.from('profiles')
       .select('role, full_name')
       .eq('id', currentUser.id)
       .single();
-
+      
     if (!p.data || p.data.role !== 'admin') {
       return window.location.href = '../app/index.html';
     }
-
+    
     document.querySelectorAll('.admin-name').forEach(
       el => el.textContent = p.data.full_name || currentUser.email
     );
@@ -336,16 +335,13 @@ async function init() {
       el => el.textContent = (p.data.full_name || 'AD').substring(0, 2).toUpperCase()
     );
 
-    await Promise.all([loadMedia(), loadBadges(), fetchMissions()]);
-    filterList('active');
-
+    // Load campaigns, category chips, and scheduled calendar dates
     await loadCampaigns();
     renderCategoryChips();
     await loadScheduledDates();
 
     const urlParams = new URLSearchParams(window.location.search);
     editQuoteId = urlParams.get('edit');
-
     if (editQuoteId) {
       document.getElementById('pageTitle').textContent = 'Edit Quote';
       await loadEditData(editQuoteId);
