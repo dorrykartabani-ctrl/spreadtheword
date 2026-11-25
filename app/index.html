@@ -250,6 +250,7 @@
 
 <!-- BACKGROUND LAYERS -->
 <div id="heroBg" class="hero-bg"></div>
+<video id="heroVideo" class="hero-video hidden" autoplay loop muted playsinline webkit-playsinline></video>
 <div class="hero-overlay"></div>
 
 <!-- COMPLETE PROFILE BANNER -->
@@ -582,21 +583,63 @@ function dismissProfileBanner() {
 }
 
 // ════════════════════════════════════════════
-// BACKGROUND LOADER
+// BACKGROUND LOADER (Image & Video)
 // ════════════════════════════════════════════
+function isVideoUrl(url) {
+  if (!url) return false
+  var clean = url.split('?')[0].split('#')[0].toLowerCase().trim()
+  return clean.endsWith('.mp4') || clean.endsWith('.webm') || clean.endsWith('.mov') || clean.endsWith('.m4v')
+}
+
 function setHeroBackground(url) {
   var bg = document.getElementById('heroBg')
+  var video = document.getElementById('heroVideo')
   if (!bg) return
-  var img = new Image()
-  img.onload = function() {
-    bg.style.backgroundImage = 'url("' + url + '")'
-    bg.classList.add('loaded')
+
+  if (url && isVideoUrl(url)) {
+    // Media is a Video
+    bg.classList.remove('loaded')
+    if (video) {
+      video.muted = true
+      video.defaultMuted = true
+      video.src = url
+      video.classList.remove('hidden')
+      
+      video.onloadeddata = function() {
+        video.classList.add('loaded')
+        video.play().catch(function(e) {
+          console.warn('Autoplay prevented:', e)
+        })
+      }
+      
+      video.onerror = function() {
+        console.error('Video background failed to load, falling back to image')
+        video.classList.add('hidden')
+        video.classList.remove('loaded')
+        bg.style.backgroundImage = 'url("' + DEFAULT_HERO + '")'
+        bg.classList.add('loaded')
+      }
+    }
+  } else {
+    // Media is an Image
+    if (video) {
+      video.pause()
+      video.removeAttribute('src')
+      video.classList.remove('loaded')
+      video.classList.add('hidden')
+    }
+    
+    var img = new Image()
+    img.onload = function() {
+      bg.style.backgroundImage = 'url("' + url + '")'
+      bg.classList.add('loaded')
+    }
+    img.onerror = function() {
+      bg.style.backgroundImage = 'url("' + DEFAULT_HERO + '")'
+      bg.classList.add('loaded')
+    }
+    img.src = url || DEFAULT_HERO
   }
-  img.onerror = function() {
-    bg.style.backgroundImage = 'url("' + DEFAULT_HERO + '")'
-    bg.classList.add('loaded')
-  }
-  img.src = url
 }
 
 // ════════════════════════════════════════════
@@ -901,9 +944,9 @@ async function handleQuickShare() {
   showSuccess()
 }
 
-// ════════════════════════════════════════════
-// GENERATE QUICK SHARE IMAGE (1080x1080)
-// ════════════════════════════════════════════
+// ═════════════════════════════
+// GENERATE QUICK SHARE 
+// ═════════════════════════════
 function generateQuickShareImage() {
   return new Promise(function(resolve) {
     try {
