@@ -2,1640 +2,939 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="theme-color" content="#f2f6fa">
-  <title>Create — Go Spread The Word</title>
-
-  <link rel="icon" type="image/x-icon" href="/images/favicon/favicon.ico">
-  <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png">
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Customize & Share — GSTW</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Playfair+Display:ital,wght@0,700;1,700&family=Oswald:wght@600&family=Bebas+Neue&family=Merriweather:ital,wght@1,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
-
-  <script src="badges-config.js"></script>
-
+  <link rel="icon" type="image/x-icon" href="/images/favicon/favicon.ico">
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            'surface':'#fbf9f4','surface-cl':'#ffffff','surface-clow':'#f5f4ed',
-            'surface-c':'#efeee7','surface-chigh':'#e9e8e1','surface-chighest':'#e3e3db',
-            'on-surface':'#31332e','on-surface-variant':'#5e6059',
-            'inverse-surface':'#0e0e0c','inverse-on-surface':'#9e9d99',
-            'outline':'#7a7b75','outline-variant':'#b2b2ab',
-            'primary':'#3d6285','on-primary':'#f7f9ff',
-            'primary-container':'#b0d5fe','on-primary-container':'#234a6c',
-            'secondary':'#41637c','secondary-container':'#cae6ff',
-            'tertiary':'#ad332b','on-tertiary':'#fff7f6',
-            'primary-dim':'#305678','secondary-dim':'#355670','tertiary-dim':'#9d2621',
-            'background':'#fbf9f4','on-background':'#31332e',
+            'surface': '#fbf9f4', 'surface-card': '#ffffff', 'surface-low': '#f5f4ed',
+            'surface-c': '#efeee7', 'surface-high': '#e9e8e1',
+            'on-surface': '#31332e', 'on-surface-variant': '#5e6059',
+            'primary': '#3d6285', 'on-primary': '#f7f9ff',
+            'primary-container': '#b0d5fe', 'primary-dark': '#2a4763',
+            'outline': '#7a7b75', 'outline-light': '#b2b2ab',
+            'inverse-surface': '#0e0e0c'
           },
-          fontFamily:{
-            'headline':['Plus Jakarta Sans','sans-serif'],
-            'body':['Manrope','sans-serif'],
-            'quote':['Lora','serif'],
-          },
-          boxShadow:{
-            'ambient':'0 20px 40px rgba(49,51,46,0.05)',
-            'ambient-sm':'0 8px 24px rgba(49,51,46,0.04)',
-            'float':'0 20px 40px rgba(49,51,46,0.08)',
-          },
-        },
-      },
+          fontFamily: {
+            'headline': ['Plus Jakarta Sans', 'sans-serif'],
+            'body': ['Manrope', 'sans-serif'],
+            'serif': ['Lora', 'serif'],
+          }
+        }
+      }
     }
   </script>
-
   <style>
-    *{box-sizing:border-box}
-    body{
-      font-family:'Manrope',sans-serif;background:#f2f6fa;color:#31332e;
-      -webkit-tap-highlight-color:transparent;overflow-y:auto;
-      min-height:100dvh;user-select:none;margin:0;letter-spacing:-0.005em;
+    body { font-family: 'Manrope', sans-serif; background: #fbf9f4; color: #31332e; -webkit-tap-highlight-color: transparent; }
+    .signature-gradient { background: linear-gradient(135deg, #3d6285, #6b9bc3); }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .filled { font-variation-settings: 'FILL' 1; }
+    
+    /* Smooth canvas container */
+    .canvas-wrapper {
+      position: relative;
+      touch-action: none;
+      user-select: none;
+      box-shadow: 0 20px 40px -15px rgba(0,0,0,0.25);
+      border-radius: 20px;
+      overflow: hidden;
+      background: #0e0e0c;
     }
-    .font-headline{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
-    .font-quote{font-family:'Lora',serif}
-    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;display:inline-block;line-height:1}
-    .filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
-    .signature-gradient{background:linear-gradient(135deg,#3d6285,#6b9bc3)}
+    #previewCanvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 58vh;
+      object-fit: contain;
+      transition: aspect-ratio 0.3s ease;
+    }
+    
+    /* Interactive tabs and chips */
+    .tab-btn {
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #5e6059;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      color: #3d6285;
+      border-color: #3d6285;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #f5f4ed;
+      color: #5e6059;
+      border: 1px solid #e9e8e1;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .chip:hover { border-color: #3d6285; }
+    .chip.active { background: #3d6285; color: #ffffff; border-color: #3d6285; }
 
-    ::-webkit-scrollbar{display:none}
-    body{-ms-overflow-style:none;scrollbar-width:none}
-
-    button{touch-action:manipulation}
-
-    .font-lora{font-family:'Lora',serif!important}
-    .font-jakarta{font-family:'Plus Jakarta Sans',sans-serif!important}
-    .font-playfair{font-family:'Playfair Display',serif!important}
-    .font-oswald{font-family:'Oswald',sans-serif!important;text-transform:uppercase}
-    .font-bebas{font-family:'Bebas Neue',sans-serif!important;letter-spacing:0.08em}
-    .font-merri{font-family:'Merriweather',serif!important}
-
-    .glass-header{
-      background:rgba(242,246,250,0.85);
-      backdrop-filter:blur(20px);
-      -webkit-backdrop-filter:blur(20px);
+    /* Custom range slider */
+    input[type=range] {
+      -webkit-appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      background: #e3e3db;
+      outline: none;
     }
-    .glass-footer{background:rgba(255,255,255,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
-
-    /* THE POST PILL */
-    .post-pill{
-      background:#ffffff;
-      border-radius:24px;
-      overflow:hidden;
-      box-shadow:0 12px 32px rgba(49,51,46,0.08);
-    }
-    .post-canvas-wrap{background:#ffffff;padding:6px 6px 0 6px}
-    .preview-canvas{
-      position:relative;width:100%;aspect-ratio:1;
-      border-radius:18px;overflow:hidden;background:#0e0e0c;touch-action:none;
-    }
-    .post-caption-wrap{
-      padding:12px 6px 6px 6px;
-      background:#ffffff;
-      border-radius:0 0 24px 24px;
-    }
-    .post-caption-inner{background:#f7f9fb;border-radius:14px;padding:12px}
-    #postCaption{
-      width:100%;background:transparent;border:none;resize:none;
-      font-family:'Manrope',sans-serif;font-size:13px;line-height:1.5;
-      color:#31332e;min-height:52px;outline:none;
-    }
-    #postCaption::placeholder{color:#8a8c85}
-    .caption-footer{
-      display:flex;align-items:center;justify-content:space-between;
-      margin-top:6px;padding:0 4px;
-    }
-
-    /* HASHTAG PILL */
-    .hashtag-row{margin-top:8px;padding:0 4px}
-    .hashtag-pill-btn{
-      display:inline-flex;align-items:center;gap:5px;
-      padding:5px 10px;background:rgba(176,213,254,0.20);
-      color:#234a6c;border-radius:99px;
-      font-family:'Manrope',sans-serif;font-size:11px;font-weight:700;
-      transition:all 0.15s ease;-webkit-tap-highlight-color:transparent;
-    }
-    .hashtag-pill-btn:hover{background:rgba(176,213,254,0.32)}
-    .hashtag-pill-btn:active{transform:scale(0.96)}
-    .hashtag-pill-btn.open{background:#3d6285;color:#f7f9ff}
-    .hashtag-pill-btn.open #hashtagChevron{transform:rotate(180deg)}
-    .hashtag-panel{
-      max-height:0;opacity:0;overflow:hidden;padding:0 4px;
-      transition:max-height 0.3s cubic-bezier(0.22,1,0.36,1),
-                 opacity 0.2s ease,padding 0.25s ease,margin-top 0.25s ease;
-      margin-top:0;
-    }
-    .hashtag-panel.open{
-      max-height:300px;opacity:1;padding-top:10px;padding-bottom:4px;margin-top:4px;
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #3d6285;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     }
 
-    #quoteOverlay{position:absolute;z-index:10;touch-action:none;cursor:grab;width:80%;left:10%;top:25%}
-    #quoteOverlay:active{cursor:grabbing}
-
-    .text-with-shadow{text-shadow:0 4px 20px rgba(0,0,0,0.8),0 2px 6px rgba(0,0,0,0.5)}
-
-    .drag-hint{
-      position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
-      background:rgba(0,0,0,0.6);color:white;font-size:11px;font-weight:600;
-      padding:6px 12px;border-radius:99px;z-index:20;pointer-events:none;
-      display:flex;align-items:center;gap:4px;
-      animation:hintFade 3s ease-in-out forwards;
+    /* Modal slide animations */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(14,14,12,0.65);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
     }
-    @keyframes hintFade{0%,100%{opacity:0}15%,85%{opacity:1}}
-
-    .action-card{
-      display:flex;align-items:center;gap:12px;padding:14px;
-      border-radius:16px;background:#ffffff;
-      box-shadow:0 4px 12px rgba(49,51,46,0.03);
-      transition:all 0.15s ease;
+    @media (min-width: 768px) {
+      .modal-overlay { align-items: center; }
     }
-    .action-card:active{transform:scale(0.97)}
-
-    /* Customize card — premium accent */
-    .customize-card{
-      background:linear-gradient(135deg,#ffffff 0%,#f0f5fa 100%);
-      border:1px solid rgba(61,98,133,0.15);
-      box-shadow:0 8px 20px rgba(61,98,133,0.08);
+    .modal-overlay.open { opacity: 1; pointer-events: auto; }
+    .modal-sheet {
+      background: #ffffff;
+      width: 100%;
+      max-width: 520px;
+      border-radius: 28px 28px 0 0;
+      max-height: 88vh;
+      overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
-
-    .hashtag-chip{
-      display:inline-flex;align-items:center;gap:5px;
-      background:rgba(176,213,254,0.25);color:#234a6c;
-      padding:5px 10px;border-radius:99px;font-size:12px;font-weight:600;
+    @media (min-width: 768px) {
+      .modal-sheet { border-radius: 24px; transform: scale(0.95); }
+      .modal-overlay.open .modal-sheet { transform: scale(1); }
     }
-
-    .char-warn{color:#c9a227!important}
-    .char-over{color:#ad332b!important;font-weight:700!important}
-
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .spin{animation:spin 1s linear infinite;display:inline-block}
-
-    .header-btn{
-      width:40px;height:40px;border-radius:12px;display:flex;align-items:center;
-      justify-content:center;color:#5e6059;transition:all 0.15s ease;
-    }
-    .header-btn:hover{background:#f5f4ed}
-    .header-btn:active{transform:scale(0.9)}
-
-    @keyframes arrowSlide{0%,88%,100%{transform:translateX(0)}92%{transform:translateX(3px)}96%{transform:translateX(0)}}
-    .cta-arrow{display:inline-block;animation:arrowSlide 5s ease-in-out infinite;animation-delay:2s}
-
-    .confirm-sheet{transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1)}
-    .confirm-sheet.open{transform:translateY(0)}
-
-    .overflow-menu{
-      position:absolute;top:56px;right:12px;background:#ffffff;border-radius:14px;
-      box-shadow:0 10px 30px rgba(49,51,46,0.15);padding:6px;min-width:180px;
-      z-index:50;opacity:0;transform:translateY(-8px) scale(0.95);pointer-events:none;
-      transition:all 0.2s cubic-bezier(0.22,1,0.36,1);transform-origin:top right;
-    }
-    .overflow-menu.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
-    .overflow-item{
-      display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;
-      width:100%;color:#31332e;font-size:13px;font-weight:600;
-      background:transparent;transition:background 0.12s ease;
-    }
-    .overflow-item:hover{background:#f5f4ed}
-    .overflow-item:active{background:#efeee7}
-    .overflow-item.danger{color:#ad332b}
-
-    /* Ceremonial confirmation */
-    .confirm-share-sheet{background:linear-gradient(180deg,#ffffff 0%,#f2f6fa 100%)}
-    @keyframes seedGrow{0%{transform:scale(0.6);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
-    .seed-icon-animate{animation:seedGrow 0.6s cubic-bezier(0.34,1.56,0.64,1) both}
-
-    /* Success modal */
-    @keyframes logoBurst{0%{transform:scale(0.4);opacity:0}60%{transform:scale(1.15);opacity:1}100%{transform:scale(1);opacity:1}}
-    .success-logo-animate{animation:logoBurst 0.6s cubic-bezier(0.34,1.56,0.64,1) both}
-
-    .confetti-container{position:absolute;top:0;left:0;right:0;height:220px;overflow:visible;pointer-events:none;z-index:1}
-    .confetti-piece{position:absolute;top:60px;left:50%;width:8px;height:12px;opacity:0}
-    @keyframes confettiFly{0%{opacity:1;transform:translate(-50%,0) rotate(0deg) scale(1)}100%{opacity:0;transform:translate(var(--tx),var(--ty)) rotate(var(--tr)) scale(0.5)}}
-    .confetti-piece.go{animation:confettiFly 1.2s ease-out forwards}
-
-    .quick-action{
-      display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;
-      border-radius:14px;transition:all 0.18s ease;font-weight:700;font-size:14px;text-align:left;
-    }
-    .quick-action:active{transform:scale(0.97)}
-    .quick-action-primary{background:#3d6285;color:#f7f9ff}
-    .quick-action-secondary{background:#f5f4ed;color:#31332e}
-    .quick-action-tertiary{background:#efeee7;color:#31332e}
-
-    .rank-progress{
-      background:linear-gradient(135deg,rgba(176,213,254,0.20),rgba(202,230,255,0.15));
-      border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;
-    }
-    .rank-progress-icon{
-      width:38px;height:38px;border-radius:12px;background:#3d6285;
-      display:flex;align-items:center;justify-content:center;color:#f7f9ff;flex-shrink:0;
-    }
-    .rank-progress-bar{height:5px;background:rgba(61,98,133,0.15);border-radius:99px;overflow:hidden;margin-top:5px}
-    .rank-progress-fill{height:100%;background:linear-gradient(90deg,#3d6285,#6b9bc3);border-radius:99px;transition:width 1s cubic-bezier(0.22,1,0.36,1)}
-
-    .platform-btn{
-      display:flex;flex-direction:column;align-items:center;
-      padding:8px 4px;border-radius:12px;background:transparent;
-      transition:all 0.15s ease;-webkit-tap-highlight-color:transparent;
-    }
-    .platform-btn:hover{background:#f5f4ed}
-    .platform-btn:active{transform:scale(0.95)}
-    .platform-label{
-      font-family:'Manrope',sans-serif;font-size:10px;font-weight:600;
-      color:#31332e;text-align:center;line-height:1.2;
-    }
-
-    body.kb-open footer{position:absolute!important}
-
-    .pinch-hint{
-      position:absolute;top:8px;left:50%;transform:translateX(-50%);
-      background:rgba(0,0,0,0.7);color:#fff;
-      font-size:10px;font-weight:600;
-      padding:5px 10px;border-radius:99px;
-      z-index:15;pointer-events:none;
-      display:flex;align-items:center;gap:4px;
-      animation:hintFade 4s ease-in-out forwards;
-    }
+    .modal-overlay.open .modal-sheet { transform: translateY(0); }
   </style>
 </head>
+<body class="min-h-screen flex flex-col">
 
-<body>
-
-<input type="file" id="selfieInput" accept="image/*" capture="user" class="hidden" onchange="handleImageSelect(this)">
-<input type="file" id="galleryInput" accept="image/png,image/jpeg,image/jpg,image/webp" class="hidden" onchange="handleImageSelect(this)">
-
-<!-- HEADER -->
-<header id="pageHeader" class="fixed top-0 w-full z-50 glass-header">
-  <div class="max-w-[430px] mx-auto px-4 pt-10 pb-3 flex items-center justify-between relative">
-    <button onclick="goHome()" class="header-btn" title="Back to home">
-      <span class="material-symbols-outlined text-[22px]">home</span>
-    </button>
-    <span class="font-headline font-bold text-on-surface" style="font-size:15px;">Create</span>
-    <button onclick="toggleOverflowMenu(event)" class="header-btn" title="More options">
-      <span class="material-symbols-outlined text-[22px]">more_vert</span>
-    </button>
-
-    <div id="overflowMenu" class="overflow-menu">
-      <button class="overflow-item" onclick="closeOverflowMenu();openDraftsSheet()">
-        <span class="material-symbols-outlined text-primary text-[18px]">bookmark</span>
-        My drafts
-      </button>
-      <button class="overflow-item" onclick="closeOverflowMenu();saveDraft()">
-        <span class="material-symbols-outlined text-primary text-[18px]">save</span>
-        Save as draft
-      </button>
-      <div style="height:1px;background:#e9e8e1;margin:6px 4px"></div>
-      <button class="overflow-item danger" onclick="closeOverflowMenu();confirmReset()">
-        <span class="material-symbols-outlined text-[18px]">refresh</span>
-        Reset
+  <!-- TOP APP BAR -->
+  <header class="sticky top-0 z-40 bg-surface/90 backdrop-blur-md border-b border-surface-c px-4 lg:px-8 py-3.5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <a href="index.html" class="w-9 h-9 rounded-xl bg-surface-low hover:bg-surface-c flex items-center justify-center text-on-surface transition-colors">
+        <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+      </a>
+      <div>
+        <h1 class="font-headline font-bold text-base leading-tight">Create & Share</h1>
+        <p class="text-[11px] font-semibold text-on-surface-variant">Drag text to position anywhere</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="openPlatformPicker()" class="px-4 py-2 rounded-xl signature-gradient text-white font-headline font-bold text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-transform">
+        <span class="material-symbols-outlined text-[16px]">share</span> Share
       </button>
     </div>
-  </div>
-</header>
+  </header>
 
-<div class="max-w-[430px] mx-auto flex flex-col min-h-[100dvh] pt-24 pb-32">
-
-  <!-- POST PILL -->
-  <section class="px-4 pt-4">
-    <div class="post-pill">
-      <div class="post-canvas-wrap">
-        <div class="flex items-center justify-between mb-2 px-2">
-  <span id="platformFormatLabel" class="font-body text-primary font-bold" style="font-size:11px; text-transform:uppercase; letter-spacing:0.05em;">
-    Optimized for Instagram
-  </span>
-</div>
-        <div class="preview-canvas" id="previewCanvas">
-          <div id="bgLayer" class="absolute inset-0 bg-cover bg-center"></div>
-          <div id="darkLayer" class="absolute inset-0" style="background:rgba(0,0,0,0.3)"></div>
-
-          <div id="quoteOverlay">
-            <div class="p-4 text-center">
-              <p id="quoteText" class="font-quote font-semibold text-white leading-snug text-with-shadow" style="font-size:18px;opacity:0;transition:opacity 0.3s"></p>
-              <p id="quoteRef" class="mt-3 font-body font-bold text-white/90 tracking-wider text-with-shadow" style="font-size:11px;opacity:0;transition:opacity 0.3s"></p>
-            </div>
-          </div>
-
-          <div id="dragHint" class="drag-hint">
-            <span class="material-symbols-outlined text-[14px]">drag_pan</span>
-            Drag to reposition
-          </div>
-          <div id="pinchHint" class="pinch-hint hidden">
-            <span class="material-symbols-outlined text-[12px]">pinch</span>
-            Pinch to resize width
-          </div>
-        </div>
-      </div>
-
-      <div class="post-caption-wrap">
-        <div class="post-caption-inner">
-          <textarea id="postCaption" maxlength="10000"
-            placeholder="Add your caption..."
-            oninput="updateCaption()"
-            onfocus="onInputFocus(this)"
-            onblur="onInputBlur(this)"></textarea>
-        </div>
-        <div class="caption-footer">
-          <div class="flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-primary text-[12px] filled">check_circle</span>
-            <span class="font-body text-on-surface-variant" style="font-size:10px;">Auto-saved</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <button id="clearCaptionBtn" onclick="clearCaption()" class="font-body text-tertiary active:opacity-60" style="font-size:10px;font-weight:600;">Clear</button>
-            <span id="charCounter" class="font-body text-on-surface-variant" style="font-size:10px;font-weight:600;">0 / 2200 · Instagram</span>
-          </div>
-        </div>
-
-        <div class="hashtag-row">
-          <button id="hashtagToggle" onclick="toggleHashtagPanel()" class="hashtag-pill-btn">
-            <span class="material-symbols-outlined" style="font-size:14px;">tag</span>
-            <span id="hashtagPillLabel">2 hashtags</span>
-            <span id="hashtagChevron" class="material-symbols-outlined" style="font-size:16px;transition:transform 0.25s ease;">expand_more</span>
-          </button>
-        </div>
-
-        <div id="hashtagPanel" class="hashtag-panel">
-          <div id="hashtagsContainer" class="flex flex-wrap gap-1.5"></div>
-          <div id="hashtagInput" class="hidden mt-2">
-            <div class="flex gap-2">
-              <input id="hashtagField" type="text" placeholder="#YourTag"
-                onkeydown="if(event.key==='Enter'){event.preventDefault();addHashtagFromInput()}"
-                class="flex-1 bg-white rounded-lg px-3 py-2 font-body text-on-surface placeholder:text-outline-variant"
-                style="font-size:12px;border:1px solid rgba(61,98,133,0.3);"
-                onfocus="onInputFocus(this)" onblur="onInputBlur(this)">
-              <button onclick="addHashtagFromInput()"
-                class="signature-gradient text-on-primary font-headline font-semibold px-3 py-2 rounded-lg active:scale-95 transition-transform"
-                style="font-size:12px;">Add</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div id="captionHint" class="hidden items-center gap-1.5 mt-2 px-3 py-2 bg-primary-container/25 rounded-lg">
-      <span class="material-symbols-outlined text-primary text-[14px] filled flex-shrink-0">auto_awesome</span>
-      <span class="font-body text-primary" style="font-size:11px;font-weight:600;">Context added as your caption — edit or clear as you like</span>
-    </div>
-  </section>
-
-  <!-- CAMERA / GALLERY -->
-  <section class="px-4 pt-3">
-    <div class="grid grid-cols-2 gap-2.5">
-      <button onclick="openCamera()" class="action-card border border-primary/20">
-        <div class="w-9 h-9 rounded-xl bg-primary text-on-primary flex items-center justify-center flex-shrink-0 shadow-sm">
-          <span class="material-symbols-outlined text-[19px] filled">photo_camera</span>
-        </div>
-        <div class="text-left">
-          <p class="font-headline font-bold text-on-surface" style="font-size:13px;">Camera</p>
-          <p class="font-body text-on-surface-variant" style="font-size:10px;">Take selfie</p>
-        </div>
-      </button>
-
-      <button onclick="openGallery()" class="action-card border border-primary/20">
-        <div class="w-9 h-9 rounded-xl bg-primary-container text-primary flex items-center justify-center flex-shrink-0">
-          <span class="material-symbols-outlined text-[19px] filled">photo_library</span>
-        </div>
-        <div class="text-left">
-          <p class="font-headline font-bold text-on-surface" style="font-size:13px;">Gallery</p>
-          <p class="font-body text-on-surface-variant" style="font-size:10px;">Pick photo</p>
-        </div>
-      </button>
-    </div>
-  </section>
-
-  <!-- CUSTOMIZE CARD (premium accent) -->
-  <section class="px-4 pt-2.5">
-    <button onclick="openCustomize()" class="action-card customize-card w-full">
-      <div class="w-9 h-9 rounded-xl signature-gradient flex items-center justify-center flex-shrink-0 shadow-sm">
-        <span class="material-symbols-outlined text-on-primary text-[19px] filled">auto_awesome</span>
-      </div>
-      <div class="text-left flex-1">
-        <p class="font-headline font-bold text-on-surface" style="font-size:13px;">Customize your post</p>
-        <p class="font-body text-on-surface-variant" style="font-size:10px;">Backgrounds, fonts, colors & more</p>
-      </div>
-      <span class="material-symbols-outlined text-primary" style="font-size:18px;">chevron_right</span>
-    </button>
-  </section>
-
-</div>
-
-<!-- STICKY CTA -->
-<footer class="glass-footer fixed bottom-0 left-0 right-0 z-40">
-  <div class="max-w-[430px] mx-auto px-4 pt-3" style="padding-bottom:max(16px,env(safe-area-inset-bottom))">
-    <button id="shareBtn" onclick="openConfirmShare()"
-      class="w-full py-4 signature-gradient text-on-primary font-headline font-bold rounded-xl flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-ambient"
-      style="font-size:16px;">
-      <span>Spread The Word</span>
-      <span class="cta-arrow" style="font-size:18px;">→</span>
-    </button>
-  </div>
-</footer>
-
-<!-- CEREMONIAL CONFIRMATION -->
-<div id="confirmShareOverlay" class="hidden fixed inset-0 bg-inverse-surface/50 backdrop-blur-sm z-[100]" onclick="closeConfirmShare()"></div>
-<div id="confirmShareSheet" class="confirm-sheet confirm-share-sheet fixed bottom-0 left-0 right-0 z-[101] rounded-t-3xl shadow-float max-w-[430px] mx-auto">
-  <div class="p-6 pb-8" style="padding-bottom:max(32px,env(safe-area-inset-bottom))">
-    <div class="w-10 h-1 bg-outline-variant/30 rounded-full mx-auto mb-5"></div>
-    <div class="text-center">
-      <div id="seedIcon" class="w-16 h-16 rounded-2xl signature-gradient flex items-center justify-center mx-auto mb-4 shadow-lg seed-icon-animate">
-        <span class="text-white" style="font-size:36px;line-height:1;">🌱</span>
-      </div>
-      <h3 class="font-headline font-extrabold text-on-surface mb-2" style="font-size:22px;">Ready to plant this seed?</h3>
-      <p class="font-body text-on-surface-variant mb-6 leading-relaxed" style="font-size:14px;">Your post will open in your share sheet with the caption copied.</p>
-      <div class="flex gap-3">
-        <button onclick="closeConfirmShare()" class="flex-1 py-3.5 bg-surface-clow text-on-surface-variant font-body font-semibold rounded-xl active:scale-95 transition-transform" style="font-size:14px;">Not yet</button>
-        <button id="confirmShareGoBtn" onclick="confirmedShare()" class="flex-1 py-3.5 signature-gradient text-on-primary font-headline font-bold rounded-xl active:scale-[0.98] transition-transform" style="font-size:14px;">Share now</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- DESKTOP SHARE PICKER -->
-<div id="desktopPickerModal" class="hidden fixed inset-0 z-[115] flex items-center justify-center px-4">
-  <div class="absolute inset-0 bg-inverse-surface/70 backdrop-blur-sm" onclick="closeDesktopPicker()"></div>
-  <div class="relative w-full max-w-md bg-surface-cl rounded-2xl shadow-float overflow-hidden" style="max-height:92vh;overflow-y:auto;">
-    <div class="p-6">
-      <div class="text-center mb-5">
-        <div class="w-14 h-14 rounded-2xl signature-gradient flex items-center justify-center mx-auto mb-3">
-          <span class="material-symbols-outlined text-on-primary text-[28px] filled">share</span>
-        </div>
-        <h3 class="font-headline font-extrabold text-on-surface mb-1" style="font-size:20px;">Share your post</h3>
-        <p class="font-body text-on-surface-variant" style="font-size:13px;">Choose where to spread the Word</p>
-      </div>
-
-      <div class="space-y-2 mb-5">
-        <div class="flex items-center gap-3 bg-primary-container/20 rounded-xl p-3">
-          <span class="material-symbols-outlined text-primary text-[18px] filled flex-shrink-0">download</span>
-          <div>
-            <p class="font-body font-semibold text-primary" style="font-size:12px;">Image downloaded</p>
-            <p class="font-body text-on-surface-variant" style="font-size:11px;">Check your Downloads folder</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-3 bg-primary-container/20 rounded-xl p-3">
-          <span class="material-symbols-outlined text-primary text-[18px] filled flex-shrink-0">content_copy</span>
-          <div>
-            <p class="font-body font-semibold text-primary" style="font-size:12px;">Caption copied</p>
-            <p class="font-body text-on-surface-variant" style="font-size:11px;">Paste it when you post</p>
-          </div>
-        </div>
-      </div>
-
-      <p class="font-body text-on-surface-variant font-semibold mb-2" style="font-size:11px;letter-spacing:0.06em;text-transform:uppercase;">Open Platform</p>
-      <div class="grid grid-cols-3 gap-2 mb-5">
-        <button onclick="openPlatform('twitter')" class="platform-btn"><div class="w-10 h-10 rounded-xl bg-black flex items-center justify-center mx-auto mb-1.5"><span class="text-white font-bold" style="font-size:16px;">𝕏</span></div><span class="platform-label">X / Twitter</span></button>
-        <button onclick="openPlatform('facebook')" class="platform-btn"><div class="w-10 h-10 rounded-xl bg-[#1877F2] flex items-center justify-center mx-auto mb-1.5"><span class="text-white font-black" style="font-size:20px;font-family:Georgia,serif;">f</span></div><span class="platform-label">Facebook</span></button>
-        <button onclick="openPlatform('whatsapp')" class="platform-btn"><div class="w-10 h-10 rounded-xl bg-[#25D366] flex items-center justify-center mx-auto mb-1.5"><span class="material-symbols-outlined text-white filled" style="font-size:20px;">chat</span></div><span class="platform-label">WhatsApp</span></button>
-        <button onclick="openPlatform('telegram')" class="platform-btn"><div class="w-10 h-10 rounded-xl bg-[#0088CC] flex items-center justify-center mx-auto mb-1.5"><span class="material-symbols-outlined text-white filled" style="font-size:20px;">send</span></div><span class="platform-label">Telegram</span></button>
-        <button onclick="openPlatform('threads')" class="platform-btn"><div class="w-10 h-10 rounded-xl bg-black flex items-center justify-center mx-auto mb-1.5"><span class="text-white font-black" style="font-size:20px;">@</span></div><span class="platform-label">Threads</span></button>
-        <button onclick="openPlatform('linkedin')" class="platform-btn"><div class="w-10 h-10 rounded-xl bg-[#0A66C2] flex items-center justify-center mx-auto mb-1.5"><span class="text-white font-black" style="font-size:14px;">in</span></div><span class="platform-label">LinkedIn</span></button>
-        <button onclick="openPlatform('email')" class="platform-btn"><div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center mx-auto mb-1.5"><span class="material-symbols-outlined text-white filled" style="font-size:20px;">mail</span></div><span class="platform-label">Email</span></button>
-        <button onclick="copyLinkOnly()" class="platform-btn"><div class="w-10 h-10 rounded-xl bg-surface-chigh flex items-center justify-center mx-auto mb-1.5"><span class="material-symbols-outlined text-on-surface-variant" style="font-size:20px;">content_copy</span></div><span class="platform-label">Copy Again</span></button>
-        <button onclick="closeDesktopPickerAndSucceed()" class="platform-btn"><div class="w-10 h-10 rounded-xl bg-surface-chigh flex items-center justify-center mx-auto mb-1.5"><span class="material-symbols-outlined text-on-surface-variant" style="font-size:20px;">check</span></div><span class="platform-label">Done</span></button>
-      </div>
-
-      <div class="bg-surface-clow rounded-xl p-3 mb-4 flex items-start gap-2">
-        <span class="material-symbols-outlined text-outline text-[16px] flex-shrink-0" style="margin-top:1px;">info</span>
-        <p class="font-body text-on-surface-variant leading-relaxed" style="font-size:11px;">Instagram &amp; TikTok require you to <span class="font-semibold">upload the image manually</span> from your device. Caption is already copied to your clipboard.</p>
-      </div>
-
-      <button onclick="closeDesktopPicker()" class="w-full py-3 text-on-surface-variant font-body font-semibold rounded-xl active:scale-95 transition-transform" style="font-size:13px;">Cancel</button>
-    </div>
-  </div>
-</div>
-
-<!-- FACEBOOK INSTRUCTIONS MODAL -->
-<div id="fbInstructModal" class="hidden fixed inset-0 z-[125] flex items-center justify-center px-4">
-  <div class="absolute inset-0 bg-inverse-surface/70 backdrop-blur-sm" onclick="closeFbInstructions()"></div>
-  <div class="relative w-full max-w-md bg-surface-cl rounded-2xl shadow-float p-6">
-    <div class="text-center mb-5">
-      <div class="w-14 h-14 rounded-2xl bg-[#1877F2] flex items-center justify-center mx-auto mb-3">
-        <span class="text-white font-black" style="font-size:28px;font-family:Georgia,serif;">f</span>
-      </div>
-      <h3 class="font-headline font-extrabold text-on-surface mb-2" style="font-size:20px;">Share on Facebook</h3>
-      <p class="font-body text-on-surface-variant" style="font-size:13px;">Everything is ready for you</p>
-    </div>
+  <!-- MAIN DUAL-PANE WORKSPACE -->
+  <main class="flex-1 max-w-6xl w-full mx-auto p-4 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
     
-    <!-- Status indicators -->
-    <div class="space-y-2 mb-5">
-      <div class="flex items-center gap-3 bg-primary-container/20 rounded-xl p-3">
-        <span class="material-symbols-outlined text-primary text-[20px] filled flex-shrink-0">download_done</span>
-        <div class="flex-1">
-          <p class="font-body font-semibold text-primary" style="font-size:13px;">Image downloaded</p>
-          <p class="font-body text-on-surface-variant" style="font-size:11px;">Check your Downloads folder</p>
-        </div>
-      </div>
+    <!-- LEFT PANE: LIVE CANVAS WORKSPACE -->
+    <div class="lg:col-span-7 flex flex-col items-center">
       
-      <div class="flex items-center gap-3 bg-primary-container/20 rounded-xl p-3">
-        <span class="material-symbols-outlined text-primary text-[20px] filled flex-shrink-0">content_copy</span>
-        <div class="flex-1">
-          <p class="font-body font-semibold text-primary" style="font-size:13px;">Caption copied</p>
-          <p class="font-body text-on-surface-variant" style="font-size:11px;">Ready to paste</p>
+      <!-- Platform Aspect Indicator & Quick Bar -->
+      <div class="w-full max-w-md flex items-center justify-between mb-3 px-1">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="platformFormatLabel" class="text-xs font-bold text-primary font-headline uppercase tracking-wider">Optimized for Instagram (4:5)</span>
         </div>
+        <button onclick="resetTextPosition()" class="text-[11px] font-bold text-on-surface-variant hover:text-primary flex items-center gap-1">
+          <span class="material-symbols-outlined text-[14px]">restart_alt</span> Center Text
+        </button>
+      </div>
+
+      <!-- CANVAS PREVIEW -->
+      <div class="w-full max-w-md canvas-wrapper">
+        <canvas id="previewCanvas" width="1080" height="1350"></canvas>
+      </div>
+
+      <!-- Quick Platform Ratio Switcher -->
+      <div class="w-full max-w-md flex justify-center gap-2 mt-4">
+        <button onclick="setPlatformFormat('instagram')" id="ratio-instagram" class="chip active">Instagram (4:5)</button>
+        <button onclick="setPlatformFormat('tiktok')" id="ratio-tiktok" class="chip">TikTok / Stories (9:16)</button>
+        <button onclick="setPlatformFormat('whatsapp')" id="ratio-whatsapp" class="chip">Square (1:1)</button>
+        <button onclick="setPlatformFormat('twitter')" id="ratio-twitter" class="chip">X (16:9)</button>
       </div>
     </div>
 
-    <!-- Step by step -->
-    <div class="bg-surface-clow rounded-xl p-4 mb-5">
-      <p class="font-body font-semibold text-on-surface mb-3" style="font-size:12px;">Next steps:</p>
-      <div class="space-y-2.5">
-        <div class="flex gap-2.5">
-          <div class="w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center flex-shrink-0 font-bold" style="font-size:11px;">1</div>
-          <p class="font-body text-on-surface" style="font-size:13px;">Click <b>"Open Facebook"</b> below</p>
-        </div>
-        <div class="flex gap-2.5">
-          <div class="w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center flex-shrink-0 font-bold" style="font-size:11px;">2</div>
-          <p class="font-body text-on-surface" style="font-size:13px;">Create a new post and <b>upload the image</b> from Downloads</p>
-        </div>
-        <div class="flex gap-2.5">
-          <div class="w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center flex-shrink-0 font-bold" style="font-size:11px;">3</div>
-          <p class="font-body text-on-surface" style="font-size:13px;"><b>Paste</b> the caption (Ctrl+V / Cmd+V)</p>
-        </div>
-        <div class="flex gap-2.5">
-          <div class="w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center flex-shrink-0 font-bold" style="font-size:11px;">4</div>
-          <p class="font-body text-on-surface" style="font-size:13px;">Share and spread the Word! 🌱</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Option to copy again if needed -->
-    <button onclick="recopyCaption()" class="w-full py-2.5 bg-surface-chigh text-on-surface font-body font-semibold rounded-xl mb-2 flex items-center justify-center gap-2" style="font-size:13px;">
-      <span class="material-symbols-outlined text-[16px]">content_copy</span>
-      Copy Caption Again
-    </button>
-
-    <button onclick="openFacebookAndClose()" class="w-full py-3.5 signature-gradient text-on-primary font-headline font-bold rounded-xl mb-2" style="font-size:14px;">Open Facebook</button>
-    <button onclick="closeFbInstructions()" class="w-full py-2.5 text-on-surface-variant font-body font-semibold" style="font-size:13px;">Cancel</button>
-  </div>
-</div>
-
-<!-- SUCCESS MODAL -->
-<div id="successModal" class="hidden fixed inset-0 z-[120] flex items-end justify-center">
-  <div class="absolute inset-0 bg-inverse-surface/70 backdrop-blur-sm" onclick="closeSuccess()"></div>
-  <div class="relative w-full max-w-[430px] bg-surface-cl rounded-t-3xl" style="max-height:92vh;overflow-y:auto;-ms-overflow-style:none;scrollbar-width:none">
-    <div class="p-6 pb-8 relative" style="padding-bottom:max(32px,env(safe-area-inset-bottom))">
-      <div class="w-10 h-1 bg-outline-variant/30 rounded-full mx-auto mb-5"></div>
-
-      <div id="confettiContainer" class="confetti-container"></div>
-
-      <div class="flex justify-center mb-4 relative" style="z-index:2;">
-        <div id="successLogoWrap" class="success-logo-animate w-20 h-20 rounded-2xl overflow-hidden shadow-float flex items-center justify-center bg-white">
-          <img src="/icons/icon-192.png" alt="GSTW" style="width:100%;height:100%;object-fit:contain;">
-        </div>
+    <!-- RIGHT PANE: TOOL CONTROLS -->
+    <div class="lg:col-span-5 bg-surface-card border border-surface-c rounded-2xl shadow-sm overflow-hidden">
+      
+      <!-- Tabs -->
+      <div class="flex border-b border-surface-c bg-surface-low px-2">
+        <button onclick="switchTab('style')" id="tabBtn-style" class="tab-btn active flex-1 text-center">Style & Font</button>
+        <button onclick="switchTab('background')" id="tabBtn-background" class="tab-btn flex-1 text-center">Background</button>
+        <button onclick="switchTab('caption')" id="tabBtn-caption" class="tab-btn flex-1 text-center">Caption</button>
       </div>
 
-      <h2 class="text-center font-headline font-extrabold text-on-surface mb-1" style="font-size:24px;">Word Shared!</h2>
-      <p id="successDesc" class="text-center font-body text-on-surface-variant mb-5" style="font-size:15px;">You planted another seed 🌱</p>
+      <div class="p-5 space-y-5">
+        
+        <!-- TAB 1: STYLE & FONT -->
+        <div id="tabContent-style" class="space-y-5">
+          <!-- Font Family -->
+          <div>
+            <label class="block text-[11px] font-extrabold uppercase tracking-wider text-outline mb-2">Typography</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button onclick="setFontStyle('serif')" id="font-serif" class="chip active justify-center font-serif text-sm py-2">Serif</button>
+              <button onclick="setFontStyle('sans')" id="font-sans" class="chip justify-center font-headline text-sm py-2">Modern</button>
+              <button onclick="setFontStyle('bold')" id="font-bold" class="chip justify-center font-headline font-extrabold text-sm py-2">Impact</button>
+            </div>
+          </div>
 
-      <div id="rankProgressCard" class="rank-progress mb-5 hidden">
-        <div class="rank-progress-icon">
-          <span class="material-symbols-outlined filled" style="font-size:20px;">military_tech</span>
-        </div>
-        <div class="flex-1 min-w-0">
-          <p id="rankProgressText" class="font-headline font-bold text-on-surface" style="font-size:13px;line-height:1.3;">—</p>
-          <p id="rankProgressSubtext" class="font-body text-on-surface-variant" style="font-size:11px;">—</p>
-          <div class="rank-progress-bar">
-            <div id="rankProgressFill" class="rank-progress-fill" style="width:0%"></div>
+          <!-- Font Size Slider -->
+          <div>
+            <div class="flex justify-between text-xs font-bold mb-1">
+              <span class="text-outline uppercase text-[11px] tracking-wider">Font Size</span>
+              <span id="fontSizeDisplay" class="text-primary font-headline">58px</span>
+            </div>
+            <input type="range" id="fontSizeSlider" min="30" max="90" value="58" oninput="handleFontSize(this.value)" class="w-full">
+          </div>
+
+          <!-- Text Alignment -->
+          <div>
+            <label class="block text-[11px] font-extrabold uppercase tracking-wider text-outline mb-2">Text Alignment</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button onclick="setTextAlign('left')" id="align-left" class="chip justify-center py-2"><span class="material-symbols-outlined text-sm">format_align_left</span></button>
+              <button onclick="setTextAlign('center')" id="align-center" class="chip active justify-center py-2"><span class="material-symbols-outlined text-sm">format_align_center</span></button>
+              <button onclick="setTextAlign('right')" id="align-right" class="chip justify-center py-2"><span class="material-symbols-outlined text-sm">format_align_right</span></button>
+            </div>
+          </div>
+
+          <!-- Dark Overlay Dimmer -->
+          <div>
+            <div class="flex justify-between text-xs font-bold mb-1">
+              <span class="text-outline uppercase text-[11px] tracking-wider">Dim Overlay (Contrast)</span>
+              <span id="overlayDimDisplay" class="text-primary font-headline">40%</span>
+            </div>
+            <input type="range" id="overlayDimSlider" min="0" max="85" value="40" oninput="handleOverlayDim(this.value)" class="w-full">
           </div>
         </div>
+
+        <!-- TAB 2: BACKGROUND (Image & Video) -->
+        <div id="tabContent-background" class="hidden space-y-4">
+          <div class="flex justify-between items-center">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-outline">Media Background</span>
+            <button onclick="openMediaLibrary()" class="text-xs font-bold text-primary flex items-center gap-1 hover:underline">
+              <span class="material-symbols-outlined text-[15px]">perm_media</span> Browse Media Library
+            </button>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2" id="quickColorPalette">
+            <button onclick="setBackgroundSolid('#1a2938')" class="h-14 rounded-xl bg-[#1a2938] border border-white/20 active:scale-95 transition-transform"></button>
+            <button onclick="setBackgroundSolid('#0e0e0c')" class="h-14 rounded-xl bg-[#0e0e0c] border border-white/20 active:scale-95 transition-transform"></button>
+            <button onclick="setBackgroundSolid('#3d6285')" class="h-14 rounded-xl bg-[#3d6285] border border-white/20 active:scale-95 transition-transform"></button>
+          </div>
+
+          <div class="pt-2 border-t border-surface-c">
+            <label class="block text-[11px] font-extrabold uppercase tracking-wider text-outline mb-2">Custom Image or Video URL</label>
+            <div class="flex gap-2">
+              <input type="text" id="customBgUrlInput" placeholder="Paste .jpg, .png, or .mp4 URL" class="flex-1 bg-surface-low border border-surface-c rounded-xl px-3 py-2 text-xs outline-none focus:border-primary">
+              <button onclick="applyCustomBgUrl()" class="px-4 bg-primary text-white font-bold text-xs rounded-xl">Apply</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: CAPTION & HASHTAGS -->
+        <div id="tabContent-caption" class="hidden space-y-4">
+          <div>
+            <label class="block text-[11px] font-extrabold uppercase tracking-wider text-outline mb-1.5">Personal Reflection (Optional)</label>
+            <textarea id="personalNote" rows="3" placeholder="Add a personal thought to accompany the quote..." oninput="updateFullCaption()" class="w-full bg-surface-low border border-surface-c rounded-xl p-3 text-xs outline-none focus:border-primary resize-none"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-extrabold uppercase tracking-wider text-outline mb-2">Hashtags</label>
+            <div id="hashtagChips" class="flex flex-wrap gap-1.5 mb-3"></div>
+            <div class="flex gap-2">
+              <input type="text" id="newTagInput" placeholder="Add custom tag (e.g. #Hope)" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomTag();}" class="flex-1 bg-surface-low border border-surface-c rounded-xl px-3 py-2 text-xs outline-none focus:border-primary">
+              <button onclick="addCustomTag()" class="px-4 bg-primary text-white font-bold text-xs rounded-xl">Add</button>
+            </div>
+          </div>
+
+          <div class="p-3 bg-surface-low rounded-xl border border-surface-c">
+            <span class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Clipboard Preview</span>
+            <p id="fullCaptionPreview" class="text-xs text-on-surface font-mono leading-relaxed line-clamp-3 select-all"></p>
+          </div>
+        </div>
+
       </div>
 
-      <p class="font-body text-on-surface-variant font-semibold mb-2" style="font-size:11px;letter-spacing:0.06em;text-transform:uppercase;">Quick Actions</p>
-      <div class="flex flex-col gap-2 mb-5">
-        <button onclick="reshareFromSuccess()" class="quick-action quick-action-primary">
-          <span class="material-symbols-outlined text-[20px]">share</span>
-          Share to another platform
-        </button>
-        <button onclick="saveImageAndClose()" class="quick-action quick-action-secondary">
-          <span class="material-symbols-outlined text-[20px]" style="color:#3d6285">save_alt</span>
-          Save image
-        </button>
-        <button onclick="goToImpact()" class="quick-action quick-action-tertiary">
-          <span class="material-symbols-outlined text-[20px]" style="color:#3d6285">analytics</span>
-          See your impact
+      <!-- BOTTOM CTA -->
+      <div class="p-4 bg-surface-low border-t border-surface-c">
+        <button onclick="openPlatformPicker()" class="w-full py-3.5 rounded-xl signature-gradient text-white font-headline font-bold text-sm shadow-md flex items-center justify-center gap-2 active:scale-98 transition-transform">
+          <span class="material-symbols-outlined text-[18px]">share</span> Share to Social Media
         </button>
       </div>
 
-      <button onclick="goHome()" class="w-full py-3 text-on-surface-variant font-body font-semibold rounded-xl" style="font-size:14px;">Back to Home</button>
+    </div>
+  </main>
+
+  <!-- PLATFORM SHARE PICKER MODAL -->
+  <div id="platformModal" class="modal-overlay" onclick="if(event.target===this)closePlatformPicker()">
+    <div class="modal-sheet p-6 space-y-5">
+      <div class="flex justify-between items-center border-b border-surface-c pb-3">
+        <div>
+          <h3 class="font-headline font-bold text-base text-on-surface">Share The Word</h3>
+          <p class="text-xs text-on-surface-variant">Caption will copy to your clipboard automatically</p>
+        </div>
+        <button onclick="closePlatformPicker()" class="w-8 h-8 rounded-full bg-surface-low flex items-center justify-center text-outline"><span class="material-symbols-outlined text-[18px]">close</span></button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="executeShare('instagram')" class="p-3.5 rounded-xl border border-surface-c hover:border-primary flex items-center gap-3 transition-colors bg-white">
+          <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center font-bold text-sm">IG</div>
+          <div class="text-left"><p class="font-headline font-bold text-xs">Instagram</p><p class="text-[10px] text-outline">Post / Reel</p></div>
+        </button>
+        <button onclick="executeShare('facebook')" class="p-3.5 rounded-xl border border-surface-c hover:border-primary flex items-center gap-3 transition-colors bg-white">
+          <div class="w-10 h-10 rounded-lg bg-[#1877f2] text-white flex items-center justify-center font-bold text-sm">FB</div>
+          <div class="text-left"><p class="font-headline font-bold text-xs">Facebook</p><p class="text-[10px] text-outline">Feed / Story</p></div>
+        </button>
+        <button onclick="executeShare('tiktok')" class="p-3.5 rounded-xl border border-surface-c hover:border-primary flex items-center gap-3 transition-colors bg-white">
+          <div class="w-10 h-10 rounded-lg bg-black text-white flex items-center justify-center font-bold text-sm">TT</div>
+          <div class="text-left"><p class="font-headline font-bold text-xs">TikTok</p><p class="text-[10px] text-outline">Story / Video</p></div>
+        </button>
+        <button onclick="executeShare('whatsapp')" class="p-3.5 rounded-xl border border-surface-c hover:border-primary flex items-center gap-3 transition-colors bg-white">
+          <div class="w-10 h-10 rounded-lg bg-[#25d366] text-white flex items-center justify-center font-bold text-sm">WA</div>
+          <div class="text-left"><p class="font-headline font-bold text-xs">WhatsApp</p><p class="text-[10px] text-outline">Status / Chat</p></div>
+        </button>
+        <button onclick="executeShare('twitter')" class="p-3.5 rounded-xl border border-surface-c hover:border-primary flex items-center gap-3 transition-colors bg-white">
+          <div class="w-10 h-10 rounded-lg bg-black text-white flex items-center justify-center font-bold text-sm">𝕏</div>
+          <div class="text-left"><p class="font-headline font-bold text-xs">X / Twitter</p><p class="text-[10px] text-outline">Post</p></div>
+        </button>
+        <button onclick="executeShare('download')" class="p-3.5 rounded-xl border border-surface-c hover:border-primary flex items-center gap-3 transition-colors bg-white">
+          <div class="w-10 h-10 rounded-lg bg-surface-low text-primary flex items-center justify-center font-bold text-sm"><span class="material-symbols-outlined text-[20px]">download</span></div>
+          <div class="text-left"><p class="font-headline font-bold text-xs">Save Image</p><p class="text-[10px] text-outline">To Device</p></div>
+        </button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- RESET CONFIRM -->
-<div id="resetOverlay" class="hidden fixed inset-0 bg-inverse-surface/40 backdrop-blur-sm z-[100]" onclick="closeResetSheet()"></div>
-<div id="resetSheet" class="confirm-sheet fixed bottom-0 left-0 right-0 z-[101] bg-surface-cl rounded-t-3xl shadow-float max-w-[430px] mx-auto">
-  <div class="p-6 pb-8" style="padding-bottom:max(32px,env(safe-area-inset-bottom))">
-    <div class="w-10 h-1 bg-outline-variant/30 rounded-full mx-auto mb-5"></div>
-    <div class="text-center mb-5">
-      <div class="w-14 h-14 rounded-full bg-tertiary-container/15 flex items-center justify-center mx-auto mb-3"><span class="material-symbols-outlined text-tertiary text-[28px]">refresh</span></div>
-      <h3 class="font-headline font-bold text-on-surface mb-1" style="font-size:18px;">Reset?</h3>
-      <p class="font-body text-on-surface-variant" style="font-size:14px;">Start over with the original quote. All customizations will be cleared.</p>
-    </div>
-    <div class="flex gap-3">
-      <button onclick="closeResetSheet()" class="flex-1 py-3 bg-surface-clow text-on-surface-variant font-body font-semibold rounded-xl" style="font-size:14px;">Cancel</button>
-      <button onclick="doReset()" class="flex-1 py-3 bg-tertiary text-on-tertiary font-headline font-bold rounded-xl" style="font-size:14px;">Reset</button>
+  <!-- MEDIA LIBRARY MODAL -->
+  <div id="mediaModal" class="modal-overlay" onclick="if(event.target===this)closeMediaLibrary()">
+    <div class="modal-sheet p-6 space-y-4 max-w-2xl">
+      <div class="flex justify-between items-center border-b border-surface-c pb-3">
+        <h3 class="font-headline font-bold text-base">Select Background Media</h3>
+        <button onclick="closeMediaLibrary()" class="text-outline"><span class="material-symbols-outlined">close</span></button>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="loadMediaPicker('all')" id="mf-all" class="chip active">All</button>
+        <button onclick="loadMediaPicker('video')" id="mf-video" class="chip">Videos</button>
+        <button onclick="loadMediaPicker('background')" id="mf-background" class="chip">Photos</button>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 max-h-80 overflow-y-auto" id="mediaPickerGrid">
+        <div class="col-span-full py-8 text-center text-xs text-outline">Loading media...</div>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- DRAFTS SHEET -->
-<div id="draftsOverlay" class="hidden fixed inset-0 bg-inverse-surface/40 backdrop-blur-sm z-[100]" onclick="closeDraftsSheet()"></div>
-<div id="draftsSheet" class="confirm-sheet fixed bottom-0 left-0 right-0 z-[101] bg-surface-cl rounded-t-3xl shadow-float max-w-[430px] mx-auto" style="max-height:80dvh;overflow-y:auto;">
-  <div class="p-6" style="padding-bottom:max(24px,env(safe-area-inset-bottom))">
-    <div class="w-10 h-1 bg-outline-variant/30 rounded-full mx-auto mb-5"></div>
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="font-headline font-bold text-on-surface" style="font-size:18px;">My Drafts</h3>
-      <span id="draftsCount" class="font-body text-on-surface-variant" style="font-size:12px;">0 / 3</span>
+  <!-- SUCCESS MODAL -->
+  <div id="successModal" class="modal-overlay" onclick="if(event.target===this)closeSuccessModal()">
+    <div class="modal-sheet p-6 text-center space-y-4">
+      <div class="w-16 h-16 rounded-2xl signature-gradient text-white flex items-center justify-center mx-auto shadow-md">
+        <span class="material-symbols-outlined text-[32px] filled">check_circle</span>
+      </div>
+      <div>
+        <h3 class="font-headline font-extrabold text-xl text-on-surface">Word Shared!</h3>
+        <p class="text-xs text-on-surface-variant mt-1" id="successSubtitle">You planted another seed 🌱</p>
+      </div>
+      <div class="p-3 bg-surface-low rounded-xl text-xs text-primary font-semibold flex items-center justify-center gap-2">
+        <span class="material-symbols-outlined text-[16px] filled">content_paste</span> Caption copied to clipboard!
+      </div>
+      <div class="space-y-2 pt-2">
+        <button onclick="reshareFromSuccess()" class="w-full py-3 bg-primary text-white font-headline font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-sm">
+          <span class="material-symbols-outlined text-[16px]">repeat</span> Reshare to Another Platform
+        </button>
+        <button onclick="window.location.href='impact.html'" class="w-full py-3 bg-surface-low text-on-surface font-headline font-bold text-xs rounded-xl">
+          View Your Impact
+        </button>
+        <button onclick="closeSuccessModal()" class="w-full py-2 text-xs font-semibold text-outline">
+          Done
+        </button>
+      </div>
     </div>
-    <div id="draftsList" class="space-y-2"></div>
-    <p class="font-body text-on-surface-variant text-center mt-4" style="font-size:11px;">Drafts save caption, hashtags & style. Max 3.</p>
-    <button onclick="closeDraftsSheet()" class="w-full mt-4 py-3 bg-surface-clow text-on-surface-variant font-body font-semibold rounded-xl" style="font-size:14px;">Close</button>
   </div>
-</div>
 
-<script>
-var supabaseClient = supabase.createClient(
-  'https://nhymadutuhpjgkiurify.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
-)
+  <!-- JAVASCRIPT LOGIC ENGINE -->
+  <script>
+    const supabaseClient = supabase.createClient(
+      'https://nhymadutuhpjgkiurify.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+    );
 
-var currentSharePlatform = 'instagram'; // Will be overridden on load
+    // Platform Configuration Map
+    const PLATFORM_CONFIG = {
+      'instagram': { name: 'Instagram', ratio: '4/5', w: 1080, h: 1350 },
+      'facebook':  { name: 'Facebook',  ratio: '4/5', w: 1080, h: 1350 },
+      'tiktok':    { name: 'TikTok',    ratio: '9/16', w: 1080, h: 1920 },
+      'twitter':   { name: 'X / Twitter', ratio: '16/9', w: 1920, h: 1080 },
+      'whatsapp':  { name: 'WhatsApp',  ratio: '1/1', w: 1080, h: 1080 },
+      'download':  { name: 'Standard',  ratio: '4/5', w: 1080, h: 1350 },
+      'default':   { name: 'Square',    ratio: '1/1', w: 1080, h: 1080 }
+    };
 
-const PLATFORM_CONFIG = {
-  'instagram': { ratio: '4/5', w: 1080, h: 1350 },
-  'facebook':  { ratio: '4/5', w: 1080, h: 1350 },
-  'tiktok':    { ratio: '9/16', w: 1080, h: 1920 },
-  'twitter':   { ratio: '16/9', w: 1920, h: 1080 },
-  'whatsapp':  { ratio: '1/1', w: 1080, h: 1080 },
-  'telegram':  { ratio: '1/1', w: 1080, h: 1080 },
-  'threads':   { ratio: '1/1', w: 1080, h: 1080 },
-  'linkedin':  { ratio: '1/1', w: 1080, h: 1080 },
-  'email':     { ratio: '1/1', w: 1080, h: 1080 },
-  'default':   { ratio: '1/1', w: 1080, h: 1080 }
-};
+    // State Variables
+    let currentUser = null;
+    let currentQuote = { id: null, text: 'The Word is with you today.', source: 'GSTW', hashtags: ['#SpreadTheWord', '#GreatCommission'] };
+    let currentPlatform = 'instagram';
+    let currentFontStyle = 'serif';
+    let currentFontSize = 58;
+    let currentTextAlign = 'center';
+    let currentOverlayDim = 0.40;
+    let currentHashtags = ['#SpreadTheWord', '#GreatCommission'];
 
-function applyPlatformFormat(platformStr) {
-  if (!platformStr) platformStr = 'instagram';
-  
-  var key = platformStr.toLowerCase();
-  if (key.includes('story') || key.includes('tiktok')) currentSharePlatform = 'tiktok';
-  else if (key.includes('twitter') || key.includes('x')) currentSharePlatform = 'twitter';
-  else if (key.includes('whatsapp')) currentSharePlatform = 'whatsapp';
-  else if (key.includes('facebook')) currentSharePlatform = 'facebook';
-  else currentSharePlatform = 'instagram'; // defaults to 4:5
+    // Normalized coordinate positioning (0.0 to 1.0)
+    let textNormX = 0.5;
+    let textNormY = 0.5;
 
-  var config = PLATFORM_CONFIG[currentSharePlatform] || PLATFORM_CONFIG['instagram'];
-  
-  var canvasEl = document.getElementById('previewCanvas');
-  if(canvasEl) {
-    canvasEl.style.transition = 'aspect-ratio 0.4s ease';
-    canvasEl.style.setProperty('aspect-ratio', config.ratio, 'important');
-  }
+    // Media background state
+    let isVideoBg = false;
+    let bgVideoEl = document.createElement('video');
+    bgVideoEl.muted = true;
+    bgVideoEl.loop = true;
+    bgVideoEl.playsInline = true;
+    bgVideoEl.crossOrigin = 'anonymous';
 
-  var labelEl = document.getElementById('platformFormatLabel');
-  if(labelEl) {
-    var displayNames = { 'tiktok': 'STORY / REEL', 'twitter': 'X (TWITTER)', 'whatsapp': 'SQUARE', 'facebook': 'FACEBOOK', 'instagram': 'INSTAGRAM' };
-    labelEl.textContent = 'Optimized for ' + (displayNames[currentSharePlatform] || currentSharePlatform.toUpperCase());
-  }
-}
-  
-// ═══ STATE ═══
-var selectedBgType = 'image'
-var selectedBgValue = ''
-var currentAlign = 'center'
-var currentTextColor = '#FFFFFF'
-var currentFontClass = 'font-lora'
-var currentDarkness = 30
-var currentUser = null
-var currentQuoteId = null
-var textShadowEnabled = true
-var userDefaultPlatform = 'Instagram'
-var userProfileCache = null
-var currentTextWidth = 80
-var currentTextX = 10
-var currentTextY = 25
+    let bgImageEl = new Image();
+    bgImageEl.crossOrigin = 'anonymous';
+    let bgSolidColor = '#3d6285';
 
-var fullCaption = ''
-var hashtags = ['#SpreadTheWord', '#GreatCommission']
-var MAX_TAGS = 5
-var MAX_DRAFTS = 3
+    // Canvas references
+    const canvas = document.getElementById('previewCanvas');
+    const ctx = canvas.getContext('2d');
+    let isDragging = false;
+    let dragStartX, dragStartY;
 
-var dragActive = false, dragStartX = 0, dragStartY = 0, overlayStartX = 0, overlayStartY = 0
-var imageDataUrl = null, imageFile = null, imageBlob = null
-
-var pinchActive = false
-var pinchStartDist = 0
-var pinchStartWidth = 80
-
-var fontClasses = ['font-lora','font-jakarta','font-playfair','font-oswald','font-bebas','font-merri']
-var fontMap = {
-  'font-lora':"'Lora',serif",'font-jakarta':"'Plus Jakarta Sans',sans-serif",
-  'font-playfair':"'Playfair Display',serif",'font-oswald':"'Oswald',sans-serif",
-  'font-bebas':"'Bebas Neue',sans-serif",'font-merri':"'Merriweather',serif"
-}
-
-var PLATFORM_LIMITS = { 'Instagram':2200,'Facebook':63206,'WhatsApp':65536,'X':280,'TikTok':2200,'Telegram':4096,'Messages':5000,'Other':5000 }
-
-function isMobileDevice(){return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)}
-function haptic(type){if(!navigator.vibrate)return;try{if(type==='light')navigator.vibrate(10);else if(type==='medium')navigator.vibrate(20);else if(type==='success')navigator.vibrate([15,40,15])}catch(e){}}
-
-// ═══ INIT ═══
-document.addEventListener('DOMContentLoaded', function(){
-  setupDrag()
-  setupKeyboardHandling()
-  setupOverflowClickOutside()
-  initEditor()
-})
-
-async function initEditor(){
-  var session = await supabaseClient.auth.getSession()
-  if(!session.data.session){window.location.href='login.html';return}
-  currentUser = session.data.session.user
-
-  try{
-    var profRes = await supabaseClient.from('profiles').select('default_platform,subscription_tier,total_shares').eq('id', currentUser.id).single()
-    if(profRes.data){
-      userProfileCache = profRes.data
-      if(profRes.data.default_platform) userDefaultPlatform = profRes.data.default_platform
+    // Helper to check for video URLs
+    function isVideoUrl(url) {
+      if (!url) return false;
+      const clean = url.split('?')[0].split('#')[0].toLowerCase().trim();
+      return clean.endsWith('.mp4') || clean.endsWith('.webm') || clean.endsWith('.mov') || clean.endsWith('.m4v');
     }
-  }catch(e){}
-  sessionStorage.setItem('gstw_default_platform', userDefaultPlatform)
- 
-  applyPlatformFormat(userDefaultPlatform);
 
-  var qt = document.getElementById('quoteText'), qr = document.getElementById('quoteRef')
-  var selectedText = sessionStorage.getItem('gstw_selected_quote_text')
-  var selectedSource = sessionStorage.getItem('gstw_selected_quote_source')
-  var selectedId = sessionStorage.getItem('gstw_selected_quote_id')
-  var quoteBgUrl = null, quoteContext = null, quoteHashtags = null
+    // ════════════════════════════════════════════
+    // INITIALIZATION
+    // ════════════════════════════════════════════
+    async function init() {
+      // 1. Authenticate
+      const { data: session } = await supabaseClient.auth.getSession();
+      if (session?.session) {
+        currentUser = session.session.user;
+        const profile = await supabaseClient.from('profiles').select('default_platform').eq('id', currentUser.id).single();
+        if (profile?.data?.default_platform) {
+          currentPlatform = profile.data.default_platform.toLowerCase();
+        }
+      }
 
-  if(selectedText && selectedId){
-    var qResult = await supabaseClient.from('quotes').select('background_url,context,hashtags').eq('id',selectedId).single()
-    if(qResult.data){
-      if(qResult.data.background_url) quoteBgUrl=qResult.data.background_url
-      if(qResult.data.context) quoteContext=qResult.data.context
-      if(qResult.data.hashtags) quoteHashtags=qResult.data.hashtags
+      // 2. Load Quote Data
+      const qText = sessionStorage.getItem('gstw_selected_quote_text') || sessionStorage.getItem('gstw_today_quote_text');
+      const qSource = sessionStorage.getItem('gstw_selected_quote_source') || sessionStorage.getItem('gstw_today_quote_source');
+      const qId = sessionStorage.getItem('gstw_selected_quote_id') || sessionStorage.getItem('gstw_quote_id');
+
+      if (qText) {
+        currentQuote.text = qText;
+        currentQuote.source = qSource || 'GSTW';
+        currentQuote.id = qId;
+      } else {
+        // Fetch active live quote from Supabase
+        const { data } = await supabaseClient.from('quotes').select('*').eq('status', 'live').limit(1).single();
+        if (data) {
+          currentQuote.text = data.text;
+          currentQuote.source = data.source || 'GSTW';
+          currentQuote.id = data.id;
+          if (data.background_url) setBackgroundSource(data.background_url);
+        }
+      }
+
+      // Check if background URL was passed in quote
+      const defaultHero = '/images/default-hero.jpg';
+      if (!isVideoBg && !bgImageEl.src) {
+        setBackgroundSource(defaultHero);
+      }
+
+      // Apply initial platform aspect ratio
+      setPlatformFormat(currentPlatform || 'instagram');
+      renderHashtags();
+      updateFullCaption();
+      setupDragEvents();
+      startRenderLoop();
     }
-    if(qt) qt.textContent = selectedText
-    if(qr) qr.textContent = '— '+(selectedSource||'GSTW').toUpperCase()
-    currentQuoteId=selectedId
-  }else{
-    var result = await supabaseClient.from('quotes').select('*').eq('status','live').order('published_at',{ascending:false}).limit(1)
-    if(result.data && result.data.length>0){
-      var q=result.data[0]
-      if(qt)qt.textContent=q.text
-      if(qr)qr.textContent='— '+(q.source||'GSTW').toUpperCase()
-      currentQuoteId=q.id
-      sessionStorage.setItem('gstw_quote_id',q.id)
-      if(q.background_url)quoteBgUrl=q.background_url
-      if(q.context)quoteContext=q.context
-      if(q.hashtags)quoteHashtags=q.hashtags
-    }else{if(qt)qt.textContent='The Word is with you today.';if(qr)qr.textContent='— GSTW'}
-  }
 
-  if(qt)qt.style.opacity='1'
-  if(qr)qr.style.opacity='1'
-  autoFitQuote()
+    // ════════════════════════════════════════════
+    // DYNAMIC ASPECT RATIOS
+    // ════════════════════════════════════════════
+    function setPlatformFormat(platformKey) {
+      currentPlatform = PLATFORM_CONFIG[platformKey] ? platformKey : 'instagram';
+      const config = PLATFORM_CONFIG[currentPlatform];
 
-  var msgEl=document.getElementById('postCaption')
-  if(msgEl && quoteContext){
-    msgEl.value=quoteContext
-    var hint=document.getElementById('captionHint')
-    if(hint){hint.classList.remove('hidden');hint.classList.add('flex')}
-  }
+      // Update Canvas Pixel Dimensions
+      canvas.width = config.w;
+      canvas.height = config.h;
 
-  if(quoteHashtags){
-    var list = []
-    if(Array.isArray(quoteHashtags)) list = quoteHashtags
-    else if(typeof quoteHashtags === 'string') list = quoteHashtags.split(/[,\s]+/)
-    list.forEach(function(t){
-      var tag = t.trim()
-      if(tag && tag.charAt(0) !== '#') tag = '#' + tag
-      if(tag && hashtags.indexOf(tag) === -1 && hashtags.length < MAX_TAGS) hashtags.push(tag)
-    })
-  }
+      // Force CSS Aspect Ratio
+      canvas.style.setProperty('aspect-ratio', config.ratio, 'important');
 
-  // Load default background if none saved
-  if(quoteBgUrl && !sessionStorage.getItem('gstw_edit_bgUrl')){
-    selectedBgValue = quoteBgUrl
-  }
+      // Update Top Label
+      document.getElementById('platformFormatLabel').textContent = `Optimized for ${config.name} (${config.ratio})`;
 
-  // Apply any customizations from sessionStorage (returning from customize page)
-  loadCustomizationState()
+      // Update Button Active States
+      document.querySelectorAll('.chip[id^="ratio-"]').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById('ratio-' + currentPlatform);
+      if (activeBtn) activeBtn.classList.add('active');
 
-  applyBackground('image', selectedBgValue)
-  setDarkness(currentDarkness)
-  applyTextStyle()
-
-  setTimeout(function(){var h=document.getElementById('dragHint');if(h)h.style.display='none'},4000)
-  renderHashtags();updateCaption();updateCharCounter()
-
-  // Show pinch hint on mobile once
-  if(isMobileDevice() && !localStorage.getItem('gstw_pinch_hint_shown')){
-    setTimeout(function(){
-      var ph=document.getElementById('pinchHint')
-      if(ph){ph.classList.remove('hidden');localStorage.setItem('gstw_pinch_hint_shown','1')}
-      setTimeout(function(){if(ph)ph.classList.add('hidden')},4500)
-    },5000)
-  }
-}
-
-// ═══ CUSTOMIZATION STATE (sessionStorage bridge) ═══
-function loadCustomizationState(){
-  var bg = sessionStorage.getItem('gstw_edit_bgUrl')
-  var dark = sessionStorage.getItem('gstw_edit_darkness')
-  var fc = sessionStorage.getItem('gstw_edit_fontClass')
-  var fs = sessionStorage.getItem('gstw_edit_fontSize')
-  var col = sessionStorage.getItem('gstw_edit_textColor')
-  var al = sessionStorage.getItem('gstw_edit_textAlign')
-  var ts = sessionStorage.getItem('gstw_edit_textShadow')
-  var tw = sessionStorage.getItem('gstw_edit_textWidth')
-  var tx = sessionStorage.getItem('gstw_edit_textX')
-  var ty = sessionStorage.getItem('gstw_edit_textY')
-  var upl = sessionStorage.getItem('gstw_edit_uploadedPhoto')
-
-  if(upl) selectedBgValue = upl
-  else if(bg) selectedBgValue = bg
-
-  if(dark) currentDarkness = parseInt(dark)
-  if(fc) currentFontClass = fc
-  if(col) currentTextColor = col
-  if(al) currentAlign = al
-  if(ts) textShadowEnabled = ts === 'true'
-  if(tw) currentTextWidth = parseFloat(tw)
-  if(tx) currentTextX = parseFloat(tx)
-  if(ty) currentTextY = parseFloat(ty)
-
-  var qt = document.getElementById('quoteText')
-  if(fs && qt) qt.style.fontSize = fs + 'px'
-}
-
-function saveCustomizationState(){
-  sessionStorage.setItem('gstw_edit_bgUrl', selectedBgValue)
-  sessionStorage.setItem('gstw_edit_darkness', currentDarkness)
-  sessionStorage.setItem('gstw_edit_fontClass', currentFontClass)
-  var qt = document.getElementById('quoteText')
-  if(qt) sessionStorage.setItem('gstw_edit_fontSize', parseInt(qt.style.fontSize)||18)
-  sessionStorage.setItem('gstw_edit_textColor', currentTextColor)
-  sessionStorage.setItem('gstw_edit_textAlign', currentAlign)
-  sessionStorage.setItem('gstw_edit_textShadow', textShadowEnabled)
-  sessionStorage.setItem('gstw_edit_textWidth', currentTextWidth)
-  sessionStorage.setItem('gstw_edit_textX', currentTextX)
-  sessionStorage.setItem('gstw_edit_textY', currentTextY)
-}
-
-function clearCustomizationState(){
-  ['gstw_edit_bgUrl','gstw_edit_darkness','gstw_edit_fontClass','gstw_edit_fontSize',
-   'gstw_edit_textColor','gstw_edit_textAlign','gstw_edit_textShadow',
-   'gstw_edit_textWidth','gstw_edit_textX','gstw_edit_textY','gstw_edit_uploadedPhoto'
-  ].forEach(function(k){sessionStorage.removeItem(k)})
-}
-
-function applyTextStyle(){
-  var qt=document.getElementById('quoteText'), qr=document.getElementById('quoteRef')
-  var overlay=document.getElementById('quoteOverlay')
-  if(qt){
-    fontClasses.forEach(function(f){qt.classList.remove(f);if(qr)qr.classList.remove(f)})
-    qt.classList.add(currentFontClass);if(qr)qr.classList.add(currentFontClass)
-    qt.style.fontFamily=fontMap[currentFontClass]
-    if(qr)qr.style.fontFamily=fontMap[currentFontClass]
-    qt.style.textTransform = currentFontClass==='font-oswald' ? 'uppercase':'none'
-    qt.style.color = currentTextColor
-    if(qr) qr.style.color = currentTextColor
-    qt.style.textAlign = currentAlign
-    if(qr) qr.style.textAlign = currentAlign
-    if(textShadowEnabled){
-      qt.classList.add('text-with-shadow')
-      if(qr) qr.classList.add('text-with-shadow')
-    }else{
-      qt.classList.remove('text-with-shadow')
-      if(qr) qr.classList.remove('text-with-shadow')
+      renderCanvas();
     }
-  }
-  if(overlay){
-    overlay.style.width = currentTextWidth + '%'
-    overlay.style.left = currentTextX + '%'
-    overlay.style.top = currentTextY + '%'
-  }
-}
 
-function autoFitQuote(){
-  var q=document.getElementById('quoteText');if(!q)return
-  var savedSize = sessionStorage.getItem('gstw_edit_fontSize')
-  if(savedSize){ q.style.fontSize = savedSize + 'px'; return }
-  var l=(q.textContent||'').length
-  var s=l>200?12:l>150?14:l>100?16:18
-  q.style.fontSize=s+'px'
-}
-
-// ═══ DRAG + PINCH ═══
-function setupDrag(){
-  var o=document.getElementById('quoteOverlay');if(!o)return
-  o.addEventListener('mousedown',onDragStart)
-  o.addEventListener('touchstart',onTouchStart,{passive:false})
-  document.addEventListener('mousemove',onDragMove)
-  document.addEventListener('touchmove',onTouchMove,{passive:false})
-  document.addEventListener('mouseup',onDragEnd)
-  document.addEventListener('touchend',onTouchEnd)
-}
-function onDragStart(e){
-  if(pinchActive) return
-  dragActive=true
-  var o=document.getElementById('quoteOverlay')
-  overlayStartX=o.offsetLeft;overlayStartY=o.offsetTop
-  o.style.left=overlayStartX+'px';o.style.top=overlayStartY+'px'
-  dragStartX=e.clientX;dragStartY=e.clientY
-  var h=document.getElementById('dragHint');if(h)h.style.display='none'
-  if(e.cancelable)e.preventDefault()
-}
-function onDragMove(e){
-  if(!dragActive || pinchActive) return
-  var o=document.getElementById('quoteOverlay'),c=document.getElementById('previewCanvas')
-  if(!o||!c)return
-  var cx=e.clientX,cy=e.clientY
-  var mX=c.offsetWidth-o.offsetWidth,mY=c.offsetHeight-o.offsetHeight
-  var nX=Math.max(0,Math.min(overlayStartX+(cx-dragStartX),mX))
-  var nY=Math.max(0,Math.min(overlayStartY+(cy-dragStartY),mY))
-  o.style.left=nX+'px';o.style.top=nY+'px'
-  // Update % positions
-  currentTextX = (nX / c.offsetWidth) * 100
-  currentTextY = (nY / c.offsetHeight) * 100
-  if(e.cancelable)e.preventDefault()
-}
-function onDragEnd(){dragActive=false;saveCustomizationState()}
-
-function onTouchStart(e){
-  if(e.touches.length === 2){
-    pinchActive = true; dragActive = false
-    pinchStartDist = touchDistance(e.touches)
-    pinchStartWidth = currentTextWidth
-    if(e.cancelable) e.preventDefault()
-  } else if(e.touches.length === 1){
-    onDragStart({clientX: e.touches[0].clientX, clientY: e.touches[0].clientY, cancelable: e.cancelable, preventDefault: function(){ e.preventDefault() }})
-  }
-}
-function onTouchMove(e){
-  if(pinchActive && e.touches.length === 2){
-    var newDist = touchDistance(e.touches)
-    var ratio = newDist / pinchStartDist
-    var newWidth = Math.max(30, Math.min(95, pinchStartWidth * ratio))
-    setTextWidth(newWidth)
-    if(e.cancelable) e.preventDefault()
-  } else if(dragActive && e.touches.length === 1){
-    onDragMove({clientX: e.touches[0].clientX, clientY: e.touches[0].clientY, cancelable: e.cancelable, preventDefault: function(){ e.preventDefault() }})
-  }
-}
-function onTouchEnd(e){
-  if(e.touches.length === 0){
-    pinchActive = false; dragActive = false
-    saveCustomizationState()
-  }
-}
-function touchDistance(touches){
-  var dx = touches[0].clientX - touches[1].clientX
-  var dy = touches[0].clientY - touches[1].clientY
-  return Math.sqrt(dx*dx + dy*dy)
-}
-function setTextWidth(pct){
-  currentTextWidth = pct
-  var overlay = document.getElementById('quoteOverlay')
-  if(overlay){
-    overlay.style.width = pct + '%'
-    // Keep centered when pinching from initial position
-    var canvas = document.getElementById('previewCanvas')
-    if(canvas && Math.abs(currentTextX - 10) < 0.5){
-      currentTextX = (100 - pct) / 2
-      overlay.style.left = currentTextX + '%'
+    // ════════════════════════════════════════════
+    // CANVAS RENDERING ENGINE (60 FPS Motion)
+    // ════════════════════════════════════════════
+    function startRenderLoop() {
+      function loop() {
+        if (isVideoBg && !bgVideoEl.paused) {
+          renderCanvas();
+        }
+        requestAnimationFrame(loop);
+      }
+      requestAnimationFrame(loop);
     }
-  }
-}
 
-// ═══ BACKGROUND ═══
-function applyBackground(t,v){
-  var b=document.getElementById('bgLayer');if(!b)return
-  if(t==='image' && v){
-    b.style.background='none'
-    b.style.backgroundImage="url('"+v+"')"
-    b.style.backgroundSize='cover';b.style.backgroundPosition='center'
-  }else{b.style.backgroundImage='none';b.style.background='#305678'}
-}
-function setDarkness(v){
-  currentDarkness = parseInt(v)
-  var d=document.getElementById('darkLayer')
-  if(d)d.style.background='rgba(0,0,0,'+(v/100)+')'
-}
+    function renderCanvas() {
+      const w = canvas.width;
+      const h = canvas.height;
 
-// ═══ CAMERA/GALLERY ═══
-function openCamera(){haptic('light');document.getElementById('selfieInput').click()}
-function openGallery(){
-  haptic('light')
-  var input = document.getElementById('galleryInput')
-  input.removeAttribute('capture')
-  input.click()
-}
-function compressImage(file){
-  return new Promise(function(resolve,reject){
-    var r=new FileReader();r.onload=function(e){
-      var img=new Image();img.onload=function(){
-        var M=1920,w=img.width,h=img.height
-        if(w>M||h>M){var s=Math.min(M/w,M/h);w=Math.round(w*s);h=Math.round(h*s)}
-        var c=document.createElement('canvas');c.width=w;c.height=h
-        var ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h)
-        try{resolve(c.toDataURL('image/jpeg',0.85))}catch(err){reject(err)}
-      };img.onerror=function(){reject(new Error('Load failed'))};img.src=e.target.result
-    };r.onerror=function(){reject(new Error('Read failed'))};r.readAsDataURL(file)
-  })
-}
-async function handleImageSelect(input){
-  var f=input.files[0];if(!f)return;showToast('Processing photo...')
-  try{
-    var d=await compressImage(f)
-    selectedBgValue=d
-    applyBackground('image',d)
-    sessionStorage.setItem('gstw_edit_uploadedPhoto', d)
-    saveCustomizationState()
-    showToast('Photo loaded');haptic('success')
-  }catch(e){console.error(e);showToast('Could not load photo')}
-  input.value=''
-}
+      // 1. Draw Background (Video / Image / Solid)
+      if (isVideoBg && bgVideoEl.readyState >= 2) {
+        const vRatio = bgVideoEl.videoWidth / bgVideoEl.videoHeight;
+        const cRatio = w / h;
+        let dw, dh, dx, dy;
+        if (vRatio > cRatio) {
+          dh = h; dw = h * vRatio;
+          dx = (w - dw) / 2; dy = 0;
+        } else {
+          dw = w; dh = w / vRatio;
+          dx = 0; dy = (h - dh) / 2;
+        }
+        ctx.drawImage(bgVideoEl, dx, dy, dw, dh);
+      } else if (bgImageEl.complete && bgImageEl.naturalWidth > 0) {
+        const imgRatio = bgImageEl.naturalWidth / bgImageEl.naturalHeight;
+        const cRatio = w / h;
+        let dw, dh, dx, dy;
+        if (imgRatio > cRatio) {
+          dh = h; dw = h * imgRatio;
+          dx = (w - dw) / 2; dy = 0;
+        } else {
+          dw = w; dh = w / imgRatio;
+          dx = 0; dy = (h - dh) / 2;
+        }
+        ctx.drawImage(bgImageEl, dx, dy, dw, dh);
+      } else {
+        ctx.fillStyle = bgSolidColor;
+        ctx.fillRect(0, 0, w, h);
+      }
 
-// ═══ CAPTION/HASHTAGS ═══
-function updateCaption(){
-  var m=document.getElementById('postCaption'),msg=m?m.value.trim():''
-  var hs=hashtags.join(' '),p=[]
-  if(msg)p.push(msg);if(hs)p.push(hs)
-  fullCaption=p.join('\n\n')||'#SpreadTheWord'
-  updateCharCounter()
-}
-function updateCharCounter(){
-  var c=document.getElementById('charCounter');if(!c)return
-  var m=document.getElementById('postCaption')
-  var captionOnly = m ? m.value.length : 0
-  var L=PLATFORM_LIMITS[userDefaultPlatform]||2200
-  c.textContent = captionOnly + ' / ' + L + ' · ' + userDefaultPlatform
-  c.classList.remove('char-warn','char-over')
-  if(captionOnly>L) c.classList.add('char-over')
-  else if(captionOnly>L*0.85) c.classList.add('char-warn')
-}
-function clearCaption(){
-  var m=document.getElementById('postCaption');if(m){m.value='';updateCaption()}
-  var h=document.getElementById('captionHint');if(h){h.classList.add('hidden');h.classList.remove('flex')}
-  showToast('Cleared')
-}
-function renderHashtags(){
-  var c = document.getElementById('hashtagsContainer');if(!c) return
-  var h = ''
-  hashtags.forEach(function(t){
-    var s = t.replace(/'/g,"\\'")
-    h += '<span class="hashtag-chip">' + t + ' <button onclick="removeHashtag(\'' + s + '\')" class="opacity-50 hover:opacity-100"><span class="material-symbols-outlined text-[12px]">close</span></button></span>'
-  })
-  if(hashtags.length < MAX_TAGS){
-    h += '<button onclick="toggleHashtagInput()" class="inline-flex items-center bg-surface-chigh text-on-surface-variant px-2.5 py-1 rounded-full font-body font-medium active:scale-95 transition-transform" style="font-size:11px;"><span class="material-symbols-outlined text-[13px] mr-0.5">add</span>Add</button>'
-  }
-  c.innerHTML = h
-  var pillLabel = document.getElementById('hashtagPillLabel')
-  if(pillLabel){ pillLabel.textContent = hashtags.length + ' hashtag' + (hashtags.length !== 1 ? 's' : '') }
-  updateCaption()
-}
-function toggleHashtagInput(){var el=document.getElementById('hashtagInput');el.classList.toggle('hidden');if(!el.classList.contains('hidden'))setTimeout(function(){document.getElementById('hashtagField').focus()},50)}
-function toggleHashtagPanel(){
-  var panel = document.getElementById('hashtagPanel')
-  var btn = document.getElementById('hashtagToggle')
-  if(!panel || !btn) return
-  var isOpen = panel.classList.contains('open')
-  if(isOpen){
-    panel.classList.remove('open'); btn.classList.remove('open')
-    var input = document.getElementById('hashtagInput')
-    if(input && !input.classList.contains('hidden')) input.classList.add('hidden')
-  } else {
-    panel.classList.add('open'); btn.classList.add('open')
-  }
-  haptic('light')
-}
-function addHashtagFromInput(){
-  var f=document.getElementById('hashtagField'),tag=f.value.trim();if(!tag)return
-  if(tag.charAt(0)!=='#')tag='#'+tag
-  if(hashtags.indexOf(tag)>-1){return}
-  if(hashtags.length>=MAX_TAGS){return}
-  hashtags.push(tag);f.value='';renderHashtags();haptic('light')
-}
-function removeHashtag(tag){hashtags=hashtags.filter(function(h){return h!==tag});renderHashtags();haptic('light')}
+      // 2. Draw Dim Overlay
+      if (currentOverlayDim > 0) {
+        ctx.fillStyle = `rgba(14, 14, 12, ${currentOverlayDim})`;
+        ctx.fillRect(0, 0, w, h);
+      }
 
-// ═══ KEYBOARD (iOS) ═══
-function setupKeyboardHandling(){
-  if(window.visualViewport)window.visualViewport.addEventListener('resize',function(){
-    var vh=window.visualViewport.height,wh=window.innerHeight
-    if(wh-vh>150)document.body.classList.add('kb-open')
-    else document.body.classList.remove('kb-open')
-  })
-}
-function onInputFocus(el){document.body.classList.add('kb-open');setTimeout(function(){if(el&&el.scrollIntoView)el.scrollIntoView({block:'center',behavior:'smooth'})},250)}
-function onInputBlur(el){document.body.classList.remove('kb-open');scrollToImage()}
-function scrollToImage(){setTimeout(function(){window.scrollTo({top:0,behavior:'smooth'})},150)}
+      // 3. Scale factor based on 1080 standard width
+      const scale = w / 1080;
+      const effectiveFontSize = currentFontSize * scale;
 
-// ═══ OVERFLOW MENU ═══
-function toggleOverflowMenu(e){if(e)e.stopPropagation();var m=document.getElementById('overflowMenu');if(m)m.classList.toggle('open')}
-function closeOverflowMenu(){var m=document.getElementById('overflowMenu');if(m)m.classList.remove('open')}
-function setupOverflowClickOutside(){document.addEventListener('click',function(e){var m=document.getElementById('overflowMenu');if(!m||!m.classList.contains('open'))return;if(!m.contains(e.target))closeOverflowMenu()})}
+      // 4. Configure Font
+      let fontFace = '"Lora", serif';
+      let fontWeight = '500';
+      if (currentFontStyle === 'sans') { fontFace = '"Plus Jakarta Sans", sans-serif'; fontWeight = '600'; }
+      else if (currentFontStyle === 'bold') { fontFace = '"Plus Jakarta Sans", sans-serif'; fontWeight = '800'; }
 
-// ═══ CUSTOMIZE ═══
-function openCustomize(){
-  haptic('medium')
-  saveCustomizationState()
-  window.location.href = 'customize.html'
-}
+      ctx.font = `${fontWeight} ${effectiveFontSize}px ${fontFace}`;
+      ctx.textAlign = currentTextAlign;
+      ctx.textBaseline = 'middle';
 
-// ═══ DRAFTS ═══
-function getDrafts(){try{return JSON.parse(localStorage.getItem('gstw_drafts')||'[]')}catch(e){return []}}
-function saveDrafts(d){try{localStorage.setItem('gstw_drafts',JSON.stringify(d))}catch(e){}}
-function saveDraft(){
-  var ds=getDrafts();if(ds.length>=MAX_DRAFTS){showToast('Max '+MAX_DRAFTS+' drafts');return}
-  var m=document.getElementById('postCaption'),qt=document.getElementById('quoteText')
-  var d={
-    id:Date.now(),savedAt:new Date().toISOString(),quoteId:currentQuoteId,
-    caption:m?m.value:'',hashtags:hashtags.slice(),
-    fontClass:currentFontClass,
-    fontSize:qt?qt.style.fontSize:'18px',
-    color:currentTextColor,align:currentAlign,darkness:currentDarkness,
-    shadow:textShadowEnabled,textWidth:currentTextWidth,
-    textX:currentTextX,textY:currentTextY,
-    bgUrl:selectedBgValue&&selectedBgValue.indexOf('data:')===0?null:selectedBgValue
-  }
-  ds.push(d);saveDrafts(ds);showToast('Saved ('+ds.length+'/'+MAX_DRAFTS+')');haptic('success')
-}
-function openDraftsSheet(){renderDraftsList();document.getElementById('draftsOverlay').classList.remove('hidden');requestAnimationFrame(function(){document.getElementById('draftsSheet').classList.add('open')})}
-function closeDraftsSheet(){document.getElementById('draftsSheet').classList.remove('open');setTimeout(function(){document.getElementById('draftsOverlay').classList.add('hidden')},300)}
-function renderDraftsList(){
-  var ds=getDrafts(),l=document.getElementById('draftsList'),c=document.getElementById('draftsCount')
-  if(c)c.textContent=ds.length+' / '+MAX_DRAFTS;if(!l)return
-  if(!ds.length){
-    l.innerHTML='<div class="text-center py-8"><span class="material-symbols-outlined text-outline text-[32px]">bookmark_border</span><p class="font-body text-on-surface-variant mt-2" style="font-size:13px;">No drafts</p></div>'
-    return
-  }
-  l.innerHTML=''
-  ds.slice().reverse().forEach(function(d){
-    var when=new Date(d.savedAt).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
-    var preview=(d.caption||'(no caption)').substring(0,80)
-    var el=document.createElement('div')
-    el.className='flex items-center gap-3 p-3 bg-surface-clow rounded-xl'
-    el.innerHTML='<div class="flex-1 min-w-0"><p class="font-body font-semibold text-on-surface truncate" style="font-size:13px;">'+preview+'</p><p class="font-body text-on-surface-variant mt-0.5" style="font-size:11px;">'+when+'</p></div><button onclick="loadDraft('+d.id+')" class="px-3 py-1.5 bg-primary text-on-primary rounded-lg font-body font-semibold" style="font-size:12px;">Load</button><button onclick="deleteDraft('+d.id+')" class="p-1.5 text-tertiary"><span class="material-symbols-outlined text-[18px]">delete</span></button>'
-    l.appendChild(el)
-  })
-}
-function loadDraft(id){
-  var ds=getDrafts(),d=ds.find(function(x){return x.id===id});if(!d)return
-  var m=document.getElementById('postCaption');if(m)m.value=d.caption||''
-  hashtags=d.hashtags||[]
-  currentTextColor=d.color||'#FFFFFF'
-  currentAlign=d.align||'center'
-  textShadowEnabled=d.shadow!==false
-  currentFontClass=d.fontClass||'font-lora'
-  currentDarkness=d.darkness||30
-  if(d.textWidth) currentTextWidth = d.textWidth
-  if(d.textX !== undefined) currentTextX = d.textX
-  if(d.textY !== undefined) currentTextY = d.textY
-  var qt=document.getElementById('quoteText')
-  if(qt && d.fontSize) qt.style.fontSize = d.fontSize
-  if(d.bgUrl){selectedBgValue=d.bgUrl;applyBackground('image',d.bgUrl)}
-  setDarkness(currentDarkness)
-  applyTextStyle()
-  saveCustomizationState()
-  renderHashtags();updateCaption();closeDraftsSheet()
-  showToast('Loaded');haptic('success')
-}
-function deleteDraft(id){saveDrafts(getDrafts().filter(function(x){return x.id!==id}));renderDraftsList();haptic('light')}
+      // 5. Wrap Text
+      const maxTextWidth = w * 0.82;
+      const lines = wrapText(currentQuote.text, maxTextWidth);
+      const lineHeight = effectiveFontSize * 1.35;
+      const blockHeight = lines.length * lineHeight;
 
-// ═══ CEREMONIAL SHARE FLOW ═══
-function openConfirmShare(){
-  updateCaption()
-  haptic('medium')
-  document.getElementById('confirmShareOverlay').classList.remove('hidden')
-  requestAnimationFrame(function(){document.getElementById('confirmShareSheet').classList.add('open')})
-  var seed=document.getElementById('seedIcon')
-  if(seed){seed.classList.remove('seed-icon-animate');void seed.offsetWidth;seed.classList.add('seed-icon-animate')}
-}
-  
-function closeConfirmShare(){
-  document.getElementById('confirmShareSheet').classList.remove('open')
-  setTimeout(function(){document.getElementById('confirmShareOverlay').classList.add('hidden')},300)
-}
+      // 6. Calculate Position from normalized coordinates
+      const targetX = textNormX * w;
+      const targetY = textNormY * h;
+      const startY = targetY - (blockHeight / 2) + (lineHeight / 2);
 
-async function confirmedShare(){
-  var goBtn=document.getElementById('confirmShareGoBtn')
-  goBtn.innerHTML='<span class="material-symbols-outlined text-[18px] spin">progress_activity</span> Preparing...'
-  goBtn.style.pointerEvents='none'
-  haptic('medium')
+      // 7. Drop Shadow
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+      ctx.shadowBlur = 16 * scale;
+      ctx.shadowOffsetY = 4 * scale;
+      ctx.fillStyle = '#ffffff';
 
-  // 1. COPY CLIPBOARD IMMEDIATELY (Fixes the browser security block)
-  if(fullCaption && navigator.clipboard){
-    try{ await navigator.clipboard.writeText(fullCaption); } catch(e){}
-  }
+      // Draw Quote Lines
+      lines.forEach((line, idx) => {
+        let lx = targetX;
+        if (currentTextAlign === 'left') lx = targetX - (maxTextWidth / 2);
+        else if (currentTextAlign === 'right') lx = targetX + (maxTextWidth / 2);
+        ctx.fillText(line, lx, startY + (idx * lineHeight));
+      });
 
-  // 2. Generate Image
-  var result = await generateImage();
-  if(!result.success){
-    goBtn.innerHTML='Share now'; goBtn.style.pointerEvents='';
-    showToast(result.error||'Error generating image'); return;
-  }
+      // Draw Source Reference
+      ctx.font = `bold ${Math.max(22 * scale, 18)}px "Plus Jakarta Sans", sans-serif`;
+      ctx.fillStyle = '#b0d5fe';
+      ctx.shadowBlur = 10 * scale;
+      const refY = startY + (lines.length * lineHeight) + (28 * scale);
+      ctx.fillText(`— ${(currentQuote.source || 'GSTW').toUpperCase()}`, targetX, refY);
 
-  goBtn.innerHTML='Share now'; goBtn.style.pointerEvents='';
+      // Watermark (Bottom Right)
+      ctx.shadowBlur = 6 * scale;
+      ctx.font = `600 ${Math.max(22 * scale, 16)}px "Plus Jakarta Sans", sans-serif`;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'bottom';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+      ctx.fillText('gospreadtheword.app', w - (36 * scale), h - (36 * scale));
 
-  // 3. Mobile Native Share
-  if(isMobileDevice()){
-    if(imageFile && navigator.canShare && navigator.canShare({files:[imageFile]})){
-      try{
-        await navigator.share({files:[imageFile],title:'Go Spread The Word',text:fullCaption})
-        await logShare(currentSharePlatform)
-        closeConfirmShare()
-        setTimeout(function(){showSuccess('shared via your device')}, 300)
-        return  
-      }catch(e){if(e.name==='AbortError'){showToast('Share cancelled');return}}
+      // Reset Shadows
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
     }
-    if(navigator.share){
-      try{
-        await navigator.share({title:'Go Spread The Word',text:fullCaption})
-        await logShare(currentSharePlatform)
-        closeConfirmShare()
-        setTimeout(function(){showSuccess('shared via your device')}, 300)
-        return
-      }catch(e){if(e.name==='AbortError'){showToast('Share cancelled');return}}
+
+    function wrapText(text, maxWidth) {
+      const words = (text || '').split(' ');
+      const lines = [];
+      let currentLine = '';
+      for (let i = 0; i < words.length; i++) {
+        const testLine = currentLine + words[i] + ' ';
+        if (ctx.measureText(testLine).width > maxWidth && i > 0) {
+          lines.push(currentLine.trim());
+          currentLine = words[i] + ' ';
+        } else {
+          currentLine = testLine;
+        }
+      }
+      lines.push(currentLine.trim());
+      return lines;
     }
-  }
-  
-  // 4. Desktop Path (Opens picker)
-  downloadImage()
-  await logShare(currentSharePlatform) 
-  closeConfirmShare()
-  setTimeout(function(){ openDesktopPicker() }, 300)
-}
 
-// ═══ DESKTOP PLATFORM PICKER ═══
-function openDesktopPicker(){
-  var modal = document.getElementById('desktopPickerModal')
-  if(modal) modal.classList.remove('hidden')
-  document.body.style.overflow = 'hidden'
-}
-function closeDesktopPicker(){
-  var modal = document.getElementById('desktopPickerModal')
-  if(modal) modal.classList.add('hidden')
-  document.body.style.overflow = ''
-}
-function closeDesktopPickerAndSucceed(){
-  closeDesktopPicker()
-  setTimeout(function(){ showSuccess('downloaded to your device') }, 200)
-}
+    // ════════════════════════════════════════════
+    // DRAG / TOUCH MOVEMENT (Normalized Coordinates)
+    // ════════════════════════════════════════════
+    function setupDragEvents() {
+      const getPos = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+          x: (clientX - rect.left) / rect.width,
+          y: (clientY - rect.top) / rect.height
+        };
+      };
 
-// ═══ REPLACE YOUR EXISTING openPlatform() ═══
-// ═══ REPLACE openPlatform() WITH THIS ═══
-async function openPlatform(platform){
-  // 1. COPY IMMEDIATELY! (Fixes desktop clipboard block)
-  if(fullCaption && navigator.clipboard){
-    try { await navigator.clipboard.writeText(fullCaption); } catch(e) {}
-  }
+      const start = (e) => {
+        isDragging = true;
+        const pos = getPos(e);
+        dragStartX = pos.x - textNormX;
+        dragStartY = pos.y - textNormY;
+      };
 
-  // 2. Change format and UI
-  applyPlatformFormat(platform);
-  showToast('Formatting for ' + platform + '...');
-  
-  // 3. Generate new image for this specific platform
-  var result = await generateImage();
-  if(!result.success){ showToast('Failed to format image'); return; }
+      const move = (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const pos = getPos(e);
+        textNormX = Math.max(0.15, Math.min(0.85, pos.x - dragStartX));
+        textNormY = Math.max(0.15, Math.min(0.85, pos.y - dragStartY));
+        renderCanvas();
+      };
 
-  // 4. Log the new share
-  logShare(platform);
-  
-  var appUrl = 'https://gospreadtheword.app'
+      const end = () => { isDragging = false; };
 
-  // Facebook special handling
-  if(platform === 'facebook'){
-    downloadImage();
-    closeDesktopPicker();
-    setTimeout(function(){ 
-      var m = document.getElementById('fbInstructModal'); 
-      if(m) m.classList.remove('hidden'); 
-    }, 200);
-    return;
-  }
+      canvas.addEventListener('mousedown', start);
+      window.addEventListener('mousemove', move);
+      window.addEventListener('mouseup', end);
 
-  // Other platforms
-  downloadImage();
-  var urls = {
-    twitter:  'https://twitter.com/intent/tweet?text=' + encodeURIComponent(fullCaption),
-    whatsapp: 'https://api.whatsapp.com/send?text=' + encodeURIComponent(fullCaption + '\n\n' + appUrl),
-    telegram: 'https://t.me/share/url?url=' + encodeURIComponent(appUrl) + '&text=' + encodeURIComponent(fullCaption),
-    threads:  'https://www.threads.net/intent/post?text=' + encodeURIComponent(fullCaption),
-    linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(appUrl),
-    email:    'mailto:?subject=' + encodeURIComponent('A word to spread') + '&body=' + encodeURIComponent(fullCaption + '\n\n' + appUrl)
-  }
+      canvas.addEventListener('touchstart', start, { passive: false });
+      window.addEventListener('touchmove', move, { passive: false });
+      window.addEventListener('touchend', end);
+    }
 
-  var url = urls[platform];
-  if(url){
-    window.open(url, '_blank', 'noopener,noreferrer');
-    closeDesktopPicker();
-    // SHOW SUCCESS MODAL!
-    setTimeout(function(){ showSuccess('shared to ' + platform.charAt(0).toUpperCase() + platform.slice(1)); }, 500);
-  }
-}
-async function copyLinkOnly(){
-  if(navigator.clipboard){
-    try{ await navigator.clipboard.writeText(fullCaption); showToast('Caption copied again'); haptic('success') }
-    catch(e){ showToast('Could not copy') }
-  }
-}
+    function resetTextPosition() {
+      textNormX = 0.5;
+      textNormY = 0.5;
+      renderCanvas();
+    }
 
-function openFacebookAndClose(){
-  window.open('https://www.facebook.com/', '_blank', 'noopener,noreferrer')
-  closeFbInstructions()
-  
-  // Show success modal!
-  setTimeout(function(){ showSuccess('shared to Facebook'); }, 500);
-}
+    // ════════════════════════════════════════════
+    // BACKGROUND & MEDIA HANDLING
+    // ════════════════════════════════════════════
+    function setBackgroundSource(url) {
+      if (!url) return;
+      if (isVideoUrl(url)) {
+        isVideoBg = true;
+        bgVideoEl.src = url;
+        bgVideoEl.play().catch(() => {});
+      } else {
+        isVideoBg = false;
+        bgVideoEl.pause();
+        bgImageEl.src = url;
+        bgImageEl.onload = () => renderCanvas();
+      }
+      renderCanvas();
+    }
 
-function closeFbInstructions(){
-  var m = document.getElementById('fbInstructModal')
-  if(m) m.classList.add('hidden')
-}
+    function setBackgroundSolid(hex) {
+      isVideoBg = false;
+      bgVideoEl.pause();
+      bgImageEl.src = '';
+      bgSolidColor = hex;
+      renderCanvas();
+    }
 
-function recopyCaption(){
-  if(fullCaption && navigator.clipboard){
-    navigator.clipboard.writeText(fullCaption)
-      .then(function(){
-        showToast('✓ Caption copied again!')
-        haptic('success')
-      })
-      .catch(function(){
-        showToast('Could not copy - check browser permissions')
-      })
-  } else {
-    showToast('Caption not available')
-  }
-}
+    function applyCustomBgUrl() {
+      const url = document.getElementById('customBgUrlInput').value.trim();
+      if (url) {
+        setBackgroundSource(url);
+        document.getElementById('customBgUrlInput').value = '';
+      }
+    }
 
-// ═══ RESHARE FROM SUCCESS ═══
-async function reshareFromSuccess(){
-  haptic('medium')
-  closeSuccess()
-  // Simply open the picker so they choose a specific target
-  setTimeout(function(){ openDesktopPicker() }, 200)
-}
+    // ════════════════════════════════════════════
+    // TYPOGRAPHY & STYLE CONTROLS
+    // ════════════════════════════════════════════
+    function setFontStyle(style) {
+      currentFontStyle = style;
+      document.querySelectorAll('#tabContent-style .chip[id^="font-"]').forEach(c => c.classList.remove('active'));
+      document.getElementById('font-' + style)?.classList.add('active');
+      renderCanvas();
+    }
 
-// ═══ GENERATE IMAGE ═══
-function generateImage(){
-  return new Promise(function(resolve){
-    try{
-      var config = PLATFORM_CONFIG[currentSharePlatform] || PLATFORM_CONFIG['default'];
-      var targetW = config.w;
-      var targetH = config.h;
-      var scale = targetW / 1080; // Scale text relative to width
+    function handleFontSize(val) {
+      currentFontSize = parseInt(val);
+      document.getElementById('fontSizeDisplay').textContent = val + 'px';
+      renderCanvas();
+    }
 
-      var canvas=document.createElement('canvas');
-      canvas.width=targetW; canvas.height=targetH;
-      var ctx=canvas.getContext('2d')
-      if(!ctx){resolve({success:false,error:'Canvas not supported'});return}
+    function setTextAlign(align) {
+      currentTextAlign = align;
+      document.querySelectorAll('#tabContent-style .chip[id^="align-"]').forEach(c => c.classList.remove('active'));
+      document.getElementById('align-' + align)?.classList.add('active');
+      renderCanvas();
+    }
+
+    function handleOverlayDim(val) {
+      currentOverlayDim = parseInt(val) / 100;
+      document.getElementById('overlayDimDisplay').textContent = val + '%';
+      renderCanvas();
+    }
+
+    function switchTab(tab) {
+      ['style', 'background', 'caption'].forEach(t => {
+        document.getElementById(`tabContent-${t}`).classList.toggle('hidden', t !== tab);
+        document.getElementById(`tabBtn-${t}`).classList.toggle('active', t === tab);
+      });
+    }
+
+    // ════════════════════════════════════════════
+    // HASHTAGS & CAPTION
+    // ════════════════════════════════════════════
+    function renderHashtags() {
+      const container = document.getElementById('hashtagChips');
+      container.innerHTML = currentHashtags.map((tag, idx) => `
+        <span class="chip active py-1 text-xs">
+          ${tag}
+          <span onclick="removeTag(${idx})" class="material-symbols-outlined text-[13px] hover:text-red-300 ml-0.5">close</span>
+        </span>
+      `).join('');
+      updateFullCaption();
+    }
+
+    function addCustomTag() {
+      const input = document.getElementById('newTagInput');
+      let tag = input.value.trim();
+      if (tag) {
+        if (!tag.startsWith('#')) tag = '#' + tag;
+        if (!currentHashtags.includes(tag)) {
+          currentHashtags.push(tag);
+          renderHashtags();
+        }
+        input.value = '';
+      }
+    }
+
+    function removeTag(idx) {
+      currentHashtags.splice(idx, 1);
+      renderHashtags();
+    }
+
+    function updateFullCaption() {
+      const note = document.getElementById('personalNote').value.trim();
+      const tags = currentHashtags.join(' ');
+      const text = `"${currentQuote.text}" — ${currentQuote.source}\n\n${note ? note + '\n\n' : ''}${tags}\n\ngospreadtheword.app`;
+      document.getElementById('fullCaptionPreview').textContent = text;
+      return text;
+    }
+
+    // ════════════════════════════════════════════
+    // SHARING ENGINE (Direct Clipboard + Analytics)
+    // ════════════════════════════════════════════
+    function openPlatformPicker() {
+      document.getElementById('platformModal').classList.add('open');
+    }
+    function closePlatformPicker() {
+      document.getElementById('platformModal').classList.remove('open');
+    }
+
+    async function executeShare(platform) {
+      const fullCaption = updateFullCaption();
+      closePlatformPicker();
+
+      // 1. Instant Clipboard Security Write (Guaranteed synchronous pass)
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try { await navigator.clipboard.writeText(fullCaption); } catch(e) {}
+      }
+
+      // 2. Adjust format for selected platform
+      if (platform !== 'download') {
+        setPlatformFormat(platform);
+      }
+
+      // 3. Export image
+      const dataUrl = canvas.toDataURL('image/png');
+
+      // 4. Record share analytics in Supabase
+      if (currentUser && currentQuote.id) {
+        try {
+          await supabaseClient.from('shares').insert({
+            user_id: currentUser.id,
+            quote_id: currentQuote.id,
+            platform: platform,
+            created_at: new Date().toISOString()
+          });
+        } catch(err) { console.warn('Share log error:', err); }
+      }
+
+      // 5. Open destination or download
+      if (platform === 'download') {
+        const link = document.createElement('a');
+        link.download = `GSTW-Quote-${Date.now()}.png`;
+        link.href = dataUrl;
+        link.click();
+      } else if (platform === 'instagram') {
+        window.open('https://instagram.com', '_blank');
+      } else if (platform === 'facebook') {
+        window.open('https://facebook.com', '_blank');
+      } else if (platform === 'tiktok') {
+        window.open('https://tiktok.com', '_blank');
+      } else if (platform === 'whatsapp') {
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(fullCaption)}`, '_blank');
+      } else if (platform === 'twitter') {
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(fullCaption)}`, '_blank');
+      }
+
+      // 6. Show celebratory Success Modal
+      setTimeout(() => {
+        showSuccessModal(platform);
+      }, 400);
+    }
+
+    function showSuccessModal(platform) {
+      document.getElementById('successSubtitle').textContent = `Shared to ${PLATFORM_CONFIG[platform]?.name || 'Social Media'}!`;
+      document.getElementById('successModal').classList.add('open');
+    }
+    function closeSuccessModal() {
+      document.getElementById('successModal').classList.remove('open');
+    }
+    function reshareFromSuccess() {
+      closeSuccessModal();
+      setTimeout(openPlatformPicker, 200);
+    }
+
+    // ════════════════════════════════════════════
+    // MEDIA LIBRARY PICKER MODAL
+    // ════════════════════════════════════════════
+    function openMediaLibrary() {
+      document.getElementById('mediaModal').classList.add('open');
+      loadMediaPicker('all');
+    }
+    function closeMediaLibrary() {
+      document.getElementById('mediaModal').classList.remove('open');
+    }
+
+    async function loadMediaPicker(folder) {
+      const grid = document.getElementById('mediaPickerGrid');
+      grid.innerHTML = '<div class="col-span-full py-8 text-center text-xs text-outline">Loading media...</div>';
       
-      ctx.fillStyle='#0e0e0c';ctx.fillRect(0,0,targetW,targetH)
-      var qt=document.getElementById('quoteText'),qr=document.getElementById('quoteRef')
-      var xPct=currentTextX,yPct=currentTextY,wPct=currentTextWidth
-      var textColor=currentTextColor||'#FFFFFF'
-      var fontSize=parseInt(qt?(qt.style.fontSize||'18'):'18')
-      var fontFam=qt?(qt.style.fontFamily||"'Lora',serif"):"'Lora',serif"
-      var txtTrnsfm=qt?(qt.style.textTransform||'none'):'none'
-      var aln=currentAlign||'center'
-      var dVal=currentDarkness
+      document.querySelectorAll('.chip[id^="mf-"]').forEach(c => c.classList.remove('active'));
+      document.getElementById('mf-' + folder)?.classList.add('active');
 
-      function wrap(ctx,text,maxW){
-        if(txtTrnsfm==='uppercase')text=text.toUpperCase()
-        var wds=text.split(' '),ln='',lines=[]
-        for(var n=0;n<wds.length;n++){
-          var tl=ln+wds[n]+' '
-          if(ctx.measureText(tl).width>maxW&&n>0){lines.push(ln.trim());ln=wds[n]+' '}
-          else{ln=tl}
+      try {
+        let query = supabaseClient.from('media').select('*').eq('is_active', true).order('created_at', { ascending: false });
+        if (folder !== 'all') query = query.eq('type', folder);
+        const { data, error } = await query;
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          grid.innerHTML = `<div class="col-span-full py-8 text-center text-xs text-outline">No media found in ${folder}.</div>`;
+          return;
         }
-        lines.push(ln.trim());return lines
-      }
 
-      function drawContent(){
-        try{
-          ctx.fillStyle='rgba(0,0,0,'+(dVal/100)+')';ctx.fillRect(0,0,targetW,targetH)
-          var tX=Math.round((xPct/100)*targetW),tY=Math.round((yPct/100)*targetH)
-          var tW=Math.round((wPct/100)*targetW),pad=16 * scale
-          var cX=tX+pad,cY=tY+pad,cW=tW-(pad*2)
-          ctx.textAlign=aln==='center'?'center':aln==='right'?'right':'left'
-          ctx.textBaseline='top'
-          
-          var sS=Math.round(fontSize*3.2*scale)
-          ctx.font='600 '+sS+'px '+fontFam
-          var qTxt=qt?qt.textContent:''
-          var lines=wrap(ctx,qTxt,cW)
-          var lH=sS*1.45,startY=cY+20
-          var tXA=aln==='center'?cX+cW/2:aln==='right'?cX+cW:cX
-          if(textShadowEnabled){
-            ctx.shadowColor='rgba(0,0,0,0.8)';ctx.shadowBlur=12*scale;ctx.shadowOffsetY=2*scale
-          }
-          for(var i=0;i<lines.length;i++){
-            var ly=startY+i*lH
-            ctx.fillStyle=textColor
-            ctx.fillText(lines[i],tXA,ly)
-          }
-          var endY=startY+lines.length*lH
-          var refSz=Math.round(fontSize*1.5*scale)
-          ctx.font='bold '+refSz+'px "Plus Jakarta Sans",sans-serif'
-          var refX=aln==='center'?tX+tW/2:aln==='right'?tX+tW-pad:cX
-          ctx.fillStyle=textColor;ctx.globalAlpha=0.9
-          ctx.fillText(qr?qr.textContent:'',refX,endY+(24*scale))
-          ctx.globalAlpha=1
-          ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0
+        grid.innerHTML = data.map(item => {
+          const url = item.url;
+          const isVid = isVideoUrl(url) || item.type === 'video';
+          const preview = isVid
+            ? `<div class="relative w-full h-full bg-black"><video src="${url}#t=0.1" class="w-full h-full object-cover" muted preload="metadata"></video><span class="material-symbols-outlined text-[14px] text-white absolute top-1 right-1 bg-black/60 rounded p-0.5">videocam</span></div>`
+            : `<img src="${url}" class="w-full h-full object-cover">`;
 
-          ctx.font='600 '+Math.round(26*scale)+'px "Plus Jakarta Sans", sans-serif'
-          ctx.textAlign='right';ctx.textBaseline='bottom'
-          ctx.shadowColor='rgba(0,0,0,0.6)';ctx.shadowBlur=8*scale;ctx.shadowOffsetY=2*scale
-          ctx.fillStyle='rgba(255,255,255,0.8)'
-          ctx.fillText('gospreadtheword.app',targetW-(48*scale),targetH-(48*scale))
-          ctx.shadowColor='transparent';ctx.shadowBlur=0
-
-          try{imageDataUrl=canvas.toDataURL('image/png')}
-          catch(te){resolve({success:false,error:'Canvas blocked by CORS. Try a different background.'});return}
-          try{
-            var bs=atob(imageDataUrl.split(',')[1])
-            var ab=new ArrayBuffer(bs.length),ia=new Uint8Array(ab)
-            for(var j=0;j<bs.length;j++)ia[j]=bs.charCodeAt(j)
-            imageBlob=new Blob([ab],{type:'image/png'})
-            imageFile=new File([imageBlob],'GSTW-'+Date.now()+'.png',{type:'image/png'})
-            resolve({success:true})
-          }catch(ce){resolve({success:false,error:'Could not prepare image'})}
-        }catch(de){console.error(de);resolve({success:false,error:'Drawing error'})}
-      }
-
-      if(selectedBgValue){
-        var im=new Image();im.crossOrigin='anonymous'
-        im.onload=function(){
-          var sc=Math.max(targetW/im.width,targetH/im.height)
-          var sw=im.width*sc,sh=im.height*sc
-          ctx.drawImage(im,(targetW-sw)/2,(targetH-sh)/2,sw,sh);drawContent()
-        }
-        im.onerror=function(){ctx.fillStyle='#305678';ctx.fillRect(0,0,targetW,targetH);drawContent()}
-        im.src=selectedBgValue
-      }else{ctx.fillStyle='#305678';ctx.fillRect(0,0,targetW,targetH);drawContent()}
-    }catch(e){console.error(e);resolve({success:false,error:'Unexpected error'})}
-  })
-}
-
-// ═══ HELPERS ═══
-function downloadImage(){
-  if(!imageDataUrl && !imageBlob){
-    showToast('Image not ready - please try sharing again')
-    return false
-  }
-  
-  try{
-    if(imageBlob){
-      var blobUrl = URL.createObjectURL(imageBlob)
-      var a = document.createElement('a')
-      a.download = 'GSTW-' + Date.now() + '.png'
-      a.href = blobUrl
-      a.style.display = 'none'
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      setTimeout(function(){ URL.revokeObjectURL(blobUrl) }, 1000)
-      return true
-    } else if(imageDataUrl){
-      var a2 = document.createElement('a')
-      a2.download = 'GSTW-' + Date.now() + '.png'
-      a2.href = imageDataUrl
-      a2.style.display = 'none'
-      document.body.appendChild(a2)
-      a2.click()
-      document.body.removeChild(a2)
-      return true
-    }
-  } catch(e){
-    console.error('Download failed:', e)
-    showToast('Download failed - please try again')
-    return false
-  }
-  return false
-}
-
-async function logShare(pl){if(!currentUser||!currentQuoteId)return;try{await supabaseClient.from('shares').insert({user_id:currentUser.id,quote_id:currentQuoteId,platform:pl})}catch(e){console.error(e)}}
-
-function showToast(msg){
-  var ex=document.getElementById('editorToast');if(ex)ex.remove()
-  var t=document.createElement('div');t.id='editorToast'
-  t.className='fixed top-20 left-1/2 z-[200] bg-inverse-surface/90 backdrop-blur-md text-inverse-on-surface font-body font-semibold px-5 py-2.5 rounded-full whitespace-nowrap flex items-center gap-2 shadow-float'
-  t.style.transform='translateX(-50%)';t.style.fontSize='13px'
-  t.innerHTML='<span class="material-symbols-outlined text-primary-container text-[14px] filled">check_circle</span> '+msg
-  document.body.appendChild(t)
-  setTimeout(function(){if(t.parentNode)t.remove()},2200)
-}
-
-// ═══ SUCCESS MODAL ═══
-function showSuccess(method){
-  var m = document.getElementById('successModal');
-  if(!m) return;
-
-  var de = document.getElementById('successDesc');
-  if(de && method) de.textContent = 'Successfully ' + method + '. Every share plants a seed.';
-  
-  var lg = m.querySelector('.success-logo-animate');
-  if(lg){
-    lg.classList.remove('success-logo-animate');
-    void lg.offsetWidth;
-    lg.classList.add('success-logo-animate');
-  }
-  
-  m.classList.remove('hidden');
-  haptic('success');
-  setTimeout(burstConfetti, 100);
-}
-  
-function burstConfetti(){
-  var container = document.getElementById('confettiContainer');if(!container) return
-  container.innerHTML = ''
-  var colors = ['#3d6285','#6b9bc3','#b0d5fe','#F0C55A','#D4AF37','#ffffff']
-  var pieces = 24
-  for(var i=0;i<pieces;i++){
-    var p = document.createElement('div')
-    p.className = 'confetti-piece'
-    var angle = (Math.PI * 2 * i / pieces) + (Math.random() - 0.5) * 0.5
-    var distance = 100 + Math.random() * 80
-    var tx = Math.cos(angle) * distance
-    var ty = Math.sin(angle) * distance - 40
-    var tr = (Math.random() - 0.5) * 720
-    p.style.background = colors[Math.floor(Math.random() * colors.length)]
-    p.style.setProperty('--tx', tx + 'px')
-    p.style.setProperty('--ty', ty + 'px')
-    p.style.setProperty('--tr', tr + 'deg')
-    container.appendChild(p)
-    setTimeout((function(el){return function(){el.classList.add('go')}})(p), 20 + i * 8)
-  }
-  setTimeout(function(){ if(container) container.innerHTML = '' }, 1500)
-}
-
-function closeSuccess(){
-  var m=document.getElementById('successModal');
-  if(m) m.classList.add('hidden');
-}
-
-async function saveImageAndClose(){
-  haptic('light')
-  if(isMobileDevice()){
-    if(imageFile && navigator.canShare && navigator.canShare({files:[imageFile]})){
-      try{
-        await navigator.share({ files:[imageFile], title:'GSTW image' })
-        showToast('Done')
-        return
-      }catch(e){
-        if(e.name === 'AbortError') return
+          return `
+            <div onclick="selectMediaBg('${url}')" class="aspect-square bg-slate-100 rounded-xl overflow-hidden border border-surface-c hover:border-primary cursor-pointer relative group transition-transform active:scale-95">
+              ${preview}
+              <div class="absolute inset-x-0 bottom-0 bg-black/60 text-white text-[9px] px-1.5 py-0.5 truncate opacity-0 group-hover:opacity-100">${item.label || item.name || 'Media'}</div>
+            </div>
+          `;
+        }).join('');
+      } catch(e) {
+        grid.innerHTML = `<div class="col-span-full py-8 text-center text-xs text-rose-500">Failed to load media.</div>`;
       }
     }
-    showSaveImageFallback()
-    return
-  }
-  var ok = downloadImage()
-  if(ok) showToast('Image saved to device')
-}
 
-function showSaveImageFallback(){
-  if(!imageDataUrl){ showToast('Please try sharing again'); return }
-  var w = window.open()
-  if(!w){ showToast('Popup blocked — allow popups to save'); return }
-  w.document.write(
-    '<html><head><title>Save Image</title>' +
-    '<style>body{margin:0;background:#0e0e0c;font-family:sans-serif;color:#fff;text-align:center;padding:20px}' +
-    'img{max-width:100%;height:auto;border-radius:12px;margin-top:12px}' +
-    'p{font-size:14px;line-height:1.5;padding:12px 20px;background:rgba(255,255,255,0.1);border-radius:12px;margin:0 0 16px 0}' +
-    '</style></head><body>' +
-    '<p><b>Long-press the image</b> and choose <b>Save to Photos</b></p>' +
-    '<img src="' + imageDataUrl + '" alt="GSTW">' +
-    '</body></html>'
-  )
-}
+    function selectMediaBg(url) {
+      setBackgroundSource(url);
+      closeMediaLibrary();
+    }
 
-function goToImpact(){ window.location.href='impact.html' }
-
-// ═══ RESET ═══
-function confirmReset(){
-  document.getElementById('resetOverlay').classList.remove('hidden');
-  requestAnimationFrame(function(){ document.getElementById('resetSheet').classList.add('open') })
-}
-
-function closeResetSheet(){
-  document.getElementById('resetSheet').classList.remove('open');
-  setTimeout(function(){ document.getElementById('resetOverlay').classList.add('hidden') }, 300)
-}
-
-function doReset(){
-  clearCustomizationState()
-  closeResetSheet()
-  setTimeout(function(){ location.reload() }, 300)
-}
-
-function goHome(){ window.location.href='index.html' }
-</script>
+    // Start on page load
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
 </body>
 </html>
