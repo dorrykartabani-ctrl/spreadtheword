@@ -465,7 +465,7 @@ function copyUrl(url) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// UPLOAD FLOW
+// UPLOAD FLOW (With Real-Time Diagnostics)
 // ═══════════════════════════════════════════════════════════
 function openUploadModal(defaultCategory) {
   selectedFile = null;
@@ -473,6 +473,7 @@ function openUploadModal(defaultCategory) {
   $('uploadLabel').value = '';
   $('uploadExternalUrl').value = '';
   $('fileNamePreview').classList.add('hidden');
+  hideUploadError();
   
   let targetCat = defaultCategory || (activeCategory !== 'all' ? activeCategory : 'background');
   $('uploadType').value = targetCat;
@@ -483,15 +484,32 @@ function openUploadModal(defaultCategory) {
 function closeUploadModal() {
   $('uploadModal').classList.remove('open');
   selectedFile = null;
+  hideUploadError();
 }
 
-$('uploadDropzone').addEventListener('click', (e) => { e.preventDefault();
-$('uploadFile').click();});
-$('uploadDropzone').addEventListener('dragover', e => { e.preventDefault(); e.currentTarget.classList.add('dragging'); });
-$('uploadDropzone').addEventListener('dragleave', e => e.currentTarget.classList.remove('dragging'));
-$('uploadDropzone').addEventListener('drop', e => {
+function showUploadError(msg) {
+  const errBox = $('uploadErrorBanner');
+  if (errBox) {
+    errBox.textContent = msg;
+    errBox.classList.remove('hidden');
+  }
+}
+
+function hideUploadError() {
+  const errBox = $('uploadErrorBanner');
+  if (errBox) {
+    errBox.textContent = '';
+    errBox.classList.add('hidden');
+  }
+}
+
+// Drag & drop support
+const dropzone = $('uploadDropzone');
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragging'); });
+dropzone.addEventListener('dragleave', e => dropzone.classList.remove('dragging'));
+dropzone.addEventListener('drop', e => {
   e.preventDefault();
-  e.currentTarget.classList.remove('dragging');
+  dropzone.classList.remove('dragging');
   const file = e.dataTransfer.files?.[0];
   if (file) handlePickedFile(file);
 });
@@ -502,26 +520,46 @@ function handleFileSelection(event) {
 }
 
 function handlePickedFile(file) {
+  hideUploadError();
   selectedFile = file;
-  $('fileNamePreview').textContent = '📎 ' + file.name;
+
+  // File size check: 50MB = 52,428,800 bytes
+  const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+  if (file.size > 52428800) {
+    showUploadError(`Selected file is ${sizeMb} MB. Supabase storage free limit is 50 MB. Please compress or choose a shorter video.`);
+    return;
+  }
+
+  $('fileNamePreview').textContent = `📎 ${file.name} (${sizeMb} MB)`;
   $('fileNamePreview').classList.remove('hidden');
+
   if (!$('uploadLabel').value) {
     $('uploadLabel').value = file.name.replace(/\.[^/.]+$/, '');
   }
-  // Auto-switch dropdown to video if user selects a video file
-  if (file.type.startsWith('video/') && $('uploadType').value === 'background') {
+
+  // Auto-select "video" if a video file is picked
+  const ext = file.name.split('.').pop().toLowerCase();
+  const isVideo = file.type.startsWith('video/') || ['mp4', 'webm', 'mov', 'm4v'].includes(ext);
+  if (isVideo && $('uploadType').value === 'background') {
     $('uploadType').value = 'video';
   }
 }
 
 async function submitUpload() {
+  hideUploadError();
   const btn = $('uploadSubmitBtn');
   const category = ($('uploadType').value || '').trim();
   const label = ($('uploadLabel').value || '').trim();
   const externalUrl = ($('uploadExternalUrl').value || '').trim();
   
-  if (!category) { showToast('Please pick a category', 'error'); return; }
-  if (!selectedFile && !externalUrl) { showToast('Choose a file or paste a URL', 'error'); return; }
+  if (!category) { 
+    showUploadError('Please select a Category / Type.'); 
+    return; 
+  }
+  if (!selectedFile && !externalUrl) { 
+    showUploadError('Please select a file to upload or enter an external URL.'); 
+    return; 
+  }
 
   btn.disabled = true;
   btn.textContent = 'Uploading…';
@@ -531,25 +569,43 @@ async function submitUpload() {
     let filename = label || 'Untitled';
 
     if (selectedFile) {
-      const ext = selectedFile.name.split('.').pop();
+      const ext = selectedFile.name.split('.').pop().toLowerCase();
       const safeName = (label || selectedFile.name.replace(/\.[^/.]+$/, '')).replace(/[^a-zA-Z0-9-_]/g, '_');
       const folderPrefix = category.replace(/\s+/g, '_');
       const path = `${folderPrefix}/${Date.now()}_${safeName}.${ext}`;
 
-      const { error: upErr } = await supabaseClient.storage
+      // Determine proper MIME type (fallback if browser doesn't report it)
+      let mimeType = selectedFile.type;
+      if (!mimeType) {
+        if (ext === 'mp4') mimeType = 'video/mp4';
+        else if (ext === 'webm') mimeType = 'video/webm';
+        else if (ext === 'mov') mimeType = 'video/quicktime';
+        else if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
+        else if (ext === 'png') mimeType = 'image/png';
+        else if (ext === 'webp') mimeType = 'image/webp';
+      }
+
+      console.log(`[Upload] Uploading ${path} (${mimeType}, ${(selectedFile.size / 1024 / 1024).toFixed(2)} MB)...`);
+
+      const { data: uploadData, error: upErr } = await supabaseClient.storage
         .from('media')
         .upload(path, selectedFile, { 
           cacheControl: '3600', 
           upsert: false,
-          contentType: selectedFile.type
+          contentType: mimeType
         });
-      if (upErr) throw upErr;
+
+      if (upErr) {
+        console.error('[Upload] Storage bucket error:', upErr);
+        throw new Error(`Storage error: ${upErr.message} (Check Supabase 'media' bucket MIME types and size limit)`);
+      }
 
       const { data: pub } = supabaseClient.storage.from('media').getPublicUrl(path);
       finalUrl = pub.publicUrl;
       filename = safeName + '.' + ext;
     }
 
+    // Save metadata row to database
     const payload = {
       type: category,
       label: label || filename,
@@ -559,16 +615,20 @@ async function submitUpload() {
       created_at: new Date().toISOString()
     };
 
+    console.log('[Upload] Saving row to database:', payload);
     const { error: insErr } = await supabaseClient.from('media').insert(payload);
-    if (insErr) throw insErr;
+    if (insErr) {
+      console.error('[Upload] Database insert error:', insErr);
+      throw new Error(`Database error: ${insErr.message}`);
+    }
 
     showToast('Uploaded to "' + category + '" successfully!');
     closeUploadModal();
     await loadMedia();
     setCategory(normalizeCategory(category));
   } catch (err) {
-    console.error('[Upload] error:', err);
-    showToast('Upload failed: ' + (err.message || 'unknown error'), 'error');
+    console.error('[Upload] Full failure details:', err);
+    showUploadError(err.message || 'Upload failed due to unknown error.');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Upload & Save';
