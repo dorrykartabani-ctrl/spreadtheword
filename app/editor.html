@@ -6,9 +6,10 @@
   <title>Customize & Share — GSTW</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Caveat:wght@600;700&family=Cinzel:wght@600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <link rel="icon" type="image/x-icon" href="/images/favicon/favicon.ico">
   <script>
@@ -20,14 +21,15 @@
             'surface-c': '#efeee7', 'surface-high': '#e9e8e1',
             'on-surface': '#31332e', 'on-surface-variant': '#5e6059',
             'primary': '#3d6285', 'on-primary': '#f7f9ff',
-            'primary-container': '#b0d5fe', 'primary-dark': '#2a4763',
-            'outline': '#7a7b75', 'outline-light': '#b2b2ab',
-            'inverse-surface': '#0e0e0c'
+            'primary-container': '#b0d5fe',
+            'outline': '#7a7b75', 'outline-light': '#b2b2ab'
           },
           fontFamily: {
             'headline': ['Plus Jakarta Sans', 'sans-serif'],
             'body': ['Manrope', 'sans-serif'],
             'serif': ['Lora', 'serif'],
+            'hand': ['Caveat', 'cursive'],
+            'classic': ['Cinzel', 'serif']
           }
         }
       }
@@ -39,13 +41,18 @@
     .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
     .filled { font-variation-settings: 'FILL' 1; }
     
-    /* Smooth canvas container */
-    .canvas-wrapper {
+    /* Interactive Pills */
+    .pill { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 99px; font-size: 11px; font-weight: 700; background: #f5f4ed; color: #5e6059; border: 1px solid #e9e8e1; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .pill:hover { border-color: #3d6285; }
+    .pill.active { background: #3d6285; color: #ffffff; border-color: #3d6285; }
+
+    /* Canvas Container */
+    .canvas-container {
       position: relative;
       touch-action: none;
       user-select: none;
-      box-shadow: 0 20px 40px -15px rgba(0,0,0,0.25);
-      border-radius: 20px;
+      box-shadow: 0 16px 36px -10px rgba(0,0,0,0.22);
+      border-radius: 18px;
       overflow: hidden;
       background: #0e0e0c;
     }
@@ -53,392 +60,401 @@
       display: block;
       width: 100%;
       height: auto;
-      max-height: 58vh;
+      max-height: 40vh; /* Keeps controls visible on mobile */
       object-fit: contain;
-      transition: aspect-ratio 0.3s ease;
+      transition: aspect-ratio 0.25s ease;
     }
-    
-    /* Interactive tabs and chips */
-    .tab-btn {
-      padding: 10px 16px;
-      font-size: 13px;
-      font-weight: 700;
-      color: #5e6059;
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s;
-    }
-    .tab-btn.active {
-      color: #3d6285;
-      border-color: #3d6285;
-    }
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      border-radius: 99px;
-      font-size: 12px;
-      font-weight: 600;
-      background: #f5f4ed;
-      color: #5e6059;
-      border: 1px solid #e9e8e1;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .chip:hover { border-color: #3d6285; }
-    .chip.active { background: #3d6285; color: #ffffff; border-color: #3d6285; }
-
-    /* Custom range slider */
-    input[type=range] {
-      -webkit-appearance: none;
-      height: 6px;
-      border-radius: 3px;
-      background: #e3e3db;
-      outline: none;
-    }
-    input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: #3d6285;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    @media (min-width: 1024px) {
+      #previewCanvas { max-height: 65vh; }
     }
 
-    /* Modal slide animations */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(14,14,12,0.65);
-      backdrop-filter: blur(8px);
-      z-index: 100;
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.25s ease;
-    }
-    @media (min-width: 768px) {
-      .modal-overlay { align-items: center; }
-    }
+    /* Tabs */
+    .tab-btn { padding: 10px 14px; font-size: 12px; font-weight: 700; color: #5e6059; border-bottom: 2px solid transparent; transition: all 0.2s; }
+    .tab-btn.active { color: #3d6285; border-color: #3d6285; }
+
+    /* Sliders */
+    input[type=range] { -webkit-appearance: none; height: 5px; border-radius: 3px; background: #e3e3db; outline: none; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #3d6285; cursor: pointer; }
+
+    /* Color Swatch */
+    .color-swatch { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.15); cursor: pointer; transition: transform 0.15s; }
+    .color-swatch:hover { transform: scale(1.15); }
+
+    /* Modals */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(14,14,12,0.65); backdrop-filter: blur(8px); z-index: 100; display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
+    @media (min-width: 768px) { .modal-overlay { align-items: center; } }
     .modal-overlay.open { opacity: 1; pointer-events: auto; }
-    .modal-sheet {
-      background: #ffffff;
-      width: 100%;
-      max-width: 520px;
-      border-radius: 28px 28px 0 0;
-      max-height: 88vh;
-      overflow-y: auto;
-      transform: translateY(100%);
-      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    @media (min-width: 768px) {
-      .modal-sheet { border-radius: 24px; transform: scale(0.95); }
-      .modal-overlay.open .modal-sheet { transform: scale(1); }
-    }
+    .modal-sheet { background: #ffffff; width: 100%; max-width: 520px; border-radius: 24px 24px 0 0; max-height: 90vh; overflow-y: auto; transform: translateY(100%); transition: transform 0.25s cubic-bezier(0.16,1,0.3,1); }
+    @media (min-width: 768px) { .modal-sheet { border-radius: 20px; transform: scale(0.96); } .modal-overlay.open .modal-sheet { transform: scale(1); } }
     .modal-overlay.open .modal-sheet { transform: translateY(0); }
   </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
   <!-- TOP APP BAR -->
-  <header class="sticky top-0 z-40 bg-surface/90 backdrop-blur-md border-b border-surface-c px-4 lg:px-8 py-3.5 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <a href="index.html" class="w-9 h-9 rounded-xl bg-surface-low hover:bg-surface-c flex items-center justify-center text-on-surface transition-colors">
-        <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+  <header class="sticky top-0 z-40 bg-surface/90 backdrop-blur-md border-b border-surface-c px-4 lg:px-8 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-2.5">
+      <a href="index.html" class="w-8 h-8 rounded-lg bg-surface-low hover:bg-surface-c flex items-center justify-center text-on-surface">
+        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
       </a>
       <div>
-        <h1 class="font-headline font-bold text-base leading-tight">Create & Share</h1>
-        <p class="text-[11px] font-semibold text-on-surface-variant">Drag text to position anywhere</p>
+        <h1 class="font-headline font-bold text-sm leading-tight">Word Studio</h1>
+        <p class="text-[10px] font-semibold text-on-surface-variant">Tap & drag to position quote</p>
       </div>
     </div>
-    <div class="flex items-center gap-2">
-      <button onclick="openPlatformPicker()" class="px-4 py-2 rounded-xl signature-gradient text-white font-headline font-bold text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-transform">
-        <span class="material-symbols-outlined text-[16px]">share</span> Share
-      </button>
-    </div>
+    <button onclick="openPlatformModal()" class="px-4 py-2 rounded-xl signature-gradient text-white font-headline font-bold text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-transform">
+      <span class="material-symbols-outlined text-[16px]">share</span> Share
+    </button>
   </header>
 
-  <!-- MAIN DUAL-PANE WORKSPACE -->
-  <main class="flex-1 max-w-6xl w-full mx-auto p-4 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+  <!-- MAIN TWO-COLUMN WORKSPACE -->
+  <main class="flex-1 max-w-6xl w-full mx-auto p-3 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
     
-    <!-- LEFT PANE: LIVE CANVAS WORKSPACE -->
-    <div class="lg:col-span-7 flex flex-col items-center">
+    <!-- LEFT: STICKY PREVIEW (STAYS FIXED IN SIGHT) -->
+    <div class="lg:col-span-7 sticky top-14 z-30 lg:top-20 bg-surface/95 lg:bg-transparent pb-2 lg:pb-0">
       
-      <!-- Platform Aspect Indicator & Quick Bar -->
-      <div class="w-full max-w-md flex items-center justify-between mb-3 px-1">
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span id="platformFormatLabel" class="text-xs font-bold text-primary font-headline uppercase tracking-wider">Optimized for Instagram (4:5)</span>
-        </div>
-        <button onclick="resetTextPosition()" class="text-[11px] font-bold text-on-surface-variant hover:text-primary flex items-center gap-1">
-          <span class="material-symbols-outlined text-[14px]">restart_alt</span> Center Text
+      <!-- 1. PLATFORM SELECTOR ABOVE THE CANVAS -->
+      <div class="w-full max-w-md mx-auto mb-2 flex items-center justify-between">
+        <span id="platformLabel" class="text-[10px] font-extrabold uppercase tracking-wider text-primary font-headline flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> Instagram (4:5)
+        </span>
+        <button onclick="resetPosition()" class="text-[10px] font-bold text-outline hover:text-primary flex items-center gap-0.5">
+          <span class="material-symbols-outlined text-[13px]">restart_alt</span> Center Text
         </button>
       </div>
 
-      <!-- CANVAS PREVIEW -->
-      <div class="w-full max-w-md canvas-wrapper">
-        <canvas id="previewCanvas" width="1080" height="1350"></canvas>
+      <div class="w-full max-w-md mx-auto overflow-x-auto pb-1.5 flex gap-1.5 no-scrollbar mb-2" id="platformRatioBar">
+        <button onclick="setPlatformRatio('instagram')" id="btn-rat-instagram" class="pill active">Instagram</button>
+        <button onclick="setPlatformRatio('tiktok')" id="btn-rat-tiktok" class="pill">TikTok</button>
+        <button onclick="setPlatformRatio('youtube')" id="btn-rat-youtube" class="pill">Shorts</button>
+        <button onclick="setPlatformRatio('facebook')" id="btn-rat-facebook" class="pill">Facebook</button>
+        <button onclick="setPlatformRatio('whatsapp')" id="btn-rat-whatsapp" class="pill">Square</button>
+        <button onclick="setPlatformRatio('twitter')" id="btn-rat-twitter" class="pill">X (16:9)</button>
       </div>
 
-      <!-- Quick Platform Ratio Switcher -->
-      <div class="w-full max-w-md flex justify-center gap-2 mt-4">
-        <button onclick="setPlatformFormat('instagram')" id="ratio-instagram" class="chip active">Instagram (4:5)</button>
-        <button onclick="setPlatformFormat('tiktok')" id="ratio-tiktok" class="chip">TikTok / Stories (9:16)</button>
-        <button onclick="setPlatformFormat('whatsapp')" id="ratio-whatsapp" class="chip">Square (1:1)</button>
-        <button onclick="setPlatformFormat('twitter')" id="ratio-twitter" class="chip">X (16:9)</button>
+      <!-- 2. CANVAS PREVIEW -->
+      <div class="w-full max-w-md mx-auto canvas-container">
+        <canvas id="previewCanvas" width="1080" height="1350"></canvas>
       </div>
     </div>
 
-    <!-- RIGHT PANE: TOOL CONTROLS -->
+    <!-- RIGHT: SCROLLABLE TOOLBOX -->
     <div class="lg:col-span-5 bg-surface-card border border-surface-c rounded-2xl shadow-sm overflow-hidden">
       
-      <!-- Tabs -->
-      <div class="flex border-b border-surface-c bg-surface-low px-2">
-        <button onclick="switchTab('style')" id="tabBtn-style" class="tab-btn active flex-1 text-center">Style & Font</button>
-        <button onclick="switchTab('background')" id="tabBtn-background" class="tab-btn flex-1 text-center">Background</button>
-        <button onclick="switchTab('caption')" id="tabBtn-caption" class="tab-btn flex-1 text-center">Caption</button>
+      <!-- TOOLBAR TABS -->
+      <div class="flex border-b border-surface-c bg-surface-low px-1">
+        <button onclick="switchTab('photo')" id="tab-btn-photo" class="tab-btn active flex-1 text-center">📸 Background</button>
+        <button onclick="switchTab('font')" id="tab-btn-font" class="tab-btn flex-1 text-center">✏️ Text & Font</button>
+        <button onclick="switchTab('caption')" id="tab-btn-caption" class="tab-btn flex-1 text-center">💬 Caption</button>
       </div>
 
-      <div class="p-5 space-y-5">
+      <div class="p-4 space-y-4">
         
-        <!-- TAB 1: STYLE & FONT -->
-        <div id="tabContent-style" class="space-y-5">
-          <!-- Font Family -->
+        <!-- ═════════ TAB 1: BACKGROUND / SELFIE ═════════ -->
+        <div id="tab-photo" class="space-y-4">
+          
+          <!-- Selfie & Camera Upload Buttons -->
           <div>
-            <label class="block text-[11px] font-extrabold uppercase tracking-wider text-outline mb-2">Typography</label>
-            <div class="grid grid-cols-3 gap-2">
-              <button onclick="setFontStyle('serif')" id="font-serif" class="chip active justify-center font-serif text-sm py-2">Serif</button>
-              <button onclick="setFontStyle('sans')" id="font-sans" class="chip justify-center font-headline text-sm py-2">Modern</button>
-              <button onclick="setFontStyle('bold')" id="font-bold" class="chip justify-center font-headline font-extrabold text-sm py-2">Impact</button>
+            <label class="block text-[10px] font-extrabold uppercase tracking-wider text-outline mb-2">Personalize with Your Photo</label>
+            <div class="grid grid-cols-2 gap-2">
+              <!-- Take Selfie -->
+              <button onclick="document.getElementById('selfieCameraInput').click()" class="p-3 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 flex items-center justify-center gap-2 text-primary font-headline font-bold text-xs transition-colors">
+                <span class="material-symbols-outlined text-[18px]">photo_camera</span> Take Selfie
+              </button>
+              <!-- Upload from Phone -->
+              <button onclick="document.getElementById('phoneGalleryInput').click()" class="p-3 rounded-xl border border-surface-c bg-surface-low hover:bg-surface-c flex items-center justify-center gap-2 text-on-surface font-headline font-bold text-xs transition-colors">
+                <span class="material-symbols-outlined text-[18px]">add_photo_alternate</span> Photos / Video
+              </button>
+            </div>
+            <!-- Hidden native file inputs -->
+            <input type="file" id="selfieCameraInput" accept="image/*" capture="user" class="hidden" onchange="handleDeviceMedia(event)">
+            <input type="file" id="phoneGalleryInput" accept="image/*,video/mp4,video/quicktime,video/webm" class="hidden" onchange="handleDeviceMedia(event)">
+          </div>
+
+          <!-- Media Library Preset Picker -->
+          <div class="pt-2 border-t border-surface-c">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-outline">Media Library</span>
+              <button onclick="openMediaModal()" class="text-xs font-bold text-primary flex items-center gap-0.5 hover:underline">
+                <span class="material-symbols-outlined text-[14px]">photo_library</span> Choose Background
+              </button>
+            </div>
+          </div>
+
+          <!-- Solid / Gradient Palette + Color Picker -->
+          <div class="pt-2 border-t border-surface-c">
+            <label class="block text-[10px] font-extrabold uppercase tracking-wider text-outline mb-2">Solid Color Background</label>
+            <div class="flex items-center gap-2">
+              <div onclick="setSolidBg('#3d6285')" class="color-swatch bg-[#3d6285]"></div>
+              <div onclick="setSolidBg('#14342b')" class="color-swatch bg-[#14342b]"></div>
+              <div onclick="setSolidBg('#3b141a')" class="color-swatch bg-[#3b141a]"></div>
+              <div onclick="setSolidBg('#0e0e0c')" class="color-swatch bg-[#0e0e0c]"></div>
+              <div onclick="setSolidBg('#1e3a5f')" class="color-swatch bg-[#1e3a5f]"></div>
+              <!-- Native Color Picker -->
+              <label class="w-7 h-7 rounded-full border border-dashed border-outline flex items-center justify-center cursor-pointer hover:border-primary relative overflow-hidden" title="Pick Custom Color">
+                <span class="material-symbols-outlined text-[14px] text-outline">palette</span>
+                <input type="color" id="customBgColor" onchange="setSolidBg(this.value)" class="opacity-0 absolute inset-0 cursor-pointer">
+              </label>
+            </div>
+          </div>
+
+          <!-- Overlay Dimmer Slider -->
+          <div class="pt-2 border-t border-surface-c">
+            <div class="flex justify-between text-xs font-bold mb-1">
+              <span class="text-outline uppercase text-[10px] tracking-wider">Background Dim (Legibility)</span>
+              <span id="dimVal" class="text-primary font-headline">40%</span>
+            </div>
+            <input type="range" id="dimSlider" min="0" max="85" value="40" oninput="handleDimChange(this.value)" class="w-full">
+          </div>
+
+        </div>
+
+        <!-- ═════════ TAB 2: TEXT & TYPOGRAPHY ═════════ -->
+        <div id="tab-font" class="hidden space-y-4">
+          
+          <!-- Font Style -->
+          <div>
+            <label class="block text-[10px] font-extrabold uppercase tracking-wider text-outline mb-2">Font Family</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="setFontFamily('serif')" id="f-serif" class="pill active justify-center font-serif text-xs py-2">Serif (Lora)</button>
+              <button onclick="setFontFamily('hand')" id="f-hand" class="pill justify-center font-hand text-sm py-2">Handwritten (Caveat)</button>
+              <button onclick="setFontFamily('classic')" id="f-classic" class="pill justify-center font-classic text-xs py-2">Classic (Cinzel)</button>
+              <button onclick="setFontFamily('sans')" id="f-sans" class="pill justify-center font-headline font-bold text-xs py-2">Modern (Sans)</button>
             </div>
           </div>
 
           <!-- Font Size Slider -->
           <div>
             <div class="flex justify-between text-xs font-bold mb-1">
-              <span class="text-outline uppercase text-[11px] tracking-wider">Font Size</span>
-              <span id="fontSizeDisplay" class="text-primary font-headline">58px</span>
+              <span class="text-outline uppercase text-[10px] tracking-wider">Font Size</span>
+              <span id="fontSizeVal" class="text-primary font-headline">56px</span>
             </div>
-            <input type="range" id="fontSizeSlider" min="30" max="90" value="58" oninput="handleFontSize(this.value)" class="w-full">
+            <input type="range" id="sizeSlider" min="30" max="95" value="56" oninput="handleSizeChange(this.value)" class="w-full">
           </div>
 
-          <!-- Text Alignment -->
+          <!-- Font Color Palette + Native Picker -->
           <div>
-            <label class="block text-[11px] font-extrabold uppercase tracking-wider text-outline mb-2">Text Alignment</label>
+            <label class="block text-[10px] font-extrabold uppercase tracking-wider text-outline mb-2">Font Color</label>
+            <div class="flex items-center gap-2">
+              <div onclick="setTextColor('#ffffff')" class="color-swatch bg-[#ffffff]"></div>
+              <div onclick="setTextColor('#fdf8e2')" class="color-swatch bg-[#fdf8e2]" title="Cream"></div>
+              <div onclick="setTextColor('#f6c358')" class="color-swatch bg-[#f6c358]" title="Gold"></div>
+              <div onclick="setTextColor('#b0d5fe')" class="color-swatch bg-[#b0d5fe]" title="Soft Blue"></div>
+              <div onclick="setTextColor('#fda4af')" class="color-swatch bg-[#fda4af]" title="Rose"></div>
+              <label class="w-7 h-7 rounded-full border border-dashed border-outline flex items-center justify-center cursor-pointer hover:border-primary relative overflow-hidden" title="Pick Custom Color">
+                <span class="material-symbols-outlined text-[14px] text-outline">colorize</span>
+                <input type="color" id="customTextColor" onchange="setTextColor(this.value)" class="opacity-0 absolute inset-0 cursor-pointer">
+              </label>
+            </div>
+          </div>
+
+          <!-- Alignment -->
+          <div>
+            <label class="block text-[10px] font-extrabold uppercase tracking-wider text-outline mb-2">Text Align</label>
             <div class="grid grid-cols-3 gap-2">
-              <button onclick="setTextAlign('left')" id="align-left" class="chip justify-center py-2"><span class="material-symbols-outlined text-sm">format_align_left</span></button>
-              <button onclick="setTextAlign('center')" id="align-center" class="chip active justify-center py-2"><span class="material-symbols-outlined text-sm">format_align_center</span></button>
-              <button onclick="setTextAlign('right')" id="align-right" class="chip justify-center py-2"><span class="material-symbols-outlined text-sm">format_align_right</span></button>
+              <button onclick="setTextAlignment('left')" id="al-left" class="pill justify-center py-1.5"><span class="material-symbols-outlined text-[16px]">format_align_left</span></button>
+              <button onclick="setTextAlignment('center')" id="al-center" class="pill active justify-center py-1.5"><span class="material-symbols-outlined text-[16px]">format_align_center</span></button>
+              <button onclick="setTextAlignment('right')" id="al-right" class="pill justify-center py-1.5"><span class="material-symbols-outlined text-[16px]">format_align_right</span></button>
             </div>
           </div>
 
-          <!-- Dark Overlay Dimmer -->
-          <div>
-            <div class="flex justify-between text-xs font-bold mb-1">
-              <span class="text-outline uppercase text-[11px] tracking-wider">Dim Overlay (Contrast)</span>
-              <span id="overlayDimDisplay" class="text-primary font-headline">40%</span>
-            </div>
-            <input type="range" id="overlayDimSlider" min="0" max="85" value="40" oninput="handleOverlayDim(this.value)" class="w-full">
-          </div>
         </div>
 
-        <!-- TAB 2: BACKGROUND (Image & Video) -->
-        <div id="tabContent-background" class="hidden space-y-4">
-          <div class="flex justify-between items-center">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-outline">Media Background</span>
-            <button onclick="openMediaLibrary()" class="text-xs font-bold text-primary flex items-center gap-1 hover:underline">
-              <span class="material-symbols-outlined text-[15px]">perm_media</span> Browse Media Library
-            </button>
-          </div>
-
-          <div class="grid grid-cols-3 gap-2" id="quickColorPalette">
-            <button onclick="setBackgroundSolid('#1a2938')" class="h-14 rounded-xl bg-[#1a2938] border border-white/20 active:scale-95 transition-transform"></button>
-            <button onclick="setBackgroundSolid('#0e0e0c')" class="h-14 rounded-xl bg-[#0e0e0c] border border-white/20 active:scale-95 transition-transform"></button>
-            <button onclick="setBackgroundSolid('#3d6285')" class="h-14 rounded-xl bg-[#3d6285] border border-white/20 active:scale-95 transition-transform"></button>
-          </div>
-
-          <div class="pt-2 border-t border-surface-c">
-            <label class="block text-[11px] font-extrabold uppercase tracking-wider text-outline mb-2">Custom Image or Video URL</label>
-            <div class="flex gap-2">
-              <input type="text" id="customBgUrlInput" placeholder="Paste .jpg, .png, or .mp4 URL" class="flex-1 bg-surface-low border border-surface-c rounded-xl px-3 py-2 text-xs outline-none focus:border-primary">
-              <button onclick="applyCustomBgUrl()" class="px-4 bg-primary text-white font-bold text-xs rounded-xl">Apply</button>
+        <!-- ═════════ TAB 3: CAPTIONS & CONTEXT ═════════ -->
+        <div id="tab-caption" class="hidden space-y-4">
+          
+          <!-- Scripture Context (From quotes.html) -->
+          <div id="contextBox" class="p-3 bg-surface-low border border-surface-c rounded-xl space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-primary flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px]">menu_book</span> Scripture Context
+              </span>
+              <label class="flex items-center gap-1 text-[11px] font-semibold text-outline cursor-pointer">
+                <input type="checkbox" id="includeContextCheck" checked onchange="buildCaption()" class="accent-primary w-3.5 h-3.5"> Include
+              </label>
             </div>
-          </div>
-        </div>
-
-        <!-- TAB 3: CAPTION & HASHTAGS -->
-        <div id="tabContent-caption" class="hidden space-y-4">
-          <div>
-            <label class="block text-[11px] font-extrabold uppercase tracking-wider text-outline mb-1.5">Personal Reflection (Optional)</label>
-            <textarea id="personalNote" rows="3" placeholder="Add a personal thought to accompany the quote..." oninput="updateFullCaption()" class="w-full bg-surface-low border border-surface-c rounded-xl p-3 text-xs outline-none focus:border-primary resize-none"></textarea>
+            <p id="contextTextDisplay" class="text-xs text-on-surface-variant italic leading-relaxed"></p>
           </div>
 
+          <!-- Personal Thought -->
           <div>
-            <label class="block text-[11px] font-extrabold uppercase tracking-wider text-outline mb-2">Hashtags</label>
-            <div id="hashtagChips" class="flex flex-wrap gap-1.5 mb-3"></div>
+            <label class="block text-[10px] font-extrabold uppercase tracking-wider text-outline mb-1.5">Personal Reflection</label>
+            <textarea id="personalReflection" rows="2" placeholder="Write a reflection or personal message..." oninput="buildCaption()" class="w-full bg-surface-low border border-surface-c rounded-xl p-2.5 text-xs outline-none focus:border-primary resize-none"></textarea>
+          </div>
+
+          <!-- Hashtags -->
+          <div>
+            <label class="block text-[10px] font-extrabold uppercase tracking-wider text-outline mb-1.5">Hashtags</label>
+            <div id="hashtagsList" class="flex flex-wrap gap-1 mb-2"></div>
             <div class="flex gap-2">
-              <input type="text" id="newTagInput" placeholder="Add custom tag (e.g. #Hope)" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomTag();}" class="flex-1 bg-surface-low border border-surface-c rounded-xl px-3 py-2 text-xs outline-none focus:border-primary">
-              <button onclick="addCustomTag()" class="px-4 bg-primary text-white font-bold text-xs rounded-xl">Add</button>
+              <input type="text" id="newHashtagInput" placeholder="Add tag (e.g. #Grace)" onkeydown="if(event.key==='Enter'){event.preventDefault();addTag();}" class="flex-1 bg-surface-low border border-surface-c rounded-xl px-3 py-1.5 text-xs outline-none focus:border-primary">
+              <button onclick="addTag()" class="px-3 bg-primary text-white font-bold text-xs rounded-xl">Add</button>
             </div>
           </div>
 
+          <!-- Full Clipboard Preview -->
           <div class="p-3 bg-surface-low rounded-xl border border-surface-c">
-            <span class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Clipboard Preview</span>
-            <p id="fullCaptionPreview" class="text-xs text-on-surface font-mono leading-relaxed line-clamp-3 select-all"></p>
+            <span class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Caption Clipboard Preview</span>
+            <p id="fullCaptionDisplay" class="text-[11px] text-on-surface font-mono leading-relaxed line-clamp-3 select-all"></p>
           </div>
+
         </div>
 
       </div>
 
-      <!-- BOTTOM CTA -->
-      <div class="p-4 bg-surface-low border-t border-surface-c">
-        <button onclick="openPlatformPicker()" class="w-full py-3.5 rounded-xl signature-gradient text-white font-headline font-bold text-sm shadow-md flex items-center justify-center gap-2 active:scale-98 transition-transform">
-          <span class="material-symbols-outlined text-[18px]">share</span> Share to Social Media
+      <!-- BOTTOM SHARE BUTTON -->
+      <div class="p-3 bg-surface-low border-t border-surface-c">
+        <button onclick="openPlatformModal()" class="w-full py-3 rounded-xl signature-gradient text-white font-headline font-bold text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-98 transition-transform">
+          <span class="material-symbols-outlined text-[16px]">share</span> Share The Word
         </button>
       </div>
 
     </div>
+
   </main>
 
-  <!-- PLATFORM SHARE PICKER MODAL -->
-  <div id="platformModal" class="modal-overlay" onclick="if(event.target===this)closePlatformPicker()">
-    <div class="modal-sheet p-6 space-y-5">
+  <!-- PLATFORM SHARE MODAL -->
+  <div id="shareModal" class="modal-overlay" onclick="if(event.target===this)closePlatformModal()">
+    <div class="modal-sheet p-5 space-y-4">
       <div class="flex justify-between items-center border-b border-surface-c pb-3">
         <div>
-          <h3 class="font-headline font-bold text-base text-on-surface">Share The Word</h3>
-          <p class="text-xs text-on-surface-variant">Caption will copy to your clipboard automatically</p>
+          <h3 class="font-headline font-bold text-base text-on-surface">Share To Platform</h3>
+          <p class="text-[11px] text-on-surface-variant">Caption will copy to clipboard automatically</p>
         </div>
-        <button onclick="closePlatformPicker()" class="w-8 h-8 rounded-full bg-surface-low flex items-center justify-center text-outline"><span class="material-symbols-outlined text-[18px]">close</span></button>
+        <button onclick="closePlatformModal()" class="text-outline"><span class="material-symbols-outlined">close</span></button>
       </div>
 
-      <div class="grid grid-cols-2 gap-3">
-        <button onclick="executeShare('instagram')" class="p-3.5 rounded-xl border border-surface-c hover:border-primary flex items-center gap-3 transition-colors bg-white">
-          <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center font-bold text-sm">IG</div>
-          <div class="text-left"><p class="font-headline font-bold text-xs">Instagram</p><p class="text-[10px] text-outline">Post / Reel</p></div>
+      <div class="grid grid-cols-2 gap-2.5">
+        <!-- Instagram -->
+        <button onclick="postToPlatform('instagram')" class="p-3 rounded-xl border border-surface-c hover:border-primary flex items-center gap-2.5 bg-white transition-all text-left">
+          <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs">IG</div>
+          <div><p class="font-headline font-bold text-xs">Instagram</p><p class="text-[10px] text-outline">Post / Reel (4:5)</p></div>
         </button>
-        <button onclick="executeShare('facebook')" class="p-3.5 rounded-xl border border-surface-c hover:border-primary flex items-center gap-3 transition-colors bg-white">
-          <div class="w-10 h-10 rounded-lg bg-[#1877f2] text-white flex items-center justify-center font-bold text-sm">FB</div>
-          <div class="text-left"><p class="font-headline font-bold text-xs">Facebook</p><p class="text-[10px] text-outline">Feed / Story</p></div>
+        <!-- TikTok -->
+        <button onclick="postToPlatform('tiktok')" class="p-3 rounded-xl border border-surface-c hover:border-primary flex items-center gap-2.5 bg-white transition-all text-left">
+          <div class="w-9 h-9 rounded-lg bg-black text-white flex items-center justify-center font-bold text-xs">TT</div>
+          <div><p class="font-headline font-bold text-xs">TikTok</p><p class="text-[10px] text-outline">Story / Video (9:16)</p></div>
         </button>
-        <button onclick="executeShare('tiktok')" class="p-3.5 rounded-xl border border-surface-c hover:border-primary flex items-center gap-3 transition-colors bg-white">
-          <div class="w-10 h-10 rounded-lg bg-black text-white flex items-center justify-center font-bold text-sm">TT</div>
-          <div class="text-left"><p class="font-headline font-bold text-xs">TikTok</p><p class="text-[10px] text-outline">Story / Video</p></div>
+        <!-- YouTube Shorts -->
+        <button onclick="postToPlatform('youtube')" class="p-3 rounded-xl border border-surface-c hover:border-primary flex items-center gap-2.5 bg-white transition-all text-left">
+          <div class="w-9 h-9 rounded-lg bg-[#ff0000] text-white flex items-center justify-center font-bold text-xs">YT</div>
+          <div><p class="font-headline font-bold text-xs">YouTube</p><p class="text-[10px] text-outline">Shorts (9:16)</p></div>
         </button>
-        <button onclick="executeShare('whatsapp')" class="p-3.5 rounded-xl border border-surface-c hover:border-primary flex items-center gap-3 transition-colors bg-white">
-          <div class="w-10 h-10 rounded-lg bg-[#25d366] text-white flex items-center justify-center font-bold text-sm">WA</div>
-          <div class="text-left"><p class="font-headline font-bold text-xs">WhatsApp</p><p class="text-[10px] text-outline">Status / Chat</p></div>
+        <!-- Facebook -->
+        <button onclick="postToPlatform('facebook')" class="p-3 rounded-xl border border-surface-c hover:border-primary flex items-center gap-2.5 bg-white transition-all text-left">
+          <div class="w-9 h-9 rounded-lg bg-[#1877f2] text-white flex items-center justify-center font-bold text-xs">FB</div>
+          <div><p class="font-headline font-bold text-xs">Facebook</p><p class="text-[10px] text-outline">Feed / Story (4:5)</p></div>
         </button>
-        <button onclick="executeShare('twitter')" class="p-3.5 rounded-xl border border-surface-c hover:border-primary flex items-center gap-3 transition-colors bg-white">
-          <div class="w-10 h-10 rounded-lg bg-black text-white flex items-center justify-center font-bold text-sm">𝕏</div>
-          <div class="text-left"><p class="font-headline font-bold text-xs">X / Twitter</p><p class="text-[10px] text-outline">Post</p></div>
+        <!-- WhatsApp -->
+        <button onclick="postToPlatform('whatsapp')" class="p-3 rounded-xl border border-surface-c hover:border-primary flex items-center gap-2.5 bg-white transition-all text-left">
+          <div class="w-9 h-9 rounded-lg bg-[#25d366] text-white flex items-center justify-center font-bold text-xs">WA</div>
+          <div><p class="font-headline font-bold text-xs">WhatsApp</p><p class="text-[10px] text-outline">Status (1:1)</p></div>
         </button>
-        <button onclick="executeShare('download')" class="p-3.5 rounded-xl border border-surface-c hover:border-primary flex items-center gap-3 transition-colors bg-white">
-          <div class="w-10 h-10 rounded-lg bg-surface-low text-primary flex items-center justify-center font-bold text-sm"><span class="material-symbols-outlined text-[20px]">download</span></div>
-          <div class="text-left"><p class="font-headline font-bold text-xs">Save Image</p><p class="text-[10px] text-outline">To Device</p></div>
+        <!-- Save Image -->
+        <button onclick="postToPlatform('download')" class="p-3 rounded-xl border border-surface-c hover:border-primary flex items-center gap-2.5 bg-white transition-all text-left">
+          <div class="w-9 h-9 rounded-lg bg-surface-low text-primary flex items-center justify-center font-bold text-xs"><span class="material-symbols-outlined text-[18px]">download</span></div>
+          <div><p class="font-headline font-bold text-xs">Save Image</p><p class="text-[10px] text-outline">To Photos</p></div>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- MEDIA LIBRARY MODAL -->
-  <div id="mediaModal" class="modal-overlay" onclick="if(event.target===this)closeMediaLibrary()">
-    <div class="modal-sheet p-6 space-y-4 max-w-2xl">
+  <!-- MEDIA PICKER MODAL -->
+  <div id="mediaModal" class="modal-overlay" onclick="if(event.target===this)closeMediaModal()">
+    <div class="modal-sheet p-5 space-y-4 max-w-xl">
       <div class="flex justify-between items-center border-b border-surface-c pb-3">
-        <h3 class="font-headline font-bold text-base">Select Background Media</h3>
-        <button onclick="closeMediaLibrary()" class="text-outline"><span class="material-symbols-outlined">close</span></button>
+        <h3 class="font-headline font-bold text-base">Media Library</h3>
+        <button onclick="closeMediaModal()" class="text-outline"><span class="material-symbols-outlined">close</span></button>
       </div>
       <div class="flex gap-2">
-        <button onclick="loadMediaPicker('all')" id="mf-all" class="chip active">All</button>
-        <button onclick="loadMediaPicker('video')" id="mf-video" class="chip">Videos</button>
-        <button onclick="loadMediaPicker('background')" id="mf-background" class="chip">Photos</button>
+        <button onclick="filterMedia('all')" id="m-all" class="pill active">All</button>
+        <button onclick="filterMedia('video')" id="m-video" class="pill">Videos</button>
+        <button onclick="filterMedia('background')" id="m-background" class="pill">Photos</button>
       </div>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 max-h-80 overflow-y-auto" id="mediaPickerGrid">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 max-h-72 overflow-y-auto" id="mediaGrid">
         <div class="col-span-full py-8 text-center text-xs text-outline">Loading media...</div>
       </div>
     </div>
   </div>
 
-  <!-- SUCCESS MODAL -->
+  <!-- SPRUCED-UP SUCCESS MODAL -->
   <div id="successModal" class="modal-overlay" onclick="if(event.target===this)closeSuccessModal()">
     <div class="modal-sheet p-6 text-center space-y-4">
-      <div class="w-16 h-16 rounded-2xl signature-gradient text-white flex items-center justify-center mx-auto shadow-md">
-        <span class="material-symbols-outlined text-[32px] filled">check_circle</span>
+      <div class="w-16 h-16 rounded-2xl signature-gradient text-white flex items-center justify-center mx-auto shadow-lg">
+        <span class="material-symbols-outlined text-[36px] filled">check_circle</span>
       </div>
+      
       <div>
         <h3 class="font-headline font-extrabold text-xl text-on-surface">Word Shared!</h3>
-        <p class="text-xs text-on-surface-variant mt-1" id="successSubtitle">You planted another seed 🌱</p>
+        <p class="text-xs text-on-surface-variant mt-1" id="successSub">Your seed has been planted 🌱</p>
       </div>
-      <div class="p-3 bg-surface-low rounded-xl text-xs text-primary font-semibold flex items-center justify-center gap-2">
-        <span class="material-symbols-outlined text-[16px] filled">content_paste</span> Caption copied to clipboard!
+
+      <!-- Generated Image Preview -->
+      <div class="w-28 mx-auto aspect-[4/5] rounded-xl overflow-hidden border-2 border-surface-c shadow-sm bg-black">
+        <img id="successImgThumb" src="" class="w-full h-full object-cover">
       </div>
+
+      <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-bold flex items-center justify-center gap-1.5">
+        <span class="material-symbols-outlined text-[16px] filled text-emerald-600">content_paste</span> Caption & hashtags copied!
+      </div>
+
       <div class="space-y-2 pt-2">
-        <button onclick="reshareFromSuccess()" class="w-full py-3 bg-primary text-white font-headline font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-sm">
+        <button onclick="reshare()" class="w-full py-3 bg-primary text-white font-headline font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform">
           <span class="material-symbols-outlined text-[16px]">repeat</span> Reshare to Another Platform
         </button>
         <button onclick="window.location.href='impact.html'" class="w-full py-3 bg-surface-low text-on-surface font-headline font-bold text-xs rounded-xl">
           View Your Impact
         </button>
-        <button onclick="closeSuccessModal()" class="w-full py-2 text-xs font-semibold text-outline">
-          Done
-        </button>
       </div>
     </div>
   </div>
 
-  <!-- JAVASCRIPT LOGIC ENGINE -->
+  <!-- SCRIPT LOGIC -->
   <script>
     const supabaseClient = supabase.createClient(
       'https://nhymadutuhpjgkiurify.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
     );
 
-    // Platform Configuration Map
-    const PLATFORM_CONFIG = {
+    // Platform configs
+    const PLATFORMS = {
       'instagram': { name: 'Instagram', ratio: '4/5', w: 1080, h: 1350 },
-      'facebook':  { name: 'Facebook',  ratio: '4/5', w: 1080, h: 1350 },
       'tiktok':    { name: 'TikTok',    ratio: '9/16', w: 1080, h: 1920 },
-      'twitter':   { name: 'X / Twitter', ratio: '16/9', w: 1920, h: 1080 },
+      'youtube':   { name: 'YouTube Shorts', ratio: '9/16', w: 1080, h: 1920 },
+      'facebook':  { name: 'Facebook',  ratio: '4/5', w: 1080, h: 1350 },
       'whatsapp':  { name: 'WhatsApp',  ratio: '1/1', w: 1080, h: 1080 },
-      'download':  { name: 'Standard',  ratio: '4/5', w: 1080, h: 1350 },
-      'default':   { name: 'Square',    ratio: '1/1', w: 1080, h: 1080 }
+      'twitter':   { name: 'X / Twitter', ratio: '16/9', w: 1920, h: 1080 },
+      'download':  { name: 'Standard',  ratio: '4/5', w: 1080, h: 1350 }
     };
 
-    // State Variables
+    // State
     let currentUser = null;
-    let currentQuote = { id: null, text: 'The Word is with you today.', source: 'GSTW', hashtags: ['#SpreadTheWord', '#GreatCommission'] };
+    let quoteData = { id: null, text: 'The Word is with you today.', source: 'GSTW', context: '' };
     let currentPlatform = 'instagram';
-    let currentFontStyle = 'serif';
-    let currentFontSize = 58;
+    let currentFont = 'serif';
+    let currentFontSize = 56;
+    let currentFontColor = '#ffffff';
     let currentTextAlign = 'center';
-    let currentOverlayDim = 0.40;
+    let currentDim = 0.40;
     let currentHashtags = ['#SpreadTheWord', '#GreatCommission'];
 
-    // Normalized coordinate positioning (0.0 to 1.0)
-    let textNormX = 0.5;
-    let textNormY = 0.5;
+    // Coordinates (normalized 0.0 to 1.0)
+    let normX = 0.5, normY = 0.5;
 
-    // Media background state
+    // Media background
     let isVideoBg = false;
-    let bgVideoEl = document.createElement('video');
-    bgVideoEl.muted = true;
-    bgVideoEl.loop = true;
-    bgVideoEl.playsInline = true;
-    bgVideoEl.crossOrigin = 'anonymous';
+    const bgVideo = document.createElement('video');
+    bgVideo.muted = true; bgVideo.loop = true; bgVideo.playsInline = true; bgVideo.crossOrigin = 'anonymous';
 
-    let bgImageEl = new Image();
-    bgImageEl.crossOrigin = 'anonymous';
-    let bgSolidColor = '#3d6285';
+    const bgImage = new Image();
+    bgImage.crossOrigin = 'anonymous';
+    let solidColor = '#3d6285';
 
-    // Canvas references
+    // Canvas
     const canvas = document.getElementById('previewCanvas');
     const ctx = canvas.getContext('2d');
-    let isDragging = false;
-    let dragStartX, dragStartY;
+    let isDragging = false, dragStartX = 0, dragStartY = 0;
 
-    // Helper to check for video URLs
     function isVideoUrl(url) {
       if (!url) return false;
       const clean = url.split('?')[0].split('#')[0].toLowerCase().trim();
@@ -446,213 +462,252 @@
     }
 
     // ════════════════════════════════════════════
-    // INITIALIZATION
+    // INITIALIZATION & DIRECT DB FETCH
     // ════════════════════════════════════════════
     async function init() {
-      // 1. Authenticate
+      // 1. Auth check
       const { data: session } = await supabaseClient.auth.getSession();
       if (session?.session) {
         currentUser = session.session.user;
         const profile = await supabaseClient.from('profiles').select('default_platform').eq('id', currentUser.id).single();
         if (profile?.data?.default_platform) {
-          currentPlatform = profile.data.default_platform.toLowerCase();
+          const pref = profile.data.default_platform.toLowerCase();
+          if (PLATFORMS[pref]) currentPlatform = pref;
         }
       }
 
-      // 2. Load Quote Data
-      const qText = sessionStorage.getItem('gstw_selected_quote_text') || sessionStorage.getItem('gstw_today_quote_text');
-      const qSource = sessionStorage.getItem('gstw_selected_quote_source') || sessionStorage.getItem('gstw_today_quote_source');
-      const qId = sessionStorage.getItem('gstw_selected_quote_id') || sessionStorage.getItem('gstw_quote_id');
+      // 2. Fetch Quote by ID (from URL, session, or Live default)
+      const urlParams = new URLSearchParams(window.location.search);
+      const qId = urlParams.get('id') || sessionStorage.getItem('gstw_selected_quote_id') || sessionStorage.getItem('gstw_quote_id');
 
-      if (qText) {
-        currentQuote.text = qText;
-        currentQuote.source = qSource || 'GSTW';
-        currentQuote.id = qId;
+      let query = supabaseClient.from('quotes').select('*');
+      if (qId) query = query.eq('id', qId);
+      else query = query.eq('status', 'live').order('published_at', { ascending: false });
+
+      const { data } = await query.limit(1).single();
+
+      if (data) {
+        quoteData.id = data.id;
+        quoteData.text = data.text;
+        quoteData.source = data.source || 'GSTW';
+        quoteData.context = data.context || '';
+
+        // Display context
+        if (data.context) {
+          document.getElementById('contextTextDisplay').textContent = `"${data.context}"`;
+          document.getElementById('contextBox').classList.remove('hidden');
+        } else {
+          document.getElementById('contextBox').classList.add('hidden');
+        }
+
+        // Set quote background
+        if (data.background_url) {
+          loadBackgroundMedia(data.background_url);
+        } else {
+          loadBackgroundMedia('/images/default-hero.jpg');
+        }
       } else {
-        // Fetch active live quote from Supabase
-        const { data } = await supabaseClient.from('quotes').select('*').eq('status', 'live').limit(1).single();
-        if (data) {
-          currentQuote.text = data.text;
-          currentQuote.source = data.source || 'GSTW';
-          currentQuote.id = data.id;
-          if (data.background_url) setBackgroundSource(data.background_url);
-        }
+        loadBackgroundMedia('/images/default-hero.jpg');
       }
 
-      // Check if background URL was passed in quote
-      const defaultHero = '/images/default-hero.jpg';
-      if (!isVideoBg && !bgImageEl.src) {
-        setBackgroundSource(defaultHero);
-      }
-
-      // Apply initial platform aspect ratio
-      setPlatformFormat(currentPlatform || 'instagram');
-      renderHashtags();
-      updateFullCaption();
-      setupDragEvents();
-      startRenderLoop();
+      // Setup platform & canvas
+      setPlatformRatio(currentPlatform);
+      renderHashtagsList();
+      buildCaption();
+      setupCanvasInteractions();
+      runRenderLoop();
     }
 
     // ════════════════════════════════════════════
-    // DYNAMIC ASPECT RATIOS
+    // PLATFORM RATIO & ADAPTIVE SIZING
     // ════════════════════════════════════════════
-    function setPlatformFormat(platformKey) {
-      currentPlatform = PLATFORM_CONFIG[platformKey] ? platformKey : 'instagram';
-      const config = PLATFORM_CONFIG[currentPlatform];
+    function setPlatformRatio(platformKey) {
+      currentPlatform = PLATFORMS[platformKey] ? platformKey : 'instagram';
+      const config = PLATFORMS[currentPlatform];
 
-      // Update Canvas Pixel Dimensions
       canvas.width = config.w;
       canvas.height = config.h;
-
-      // Force CSS Aspect Ratio
       canvas.style.setProperty('aspect-ratio', config.ratio, 'important');
 
-      // Update Top Label
-      document.getElementById('platformFormatLabel').textContent = `Optimized for ${config.name} (${config.ratio})`;
+      document.getElementById('platformLabel').innerHTML = `
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> ${config.name} (${config.ratio})
+      `;
 
-      // Update Button Active States
-      document.querySelectorAll('.chip[id^="ratio-"]').forEach(btn => btn.classList.remove('active'));
-      const activeBtn = document.getElementById('ratio-' + currentPlatform);
-      if (activeBtn) activeBtn.classList.add('active');
+      document.querySelectorAll('#platformRatioBar .pill').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('btn-rat-' + currentPlatform)?.classList.add('active');
 
-      renderCanvas();
+      drawCanvas();
     }
 
     // ════════════════════════════════════════════
-    // CANVAS RENDERING ENGINE (60 FPS Motion)
+    // BACKGROUND HANDLERS (SELFIE / GALLERY / VIDEO)
     // ════════════════════════════════════════════
-    function startRenderLoop() {
-      function loop() {
-        if (isVideoBg && !bgVideoEl.paused) {
-          renderCanvas();
-        }
-        requestAnimationFrame(loop);
+    function loadBackgroundMedia(url) {
+      if (!url) return;
+      if (isVideoUrl(url)) {
+        isVideoBg = true;
+        bgVideo.src = url;
+        bgVideo.play().catch(() => {});
+      } else {
+        isVideoBg = false;
+        bgVideo.pause();
+        bgImage.src = url;
+        bgImage.onload = () => drawCanvas();
       }
-      requestAnimationFrame(loop);
+      drawCanvas();
     }
 
-    function renderCanvas() {
+    // Handles user selfie camera or phone upload
+    function handleDeviceMedia(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const objUrl = URL.createObjectURL(file);
+      if (file.type.startsWith('video/')) {
+        isVideoBg = true;
+        bgVideo.src = objUrl;
+        bgVideo.play().catch(() => {});
+      } else {
+        isVideoBg = false;
+        bgVideo.pause();
+        bgImage.src = objUrl;
+        bgImage.onload = () => drawCanvas();
+      }
+      drawCanvas();
+    }
+
+    function setSolidBg(hex) {
+      isVideoBg = false;
+      bgVideo.pause();
+      bgImage.src = '';
+      solidColor = hex;
+      drawCanvas();
+    }
+
+    // ════════════════════════════════════════════
+    // CANVAS DRAWING & RENDER LOOP
+    // ════════════════════════════════════════════
+    function runRenderLoop() {
+      function frame() {
+        if (isVideoBg && !bgVideo.paused) {
+          drawCanvas();
+        }
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function drawCanvas() {
       const w = canvas.width;
       const h = canvas.height;
 
-      // 1. Draw Background (Video / Image / Solid)
-      if (isVideoBg && bgVideoEl.readyState >= 2) {
-        const vRatio = bgVideoEl.videoWidth / bgVideoEl.videoHeight;
+      // 1. Draw Media Background
+      if (isVideoBg && bgVideo.readyState >= 2) {
+        const vRatio = bgVideo.videoWidth / bgVideo.videoHeight;
         const cRatio = w / h;
         let dw, dh, dx, dy;
-        if (vRatio > cRatio) {
-          dh = h; dw = h * vRatio;
-          dx = (w - dw) / 2; dy = 0;
-        } else {
-          dw = w; dh = w / vRatio;
-          dx = 0; dy = (h - dh) / 2;
-        }
-        ctx.drawImage(bgVideoEl, dx, dy, dw, dh);
-      } else if (bgImageEl.complete && bgImageEl.naturalWidth > 0) {
-        const imgRatio = bgImageEl.naturalWidth / bgImageEl.naturalHeight;
+        if (vRatio > cRatio) { dh = h; dw = h * vRatio; dx = (w - dw) / 2; dy = 0; }
+        else { dw = w; dh = w / vRatio; dx = 0; dy = (h - dh) / 2; }
+        ctx.drawImage(bgVideo, dx, dy, dw, dh);
+      } else if (bgImage.complete && bgImage.naturalWidth > 0) {
+        const imgRatio = bgImage.naturalWidth / bgImage.naturalHeight;
         const cRatio = w / h;
         let dw, dh, dx, dy;
-        if (imgRatio > cRatio) {
-          dh = h; dw = h * imgRatio;
-          dx = (w - dw) / 2; dy = 0;
-        } else {
-          dw = w; dh = w / imgRatio;
-          dx = 0; dy = (h - dh) / 2;
-        }
-        ctx.drawImage(bgImageEl, dx, dy, dw, dh);
+        if (imgRatio > cRatio) { dh = h; dw = h * imgRatio; dx = (w - dw) / 2; dy = 0; }
+        else { dw = w; dh = w / imgRatio; dx = 0; dy = (h - dh) / 2; }
+        ctx.drawImage(bgImage, dx, dy, dw, dh);
       } else {
-        ctx.fillStyle = bgSolidColor;
+        ctx.fillStyle = solidColor;
         ctx.fillRect(0, 0, w, h);
       }
 
-      // 2. Draw Dim Overlay
-      if (currentOverlayDim > 0) {
-        ctx.fillStyle = `rgba(14, 14, 12, ${currentOverlayDim})`;
+      // 2. Dim Overlay
+      if (currentDim > 0) {
+        ctx.fillStyle = `rgba(14, 14, 12, ${currentDim})`;
         ctx.fillRect(0, 0, w, h);
       }
 
-      // 3. Scale factor based on 1080 standard width
+      // 3. Scale factor based on standard 1080 width
       const scale = w / 1080;
-      const effectiveFontSize = currentFontSize * scale;
+      const fSize = currentFontSize * scale;
 
       // 4. Configure Font
-      let fontFace = '"Lora", serif';
-      let fontWeight = '500';
-      if (currentFontStyle === 'sans') { fontFace = '"Plus Jakarta Sans", sans-serif'; fontWeight = '600'; }
-      else if (currentFontStyle === 'bold') { fontFace = '"Plus Jakarta Sans", sans-serif'; fontWeight = '800'; }
+      let fontFamily = '"Lora", serif';
+      let weight = '500';
+      if (currentFont === 'sans') { fontFamily = '"Plus Jakarta Sans", sans-serif'; weight = '700'; }
+      else if (currentFont === 'hand') { fontFamily = '"Caveat", cursive'; weight = '700'; }
+      else if (currentFont === 'classic') { fontFamily = '"Cinzel", serif'; weight = '700'; }
 
-      ctx.font = `${fontWeight} ${effectiveFontSize}px ${fontFace}`;
+      ctx.font = `${weight} ${fSize}px ${fontFamily}`;
       ctx.textAlign = currentTextAlign;
       ctx.textBaseline = 'middle';
 
-      // 5. Wrap Text
-      const maxTextWidth = w * 0.82;
-      const lines = wrapText(currentQuote.text, maxTextWidth);
-      const lineHeight = effectiveFontSize * 1.35;
-      const blockHeight = lines.length * lineHeight;
+      // 5. Wrap lines
+      const maxW = w * 0.82;
+      const lines = wrapText(quoteData.text, maxW);
+      const lineHeight = fSize * 1.35;
+      const blockH = lines.length * lineHeight;
 
-      // 6. Calculate Position from normalized coordinates
-      const targetX = textNormX * w;
-      const targetY = textNormY * h;
-      const startY = targetY - (blockHeight / 2) + (lineHeight / 2);
+      // 6. Coordinate position
+      const cx = normX * w;
+      const cy = normY * h;
+      const startY = cy - (blockH / 2) + (lineHeight / 2);
 
       // 7. Drop Shadow
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
-      ctx.shadowBlur = 16 * scale;
-      ctx.shadowOffsetY = 4 * scale;
-      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0,0,0,0.85)';
+      ctx.shadowBlur = 15 * scale;
+      ctx.shadowOffsetY = 3 * scale;
+      ctx.fillStyle = currentFontColor;
 
       // Draw Quote Lines
       lines.forEach((line, idx) => {
-        let lx = targetX;
-        if (currentTextAlign === 'left') lx = targetX - (maxTextWidth / 2);
-        else if (currentTextAlign === 'right') lx = targetX + (maxTextWidth / 2);
+        let lx = cx;
+        if (currentTextAlign === 'left') lx = cx - (maxW / 2);
+        else if (currentTextAlign === 'right') lx = cx + (maxW / 2);
         ctx.fillText(line, lx, startY + (idx * lineHeight));
       });
 
-      // Draw Source Reference
+      // Source reference
       ctx.font = `bold ${Math.max(22 * scale, 18)}px "Plus Jakarta Sans", sans-serif`;
       ctx.fillStyle = '#b0d5fe';
       ctx.shadowBlur = 10 * scale;
-      const refY = startY + (lines.length * lineHeight) + (28 * scale);
-      ctx.fillText(`— ${(currentQuote.source || 'GSTW').toUpperCase()}`, targetX, refY);
+      const refY = startY + (lines.length * lineHeight) + (26 * scale);
+      ctx.fillText(`— ${(quoteData.source || 'GSTW').toUpperCase()}`, cx, refY);
 
-      // Watermark (Bottom Right)
-      ctx.shadowBlur = 6 * scale;
-      ctx.font = `600 ${Math.max(22 * scale, 16)}px "Plus Jakarta Sans", sans-serif`;
+      // Watermark
+      ctx.shadowBlur = 5 * scale;
+      ctx.font = `600 ${Math.max(20 * scale, 15)}px "Plus Jakarta Sans", sans-serif`;
       ctx.textAlign = 'right';
       ctx.textBaseline = 'bottom';
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
-      ctx.fillText('gospreadtheword.app', w - (36 * scale), h - (36 * scale));
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.fillText('gospreadtheword.app', w - (32 * scale), h - (32 * scale));
 
-      // Reset Shadows
+      // Reset
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
       ctx.shadowOffsetY = 0;
     }
 
-    function wrapText(text, maxWidth) {
+    function wrapText(text, maxW) {
       const words = (text || '').split(' ');
       const lines = [];
-      let currentLine = '';
+      let cur = '';
       for (let i = 0; i < words.length; i++) {
-        const testLine = currentLine + words[i] + ' ';
-        if (ctx.measureText(testLine).width > maxWidth && i > 0) {
-          lines.push(currentLine.trim());
-          currentLine = words[i] + ' ';
-        } else {
-          currentLine = testLine;
-        }
+        const test = cur + words[i] + ' ';
+        if (ctx.measureText(test).width > maxW && i > 0) {
+          lines.push(cur.trim());
+          cur = words[i] + ' ';
+        } else { cur = test; }
       }
-      lines.push(currentLine.trim());
+      lines.push(cur.trim());
       return lines;
     }
 
     // ════════════════════════════════════════════
-    // DRAG / TOUCH MOVEMENT (Normalized Coordinates)
+    // DRAG / TOUCH NORMALIZATION
     // ════════════════════════════════════════════
-    function setupDragEvents() {
-      const getPos = (e) => {
+    function setupCanvasInteractions() {
+      const getNormCoords = (e) => {
         const rect = canvas.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -662,131 +717,101 @@
         };
       };
 
-      const start = (e) => {
+      const onStart = (e) => {
         isDragging = true;
-        const pos = getPos(e);
-        dragStartX = pos.x - textNormX;
-        dragStartY = pos.y - textNormY;
+        const p = getNormCoords(e);
+        dragStartX = p.x - normX;
+        dragStartY = p.y - normY;
       };
 
-      const move = (e) => {
+      const onMove = (e) => {
         if (!isDragging) return;
         e.preventDefault();
-        const pos = getPos(e);
-        textNormX = Math.max(0.15, Math.min(0.85, pos.x - dragStartX));
-        textNormY = Math.max(0.15, Math.min(0.85, pos.y - dragStartY));
-        renderCanvas();
+        const p = getNormCoords(e);
+        normX = Math.max(0.12, Math.min(0.88, p.x - dragStartX));
+        normY = Math.max(0.12, Math.min(0.88, p.y - dragStartY));
+        drawCanvas();
       };
 
-      const end = () => { isDragging = false; };
+      const onEnd = () => { isDragging = false; };
 
-      canvas.addEventListener('mousedown', start);
-      window.addEventListener('mousemove', move);
-      window.addEventListener('mouseup', end);
+      canvas.addEventListener('mousedown', onStart);
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onEnd);
 
-      canvas.addEventListener('touchstart', start, { passive: false });
-      window.addEventListener('touchmove', move, { passive: false });
-      window.addEventListener('touchend', end);
+      canvas.addEventListener('touchstart', onStart, { passive: false });
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('touchend', onEnd);
     }
 
-    function resetTextPosition() {
-      textNormX = 0.5;
-      textNormY = 0.5;
-      renderCanvas();
-    }
-
-    // ════════════════════════════════════════════
-    // BACKGROUND & MEDIA HANDLING
-    // ════════════════════════════════════════════
-    function setBackgroundSource(url) {
-      if (!url) return;
-      if (isVideoUrl(url)) {
-        isVideoBg = true;
-        bgVideoEl.src = url;
-        bgVideoEl.play().catch(() => {});
-      } else {
-        isVideoBg = false;
-        bgVideoEl.pause();
-        bgImageEl.src = url;
-        bgImageEl.onload = () => renderCanvas();
-      }
-      renderCanvas();
-    }
-
-    function setBackgroundSolid(hex) {
-      isVideoBg = false;
-      bgVideoEl.pause();
-      bgImageEl.src = '';
-      bgSolidColor = hex;
-      renderCanvas();
-    }
-
-    function applyCustomBgUrl() {
-      const url = document.getElementById('customBgUrlInput').value.trim();
-      if (url) {
-        setBackgroundSource(url);
-        document.getElementById('customBgUrlInput').value = '';
-      }
+    function resetPosition() {
+      normX = 0.5; normY = 0.5;
+      drawCanvas();
     }
 
     // ════════════════════════════════════════════
-    // TYPOGRAPHY & STYLE CONTROLS
+    // TYPOGRAPHY & CONTROLS
     // ════════════════════════════════════════════
-    function setFontStyle(style) {
-      currentFontStyle = style;
-      document.querySelectorAll('#tabContent-style .chip[id^="font-"]').forEach(c => c.classList.remove('active'));
-      document.getElementById('font-' + style)?.classList.add('active');
-      renderCanvas();
+    function setFontFamily(f) {
+      currentFont = f;
+      document.querySelectorAll('#tab-font .pill[id^="f-"]').forEach(b => b.classList.remove('active'));
+      document.getElementById('f-' + f)?.classList.add('active');
+      drawCanvas();
     }
 
-    function handleFontSize(val) {
+    function handleSizeChange(val) {
       currentFontSize = parseInt(val);
-      document.getElementById('fontSizeDisplay').textContent = val + 'px';
-      renderCanvas();
+      document.getElementById('fontSizeVal').textContent = val + 'px';
+      drawCanvas();
     }
 
-    function setTextAlign(align) {
-      currentTextAlign = align;
-      document.querySelectorAll('#tabContent-style .chip[id^="align-"]').forEach(c => c.classList.remove('active'));
-      document.getElementById('align-' + align)?.classList.add('active');
-      renderCanvas();
+    function setTextColor(hex) {
+      currentFontColor = hex;
+      drawCanvas();
     }
 
-    function handleOverlayDim(val) {
-      currentOverlayDim = parseInt(val) / 100;
-      document.getElementById('overlayDimDisplay').textContent = val + '%';
-      renderCanvas();
+    function setTextAlignment(al) {
+      currentTextAlign = al;
+      document.querySelectorAll('#tab-font .pill[id^="al-"]').forEach(b => b.classList.remove('active'));
+      document.getElementById('al-' + al)?.classList.add('active');
+      drawCanvas();
+    }
+
+    function handleDimChange(val) {
+      currentDim = parseInt(val) / 100;
+      document.getElementById('dimVal').textContent = val + '%';
+      drawCanvas();
     }
 
     function switchTab(tab) {
-      ['style', 'background', 'caption'].forEach(t => {
-        document.getElementById(`tabContent-${t}`).classList.toggle('hidden', t !== tab);
-        document.getElementById(`tabBtn-${t}`).classList.toggle('active', t === tab);
+      ['photo', 'font', 'caption'].forEach(t => {
+        document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
+        document.getElementById('tab-btn-' + t).classList.toggle('active', t === tab);
       });
     }
 
     // ════════════════════════════════════════════
-    // HASHTAGS & CAPTION
+    // HASHTAGS & CAPTIONS
     // ════════════════════════════════════════════
-    function renderHashtags() {
-      const container = document.getElementById('hashtagChips');
-      container.innerHTML = currentHashtags.map((tag, idx) => `
-        <span class="chip active py-1 text-xs">
+    function renderHashtagsList() {
+      const el = document.getElementById('hashtagsList');
+      el.innerHTML = currentHashtags.map((tag, idx) => `
+        <span class="pill active py-0.5 text-[11px]">
           ${tag}
           <span onclick="removeTag(${idx})" class="material-symbols-outlined text-[13px] hover:text-red-300 ml-0.5">close</span>
         </span>
       `).join('');
-      updateFullCaption();
+      buildCaption();
     }
 
-    function addCustomTag() {
-      const input = document.getElementById('newTagInput');
-      let tag = input.value.trim();
-      if (tag) {
-        if (!tag.startsWith('#')) tag = '#' + tag;
-        if (!currentHashtags.includes(tag)) {
-          currentHashtags.push(tag);
-          renderHashtags();
+    function addTag() {
+      const input = document.getElementById('newHashtagInput');
+      let val = input.value.trim();
+      if (val) {
+        if (!val.startsWith('#')) val = '#' + val;
+        if (!currentHashtags.includes(val)) {
+          currentHashtags.push(val);
+          renderHashtagsList();
         }
         input.value = '';
       }
@@ -794,57 +819,74 @@
 
     function removeTag(idx) {
       currentHashtags.splice(idx, 1);
-      renderHashtags();
+      renderHashtagsList();
     }
 
-    function updateFullCaption() {
-      const note = document.getElementById('personalNote').value.trim();
+    function buildCaption() {
+      const incCtx = document.getElementById('includeContextCheck')?.checked;
+      const note = document.getElementById('personalReflection')?.value.trim();
       const tags = currentHashtags.join(' ');
-      const text = `"${currentQuote.text}" — ${currentQuote.source}\n\n${note ? note + '\n\n' : ''}${tags}\n\ngospreadtheword.app`;
-      document.getElementById('fullCaptionPreview').textContent = text;
-      return text;
+      
+      let caption = `"${quoteData.text}" — ${quoteData.source}\n\n`;
+      if (incCtx && quoteData.context) caption += `Context: ${quoteData.context}\n\n`;
+      if (note) caption += `${note}\n\n`;
+      caption += `${tags}\n\ngospreadtheword.app`;
+
+      document.getElementById('fullCaptionDisplay').textContent = caption;
+      return caption;
     }
 
     // ════════════════════════════════════════════
-    // SHARING ENGINE (Direct Clipboard + Analytics)
+    // SHARING & CLIPBOARD ENGINE
     // ════════════════════════════════════════════
-    function openPlatformPicker() {
-      document.getElementById('platformModal').classList.add('open');
-    }
-    function closePlatformPicker() {
-      document.getElementById('platformModal').classList.remove('open');
-    }
+    function openPlatformModal() { document.getElementById('shareModal').classList.add('open'); }
+    function closePlatformModal() { document.getElementById('shareModal').classList.remove('open'); }
 
-    async function executeShare(platform) {
-      const fullCaption = updateFullCaption();
-      closePlatformPicker();
+    async function postToPlatform(platform) {
+      const caption = buildCaption();
+      closePlatformModal();
 
-      // 1. Instant Clipboard Security Write (Guaranteed synchronous pass)
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        try { await navigator.clipboard.writeText(fullCaption); } catch(e) {}
-      }
-
-      // 2. Adjust format for selected platform
+      // Adjust ratio
       if (platform !== 'download') {
-        setPlatformFormat(platform);
+        setPlatformRatio(platform);
       }
 
-      // 3. Export image
+      // 1. Write text to clipboard immediately
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try { await navigator.clipboard.writeText(caption); } catch(e) {}
+      }
+
+      // 2. Export Image
       const dataUrl = canvas.toDataURL('image/png');
 
-      // 4. Record share analytics in Supabase
-      if (currentUser && currentQuote.id) {
+      // 3. For Facebook: Also copy image blob to clipboard & auto-download
+      if (platform === 'facebook' && navigator.clipboard && window.ClipboardItem) {
+        canvas.toBlob(async (blob) => {
+          try {
+            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          } catch(e) { console.warn('Image clipboard write failed', e); }
+        }, 'image/png');
+
+        // Download image for easy attachment
+        const fbLink = document.createElement('a');
+        fbLink.download = `GSTW-Post-${Date.now()}.png`;
+        fbLink.href = dataUrl;
+        fbLink.click();
+      }
+
+      // 4. Log share in database
+      if (currentUser && quoteData.id) {
         try {
           await supabaseClient.from('shares').insert({
             user_id: currentUser.id,
-            quote_id: currentQuote.id,
+            quote_id: quoteData.id,
             platform: platform,
             created_at: new Date().toISOString()
           });
-        } catch(err) { console.warn('Share log error:', err); }
+        } catch(e) {}
       }
 
-      // 5. Open destination or download
+      // 5. Trigger destination app
       if (platform === 'download') {
         const link = document.createElement('a');
         link.download = `GSTW-Quote-${Date.now()}.png`;
@@ -852,88 +894,81 @@
         link.click();
       } else if (platform === 'instagram') {
         window.open('https://instagram.com', '_blank');
-      } else if (platform === 'facebook') {
-        window.open('https://facebook.com', '_blank');
       } else if (platform === 'tiktok') {
         window.open('https://tiktok.com', '_blank');
+      } else if (platform === 'youtube') {
+        window.open('https://youtube.com/shorts', '_blank');
+      } else if (platform === 'facebook') {
+        window.open('https://facebook.com', '_blank');
       } else if (platform === 'whatsapp') {
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(fullCaption)}`, '_blank');
-      } else if (platform === 'twitter') {
-        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(fullCaption)}`, '_blank');
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(caption)}`, '_blank');
       }
 
-      // 6. Show celebratory Success Modal
+      // 6. Trigger Confetti & Success Modal
       setTimeout(() => {
-        showSuccessModal(platform);
+        showCelebration(dataUrl, platform);
       }, 400);
     }
 
-    function showSuccessModal(platform) {
-      document.getElementById('successSubtitle').textContent = `Shared to ${PLATFORM_CONFIG[platform]?.name || 'Social Media'}!`;
+    function showCelebration(imgSrc, platform) {
+      document.getElementById('successImgThumb').src = imgSrc;
+      document.getElementById('successSub').textContent = `Shared to ${PLATFORMS[platform]?.name || 'Social Media'}!`;
       document.getElementById('successModal').classList.add('open');
+
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 75, spread: 60, origin: { y: 0.6 } });
+      }
     }
-    function closeSuccessModal() {
-      document.getElementById('successModal').classList.remove('open');
-    }
-    function reshareFromSuccess() {
-      closeSuccessModal();
-      setTimeout(openPlatformPicker, 200);
-    }
+
+    function closeSuccessModal() { document.getElementById('successModal').classList.remove('open'); }
+    function reshare() { closeSuccessModal(); setTimeout(openPlatformModal, 200); }
 
     // ════════════════════════════════════════════
     // MEDIA LIBRARY PICKER MODAL
     // ════════════════════════════════════════════
-    function openMediaLibrary() {
-      document.getElementById('mediaModal').classList.add('open');
-      loadMediaPicker('all');
-    }
-    function closeMediaLibrary() {
-      document.getElementById('mediaModal').classList.remove('open');
-    }
+    function openMediaModal() { document.getElementById('mediaModal').classList.add('open'); filterMedia('all'); }
+    function closeMediaModal() { document.getElementById('mediaModal').classList.remove('open'); }
 
-    async function loadMediaPicker(folder) {
-      const grid = document.getElementById('mediaPickerGrid');
+    async function filterMedia(category) {
+      const grid = document.getElementById('mediaGrid');
       grid.innerHTML = '<div class="col-span-full py-8 text-center text-xs text-outline">Loading media...</div>';
       
-      document.querySelectorAll('.chip[id^="mf-"]').forEach(c => c.classList.remove('active'));
-      document.getElementById('mf-' + folder)?.classList.add('active');
+      document.querySelectorAll('#mediaModal .pill').forEach(p => p.classList.remove('active'));
+      document.getElementById('m-' + category)?.classList.add('active');
 
       try {
         let query = supabaseClient.from('media').select('*').eq('is_active', true).order('created_at', { ascending: false });
-        if (folder !== 'all') query = query.eq('type', folder);
-        const { data, error } = await query;
-        if (error) throw error;
+        if (category !== 'all') query = query.eq('type', category);
+        const { data } = await query;
 
-        if (!data || data.length === 0) {
-          grid.innerHTML = `<div class="col-span-full py-8 text-center text-xs text-outline">No media found in ${folder}.</div>`;
+        if (!data || !data.length) {
+          grid.innerHTML = `<div class="col-span-full py-8 text-center text-xs text-outline">No media found in ${category}.</div>`;
           return;
         }
 
-        grid.innerHTML = data.map(item => {
-          const url = item.url;
-          const isVid = isVideoUrl(url) || item.type === 'video';
-          const preview = isVid
-            ? `<div class="relative w-full h-full bg-black"><video src="${url}#t=0.1" class="w-full h-full object-cover" muted preload="metadata"></video><span class="material-symbols-outlined text-[14px] text-white absolute top-1 right-1 bg-black/60 rounded p-0.5">videocam</span></div>`
-            : `<img src="${url}" class="w-full h-full object-cover">`;
+        grid.innerHTML = data.map(m => {
+          const isVid = isVideoUrl(m.url) || m.type === 'video';
+          const thumb = isVid
+            ? `<video src="${m.url}#t=0.1" class="w-full h-full object-cover" muted preload="metadata"></video><span class="material-symbols-outlined text-white text-[14px] absolute top-1 right-1 bg-black/60 rounded p-0.5">videocam</span>`
+            : `<img src="${m.url}" class="w-full h-full object-cover">`;
 
           return `
-            <div onclick="selectMediaBg('${url}')" class="aspect-square bg-slate-100 rounded-xl overflow-hidden border border-surface-c hover:border-primary cursor-pointer relative group transition-transform active:scale-95">
-              ${preview}
-              <div class="absolute inset-x-0 bottom-0 bg-black/60 text-white text-[9px] px-1.5 py-0.5 truncate opacity-0 group-hover:opacity-100">${item.label || item.name || 'Media'}</div>
+            <div onclick="selectMedia('${m.url}')" class="aspect-square bg-slate-100 rounded-xl overflow-hidden border border-surface-c hover:border-primary cursor-pointer relative group active:scale-95 transition-transform">
+              ${thumb}
+              <div class="absolute inset-x-0 bottom-0 bg-black/60 text-white text-[9px] px-1.5 py-0.5 truncate opacity-0 group-hover:opacity-100">${m.label || m.name || 'Media'}</div>
             </div>
           `;
         }).join('');
       } catch(e) {
-        grid.innerHTML = `<div class="col-span-full py-8 text-center text-xs text-rose-500">Failed to load media.</div>`;
+        grid.innerHTML = `<div class="col-span-full py-8 text-center text-xs text-rose-500">Error loading media.</div>`;
       }
     }
 
-    function selectMediaBg(url) {
-      setBackgroundSource(url);
-      closeMediaLibrary();
+    function selectMedia(url) {
+      loadBackgroundMedia(url);
+      closeMediaModal();
     }
 
-    // Start on page load
     window.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
