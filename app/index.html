@@ -944,9 +944,10 @@ async function handleQuickShare() {
   showSuccess()
 }
 
-// ═════════════════════════════
-// GENERATE QUICK SHARE 
-// ═════════════════════════════
+// ════════════════════════════════════════════
+// GENERATE QUICK SHARE IMAGE (1080x1080)
+// Supports both Image & Video backgrounds
+// ════════════════════════════════════════════
 function generateQuickShareImage() {
   return new Promise(function(resolve) {
     try {
@@ -954,16 +955,16 @@ function generateQuickShareImage() {
       canvas.width = 1080; canvas.height = 1080
       var ctx = canvas.getContext('2d')
       if (!ctx) { resolve({ success: false, error: 'Canvas not supported' }); return }
-
+      
       ctx.fillStyle = '#0e0e0c'
       ctx.fillRect(0, 0, 1080, 1080)
-
+      
       var quoteText = currentQuote.text || ''
       var quoteSource = currentQuote.source || 'GSTW'
       var bgUrl = (currentQuote.background_url && currentQuote.background_url.trim()) ? currentQuote.background_url : DEFAULT_HERO
 
       function drawContent() {
-        // Dark overlay (30%)
+        // Dark overlay (35%)
         ctx.fillStyle = 'rgba(0,0,0,0.35)'
         ctx.fillRect(0, 0, 1080, 1080)
 
@@ -971,16 +972,18 @@ function generateQuickShareImage() {
         var pad = 100
         var maxWidth = 1080 - (pad * 2)
         var fontSize = 60
-        // Auto-fit
+
+        // Auto-fit font size based on length
         var textLen = quoteText.length
         if (textLen > 200) fontSize = 40
         else if (textLen > 150) fontSize = 48
         else if (textLen > 100) fontSize = 54
+
         ctx.font = '500 ' + fontSize + 'px "Lora", serif'
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
 
-        // Wrap text
+        // Wrap text helper
         function wrapText(text, maxW) {
           var words = text.split(' '), line = '', lines = []
           for (var i = 0; i < words.length; i++) {
@@ -999,17 +1002,17 @@ function generateQuickShareImage() {
         var totalHeight = lines.length * lineHeight
         var startY = (1080 / 2) - (totalHeight / 2) + (lineHeight / 2)
 
-        // Shadow
+        // Text drop shadow
         ctx.shadowColor = 'rgba(0,0,0,0.85)'
         ctx.shadowBlur = 14
         ctx.shadowOffsetY = 3
-
         ctx.fillStyle = '#ffffff'
+
         for (var j = 0; j < lines.length; j++) {
           ctx.fillText(lines[j], 540, startY + (j * lineHeight))
         }
 
-        // Source ref
+        // Source reference
         ctx.shadowBlur = 8
         ctx.font = 'bold 28px "Plus Jakarta Sans", sans-serif'
         ctx.fillStyle = '#b0d5fe'
@@ -1032,7 +1035,7 @@ function generateQuickShareImage() {
         try {
           quickShareImageDataUrl = canvas.toDataURL('image/png')
         } catch(taintErr) {
-          resolve({ success: false, error: 'Background image blocked by browser CORS. Contact support.' })
+          resolve({ success: false, error: 'Background media blocked by CORS.' })
           return
         }
 
@@ -1044,31 +1047,57 @@ function generateQuickShareImage() {
           var blob = new Blob([ab], { type: 'image/png' })
           quickShareImageFile = new File([blob], 'GSTW-' + Date.now() + '.png', { type: 'image/png' })
           resolve({ success: true })
-        } catch(err) { resolve({ success: false, error: 'Could not prepare image' }) }
+        } catch(err) { 
+          resolve({ success: false, error: 'Could not prepare image' }) 
+        }
       }
 
-      var img = new Image()
-      img.crossOrigin = 'anonymous'
-      img.onload = function() {
-        var scale = Math.max(1080 / img.width, 1080 / img.height)
-        var sw = img.width * scale, sh = img.height * scale
-        ctx.drawImage(img, (1080 - sw) / 2, (1080 - sh) / 2, sw, sh)
-        drawContent()
+      // Check if background is Video or Static Image
+      if (isVideoUrl(bgUrl)) {
+        var v = document.createElement('video')
+        v.crossOrigin = 'anonymous'
+        v.muted = true
+        v.playsInline = true
+        v.src = bgUrl
+        
+        v.onloadeddata = function() {
+          v.currentTime = 0.5 // Seek to 0.5s to ensure a rendered frame
+        }
+        
+        v.onseeked = function() {
+          var scale = Math.max(1080 / v.videoWidth, 1080 / v.videoHeight)
+          var sw = v.videoWidth * scale, sh = v.videoHeight * scale
+          ctx.drawImage(v, (1080 - sw) / 2, (1080 - sh) / 2, sw, sh)
+          drawContent()
+        }
+        
+        v.onerror = function() {
+          ctx.fillStyle = '#305678'
+          ctx.fillRect(0, 0, 1080, 1080)
+          drawContent()
+        }
+      } else {
+        var img = new Image()
+        img.crossOrigin = 'anonymous'
+        img.onload = function() {
+          var scale = Math.max(1080 / img.width, 1080 / img.height)
+          var sw = img.width * scale, sh = img.height * scale
+          ctx.drawImage(img, (1080 - sw) / 2, (1080 - sh) / 2, sw, sh)
+          drawContent()
+        }
+        img.onerror = function() {
+          ctx.fillStyle = '#305678'
+          ctx.fillRect(0, 0, 1080, 1080)
+          drawContent()
+        }
+        img.src = bgUrl
       }
-      img.onerror = function() {
-        ctx.fillStyle = '#305678'
-        ctx.fillRect(0, 0, 1080, 1080)
-        drawContent()
-      }
-      img.src = bgUrl
-
     } catch(e) {
       console.error('generateQuickShareImage:', e)
       resolve({ success: false, error: 'Unexpected error' })
     }
   })
 }
-
 function downloadQuickShareImage() {
   if (!quickShareImageDataUrl) return
   var a = document.createElement('a')
