@@ -256,7 +256,11 @@ function populateCategories() {
   sel.innerHTML = '<option value="">All Categories</option>' + cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
   sel.value = current;
 }
-
+function isVideoUrl(url) {
+  if (!url) return false;
+  const clean = url.split('?')[0].split('#')[0].toLowerCase().trim();
+  return clean.endsWith('.mp4') || clean.endsWith('.webm') || clean.endsWith('.mov') || clean.endsWith('.m4v');
+}
 function applyFilters() {
   const status = document.getElementById('filterStatus').value;
   const campaign = document.getElementById('filterCampaign').value;
@@ -306,7 +310,14 @@ function renderList(containerId, quotes, type, emptyMsg) {
 }
 
 function buildQuoteCard(q, type) {
-  const bg = q.background_url ? `<img src="${q.background_url}" class="w-full h-full object-cover">` : `<span class="material-symbols-outlined text-outline text-[24px]">image</span>`;
+  let bg = `<span class="material-symbols-outlined text-outline text-[24px]">image</span>`;
+if (q.background_url) {
+  if (isVideoUrl(q.background_url)) {
+    bg = `<video src="${q.background_url}#t=0.1" class="w-full h-full object-cover" muted preload="metadata" playsinline></video>`;
+  } else {
+    bg = `<img src="${q.background_url}" class="w-full h-full object-cover">`;
+  }
+}
   
   const badges = {
     live: `<span class="badge badge-live"><span class="material-symbols-outlined filled text-[10px]">radio_button_checked</span> Live</span>`,
