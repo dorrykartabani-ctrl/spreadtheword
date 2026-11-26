@@ -923,11 +923,17 @@
     function closeSuccessModal() { document.getElementById('successModal').classList.remove('open'); }
     function reshare() { closeSuccessModal(); setTimeout(openPlatformModal, 200); }
 
+       // ════════════════════════════════════════════
+    // MEDIA LIBRARY PICKER MODAL (RESTRICTED TO BG & VIDEO)
     // ════════════════════════════════════════════
-    // MEDIA LIBRARY PICKER MODAL
-    // ════════════════════════════════════════════
-    function openMediaModal() { document.getElementById('mediaModal').classList.add('open'); filterMedia('all'); }
-    function closeMediaModal() { document.getElementById('mediaModal').classList.remove('open'); }
+    function openMediaModal() { 
+      document.getElementById('mediaModal').classList.add('open'); 
+      filterMedia('all'); 
+    }
+    
+    function closeMediaModal() { 
+      document.getElementById('mediaModal').classList.remove('open'); 
+    }
 
     async function filterMedia(category) {
       const grid = document.getElementById('mediaGrid');
@@ -935,11 +941,27 @@
       
       document.querySelectorAll('#mediaModal .pill').forEach(p => p.classList.remove('active'));
       document.getElementById('m-' + category)?.classList.add('active');
-
+      
       try {
-        let query = supabaseClient.from('media').select('*').eq('is_active', true).order('created_at', { ascending: false });
-        if (category !== 'all') query = query.eq('type', category);
-        const { data } = await query;
+        // Base query always restricts to is_active
+        let query = supabaseClient
+          .from('media')
+          .select('id, url, type, label, name, created_at')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
+
+        // Restrict to 'background' and 'video' only
+        if (category === 'all') {
+          query = query.in('type', ['background', 'video']);
+        } else if (category === 'video' || category === 'background') {
+          query = query.eq('type', category);
+        } else {
+          // Fallback safeguard
+          query = query.in('type', ['background', 'video']);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
 
         if (!data || !data.length) {
           grid.innerHTML = `<div class="col-span-full py-8 text-center text-xs text-outline">No media found in ${category}.</div>`;
@@ -950,8 +972,7 @@
           const isVid = isVideoUrl(m.url) || m.type === 'video';
           const thumb = isVid
             ? `<video src="${m.url}#t=0.1" class="w-full h-full object-cover" muted preload="metadata"></video><span class="material-symbols-outlined text-white text-[14px] absolute top-1 right-1 bg-black/60 rounded p-0.5">videocam</span>`
-            : `<img src="${m.url}" class="w-full h-full object-cover">`;
-
+            : `<img src="${m.url}" class="w-full h-full object-cover" loading="lazy">`;
           return `
             <div onclick="selectMedia('${m.url}')" class="aspect-square bg-slate-100 rounded-xl overflow-hidden border border-surface-c hover:border-primary cursor-pointer relative group active:scale-95 transition-transform">
               ${thumb}
@@ -960,10 +981,10 @@
           `;
         }).join('');
       } catch(e) {
+        console.error('Error loading media:', e);
         grid.innerHTML = `<div class="col-span-full py-8 text-center text-xs text-rose-500">Error loading media.</div>`;
       }
     }
-
     function selectMedia(url) {
       loadBackgroundMedia(url);
       closeMediaModal();
