@@ -51,6 +51,8 @@
     .cat-chip { display:inline-flex; align-items:center; gap:6px; padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #f5f4ed; color: #5e6059; user-select: none; }
     .cat-chip:hover { background: #e9e8e1; }
     .cat-chip.active { background: #3d6285; color: #ffffff; }
+    .tag-chip { display:inline-flex; align-items:center; gap:4px; padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 700; background: #e0f2fe; color: #0369a1; }
+    .tag-chip span { cursor: pointer; }
     .mode-card { border: 2px solid #efeee7; border-radius: 12px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.2s; background: #ffffff; color: #5e6059; }
     .mode-card:hover { border-color: #c0c0b8; }
     .mode-card.active { border-color: #3d6285; background: #3d6285; color: #ffffff; }
@@ -110,7 +112,7 @@
   <header class="sticky top-0 z-20 bg-surface/90 backdrop-blur-md border-b border-surface-c px-6 lg:px-10 py-5 flex items-center justify-between">
     <div>
       <h2 class="font-headline font-bold text-on-surface text-2xl" id="pageTitle">Create New Quote</h2>
-      <p class="text-xs font-semibold text-outline mt-1">Configure scripture, multi-categories, media background, and schedule timing.</p>
+      <p class="text-xs font-semibold text-outline mt-1">Configure scripture, categories, hashtags, background media, and scheduling.</p>
     </div>
     <a href="manage-quotes.html" class="text-sm font-bold text-primary hover:underline">← Back to List</a>
   </header>
@@ -159,35 +161,60 @@
           </div>
         </div>
 
-        <!-- Category & Campaign -->
+        <!-- Categories & Hashtags -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Categories -->
           <div class="form-card">
             <div class="flex justify-between items-center mb-2">
               <label class="form-label mb-0">Categories (Multi-Select) *</label>
-              <span class="text-[10px] text-outline font-bold">Select 1 or more</span>
             </div>
             <div class="flex flex-wrap gap-2 mb-4" id="categoryChips"></div>
             <div class="flex gap-2">
-              <input type="text" id="newCategoryInput" class="form-input py-2 text-xs" placeholder="Add custom tag..." onkeydown="if(event.key==='Enter'){event.preventDefault();addCategory();}">
+              <input type="text" id="newCategoryInput" class="form-input py-2 text-xs" placeholder="Add custom category..." onkeydown="if(event.key==='Enter'){event.preventDefault();addCategory();}">
               <button type="button" onclick="addCategory()" class="bg-primary text-white px-4 rounded-lg font-bold text-xs">Add</button>
             </div>
           </div>
+
+          <!-- Hashtags -->
           <div class="form-card">
-            <label class="form-label">Attached Campaign</label>
-            <select id="quoteCampaign" class="form-input mt-2"><option value="">— None —</option></select>
-            <p class="text-[10px] text-outline font-medium mt-2">Associating a quote with a campaign automatically rewards participants with campaign badges.</p>
+            <div class="flex justify-between items-center mb-2">
+              <label class="form-label mb-0">Post Hashtags (#)</label>
+              <span class="text-[10px] text-outline font-bold">Press Enter or Comma</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5 mb-3 min-h-[32px]" id="hashtagChips"></div>
+            <div class="flex gap-2 mb-3">
+              <input type="text" id="newHashtagInput" class="form-input py-2 text-xs" placeholder="e.g. Faith, DailyScripture..." onkeydown="handleHashtagKeydown(event)">
+              <button type="button" onclick="addHashtagFromInput()" class="bg-primary text-white px-4 rounded-lg font-bold text-xs">Add</button>
+            </div>
+            <div>
+              <p class="text-[10px] text-outline font-bold uppercase tracking-wider mb-1.5">Quick Suggestions:</p>
+              <div class="flex flex-wrap gap-1.5">
+                <button type="button" onclick="quickAddHashtag('#Faith')" class="text-[11px] bg-surface-clow hover:bg-slate-200 text-on-surface-variant font-bold px-2 py-0.5 rounded-md transition-colors">+ #Faith</button>
+                <button type="button" onclick="quickAddHashtag('#DailyScripture')" class="text-[11px] bg-surface-clow hover:bg-slate-200 text-on-surface-variant font-bold px-2 py-0.5 rounded-md transition-colors">+ #DailyScripture</button>
+                <button type="button" onclick="quickAddHashtag('#IDeclare')" class="text-[11px] bg-surface-clow hover:bg-slate-200 text-on-surface-variant font-bold px-2 py-0.5 rounded-md transition-colors">+ #IDeclare</button>
+                <button type="button" onclick="quickAddHashtag('#Warrior')" class="text-[11px] bg-surface-clow hover:bg-slate-200 text-on-surface-variant font-bold px-2 py-0.5 rounded-md transition-colors">+ #Warrior</button>
+                <button type="button" onclick="quickAddHashtag('#Jesus')" class="text-[11px] bg-surface-clow hover:bg-slate-200 text-on-surface-variant font-bold px-2 py-0.5 rounded-md transition-colors">+ #Jesus</button>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Background Media -->
-        <div class="form-card">
-          <div class="flex justify-between items-end mb-3">
-            <label class="form-label mb-0">Background Media (Image or MP4 Video)</label>
-            <button type="button" onclick="openMediaLibrary()" class="text-xs font-bold text-primary flex items-center gap-1 hover:underline">
-              <span class="material-symbols-outlined text-[14px]">photo_library</span> Select from Library
-            </button>
+        <!-- Campaign & Background Media -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="form-card">
+            <label class="form-label">Attached Campaign</label>
+            <select id="quoteCampaign" class="form-input mt-2"><option value="">— None —</option></select>
+            <p class="text-[10px] text-outline font-medium mt-2">Sharing campaign quotes rewards users with participation badges.</p>
           </div>
-          <input type="text" id="quoteBgUrl" class="form-input text-xs" placeholder="Image or MP4 Video URL..." oninput="updatePreview()">
+          <div class="form-card">
+            <div class="flex justify-between items-end mb-2">
+              <label class="form-label mb-0">Background Media</label>
+              <button type="button" onclick="openMediaLibrary()" class="text-xs font-bold text-primary flex items-center gap-1 hover:underline">
+                <span class="material-symbols-outlined text-[14px]">photo_library</span> Library
+              </button>
+            </div>
+            <input type="text" id="quoteBgUrl" class="form-input text-xs mt-1" placeholder="Image or MP4 Video URL..." oninput="updatePreview()">
+          </div>
         </div>
 
         <!-- Advanced Display Settings -->
@@ -293,6 +320,7 @@
                 <div class="h-px bg-primary-container/60 w-8"></div>
               </div>
               <div id="previewTags" class="flex flex-wrap justify-center gap-1 mt-4"></div>
+              <div id="previewHashtags" class="flex flex-wrap justify-center gap-1.5 mt-2"></div>
             </div>
           </div>
         </div>
@@ -338,11 +366,11 @@ let editQuoteId = null;
 let allAvailableCategories = ['General', 'Faith', 'Hope', 'Courage', 'Wisdom', 'Mission', 'Declaration'];
 let selectedCategories = ['General'];
 const coreCategories = ['General', 'Faith', 'Hope', 'Courage', 'Wisdom', 'Mission'];
+let currentHashtags = [];
 let currentBibleVersion = 'web';
 let scheduledDatesList = [];
 let toastTimer;
 
-// Timezone helper: Australia/Sydney (AEST / AEDT)
 const AEST_TIMEZONE = 'Australia/Sydney';
 
 function getNowInAEST() {
@@ -399,6 +427,7 @@ async function init() {
       await loadEditData(editQuoteId);
     } else {
       renderCategoryChips();
+      renderHashtags();
       updatePreview();
       selectMode('live');
     }
@@ -500,7 +529,6 @@ function renderCategoryChips() {
     return `<div onclick="toggleCategory('${cat}')" class="cat-chip ${isSelected ? 'active' : ''}">${escapeHtml(cat)} ${delBtn}</div>`;
   }).join('');
   
-  // Update preview tags
   const previewTags = document.getElementById('previewTags');
   if (previewTags) {
     previewTags.innerHTML = selectedCategories.map(c => 
@@ -546,6 +574,73 @@ function deleteCategory(cat, event) {
     selectedCategories = ['General'];
   }
   renderCategoryChips();
+}
+
+// HASHTAG HANDLING
+function formatHashtag(tag) {
+  let cleaned = tag.replace(/[^a-zA-Z0-9_#]/g, '').trim();
+  if (!cleaned) return '';
+  if (!cleaned.startsWith('#')) cleaned = '#' + cleaned;
+  return cleaned;
+}
+
+function renderHashtags() {
+  const container = document.getElementById('hashtagChips');
+  if (currentHashtags.length === 0) {
+    container.innerHTML = '<span class="text-xs text-slate-400 italic">No hashtags added yet.</span>';
+  } else {
+    container.innerHTML = currentHashtags.map((tag, idx) => `
+      <span class="tag-chip">
+        ${escapeHtml(tag)}
+        <span onclick="removeHashtag(${idx})" class="material-symbols-outlined text-[14px] hover:text-rose-600">close</span>
+      </span>
+    `).join('');
+  }
+
+  // Update phone preview
+  const previewHashtags = document.getElementById('previewHashtags');
+  if (previewHashtags) {
+    previewHashtags.innerHTML = currentHashtags.map(t => 
+      `<span class="text-[10px] text-primary-container font-semibold tracking-wide opacity-90">${escapeHtml(t)}</span>`
+    ).join(' ');
+  }
+}
+
+function handleHashtagKeydown(e) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    addHashtagFromInput();
+  }
+}
+
+function addHashtagFromInput() {
+  const input = document.getElementById('newHashtagInput');
+  const raw = (input?.value || '').trim();
+  if (!raw) return;
+
+  const parts = raw.split(/[\s,]+/);
+  parts.forEach(p => {
+    const formatted = formatHashtag(p);
+    if (formatted && !currentHashtags.includes(formatted)) {
+      currentHashtags.push(formatted);
+    }
+  });
+
+  input.value = '';
+  renderHashtags();
+}
+
+function quickAddHashtag(tag) {
+  const formatted = formatHashtag(tag);
+  if (formatted && !currentHashtags.includes(formatted)) {
+    currentHashtags.push(formatted);
+    renderHashtags();
+  }
+}
+
+function removeHashtag(idx) {
+  currentHashtags.splice(idx, 1);
+  renderHashtags();
 }
 
 // CALENDAR & AEST SCHEDULER
@@ -627,6 +722,16 @@ async function loadEditData(id) {
     }
   });
   renderCategoryChips();
+
+  // Populate hashtags
+  if (Array.isArray(data.hashtags)) {
+    currentHashtags = [...data.hashtags];
+  } else if (typeof data.hashtags === 'string' && data.hashtags) {
+    currentHashtags = data.hashtags.split(/[\s,]+/).map(formatHashtag).filter(Boolean);
+  } else {
+    currentHashtags = [];
+  }
+  renderHashtags();
 
   // Populate Schedule and End Date in AEST
   if (data.scheduled_for) {
@@ -721,24 +826,20 @@ async function handlePublish() {
   if (!text) return showToast('Quote text is required', true);
   if (!source) return showToast('Source / Reference is required', true);
 
-  // Multi-Category Sanitization
   if (!selectedCategories || selectedCategories.length === 0) {
     selectedCategories = ['General'];
   }
   const primaryCategory = selectedCategories[0];
 
-  // Campaign UUID Check
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const rawCampaign = document.getElementById('quoteCampaign')?.value || '';
   const campaignId = uuidRegex.test(rawCampaign) ? rawCampaign : null;
 
-  // Optional Fields
   const context = (document.getElementById('quoteContext')?.value || '').trim() || null;
   const bgUrl = (document.getElementById('quoteBgUrl')?.value || '').trim() || null;
   const fontSize = document.getElementById('quoteFontSize')?.value || null;
   const textAlign = document.getElementById('quoteTextAlign')?.value || 'center';
   
-  // Schedule & Expiry Dates
   const scheduleDateVal = document.getElementById('scheduleDate')?.value || '';
   const endDateVal = document.getElementById('endDate')?.value || '';
   
@@ -751,6 +852,7 @@ async function handlePublish() {
     source: source,
     category: primaryCategory,
     categories: selectedCategories,
+    hashtags: currentHashtags,
     campaign_id: campaignId,
     context: context,
     background_url: bgUrl,
