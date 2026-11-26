@@ -45,7 +45,6 @@
     .pill { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 99px; font-size: 11px; font-weight: 700; background: #f5f4ed; color: #5e6059; border: 1px solid #e9e8e1; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
     .pill:hover { border-color: #3d6285; }
     .pill.active { background: #3d6285; color: #ffffff; border-color: #3d6285; }
-
     /* Canvas Container */
     .canvas-container {
       position: relative;
@@ -65,21 +64,17 @@
       transition: aspect-ratio 0.25s ease;
     }
     @media (min-width: 1024px) {
-      #previewCanvas { max-height: 65vh; }
+      #previewCanvas { max-height: 55vh; }
     }
-
     /* Tabs */
     .tab-btn { padding: 10px 14px; font-size: 12px; font-weight: 700; color: #5e6059; border-bottom: 2px solid transparent; transition: all 0.2s; }
     .tab-btn.active { color: #3d6285; border-color: #3d6285; }
-
     /* Sliders */
     input[type=range] { -webkit-appearance: none; height: 5px; border-radius: 3px; background: #e3e3db; outline: none; }
     input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #3d6285; cursor: pointer; }
-
     /* Color Swatch */
     .color-swatch { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.15); cursor: pointer; transition: transform 0.15s; }
     .color-swatch:hover { transform: scale(1.15); }
-
     /* Modals */
     .modal-overlay { position: fixed; inset: 0; background: rgba(14,14,12,0.65); backdrop-filter: blur(8px); z-index: 100; display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
     @media (min-width: 768px) { .modal-overlay { align-items: center; } }
@@ -90,7 +85,6 @@
   </style>
 </head>
 <body class="min-h-screen flex flex-col">
-
   <!-- TOP APP BAR -->
   <header class="sticky top-0 z-40 bg-surface/90 backdrop-blur-md border-b border-surface-c px-4 lg:px-8 py-3 flex items-center justify-between">
     <div class="flex items-center gap-2.5">
@@ -110,7 +104,7 @@
   <!-- MAIN TWO-COLUMN WORKSPACE -->
   <main class="flex-1 max-w-6xl w-full mx-auto p-3 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
     
-    <!-- LEFT: STICKY PREVIEW (STAYS FIXED IN SIGHT) -->
+    <!-- LEFT: PREVIEW & LIVE CAPTION / HASHTAG CARD -->
     <div class="lg:col-span-7 sticky top-14 z-30 lg:top-20 bg-surface/95 lg:bg-transparent pb-2 lg:pb-0">
       
       <!-- 1. PLATFORM SELECTOR ABOVE THE CANVAS -->
@@ -122,7 +116,6 @@
           <span class="material-symbols-outlined text-[13px]">restart_alt</span> Center Text
         </button>
       </div>
-
       <div class="w-full max-w-md mx-auto overflow-x-auto pb-1.5 flex gap-1.5 no-scrollbar mb-2" id="platformRatioBar">
         <button onclick="setPlatformRatio('instagram')" id="btn-rat-instagram" class="pill active">Instagram</button>
         <button onclick="setPlatformRatio('tiktok')" id="btn-rat-tiktok" class="pill">TikTok</button>
@@ -136,6 +129,32 @@
       <div class="w-full max-w-md mx-auto canvas-container">
         <canvas id="previewCanvas" width="1080" height="1350"></canvas>
       </div>
+
+      <!-- 3. LIVE CAPTION & HASHTAGS PREVIEW CARD (DIRECTLY BELOW IMAGE) -->
+      <div class="w-full max-w-md mx-auto mt-3 bg-surface-card border border-surface-c rounded-2xl p-3.5 shadow-sm space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-primary font-headline flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">content_paste</span> Caption & Context (Copies to Clipboard)
+          </span>
+          <span class="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Auto-copies on share</span>
+        </div>
+        
+        <!-- Live Text Preview -->
+        <div class="p-2.5 bg-surface-low rounded-xl border border-surface-c text-[11px] text-on-surface leading-relaxed max-h-24 overflow-y-auto whitespace-pre-wrap select-all font-mono" id="belowCanvasCaptionPreview"></div>
+
+        <!-- Live Hashtags Bar -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-outline">Post Hashtags</span>
+            <span class="text-[10px] font-semibold text-outline">Tap × to remove</span>
+          </div>
+          <div id="belowCanvasHashtags" class="flex flex-wrap gap-1 mb-2"></div>
+          <div class="flex gap-1.5">
+            <input type="text" id="quickTagInput" placeholder="Add custom hashtag (e.g. #Grace)" onkeydown="if(event.key==='Enter'){event.preventDefault();addQuickTag();}" class="flex-1 bg-surface-low border border-surface-c rounded-xl px-3 py-1.5 text-xs outline-none focus:border-primary">
+            <button onclick="addQuickTag()" class="px-3 bg-primary text-white font-bold text-xs rounded-xl hover:opacity-90">Add</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- RIGHT: SCROLLABLE TOOLBOX -->
@@ -145,9 +164,8 @@
       <div class="flex border-b border-surface-c bg-surface-low px-1">
         <button onclick="switchTab('photo')" id="tab-btn-photo" class="tab-btn active flex-1 text-center">📸 Background</button>
         <button onclick="switchTab('font')" id="tab-btn-font" class="tab-btn flex-1 text-center">✏️ Text & Font</button>
-        <button onclick="switchTab('caption')" id="tab-btn-caption" class="tab-btn flex-1 text-center">💬 Caption</button>
+        <button onclick="switchTab('caption')" id="tab-btn-caption" class="tab-btn flex-1 text-center">💬 Reflection</button>
       </div>
-
       <div class="p-4 space-y-4">
         
         <!-- ═════════ TAB 1: BACKGROUND / SELFIE ═════════ -->
@@ -157,11 +175,9 @@
           <div>
             <label class="block text-[10px] font-extrabold uppercase tracking-wider text-outline mb-2">Personalize with Your Photo</label>
             <div class="grid grid-cols-2 gap-2">
-              <!-- Take Selfie -->
               <button onclick="document.getElementById('selfieCameraInput').click()" class="p-3 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 flex items-center justify-center gap-2 text-primary font-headline font-bold text-xs transition-colors">
                 <span class="material-symbols-outlined text-[18px]">photo_camera</span> Take Selfie
               </button>
-              <!-- Upload from Phone -->
               <button onclick="document.getElementById('phoneGalleryInput').click()" class="p-3 rounded-xl border border-surface-c bg-surface-low hover:bg-surface-c flex items-center justify-center gap-2 text-on-surface font-headline font-bold text-xs transition-colors">
                 <span class="material-symbols-outlined text-[18px]">add_photo_alternate</span> Photos / Video
               </button>
@@ -190,7 +206,6 @@
               <div onclick="setSolidBg('#3b141a')" class="color-swatch bg-[#3b141a]"></div>
               <div onclick="setSolidBg('#0e0e0c')" class="color-swatch bg-[#0e0e0c]"></div>
               <div onclick="setSolidBg('#1e3a5f')" class="color-swatch bg-[#1e3a5f]"></div>
-              <!-- Native Color Picker -->
               <label class="w-7 h-7 rounded-full border border-dashed border-outline flex items-center justify-center cursor-pointer hover:border-primary relative overflow-hidden" title="Pick Custom Color">
                 <span class="material-symbols-outlined text-[14px] text-outline">palette</span>
                 <input type="color" id="customBgColor" onchange="setSolidBg(this.value)" class="opacity-0 absolute inset-0 cursor-pointer">
@@ -206,12 +221,10 @@
             </div>
             <input type="range" id="dimSlider" min="0" max="85" value="40" oninput="handleDimChange(this.value)" class="w-full">
           </div>
-
         </div>
 
         <!-- ═════════ TAB 2: TEXT & TYPOGRAPHY ═════════ -->
         <div id="tab-font" class="hidden space-y-4">
-          
           <!-- Font Style -->
           <div>
             <label class="block text-[10px] font-extrabold uppercase tracking-wider text-outline mb-2">Font Family</label>
@@ -232,7 +245,7 @@
             <input type="range" id="sizeSlider" min="30" max="95" value="56" oninput="handleSizeChange(this.value)" class="w-full">
           </div>
 
-          <!-- Font Color Palette + Native Picker -->
+          <!-- Font Color Palette -->
           <div>
             <label class="block text-[10px] font-extrabold uppercase tracking-wider text-outline mb-2">Font Color</label>
             <div class="flex items-center gap-2">
@@ -257,13 +270,11 @@
               <button onclick="setTextAlignment('right')" id="al-right" class="pill justify-center py-1.5"><span class="material-symbols-outlined text-[16px]">format_align_right</span></button>
             </div>
           </div>
-
         </div>
 
         <!-- ═════════ TAB 3: CAPTIONS & CONTEXT ═════════ -->
         <div id="tab-caption" class="hidden space-y-4">
-          
-          <!-- Scripture Context (From quotes.html) -->
+          <!-- Scripture Context -->
           <div id="contextBox" class="p-3 bg-surface-low border border-surface-c rounded-xl space-y-2">
             <div class="flex items-center justify-between">
               <span class="text-[10px] font-extrabold uppercase tracking-wider text-primary flex items-center gap-1">
@@ -282,7 +293,7 @@
             <textarea id="personalReflection" rows="2" placeholder="Write a reflection or personal message..." oninput="buildCaption()" class="w-full bg-surface-low border border-surface-c rounded-xl p-2.5 text-xs outline-none focus:border-primary resize-none"></textarea>
           </div>
 
-          <!-- Hashtags -->
+          <!-- Tab 3 Hashtag Input -->
           <div>
             <label class="block text-[10px] font-extrabold uppercase tracking-wider text-outline mb-1.5">Hashtags</label>
             <div id="hashtagsList" class="flex flex-wrap gap-1 mb-2"></div>
@@ -295,11 +306,9 @@
           <!-- Full Clipboard Preview -->
           <div class="p-3 bg-surface-low rounded-xl border border-surface-c">
             <span class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Caption Clipboard Preview</span>
-            <p id="fullCaptionDisplay" class="text-[11px] text-on-surface font-mono leading-relaxed line-clamp-3 select-all"></p>
+            <p id="fullCaptionDisplay" class="text-[11px] text-on-surface font-mono leading-relaxed line-clamp-4 select-all"></p>
           </div>
-
         </div>
-
       </div>
 
       <!-- BOTTOM SHARE BUTTON -->
@@ -308,9 +317,7 @@
           <span class="material-symbols-outlined text-[16px]">share</span> Share The Word
         </button>
       </div>
-
     </div>
-
   </main>
 
   <!-- PLATFORM SHARE MODAL -->
@@ -319,11 +326,10 @@
       <div class="flex justify-between items-center border-b border-surface-c pb-3">
         <div>
           <h3 class="font-headline font-bold text-base text-on-surface">Share To Platform</h3>
-          <p class="text-[11px] text-on-surface-variant">Caption will copy to clipboard automatically</p>
+          <p class="text-[11px] text-on-surface-variant">Caption, context & hashtags copy automatically</p>
         </div>
         <button onclick="closePlatformModal()" class="text-outline"><span class="material-symbols-outlined">close</span></button>
       </div>
-
       <div class="grid grid-cols-2 gap-2.5">
         <!-- Instagram -->
         <button onclick="postToPlatform('instagram')" class="p-3 rounded-xl border border-surface-c hover:border-primary flex items-center gap-2.5 bg-white transition-all text-left">
@@ -343,7 +349,7 @@
         <!-- Facebook -->
         <button onclick="postToPlatform('facebook')" class="p-3 rounded-xl border border-surface-c hover:border-primary flex items-center gap-2.5 bg-white transition-all text-left">
           <div class="w-9 h-9 rounded-lg bg-[#1877f2] text-white flex items-center justify-center font-bold text-xs">FB</div>
-          <div><p class="font-headline font-bold text-xs">Facebook</p><p class="text-[10px] text-outline">Feed / Story (4:5)</p></div>
+          <div><p class="font-headline font-bold text-xs">Facebook</p><p class="text-[10px] text-outline">Caption Copied + Photo</p></div>
         </button>
         <!-- WhatsApp -->
         <button onclick="postToPlatform('whatsapp')" class="p-3 rounded-xl border border-surface-c hover:border-primary flex items-center gap-2.5 bg-white transition-all text-left">
@@ -359,7 +365,7 @@
     </div>
   </div>
 
-  <!-- MEDIA PICKER MODAL -->
+  <!-- MEDIA PICKER MODAL (RESTRICTED TO BG & VIDEO ONLY) -->
   <div id="mediaModal" class="modal-overlay" onclick="if(event.target===this)closeMediaModal()">
     <div class="modal-sheet p-5 space-y-4 max-w-xl">
       <div class="flex justify-between items-center border-b border-surface-c pb-3">
@@ -377,7 +383,7 @@
     </div>
   </div>
 
-  <!-- SPRUCED-UP SUCCESS MODAL -->
+  <!-- SUCCESS CELEBRATION MODAL -->
   <div id="successModal" class="modal-overlay" onclick="if(event.target===this)closeSuccessModal()">
     <div class="modal-sheet p-6 text-center space-y-4">
       <div class="w-16 h-16 rounded-2xl signature-gradient text-white flex items-center justify-center mx-auto shadow-lg">
@@ -388,16 +394,13 @@
         <h3 class="font-headline font-extrabold text-xl text-on-surface">Word Shared!</h3>
         <p class="text-xs text-on-surface-variant mt-1" id="successSub">Your seed has been planted 🌱</p>
       </div>
-
       <!-- Generated Image Preview -->
       <div class="w-28 mx-auto aspect-[4/5] rounded-xl overflow-hidden border-2 border-surface-c shadow-sm bg-black">
         <img id="successImgThumb" src="" class="w-full h-full object-cover">
       </div>
-
       <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-bold flex items-center justify-center gap-1.5">
         <span class="material-symbols-outlined text-[16px] filled text-emerald-600">content_paste</span> Caption & hashtags copied!
       </div>
-
       <div class="space-y-2 pt-2">
         <button onclick="reshare()" class="w-full py-3 bg-primary text-white font-headline font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform">
           <span class="material-symbols-outlined text-[16px]">repeat</span> Reshare to Another Platform
@@ -436,7 +439,10 @@
     let currentFontColor = '#ffffff';
     let currentTextAlign = 'center';
     let currentDim = 0.40;
-    let currentHashtags = ['#SpreadTheWord', '#GreatCommission'];
+    
+    // Default hashtags that appear on every quote + quote-specific tags
+    const DEFAULT_HASHTAGS = ['#SpreadTheWord', '#GreatCommission'];
+    let currentHashtags = [...DEFAULT_HASHTAGS];
 
     // Coordinates (normalized 0.0 to 1.0)
     let normX = 0.5, normY = 0.5;
@@ -445,7 +451,6 @@
     let isVideoBg = false;
     const bgVideo = document.createElement('video');
     bgVideo.muted = true; bgVideo.loop = true; bgVideo.playsInline = true; bgVideo.crossOrigin = 'anonymous';
-
     const bgImage = new Image();
     bgImage.crossOrigin = 'anonymous';
     let solidColor = '#3d6285';
@@ -459,6 +464,13 @@
       if (!url) return false;
       const clean = url.split('?')[0].split('#')[0].toLowerCase().trim();
       return clean.endsWith('.mp4') || clean.endsWith('.webm') || clean.endsWith('.mov') || clean.endsWith('.m4v');
+    }
+
+    function cleanHashtag(tag) {
+      let cleaned = String(tag).replace(/[^a-zA-Z0-9_#]/g, '').trim();
+      if (!cleaned) return '';
+      if (!cleaned.startsWith('#')) cleaned = '#' + cleaned;
+      return cleaned;
     }
 
     // ════════════════════════════════════════════
@@ -479,13 +491,11 @@
       // 2. Fetch Quote by ID (from URL, session, or Live default)
       const urlParams = new URLSearchParams(window.location.search);
       const qId = urlParams.get('id') || sessionStorage.getItem('gstw_selected_quote_id') || sessionStorage.getItem('gstw_quote_id');
-
       let query = supabaseClient.from('quotes').select('*');
       if (qId) query = query.eq('id', qId);
       else query = query.eq('status', 'live').order('published_at', { ascending: false });
 
       const { data } = await query.limit(1).single();
-
       if (data) {
         quoteData.id = data.id;
         quoteData.text = data.text;
@@ -499,6 +509,18 @@
         } else {
           document.getElementById('contextBox').classList.add('hidden');
         }
+
+        // Parse and merge hashtags from Admin (quotes.html)
+        let adminTags = [];
+        if (Array.isArray(data.hashtags)) {
+          adminTags = data.hashtags;
+        } else if (typeof data.hashtags === 'string' && data.hashtags) {
+          adminTags = data.hashtags.split(/[\s,]+/);
+        }
+
+        // Clean, format, and de-duplicate with defaults
+        const formattedAdminTags = adminTags.map(cleanHashtag).filter(Boolean);
+        currentHashtags = [...new Set([...DEFAULT_HASHTAGS, ...formattedAdminTags])];
 
         // Set quote background
         if (data.background_url) {
@@ -524,18 +546,14 @@
     function setPlatformRatio(platformKey) {
       currentPlatform = PLATFORMS[platformKey] ? platformKey : 'instagram';
       const config = PLATFORMS[currentPlatform];
-
       canvas.width = config.w;
       canvas.height = config.h;
       canvas.style.setProperty('aspect-ratio', config.ratio, 'important');
-
       document.getElementById('platformLabel').innerHTML = `
         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> ${config.name} (${config.ratio})
       `;
-
       document.querySelectorAll('#platformRatioBar .pill').forEach(btn => btn.classList.remove('active'));
       document.getElementById('btn-rat-' + currentPlatform)?.classList.add('active');
-
       drawCanvas();
     }
 
@@ -557,11 +575,9 @@
       drawCanvas();
     }
 
-    // Handles user selfie camera or phone upload
     function handleDeviceMedia(event) {
       const file = event.target.files?.[0];
       if (!file) return;
-
       const objUrl = URL.createObjectURL(file);
       if (file.type.startsWith('video/')) {
         isVideoBg = true;
@@ -627,7 +643,7 @@
         ctx.fillRect(0, 0, w, h);
       }
 
-      // 3. Scale factor based on standard 1080 width
+      // 3. Scale factor
       const scale = w / 1080;
       const fSize = currentFontSize * scale;
 
@@ -637,7 +653,6 @@
       if (currentFont === 'sans') { fontFamily = '"Plus Jakarta Sans", sans-serif'; weight = '700'; }
       else if (currentFont === 'hand') { fontFamily = '"Caveat", cursive'; weight = '700'; }
       else if (currentFont === 'classic') { fontFamily = '"Cinzel", serif'; weight = '700'; }
-
       ctx.font = `${weight} ${fSize}px ${fontFamily}`;
       ctx.textAlign = currentTextAlign;
       ctx.textBaseline = 'middle';
@@ -716,14 +731,12 @@
           y: (clientY - rect.top) / rect.height
         };
       };
-
       const onStart = (e) => {
         isDragging = true;
         const p = getNormCoords(e);
         dragStartX = p.x - normX;
         dragStartY = p.y - normY;
       };
-
       const onMove = (e) => {
         if (!isDragging) return;
         e.preventDefault();
@@ -732,13 +745,10 @@
         normY = Math.max(0.12, Math.min(0.88, p.y - dragStartY));
         drawCanvas();
       };
-
       const onEnd = () => { isDragging = false; };
-
       canvas.addEventListener('mousedown', onStart);
       window.addEventListener('mousemove', onMove);
       window.addEventListener('mouseup', onEnd);
-
       canvas.addEventListener('touchstart', onStart, { passive: false });
       window.addEventListener('touchmove', onMove, { passive: false });
       window.addEventListener('touchend', onEnd);
@@ -791,29 +801,45 @@
     }
 
     // ════════════════════════════════════════════
-    // HASHTAGS & CAPTIONS
+    // HASHTAGS & CAPTIONS (UPDATES BOTH LOCATIONS)
     // ════════════════════════════════════════════
     function renderHashtagsList() {
-      const el = document.getElementById('hashtagsList');
-      el.innerHTML = currentHashtags.map((tag, idx) => `
+      const chipsHtml = currentHashtags.map((tag, idx) => `
         <span class="pill active py-0.5 text-[11px]">
           ${tag}
           <span onclick="removeTag(${idx})" class="material-symbols-outlined text-[13px] hover:text-red-300 ml-0.5">close</span>
         </span>
       `).join('');
+
+      // 1. Update Tab 3
+      const elTab = document.getElementById('hashtagsList');
+      if (elTab) elTab.innerHTML = chipsHtml;
+
+      // 2. Update Direct Preview Card under Canvas
+      const elBelow = document.getElementById('belowCanvasHashtags');
+      if (elBelow) elBelow.innerHTML = chipsHtml;
+
       buildCaption();
     }
 
     function addTag() {
       const input = document.getElementById('newHashtagInput');
-      let val = input.value.trim();
-      if (val) {
-        if (!val.startsWith('#')) val = '#' + val;
-        if (!currentHashtags.includes(val)) {
-          currentHashtags.push(val);
-          renderHashtagsList();
-        }
-        input.value = '';
+      processNewTag(input?.value);
+      if (input) input.value = '';
+    }
+
+    function addQuickTag() {
+      const input = document.getElementById('quickTagInput');
+      processNewTag(input?.value);
+      if (input) input.value = '';
+    }
+
+    function processNewTag(raw) {
+      if (!raw) return;
+      const formatted = cleanHashtag(raw);
+      if (formatted && !currentHashtags.includes(formatted)) {
+        currentHashtags.push(formatted);
+        renderHashtagsList();
       }
     }
 
@@ -832,12 +858,18 @@
       if (note) caption += `${note}\n\n`;
       caption += `${tags}\n\ngospreadtheword.app`;
 
-      document.getElementById('fullCaptionDisplay').textContent = caption;
+      // Update both preview displays
+      const elTab = document.getElementById('fullCaptionDisplay');
+      if (elTab) elTab.textContent = caption;
+
+      const elBelow = document.getElementById('belowCanvasCaptionPreview');
+      if (elBelow) elBelow.textContent = caption;
+
       return caption;
     }
 
     // ════════════════════════════════════════════
-    // SHARING & CLIPBOARD ENGINE
+    // SHARING & CLIPBOARD ENGINE (FACEBOOK FIXED)
     // ════════════════════════════════════════════
     function openPlatformModal() { document.getElementById('shareModal').classList.add('open'); }
     function closePlatformModal() { document.getElementById('shareModal').classList.remove('open'); }
@@ -851,23 +883,21 @@
         setPlatformRatio(platform);
       }
 
-      // 1. Write text to clipboard immediately
+      // 1. Copy the full text (Quote + Context + Reflection + Hashtags + Link) to clipboard
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        try { await navigator.clipboard.writeText(caption); } catch(e) {}
+        try { 
+          await navigator.clipboard.writeText(caption); 
+        } catch(e) {
+          console.warn('Clipboard write text error:', e);
+        }
       }
 
       // 2. Export Image
       const dataUrl = canvas.toDataURL('image/png');
 
-      // 3. For Facebook: Also copy image blob to clipboard & auto-download
-      if (platform === 'facebook' && navigator.clipboard && window.ClipboardItem) {
-        canvas.toBlob(async (blob) => {
-          try {
-            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-          } catch(e) { console.warn('Image clipboard write failed', e); }
-        }, 'image/png');
-
-        // Download image for easy attachment
+      // 3. For Facebook: Auto-download the image so the user can easily attach it,
+      // while keeping the text caption safely on their clipboard for pasting!
+      if (platform === 'facebook') {
         const fbLink = document.createElement('a');
         fbLink.download = `GSTW-Post-${Date.now()}.png`;
         fbLink.href = dataUrl;
@@ -914,7 +944,6 @@
       document.getElementById('successImgThumb').src = imgSrc;
       document.getElementById('successSub').textContent = `Shared to ${PLATFORMS[platform]?.name || 'Social Media'}!`;
       document.getElementById('successModal').classList.add('open');
-
       if (typeof confetti === 'function') {
         confetti({ particleCount: 75, spread: 60, origin: { y: 0.6 } });
       }
@@ -923,14 +952,14 @@
     function closeSuccessModal() { document.getElementById('successModal').classList.remove('open'); }
     function reshare() { closeSuccessModal(); setTimeout(openPlatformModal, 200); }
 
-       // ════════════════════════════════════════════
-    // MEDIA LIBRARY PICKER MODAL (RESTRICTED TO BG & VIDEO)
+    // ════════════════════════════════════════════
+    // MEDIA LIBRARY PICKER (STRICTLY BACKGROUND & VIDEO)
     // ════════════════════════════════════════════
     function openMediaModal() { 
       document.getElementById('mediaModal').classList.add('open'); 
       filterMedia('all'); 
     }
-    
+
     function closeMediaModal() { 
       document.getElementById('mediaModal').classList.remove('open'); 
     }
@@ -941,22 +970,20 @@
       
       document.querySelectorAll('#mediaModal .pill').forEach(p => p.classList.remove('active'));
       document.getElementById('m-' + category)?.classList.add('active');
-      
+
       try {
-        // Base query always restricts to is_active
         let query = supabaseClient
           .from('media')
           .select('id, url, type, label, name, created_at')
           .eq('is_active', true)
           .order('created_at', { ascending: false });
 
-        // Restrict to 'background' and 'video' only
+        // Restrict strictly to background and video only
         if (category === 'all') {
           query = query.in('type', ['background', 'video']);
         } else if (category === 'video' || category === 'background') {
           query = query.eq('type', category);
         } else {
-          // Fallback safeguard
           query = query.in('type', ['background', 'video']);
         }
 
@@ -981,10 +1008,11 @@
           `;
         }).join('');
       } catch(e) {
-        console.error('Error loading media:', e);
+        console.error('Media loading error:', e);
         grid.innerHTML = `<div class="col-span-full py-8 text-center text-xs text-rose-500">Error loading media.</div>`;
       }
     }
+
     function selectMedia(url) {
       loadBackgroundMedia(url);
       closeMediaModal();
