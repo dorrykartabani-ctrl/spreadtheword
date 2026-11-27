@@ -22,7 +22,8 @@
             'on-surface': '#31332e', 'on-surface-variant': '#5e6059',
             'primary': '#3d6285', 'on-primary': '#f7f9ff',
             'primary-container': '#b0d5fe',
-            'outline': '#7a7b75', 'outline-light': '#b2b2ab'
+            'outline': '#7a7b75', 'outline-light': '#b2b2ab',
+            'fb-blue': '#1877f2', 'ig-blue': '#0095f6', 'x-blue': '#1d9bf0'
           },
           fontFamily: {
             'headline': ['Plus Jakarta Sans', 'sans-serif'],
@@ -45,13 +46,12 @@
     .pill { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 99px; font-size: 11px; font-weight: 700; background: #f5f4ed; color: #5e6059; border: 1px solid #e9e8e1; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
     .pill:hover { border-color: #3d6285; }
     .pill.active { background: #3d6285; color: #ffffff; border-color: #3d6285; }
+
     /* Canvas Container */
     .canvas-container {
       position: relative;
       touch-action: none;
       user-select: none;
-      box-shadow: 0 16px 36px -10px rgba(0,0,0,0.22);
-      border-radius: 18px;
       overflow: hidden;
       background: #0e0e0c;
     }
@@ -59,22 +59,26 @@
       display: block;
       width: 100%;
       height: auto;
-      max-height: 40vh; /* Keeps controls visible on mobile */
+      max-height: 40vh;
       object-fit: contain;
       transition: aspect-ratio 0.25s ease;
     }
     @media (min-width: 1024px) {
-      #previewCanvas { max-height: 55vh; }
+      #previewCanvas { max-height: 52vh; }
     }
+
     /* Tabs */
     .tab-btn { padding: 10px 14px; font-size: 12px; font-weight: 700; color: #5e6059; border-bottom: 2px solid transparent; transition: all 0.2s; }
     .tab-btn.active { color: #3d6285; border-color: #3d6285; }
+
     /* Sliders */
     input[type=range] { -webkit-appearance: none; height: 5px; border-radius: 3px; background: #e3e3db; outline: none; }
     input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #3d6285; cursor: pointer; }
+
     /* Color Swatch */
     .color-swatch { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.15); cursor: pointer; transition: transform 0.15s; }
     .color-swatch:hover { transform: scale(1.15); }
+
     /* Modals */
     .modal-overlay { position: fixed; inset: 0; background: rgba(14,14,12,0.65); backdrop-filter: blur(8px); z-index: 100; display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
     @media (min-width: 768px) { .modal-overlay { align-items: center; } }
@@ -85,6 +89,7 @@
   </style>
 </head>
 <body class="min-h-screen flex flex-col">
+
   <!-- TOP APP BAR -->
   <header class="sticky top-0 z-40 bg-surface/90 backdrop-blur-md border-b border-surface-c px-4 lg:px-8 py-3 flex items-center justify-between">
     <div class="flex items-center gap-2.5">
@@ -104,55 +109,126 @@
   <!-- MAIN TWO-COLUMN WORKSPACE -->
   <main class="flex-1 max-w-6xl w-full mx-auto p-3 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
     
-    <!-- LEFT: PREVIEW & LIVE CAPTION / HASHTAG CARD -->
+    <!-- LEFT: NATIVE PLATFORM PREVIEW MOCKUP -->
     <div class="lg:col-span-7 sticky top-14 z-30 lg:top-20 bg-surface/95 lg:bg-transparent pb-2 lg:pb-0">
       
-      <!-- 1. PLATFORM SELECTOR ABOVE THE CANVAS -->
+      <!-- 1. PLATFORM SELECTOR BAR -->
       <div class="w-full max-w-md mx-auto mb-2 flex items-center justify-between">
         <span id="platformLabel" class="text-[10px] font-extrabold uppercase tracking-wider text-primary font-headline flex items-center gap-1">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> Instagram (4:5)
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> Facebook Feed (4:5)
         </span>
         <button onclick="resetPosition()" class="text-[10px] font-bold text-outline hover:text-primary flex items-center gap-0.5">
           <span class="material-symbols-outlined text-[13px]">restart_alt</span> Center Text
         </button>
       </div>
       <div class="w-full max-w-md mx-auto overflow-x-auto pb-1.5 flex gap-1.5 no-scrollbar mb-2" id="platformRatioBar">
-        <button onclick="setPlatformRatio('instagram')" id="btn-rat-instagram" class="pill active">Instagram</button>
+        <button onclick="setPlatformRatio('facebook')" id="btn-rat-facebook" class="pill active">Facebook</button>
+        <button onclick="setPlatformRatio('instagram')" id="btn-rat-instagram" class="pill">Instagram</button>
         <button onclick="setPlatformRatio('tiktok')" id="btn-rat-tiktok" class="pill">TikTok</button>
         <button onclick="setPlatformRatio('youtube')" id="btn-rat-youtube" class="pill">Shorts</button>
-        <button onclick="setPlatformRatio('facebook')" id="btn-rat-facebook" class="pill">Facebook</button>
         <button onclick="setPlatformRatio('whatsapp')" id="btn-rat-whatsapp" class="pill">Square</button>
         <button onclick="setPlatformRatio('twitter')" id="btn-rat-twitter" class="pill">X (16:9)</button>
       </div>
 
-      <!-- 2. CANVAS PREVIEW -->
-      <div class="w-full max-w-md mx-auto canvas-container">
-        <canvas id="previewCanvas" width="1080" height="1350"></canvas>
+      <!-- 2. AUTHENTIC SOCIAL FEED MOCKUP CARD -->
+      <div id="socialMockupCard" class="w-full max-w-md mx-auto bg-white rounded-2xl border border-surface-c shadow-md overflow-hidden transition-all">
+        
+        <!-- HEADER (FACEBOOK / INSTAGRAM / TWITTER) -->
+        <div id="mockupHeader" class="p-3 flex items-center justify-between border-b border-slate-100">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-full signature-gradient text-white font-bold text-sm flex items-center justify-center flex-shrink-0 shadow-sm" id="mockupAvatar">
+              GW
+            </div>
+            <div>
+              <div class="flex items-center gap-1 leading-tight">
+                <span class="font-bold text-xs text-slate-900" id="mockupAccountName">Go Spread The Word</span>
+                <!-- Verified Checkmark Icon -->
+                <svg class="w-3.5 h-3.5 text-[#1877f2] inline" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                <span class="text-[#1877f2] font-bold text-[11px] cursor-pointer hover:underline" id="mockupFollowBtn">• Follow</span>
+              </div>
+              <div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                <span id="mockupTimestamp">Just now</span>
+                <span>•</span>
+                <!-- Globe Privacy Icon -->
+                <svg class="w-3 h-3 text-slate-400 inline" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm6.27 7H11.5a13.9 13.9 0 0 0-1.2-4.5A6.5 6.5 0 0 1 14.27 7zM8 1.5c.87 0 2.02 1.8 2.45 4.5H5.55C5.98 3.3 7.13 1.5 8 1.5zM1.73 7A6.5 6.5 0 0 1 5.7 2.5 13.9 13.9 0 0 0 4.5 7H1.73zM1.5 8c0 .35.03.68.08 1h3.04c-.08-.65-.12-1.32-.12-2 0-.68.04-1.35.12-2H1.58A6.47 6.47 0 0 0 1.5 8zm3.2 2h6.6c-.35 2.18-1.3 3.92-2.3 4.5-.4-.24-.8-.67-1.15-1.25A11.3 11.3 0 0 1 8 11.5c-.32 0-.64.06-.95.18-.35.58-.75 1.01-1.15 1.25-1-.58-1.95-2.32-2.3-4.5z"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 text-slate-400">
+            <span class="material-symbols-outlined text-[18px] cursor-pointer hover:text-slate-600">more_horiz</span>
+            <span class="material-symbols-outlined text-[18px] cursor-pointer hover:text-slate-600">close</span>
+          </div>
+        </div>
+
+        <!-- TOP CAPTION BOX (ABOVE IMAGE ON FACEBOOK & TWITTER) -->
+        <div id="mockupTopCaption" class="px-3.5 py-2.5 text-xs text-slate-800 leading-relaxed font-normal">
+          <div id="topCaptionContent"></div>
+        </div>
+
+        <!-- CANVAS PREVIEW (THE POSTED IMAGE/VIDEO) -->
+        <div class="canvas-container relative">
+          <canvas id="previewCanvas" width="1080" height="1350"></canvas>
+          
+          <!-- TIKTOK / SHORTS OVERLAY ICONS -->
+          <div id="reelsOverlay" class="hidden absolute inset-y-0 right-2 flex flex-col justify-end items-center pb-6 gap-3 z-20 pointer-events-none">
+            <div class="w-9 h-9 rounded-full bg-slate-900/80 border border-white/20 flex items-center justify-center text-white"><span class="material-symbols-outlined text-[18px] filled text-red-500">favorite</span></div>
+            <span class="text-[10px] text-white font-bold drop-shadow">12.4K</span>
+            <div class="w-9 h-9 rounded-full bg-slate-900/80 border border-white/20 flex items-center justify-center text-white"><span class="material-symbols-outlined text-[18px]">chat_bubble</span></div>
+            <span class="text-[10px] text-white font-bold drop-shadow">342</span>
+            <div class="w-9 h-9 rounded-full bg-slate-900/80 border border-white/20 flex items-center justify-center text-white"><span class="material-symbols-outlined text-[18px]">bookmark</span></div>
+            <span class="text-[10px] text-white font-bold drop-shadow">1.1K</span>
+            <div class="w-9 h-9 rounded-full bg-slate-900/80 border border-white/20 flex items-center justify-center text-white"><span class="material-symbols-outlined text-[18px]">share</span></div>
+          </div>
+        </div>
+
+        <!-- BOTTOM CAPTION BOX (BELOW IMAGE ON INSTAGRAM & REELS) -->
+        <div id="mockupBottomCaption" class="hidden px-3.5 py-2.5 text-xs text-slate-800 leading-relaxed font-normal border-t border-slate-100">
+          <span class="font-bold text-slate-900 mr-1.5" id="mockupBottomAuthor">gospreadtheword</span>
+          <span id="bottomCaptionContent"></span>
+        </div>
+
+        <!-- AUTHENTIC ENGAGEMENT FOOTER (FACEBOOK STYLE) -->
+        <div id="mockupEngagementBar" class="p-2.5 border-t border-slate-100 bg-slate-50/50">
+          <div class="flex items-center justify-between text-[11px] text-slate-500 pb-2 border-b border-slate-200/80">
+            <div class="flex items-center gap-1.5">
+              <span class="flex -space-x-1">
+                <span class="w-4 h-4 rounded-full bg-[#1877f2] text-white text-[9px] flex items-center justify-center font-bold">👍</span>
+                <span class="w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold">❤️</span>
+              </span>
+              <span class="font-semibold text-slate-700">732</span>
+            </div>
+            <div>
+              <span>243 comments</span> • <span>18 shares</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-3 pt-1.5 text-slate-600 font-bold text-xs">
+            <button class="py-1 flex items-center justify-center gap-1.5 hover:bg-slate-200/60 rounded-lg transition-colors">
+              <span class="material-symbols-outlined text-[18px]">thumb_up</span> Like
+            </button>
+            <button class="py-1 flex items-center justify-center gap-1.5 hover:bg-slate-200/60 rounded-lg transition-colors">
+              <span class="material-symbols-outlined text-[18px]">chat_bubble_outline</span> Comment
+            </button>
+            <button class="py-1 flex items-center justify-center gap-1.5 hover:bg-slate-200/60 rounded-lg transition-colors">
+              <span class="material-symbols-outlined text-[18px]">share</span> Share
+            </button>
+          </div>
+        </div>
       </div>
 
-      <!-- 3. LIVE CAPTION & HASHTAGS PREVIEW CARD (DIRECTLY BELOW IMAGE) -->
-      <div class="w-full max-w-md mx-auto mt-3 bg-surface-card border border-surface-c rounded-2xl p-3.5 shadow-sm space-y-2.5">
-        <div class="flex items-center justify-between">
-          <span class="text-[10px] font-extrabold uppercase tracking-wider text-primary font-headline flex items-center gap-1">
-            <span class="material-symbols-outlined text-[14px]">content_paste</span> Caption & Context (Copies to Clipboard)
-          </span>
-          <span class="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Auto-copies on share</span>
+      <!-- 3. QUICK HASHTAG MANAGER DIRECTLY BELOW -->
+      <div class="w-full max-w-md mx-auto mt-2.5 bg-surface-card border border-surface-c rounded-2xl p-3 shadow-sm">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-outline">Post Hashtags (Tap × to remove)</span>
+          <span class="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Auto-copies on share</span>
         </div>
-        
-        <!-- Live Text Preview -->
-        <div class="p-2.5 bg-surface-low rounded-xl border border-surface-c text-[11px] text-on-surface leading-relaxed max-h-24 overflow-y-auto whitespace-pre-wrap select-all font-mono" id="belowCanvasCaptionPreview"></div>
-
-        <!-- Live Hashtags Bar -->
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="text-[10px] font-extrabold uppercase tracking-wider text-outline">Post Hashtags</span>
-            <span class="text-[10px] font-semibold text-outline">Tap × to remove</span>
-          </div>
-          <div id="belowCanvasHashtags" class="flex flex-wrap gap-1 mb-2"></div>
-          <div class="flex gap-1.5">
-            <input type="text" id="quickTagInput" placeholder="Add custom hashtag (e.g. #Grace)" onkeydown="if(event.key==='Enter'){event.preventDefault();addQuickTag();}" class="flex-1 bg-surface-low border border-surface-c rounded-xl px-3 py-1.5 text-xs outline-none focus:border-primary">
-            <button onclick="addQuickTag()" class="px-3 bg-primary text-white font-bold text-xs rounded-xl hover:opacity-90">Add</button>
-          </div>
+        <div id="belowCanvasHashtags" class="flex flex-wrap gap-1 mb-2"></div>
+        <div class="flex gap-1.5">
+          <input type="text" id="quickTagInput" placeholder="Add hashtag (e.g. #Grace)" onkeydown="if(event.key==='Enter'){event.preventDefault();addQuickTag();}" class="flex-1 bg-surface-low border border-surface-c rounded-xl px-3 py-1.5 text-xs outline-none focus:border-primary">
+          <button onclick="addQuickTag()" class="px-3 bg-primary text-white font-bold text-xs rounded-xl hover:opacity-90">Add</button>
         </div>
       </div>
     </div>
@@ -170,7 +246,6 @@
         
         <!-- ═════════ TAB 1: BACKGROUND / SELFIE ═════════ -->
         <div id="tab-photo" class="space-y-4">
-          
           <!-- Selfie & Camera Upload Buttons -->
           <div>
             <label class="block text-[10px] font-extrabold uppercase tracking-wider text-outline mb-2">Personalize with Your Photo</label>
@@ -278,7 +353,7 @@
           <div id="contextBox" class="p-3 bg-surface-low border border-surface-c rounded-xl space-y-2">
             <div class="flex items-center justify-between">
               <span class="text-[10px] font-extrabold uppercase tracking-wider text-primary flex items-center gap-1">
-                <span class="material-symbols-outlined text-[14px]">menu_book</span> Scripture Context
+                <span class="material-symbols-outlined text-[14px]">menu_book</span> Scripture Meaning
               </span>
               <label class="flex items-center gap-1 text-[11px] font-semibold text-outline cursor-pointer">
                 <input type="checkbox" id="includeContextCheck" checked onchange="buildCaption()" class="accent-primary w-3.5 h-3.5"> Include
@@ -302,12 +377,6 @@
               <button onclick="addTag()" class="px-3 bg-primary text-white font-bold text-xs rounded-xl">Add</button>
             </div>
           </div>
-
-          <!-- Full Clipboard Preview -->
-          <div class="p-3 bg-surface-low rounded-xl border border-surface-c">
-            <span class="block text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Caption Clipboard Preview</span>
-            <p id="fullCaptionDisplay" class="text-[11px] text-on-surface font-mono leading-relaxed line-clamp-4 select-all"></p>
-          </div>
         </div>
       </div>
 
@@ -326,11 +395,16 @@
       <div class="flex justify-between items-center border-b border-surface-c pb-3">
         <div>
           <h3 class="font-headline font-bold text-base text-on-surface">Share To Platform</h3>
-          <p class="text-[11px] text-on-surface-variant">Caption, context & hashtags copy automatically</p>
+          <p class="text-[11px] text-on-surface-variant">Caption & hashtags copy automatically to clipboard</p>
         </div>
         <button onclick="closePlatformModal()" class="text-outline"><span class="material-symbols-outlined">close</span></button>
       </div>
       <div class="grid grid-cols-2 gap-2.5">
+        <!-- Facebook -->
+        <button onclick="postToPlatform('facebook')" class="p-3 rounded-xl border border-surface-c hover:border-primary flex items-center gap-2.5 bg-white transition-all text-left">
+          <div class="w-9 h-9 rounded-lg bg-[#1877f2] text-white flex items-center justify-center font-bold text-xs">FB</div>
+          <div><p class="font-headline font-bold text-xs">Facebook</p><p class="text-[10px] text-outline">Caption + Auto Photo</p></div>
+        </button>
         <!-- Instagram -->
         <button onclick="postToPlatform('instagram')" class="p-3 rounded-xl border border-surface-c hover:border-primary flex items-center gap-2.5 bg-white transition-all text-left">
           <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs">IG</div>
@@ -345,11 +419,6 @@
         <button onclick="postToPlatform('youtube')" class="p-3 rounded-xl border border-surface-c hover:border-primary flex items-center gap-2.5 bg-white transition-all text-left">
           <div class="w-9 h-9 rounded-lg bg-[#ff0000] text-white flex items-center justify-center font-bold text-xs">YT</div>
           <div><p class="font-headline font-bold text-xs">YouTube</p><p class="text-[10px] text-outline">Shorts (9:16)</p></div>
-        </button>
-        <!-- Facebook -->
-        <button onclick="postToPlatform('facebook')" class="p-3 rounded-xl border border-surface-c hover:border-primary flex items-center gap-2.5 bg-white transition-all text-left">
-          <div class="w-9 h-9 rounded-lg bg-[#1877f2] text-white flex items-center justify-center font-bold text-xs">FB</div>
-          <div><p class="font-headline font-bold text-xs">Facebook</p><p class="text-[10px] text-outline">Caption Copied + Photo</p></div>
         </button>
         <!-- WhatsApp -->
         <button onclick="postToPlatform('whatsapp')" class="p-3 rounded-xl border border-surface-c hover:border-primary flex items-center gap-2.5 bg-white transition-all text-left">
@@ -389,7 +458,6 @@
       <div class="w-16 h-16 rounded-2xl signature-gradient text-white flex items-center justify-center mx-auto shadow-lg">
         <span class="material-symbols-outlined text-[36px] filled">check_circle</span>
       </div>
-      
       <div>
         <h3 class="font-headline font-extrabold text-xl text-on-surface">Word Shared!</h3>
         <p class="text-xs text-on-surface-variant mt-1" id="successSub">Your seed has been planted 🌱</p>
@@ -421,19 +489,19 @@
 
     // Platform configs
     const PLATFORMS = {
-      'instagram': { name: 'Instagram', ratio: '4/5', w: 1080, h: 1350 },
-      'tiktok':    { name: 'TikTok',    ratio: '9/16', w: 1080, h: 1920 },
-      'youtube':   { name: 'YouTube Shorts', ratio: '9/16', w: 1080, h: 1920 },
-      'facebook':  { name: 'Facebook',  ratio: '4/5', w: 1080, h: 1350 },
-      'whatsapp':  { name: 'WhatsApp',  ratio: '1/1', w: 1080, h: 1080 },
-      'twitter':   { name: 'X / Twitter', ratio: '16/9', w: 1920, h: 1080 },
-      'download':  { name: 'Standard',  ratio: '4/5', w: 1080, h: 1350 }
+      'facebook':  { name: 'Facebook',  ratio: '4/5', w: 1080, h: 1350, color: '#1877f2' },
+      'instagram': { name: 'Instagram', ratio: '4/5', w: 1080, h: 1350, color: '#0095f6' },
+      'tiktok':    { name: 'TikTok',    ratio: '9/16', w: 1080, h: 1920, color: '#25f4ee' },
+      'youtube':   { name: 'YouTube Shorts', ratio: '9/16', w: 1080, h: 1920, color: '#ff0000' },
+      'whatsapp':  { name: 'WhatsApp',  ratio: '1/1', w: 1080, h: 1080, color: '#25d366' },
+      'twitter':   { name: 'X / Twitter', ratio: '16/9', w: 1920, h: 1080, color: '#1d9bf0' },
+      'download':  { name: 'Standard',  ratio: '4/5', w: 1080, h: 1350, color: '#3d6285' }
     };
 
     // State
     let currentUser = null;
     let quoteData = { id: null, text: 'The Word is with you today.', source: 'GSTW', context: '' };
-    let currentPlatform = 'instagram';
+    let currentPlatform = 'facebook';
     let currentFont = 'serif';
     let currentFontSize = 56;
     let currentFontColor = '#ffffff';
@@ -473,6 +541,11 @@
       return cleaned;
     }
 
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    }
+
     // ════════════════════════════════════════════
     // INITIALIZATION & DIRECT DB FETCH
     // ════════════════════════════════════════════
@@ -481,14 +554,18 @@
       const { data: session } = await supabaseClient.auth.getSession();
       if (session?.session) {
         currentUser = session.session.user;
-        const profile = await supabaseClient.from('profiles').select('default_platform').eq('id', currentUser.id).single();
+        const profile = await supabaseClient.from('profiles').select('default_platform, full_name').eq('id', currentUser.id).single();
         if (profile?.data?.default_platform) {
           const pref = profile.data.default_platform.toLowerCase();
           if (PLATFORMS[pref]) currentPlatform = pref;
         }
+        if (profile?.data?.full_name) {
+          document.getElementById('mockupAccountName').textContent = profile.data.full_name;
+          document.getElementById('mockupBottomAuthor').textContent = profile.data.full_name.toLowerCase().replace(/\s+/g, '');
+        }
       }
 
-      // 2. Fetch Quote by ID (from URL, session, or Live default)
+      // 2. Fetch Quote by ID
       const urlParams = new URLSearchParams(window.location.search);
       const qId = urlParams.get('id') || sessionStorage.getItem('gstw_selected_quote_id') || sessionStorage.getItem('gstw_quote_id');
       let query = supabaseClient.from('quotes').select('*');
@@ -502,7 +579,7 @@
         quoteData.source = data.source || 'GSTW';
         quoteData.context = data.context || '';
 
-        // Display context
+        // Display context in Tab 3
         if (data.context) {
           document.getElementById('contextTextDisplay').textContent = `"${data.context}"`;
           document.getElementById('contextBox').classList.remove('hidden');
@@ -518,11 +595,10 @@
           adminTags = data.hashtags.split(/[\s,]+/);
         }
 
-        // Clean, format, and de-duplicate with defaults
         const formattedAdminTags = adminTags.map(cleanHashtag).filter(Boolean);
         currentHashtags = [...new Set([...DEFAULT_HASHTAGS, ...formattedAdminTags])];
 
-        // Set quote background
+        // Load background
         if (data.background_url) {
           loadBackgroundMedia(data.background_url);
         } else {
@@ -541,19 +617,62 @@
     }
 
     // ════════════════════════════════════════════
-    // PLATFORM RATIO & ADAPTIVE SIZING
+    // PLATFORM ADAPTIVE MOCKUP & RATIO
     // ════════════════════════════════════════════
     function setPlatformRatio(platformKey) {
-      currentPlatform = PLATFORMS[platformKey] ? platformKey : 'instagram';
+      currentPlatform = PLATFORMS[platformKey] ? platformKey : 'facebook';
       const config = PLATFORMS[currentPlatform];
       canvas.width = config.w;
       canvas.height = config.h;
       canvas.style.setProperty('aspect-ratio', config.ratio, 'important');
+
       document.getElementById('platformLabel').innerHTML = `
         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> ${config.name} (${config.ratio})
       `;
+
       document.querySelectorAll('#platformRatioBar .pill').forEach(btn => btn.classList.remove('active'));
       document.getElementById('btn-rat-' + currentPlatform)?.classList.add('active');
+
+      // Update Native Mockup Layout per platform
+      const topCap = document.getElementById('mockupTopCaption');
+      const bottomCap = document.getElementById('mockupBottomCaption');
+      const header = document.getElementById('mockupHeader');
+      const followBtn = document.getElementById('mockupFollowBtn');
+      const reelsOver = document.getElementById('reelsOverlay');
+      const engageBar = document.getElementById('mockupEngagementBar');
+
+      if (currentPlatform === 'facebook' || currentPlatform === 'twitter') {
+        // Facebook & Twitter: Caption sits ABOVE the image
+        topCap.classList.remove('hidden');
+        bottomCap.classList.add('hidden');
+        header.classList.remove('hidden');
+        followBtn.classList.remove('hidden');
+        reelsOver.classList.add('hidden');
+        engageBar.classList.remove('hidden');
+      } else if (currentPlatform === 'instagram') {
+        // Instagram: Caption sits BELOW the photo
+        topCap.classList.add('hidden');
+        bottomCap.classList.remove('hidden');
+        header.classList.remove('hidden');
+        followBtn.classList.add('hidden');
+        reelsOver.classList.add('hidden');
+        engageBar.classList.remove('hidden');
+      } else if (currentPlatform === 'tiktok' || currentPlatform === 'youtube') {
+        // Vertical video stories
+        topCap.classList.add('hidden');
+        bottomCap.classList.remove('hidden');
+        header.classList.add('hidden');
+        reelsOver.classList.remove('hidden');
+        engageBar.classList.add('hidden');
+      } else {
+        topCap.classList.remove('hidden');
+        bottomCap.classList.add('hidden');
+        header.classList.remove('hidden');
+        reelsOver.classList.add('hidden');
+        engageBar.classList.remove('hidden');
+      }
+
+      buildCaption();
       drawCanvas();
     }
 
@@ -801,7 +920,7 @@
     }
 
     // ════════════════════════════════════════════
-    // HASHTAGS & CAPTIONS (UPDATES BOTH LOCATIONS)
+    // HASHTAGS & CLEAN CAPTION BUILDER
     // ════════════════════════════════════════════
     function renderHashtagsList() {
       const chipsHtml = currentHashtags.map((tag, idx) => `
@@ -811,11 +930,9 @@
         </span>
       `).join('');
 
-      // 1. Update Tab 3
       const elTab = document.getElementById('hashtagsList');
       if (elTab) elTab.innerHTML = chipsHtml;
 
-      // 2. Update Direct Preview Card under Canvas
       const elBelow = document.getElementById('belowCanvasHashtags');
       if (elBelow) elBelow.innerHTML = chipsHtml;
 
@@ -848,24 +965,56 @@
       renderHashtagsList();
     }
 
+    // Builds the clean clipboard caption AND the realistic HTML preview
     function buildCaption() {
       const incCtx = document.getElementById('includeContextCheck')?.checked;
       const note = document.getElementById('personalReflection')?.value.trim();
       const tags = currentHashtags.join(' ');
-      
-      let caption = `"${quoteData.text}" — ${quoteData.source}\n\n`;
-      if (incCtx && quoteData.context) caption += `Context: ${quoteData.context}\n\n`;
-      if (note) caption += `${note}\n\n`;
-      caption += `${tags}\n\ngospreadtheword.app`;
 
-      // Update both preview displays
-      const elTab = document.getElementById('fullCaptionDisplay');
-      if (elTab) elTab.textContent = caption;
+      // 1. PLAIN TEXT FOR CLIPBOARD:
+      // - Quote text is omitted (already on the image)
+      // - The word "Context:" is completely omitted
+      let parts = [];
+      if (incCtx && quoteData.context && quoteData.context.trim()) {
+        parts.push(quoteData.context.trim());
+      }
+      if (note) {
+        parts.push(note);
+      }
+      if (tags) {
+        parts.push(tags);
+      }
+      parts.push('gospreadtheword.app');
 
-      const elBelow = document.getElementById('belowCanvasCaptionPreview');
-      if (elBelow) elBelow.textContent = caption;
+      const plainTextCaption = parts.join('\n\n');
 
-      return caption;
+      // 2. STYLED HTML FOR THE SOCIAL POST MOCKUP:
+      // Uses the usual platform blue for hashtags and domain
+      const linkColor = PLATFORMS[currentPlatform]?.color || '#1877f2';
+
+      let htmlCaption = '';
+      if (incCtx && quoteData.context && quoteData.context.trim()) {
+        htmlCaption += `<p class="mb-2 text-slate-800">${escapeHtml(quoteData.context.trim())}</p>`;
+      }
+      if (note) {
+        htmlCaption += `<p class="mb-2 text-slate-700 italic">${escapeHtml(note)}</p>`;
+      }
+      if (currentHashtags.length > 0) {
+        const blueTags = currentHashtags.map(t => 
+          `<span style="color: ${linkColor};" class="font-semibold hover:underline cursor-pointer mr-1.5">${escapeHtml(t)}</span>`
+        ).join('');
+        htmlCaption += `<p class="mb-1 leading-normal">${blueTags}</p>`;
+      }
+      htmlCaption += `<p class="text-[11px]"><a href="#" style="color: ${linkColor};" class="font-semibold hover:underline">gospreadtheword.app</a></p>`;
+
+      // Render into both Mockup containers
+      const topEl = document.getElementById('topCaptionContent');
+      if (topEl) topEl.innerHTML = htmlCaption;
+
+      const botEl = document.getElementById('bottomCaptionContent');
+      if (botEl) botEl.innerHTML = htmlCaption;
+
+      return plainTextCaption;
     }
 
     // ════════════════════════════════════════════
@@ -878,24 +1027,23 @@
       const caption = buildCaption();
       closePlatformModal();
 
-      // Adjust ratio
       if (platform !== 'download') {
         setPlatformRatio(platform);
       }
 
-      // 1. Copy the full text (Quote + Context + Reflection + Hashtags + Link) to clipboard
+      // 1. Copy clean caption (Context + Note + Blue Hashtags + Link) to clipboard
       if (navigator.clipboard && navigator.clipboard.writeText) {
         try { 
           await navigator.clipboard.writeText(caption); 
         } catch(e) {
-          console.warn('Clipboard write text error:', e);
+          console.warn('Clipboard write error:', e);
         }
       }
 
       // 2. Export Image
       const dataUrl = canvas.toDataURL('image/png');
 
-      // 3. For Facebook: Auto-download the image so the user can easily attach it,
+      // 3. For Facebook: Auto-download the image ready for posting,
       // while keeping the text caption safely on their clipboard for pasting!
       if (platform === 'facebook') {
         const fbLink = document.createElement('a');
@@ -978,7 +1126,6 @@
           .eq('is_active', true)
           .order('created_at', { ascending: false });
 
-        // Restrict strictly to background and video only
         if (category === 'all') {
           query = query.in('type', ['background', 'video']);
         } else if (category === 'video' || category === 'background') {
