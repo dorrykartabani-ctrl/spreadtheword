@@ -2,611 +2,886 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Global Kingdom Impact | Go Spread The Word</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Impact — Command Center</title>
+  <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
   
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  
-  <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Lora:ital@1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+  
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            brand: {
-              gold: '#D4AF37',
-              darkGold: '#AA820A',
-              navy: '#0B132B',
-              slate: '#1C2541',
-              charcoal: '#0b0f19'
-            }
+            'surface': '#f8fafc', 'card': '#ffffff', 'text-main': '#0f172a', 'text-muted': '#64748b',
+            'primary': '#3d6285', 'gold': '#D4A24C',
+            'common': '#94a3b8', 'uncommon': '#16a34a', 'rare': '#2563eb', 'epic': '#9333ea', 'mythic': '#d97706'
           },
           fontFamily: {
-            serif: ['Cinzel', 'serif'],
-            sans: ['Plus Jakarta Sans', 'sans-serif']
+            'headline': ['Plus Jakarta Sans', 'sans-serif'],
+            'body': ['Manrope', 'sans-serif'],
+            'quote': ['Lora', 'serif']
           }
         }
       }
     }
   </script>
-
-  <!-- Supabase JS CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- App Configuration (Fallback resilient) -->
-  <script src="js/config.js"></script>
-
   <style>
-    body {
-      background-color: #0b0f19;
-      color: #f1f5f9;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-    }
-    .glass-card {
-      background: rgba(28, 37, 65, 0.45);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(212, 175, 55, 0.15);
-    }
-    .glass-card-gold {
-      background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(15, 23, 42, 0.6) 100%);
-      border: 1px solid rgba(212, 175, 55, 0.35);
-    }
-    .gold-gradient-text {
-      background: linear-gradient(135deg, #F3E7C4 0%, #D4AF37 50%, #AA820A 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .custom-scrollbar::-webkit-scrollbar {
-      height: 6px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: rgba(15, 23, 42, 0.6);
-      border-radius: 8px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: rgba(212, 175, 55, 0.3);
-      border-radius: 8px;
-    }
+    body { font-family: 'Manrope', sans-serif; background: #f8fafc; color: #0f172a; }
+    .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-quote { font-family: 'Lora', serif; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    .dash-card { background: white; border-radius: 24px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; }
+    .time-toggle { display: flex; background: #f1f5f9; border-radius: 12px; padding: 4px; }
+    .time-btn { flex: 1; padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; color: #64748b; text-align: center; transition: all 0.2s; cursor: pointer; }
+    .time-btn.active { background: white; color: #0f172a; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .avatar-float { filter: drop-shadow(0 10px 18px rgba(61, 98, 133, 0.18)); }
+    .first-trophy-banner { background: linear-gradient(135deg, #1e293b, #0f172a); }
   </style>
 </head>
-<body class="min-h-screen flex flex-col antialiased selection:bg-brand-gold selection:text-brand-navy">
+<body class="pb-32">
 
-  <!-- TOP NAVIGATION -->
-  <nav class="sticky top-0 z-40 bg-[#0b0f19]/90 backdrop-blur-md border-b border-white/10 px-4 sm:px-8 py-3.5 flex items-center justify-between">
-    <a href="index.html" class="flex items-center gap-3 group">
-      <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-gold to-brand-darkGold flex items-center justify-center text-brand-navy font-bold shadow-md shadow-brand-gold/20">
-        <i class="fa-solid fa-cross"></i>
+<!-- HEADER -->
+<header class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100" style="padding-top: env(safe-area-inset-top);">
+  <div class="max-w-[430px] mx-auto px-6 py-3 flex justify-between items-center">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+        <img src="/images/icon/icon-light-512.png" alt="GSTW" class="w-6 h-6 object-contain" onerror="this.style.display='none'">
       </div>
-      <div>
-        <span class="font-serif font-bold tracking-wide text-base sm:text-lg block text-white group-hover:text-brand-gold transition-colors">GO SPREAD THE WORD</span>
-        <span class="text-[10px] tracking-widest uppercase text-gray-400 block -mt-1">The Great Commission</span>
-      </div>
-    </a>
-
-    <div class="flex items-center gap-2 sm:gap-4 text-sm font-medium">
-      <a href="editor.html" class="px-3.5 py-1.5 rounded-lg text-gray-300 hover:text-white hover:bg-white/5 transition flex items-center gap-2">
-        <i class="fa-solid fa-paintbrush text-xs text-brand-gold"></i>
-        <span class="hidden sm:inline">Studio</span>
-      </a>
-      <a href="impact.html" class="px-3.5 py-1.5 rounded-lg bg-brand-gold/15 text-brand-gold border border-brand-gold/30 flex items-center gap-2 font-semibold">
-        <i class="fa-solid fa-earth-americas text-xs"></i>
-        <span>Impact</span>
-      </a>
-      <a href="rewards.html" class="px-3.5 py-1.5 rounded-lg text-gray-300 hover:text-white hover:bg-white/5 transition flex items-center gap-2">
-        <i class="fa-solid fa-trophy text-xs text-brand-gold"></i>
-        <span class="hidden sm:inline">Rewards</span>
-      </a>
-      <button id="logoutBtn" class="text-xs text-gray-400 hover:text-red-400 px-2 py-1.5 ml-1 transition" title="Log Out">
-        <i class="fa-solid fa-arrow-right-from-bracket"></i>
-      </button>
+      <h1 class="font-headline font-extrabold text-lg text-slate-900">Impact</h1>
     </div>
-  </nav>
+    <a href="rewards.html" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors" title="Rewards Cabinet">
+      <span class="material-symbols-outlined text-[20px]">workspace_premium</span>
+    </a>
+  </div>
+</header>
 
-  <!-- MAIN CONTAINER -->
-  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-8 py-8 space-y-10">
+<main class="px-5 max-w-[430px] mx-auto space-y-6" style="padding-top: calc(5.2rem + env(safe-area-inset-top));">
 
-    <!-- HERO SECTION: PERSONAL CONTRIBUTION & TIER STATUS -->
-    <section class="glass-card rounded-2xl p-6 sm:p-8 relative overflow-hidden">
-      <div class="absolute -top-24 -right-24 w-80 h-80 bg-brand-gold/10 rounded-full blur-3xl pointer-events-none"></div>
+  <!-- HERO CARD: FLOATING AVATAR + KINGDOM TIER BADGE + PROGRESSION -->
+  <section class="dash-card flex items-center gap-5 relative overflow-hidden !bg-white border-slate-100">
+    <div class="absolute top-0 right-0 w-36 h-36 bg-gold/5 rounded-full blur-3xl pointer-events-none"></div>
+    
+    <!-- Floating Avatar Image -->
+    <div class="relative flex-shrink-0 z-10 flex items-center justify-center h-32 w-24">
+      <img id="heroAvatarImg" src="" alt="Avatar" class="h-28 w-auto object-contain avatar-float transition-all duration-300" style="display:none;">
+      <div id="avatarFallback" class="h-28 w-24 flex items-center justify-center bg-slate-50 rounded-2xl border border-slate-100">
+        <span class="material-symbols-outlined text-slate-300 text-[64px]">person</span>
+      </div>
+    </div>
 
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-        
-        <!-- User Info -->
-        <div class="flex items-center gap-5">
-          <div class="relative">
-            <div id="userAvatarContainer" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-800 border-2 border-brand-gold/40 flex items-center justify-center overflow-hidden shadow-lg">
-              <i class="fa-solid fa-user-astronaut text-3xl text-brand-gold/50"></i>
-            </div>
-            <span id="userOnlineIndicator" class="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-[#0b0f19] rounded-full"></span>
-          </div>
-
-          <div>
-            <div class="flex items-center gap-2.5 flex-wrap">
-              <h1 id="userNameDisplay" class="font-serif text-xl sm:text-2xl font-bold text-white tracking-wide">Kingdom Ambassador</h1>
-              <!-- Subscription Tier Badge -->
-              <button id="tierBadgeBtn" onclick="openSubModal()" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wider uppercase bg-brand-gold/20 text-brand-gold border border-brand-gold/40 hover:bg-brand-gold/30 transition flex items-center gap-1.5">
-                <i class="fa-solid fa-shield-halved text-[10px]"></i>
-                <span id="tierLabel">Free Partner</span>
-              </button>
-            </div>
-            <p id="userEmailDisplay" class="text-xs sm:text-sm text-gray-400 mt-1">Connecting to live network...</p>
-          </div>
-        </div>
-
-        <!-- Personal Contribution Counters -->
-        <div class="grid grid-cols-2 gap-3 sm:gap-4 sm:flex sm:items-center">
-          <div class="bg-black/30 border border-white/5 rounded-xl px-4 py-3 min-w-[130px] text-center">
-            <span class="text-[11px] uppercase tracking-wider text-gray-400 block font-semibold">Your Shares</span>
-            <span id="userPersonalShares" class="text-xl sm:text-2xl font-extrabold text-white">0</span>
-          </div>
-          <div class="bg-black/30 border border-white/5 rounded-xl px-4 py-3 min-w-[130px] text-center">
-            <span class="text-[11px] uppercase tracking-wider text-gray-400 block font-semibold">Personal Reach</span>
-            <span id="userPersonalReach" class="text-xl sm:text-2xl font-extrabold text-brand-gold">0</span>
-          </div>
-        </div>
+    <!-- Text & Identity Info -->
+    <div class="flex-1 z-10 min-w-0">
+      <div class="flex items-center justify-between gap-2 mb-1">
+        <h2 id="userNameDisplay" class="font-headline font-black text-xl text-slate-900 leading-tight truncate">Warrior</h2>
+        <!-- Tier Level Badge (Clickable -> Opens Sub Modal) -->
+        <button onclick="openSubModal()" id="heroTierBadgeBtn" class="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-[9px] font-black uppercase tracking-wider hover:bg-slate-200 transition-colors">
+          <img id="heroTierBadgeImg" src="/images/badges/called.svg" class="w-3.5 h-3.5 object-contain" onerror="this.style.display='none'">
+          <span id="heroTierBadgeName">FREE</span>
+        </button>
       </div>
 
-      <!-- Onboarding Prompt: Earn Your First Trophy (Shows only if trophies = 0) -->
-      <div id="firstTrophyPrompt" class="hidden mt-6 pt-5 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 bg-brand-gold/5 p-4 rounded-xl border border-brand-gold/20">
-        <div class="flex items-center gap-3.5 text-center sm:text-left">
-          <div class="w-10 h-10 rounded-full bg-brand-gold/20 text-brand-gold flex items-center justify-center shrink-0">
-            <i class="fa-solid fa-award text-lg"></i>
-          </div>
-          <div>
-            <h4 class="font-bold text-sm text-white">Begin Your Great Commission Journey</h4>
-            <p class="text-xs text-gray-400">Share your first Scripture quote in the studio to earn your first trophy and begin your Avatar evolution.</p>
-          </div>
+      <p id="journeyNameDisplay" class="font-headline font-extrabold text-gold text-xs uppercase tracking-wider">The Sower</p>
+      <p id="avatarTitleDisplay" class="text-[10px] font-bold text-slate-400 uppercase mt-0.5">Stage 0</p>
+
+      <!-- Mythic Avatar Evolution Bar -->
+      <div class="mt-3 space-y-1">
+        <div class="flex justify-between items-center text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+          <span id="nextRankName">Next: The Slinger</span>
+          <span id="mythicProgressText">0/1 Mythic</span>
         </div>
-        <a href="editor.html" class="shrink-0 px-4 py-2 bg-gradient-to-r from-brand-gold to-brand-darkGold hover:brightness-110 text-brand-navy font-bold text-xs rounded-lg transition shadow-md flex items-center gap-2">
-          <span>Create & Share</span>
-          <i class="fa-solid fa-arrow-right text-[10px]"></i>
+        <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div id="mythicProgressBar" class="h-full bg-gradient-to-r from-primary to-gold rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TROPHY WALL OR "EARN YOUR FIRST TROPHY" ONBOARDING -->
+  <section id="trophySection">
+    <!-- State A: Has Trophies (Standard Wall) -->
+    <div id="standardTrophyWall">
+      <div class="flex justify-between items-center mb-3 px-1">
+        <h3 class="font-headline font-bold text-lg text-slate-900">Trophy Tiers</h3>
+        <a href="rewards.html" class="text-xs font-bold text-primary hover:underline">View Cabinet</a>
+      </div>
+      <div class="grid grid-cols-5 gap-2">
+        <div class="rounded-2xl p-3 text-center bg-common text-white shadow-sm">
+          <p class="text-[8px] font-black uppercase tracking-widest opacity-80">Common</p>
+          <p id="tierCommon" class="font-headline font-black text-xl mt-1">0</p>
+        </div>
+        <div class="rounded-2xl p-3 text-center bg-uncommon text-white shadow-sm">
+          <p class="text-[8px] font-black uppercase tracking-widest opacity-80">Uncommon</p>
+          <p id="tierUncommon" class="font-headline font-black text-xl mt-1">0</p>
+        </div>
+        <div class="rounded-2xl p-3 text-center bg-rare text-white shadow-sm">
+          <p class="text-[8px] font-black uppercase tracking-widest opacity-80">Rare</p>
+          <p id="tierRare" class="font-headline font-black text-xl mt-1">0</p>
+        </div>
+        <div class="rounded-2xl p-3 text-center bg-epic text-white shadow-sm">
+          <p class="text-[8px] font-black uppercase tracking-widest opacity-80">Epic</p>
+          <p id="tierEpic" class="font-headline font-black text-xl mt-1">0</p>
+        </div>
+        <div class="rounded-2xl p-3 text-center bg-mythic text-white shadow-sm">
+          <p class="text-[8px] font-black uppercase tracking-widest opacity-80">Mythic</p>
+          <p id="tierMythic" class="font-headline font-black text-xl mt-1">0</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- State B: 0 Trophies (Earn Your First Trophy Prompt) -->
+    <div id="firstTrophyCard" class="hidden first-trophy-banner text-white rounded-3xl p-6 relative overflow-hidden shadow-lg">
+      <div class="absolute -right-4 -bottom-4 opacity-10">
+        <span class="material-symbols-outlined text-[140px]">emoji_events</span>
+      </div>
+      <div class="relative z-10">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="px-2.5 py-0.5 rounded-full bg-gold/20 text-gold text-[9px] font-black uppercase tracking-wider">First Objective</span>
+        </div>
+        <h4 class="font-headline font-black text-xl leading-tight mb-2">Claim Your First Trophy!</h4>
+        <p class="text-xs text-slate-300 leading-relaxed mb-5">
+          Share your first Scripture verse today to unlock your <b>Common Recruit Trophy</b> and start evolving your Avatar.
+        </p>
+        <a id="shareFirstVerseBtn" href="editor.html" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gold text-slate-900 font-headline font-black text-xs uppercase tracking-wider shadow-md hover:bg-amber-400 active:scale-95 transition-all">
+          <span class="material-symbols-outlined text-base">send</span> Share Today's Verse
         </a>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- SECTION 1: 100% REAL GLOBAL TOTALS -->
-    <section class="space-y-4">
-      <div>
-        <h2 class="font-serif text-xl sm:text-2xl font-bold tracking-wide text-white">Worldwide Kingdom Outreach</h2>
-        <p class="text-xs sm:text-sm text-gray-400">Real-time verifiable impact delivered through our community of believers across the globe.</p>
+  <!-- PERSONAL IMPACT -->
+  <section>
+    <div class="flex justify-between items-center mb-3 px-1 gap-3">
+      <h3 class="font-headline font-bold text-lg text-slate-900">Personal Impact</h3>
+      <div class="time-toggle">
+        <button type="button" class="time-btn" onclick="setTimeframe('week', this)">Week</button>
+        <button type="button" class="time-btn active" onclick="setTimeframe('all', this)">All Time</button>
       </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        <!-- Total Global Shares -->
-        <div class="glass-card rounded-xl p-5 relative overflow-hidden group hover:border-brand-gold/40 transition">
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Total Scriptures Shared</span>
-            <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
-              <i class="fa-solid fa-share-nodes text-sm"></i>
-            </div>
-          </div>
-          <div id="globalTotalShares" class="text-3xl font-extrabold text-white tracking-tight">0</div>
-          <span class="text-[11px] text-gray-400 mt-1 block">Live verified shares</span>
-        </div>
-
-        <!-- Global Monetary Giving -->
-        <div class="glass-card-gold rounded-xl p-5 relative overflow-hidden group hover:border-brand-gold/60 transition">
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-bold uppercase tracking-wider text-brand-gold">Missions Funded</span>
-            <div class="w-8 h-8 rounded-lg bg-brand-gold/20 text-brand-gold flex items-center justify-center">
-              <i class="fa-solid fa-hand-holding-dollar text-sm"></i>
-            </div>
-          </div>
-          <div id="globalDonationsSum" class="text-3xl font-extrabold gold-gradient-text tracking-tight">$0.00</div>
-          <span class="text-[11px] text-gray-400 mt-1 block">Verified project contributions</span>
-        </div>
-
-        <!-- Active Nations & Territories -->
-        <div class="glass-card rounded-xl p-5 relative overflow-hidden group hover:border-brand-gold/40 transition">
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Nations Reached</span>
-            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-              <i class="fa-solid fa-flag text-sm"></i>
-            </div>
-          </div>
-          <div id="globalNationsCount" class="text-3xl font-extrabold text-emerald-400 tracking-tight">0</div>
-          <span class="text-[11px] text-gray-400 mt-1 block">Active territory profiles</span>
-        </div>
-
-        <!-- Estimated Worldwide Impressions -->
-        <div class="glass-card rounded-xl p-5 relative overflow-hidden group hover:border-brand-gold/40 transition">
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Gospel Impressions</span>
-            <div class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
-              <i class="fa-solid fa-eye text-sm"></i>
-            </div>
-          </div>
-          <div id="globalImpressionsCount" class="text-3xl font-extrabold text-purple-300 tracking-tight">0</div>
-          <span class="text-[11px] text-gray-400 mt-1 block">Estimated souls reached</span>
-        </div>
-
+    </div>
+    <div class="grid grid-cols-3 gap-3">
+      <div class="dash-card !p-4 text-center">
+        <p id="statShares" class="font-headline font-black text-2xl text-slate-900">0</p>
+        <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Shares</p>
       </div>
-    </section>
-
-    <!-- SECTION 2: ACTIVE TERRITORIES & DYNAMIC FLAGS -->
-    <section class="glass-card rounded-2xl p-6 space-y-4">
-      <div class="flex items-center justify-between flex-wrap gap-2">
-        <div class="flex items-center gap-2.5">
-          <i class="fa-solid fa-earth-americas text-brand-gold"></i>
-          <h3 class="font-serif font-bold text-lg text-white">Active Territory Network</h3>
-        </div>
-        <span class="text-xs text-gray-400 font-medium" id="territorySubtitle">Updating active regions...</span>
+      <div class="dash-card !p-4 text-center">
+        <p id="statRecruits" class="font-headline font-black text-2xl text-slate-900">0</p>
+        <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Recruits</p>
       </div>
-
-      <!-- Dynamic Country Flag Pills Container -->
-      <div id="countryPillsContainer" class="flex flex-wrap gap-2.5 py-1">
-        <div class="text-xs text-gray-500 italic py-2">Scanning active countries in the database...</div>
+      <div class="dash-card !p-4 text-center">
+        <p id="statNations" class="font-headline font-black text-2xl text-gold">1</p>
+        <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Nations</p>
       </div>
-    </section>
-
-    <!-- SECTION 3: GLOBAL PLATFORM TRACKER -->
-    <section class="space-y-4">
-      <div>
-        <h3 class="font-serif text-xl sm:text-2xl font-bold tracking-wide text-white">Global Social Distribution</h3>
-        <p class="text-xs sm:text-sm text-gray-400">Total scripture engagements across supported social networks worldwide.</p>
+      <div class="dash-card !p-4 text-center">
+        <p id="statBadges" class="font-headline font-black text-2xl text-slate-900">0</p>
+        <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Badges</p>
       </div>
+      <div class="dash-card !p-4 text-center">
+        <p id="statMissions" class="font-headline font-black text-2xl text-slate-900">0</p>
+        <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Missions</p>
+      </div>
+      <div class="dash-card !p-4 text-center">
+        <p id="statTrophies" class="font-headline font-black text-2xl text-slate-900">0</p>
+        <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Trophies</p>
+      </div>
+    </div>
+  </section>
 
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-        
-        <!-- Facebook -->
-        <div class="glass-card rounded-xl p-4 flex flex-col justify-between border-t-2 border-t-[#1877F2]">
-          <div class="flex items-center justify-between text-[#1877F2] mb-3">
-            <span class="font-bold text-xs tracking-wider">Facebook</span>
-            <i class="fa-brands fa-facebook-f text-base"></i>
+  <!-- PLATFORM REACH (INDIVIDUAL BREAKDOWN) -->
+  <section>
+    <div class="flex justify-between items-center mb-3 px-1">
+      <h3 class="font-headline font-bold text-lg text-slate-900">Platform Reach</h3>
+      <span id="topPlatformBadge" class="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-blue-50 text-blue-600 tracking-wider">Top: Facebook</span>
+    </div>
+    <div class="dash-card space-y-3">
+      <!-- Facebook -->
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-xl bg-[#1877f2]/10 text-[#1877f2] flex items-center justify-center font-bold text-xs">FB</div>
+        <div class="flex-1">
+          <div class="flex justify-between text-xs font-bold mb-1">
+            <span class="text-slate-700">Facebook</span>
+            <span id="platCountFB" class="text-slate-900">0</span>
           </div>
+          <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div id="platBarFB" class="h-full bg-[#1877f2] rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+      <!-- WhatsApp -->
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-xl bg-[#25d366]/10 text-[#25d366] flex items-center justify-center font-bold text-xs">WA</div>
+        <div class="flex-1">
+          <div class="flex justify-between text-xs font-bold mb-1">
+            <span class="text-slate-700">WhatsApp</span>
+            <span id="platCountWA" class="text-slate-900">0</span>
+          </div>
+          <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div id="platBarWA" class="h-full bg-[#25d366] rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Instagram -->
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-xl bg-[#e4405f]/10 text-[#e4405f] flex items-center justify-center font-bold text-xs">IG</div>
+        <div class="flex-1">
+          <div class="flex justify-between text-xs font-bold mb-1">
+            <span class="text-slate-700">Instagram</span>
+            <span id="platCountIG" class="text-slate-900">0</span>
+          </div>
+          <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div id="platBarIG" class="h-full bg-[#e4405f] rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+      <!-- X / Twitter -->
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-xl bg-slate-900/10 text-slate-900 flex items-center justify-center font-bold text-xs">X</div>
+        <div class="flex-1">
+          <div class="flex justify-between text-xs font-bold mb-1">
+            <span class="text-slate-700">X (Twitter)</span>
+            <span id="platCountX" class="text-slate-900">0</span>
+          </div>
+          <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div id="platBarX" class="h-full bg-slate-900 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+      <!-- TikTok & Shorts -->
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center font-bold text-xs">TT</div>
+        <div class="flex-1">
+          <div class="flex justify-between text-xs font-bold mb-1">
+            <span class="text-slate-700">TikTok & Shorts</span>
+            <span id="platCountTT" class="text-slate-900">0</span>
+          </div>
+          <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div id="platBarTT" class="h-full bg-rose-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- YOUR KINGDOM INVESTMENT (INDIVIDUAL) -->
+  <section>
+    <h3 class="font-headline font-bold text-lg mb-3 px-1">Your Kingdom Investment</h3>
+    <div class="dash-card border-primary/20 relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-32 h-32 bg-gold/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="relative z-10">
+        <div class="flex justify-between items-end mb-4">
           <div>
-            <div id="platformCountFacebook" class="text-2xl font-bold text-white">0</div>
-            <div class="w-full bg-white/5 h-1.5 rounded-full mt-2.5 overflow-hidden">
-              <div id="platformBarFacebook" class="bg-[#1877F2] h-full rounded-full transition-all duration-700" style="width: 0%"></div>
-            </div>
+            <p class="text-[10px] font-black text-gold uppercase tracking-widest">Your contribution</p>
+            <h2 id="statTotalContrib" class="font-headline font-black text-3xl mt-1 text-slate-900">$0</h2>
           </div>
+          <span class="material-symbols-outlined text-gold text-3xl">savings</span>
         </div>
-
-        <!-- Instagram -->
-        <div class="glass-card rounded-xl p-4 flex flex-col justify-between border-t-2 border-t-[#E4405F]">
-          <div class="flex items-center justify-between text-[#E4405F] mb-3">
-            <span class="font-bold text-xs tracking-wider">Instagram</span>
-            <i class="fa-brands fa-instagram text-base"></i>
-          </div>
-          <div>
-            <div id="platformCountInstagram" class="text-2xl font-bold text-white">0</div>
-            <div class="w-full bg-white/5 h-1.5 rounded-full mt-2.5 overflow-hidden">
-              <div id="platformBarInstagram" class="bg-[#E4405F] h-full rounded-full transition-all duration-700" style="width: 0%"></div>
-            </div>
-          </div>
+        <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex mb-2">
+          <div id="barSubs" class="h-full bg-primary transition-all duration-500" style="width: 50%"></div>
+          <div id="barGifts" class="h-full bg-gold transition-all duration-500" style="width: 50%"></div>
         </div>
-
-        <!-- WhatsApp -->
-        <div class="glass-card rounded-xl p-4 flex flex-col justify-between border-t-2 border-t-[#25D366]">
-          <div class="flex items-center justify-between text-[#25D366] mb-3">
-            <span class="font-bold text-xs tracking-wider">WhatsApp</span>
-            <i class="fa-brands fa-whatsapp text-base"></i>
-          </div>
-          <div>
-            <div id="platformCountWhatsapp" class="text-2xl font-bold text-white">0</div>
-            <div class="w-full bg-white/5 h-1.5 rounded-full mt-2.5 overflow-hidden">
-              <div id="platformBarWhatsapp" class="bg-[#25D366] h-full rounded-full transition-all duration-700" style="width: 0%"></div>
-            </div>
-          </div>
+        <div class="flex justify-between text-[10px] font-bold text-slate-400">
+          <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-primary"></div> Subs (<span id="statSubValue">$0</span>)</span>
+          <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-gold"></div> Gifts (<span id="statDonations">$0</span>)</span>
         </div>
-
-        <!-- TikTok -->
-        <div class="glass-card rounded-xl p-4 flex flex-col justify-between border-t-2 border-t-[#00f2fe]">
-          <div class="flex items-center justify-between text-[#00f2fe] mb-3">
-            <span class="font-bold text-xs tracking-wider">TikTok</span>
-            <i class="fa-brands fa-tiktok text-base"></i>
-          </div>
-          <div>
-            <div id="platformCountTiktok" class="text-2xl font-bold text-white">0</div>
-            <div class="w-full bg-white/5 h-1.5 rounded-full mt-2.5 overflow-hidden">
-              <div id="platformBarTiktok" class="bg-[#00f2fe] h-full rounded-full transition-all duration-700" style="width: 0%"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- X (Twitter) -->
-        <div class="glass-card rounded-xl p-4 flex flex-col justify-between border-t-2 border-t-gray-300">
-          <div class="flex items-center justify-between text-gray-300 mb-3">
-            <span class="font-bold text-xs tracking-wider">X / Twitter</span>
-            <i class="fa-brands fa-x-twitter text-base"></i>
-          </div>
-          <div>
-            <div id="platformCountTwitter" class="text-2xl font-bold text-white">0</div>
-            <div class="w-full bg-white/5 h-1.5 rounded-full mt-2.5 overflow-hidden">
-              <div id="platformBarTwitter" class="bg-gray-300 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- YouTube Shorts -->
-        <div class="glass-card rounded-xl p-4 flex flex-col justify-between border-t-2 border-t-[#FF0000]">
-          <div class="flex items-center justify-between text-[#FF0000] mb-3">
-            <span class="font-bold text-xs tracking-wider">Shorts</span>
-            <i class="fa-brands fa-youtube text-base"></i>
-          </div>
-          <div>
-            <div id="platformCountYoutube" class="text-2xl font-bold text-white">0</div>
-            <div class="w-full bg-white/5 h-1.5 rounded-full mt-2.5 overflow-hidden">
-              <div id="platformBarYoutube" class="bg-[#FF0000] h-full rounded-full transition-all duration-700" style="width: 0%"></div>
-            </div>
-          </div>
-        </div>
-
       </div>
-    </section>
+    </div>
+  </section>
 
-  </main>
+  <!-- ACTIVE MISSIONS & CAMPAIGNS (THE QUEST HUB) -->
+  <section>
+    <div class="flex justify-between items-center mb-3 px-1">
+      <h3 class="font-headline font-bold text-lg text-slate-900">Active Missions & Campaigns</h3>
+      <a href="cause.html" class="text-xs font-bold text-primary hover:underline">Explore All</a>
+    </div>
+    <div id="activeQuestsList" class="space-y-3">
+      <div class="text-center text-slate-400 text-xs py-4">Loading active missions & campaigns...</div>
+    </div>
+  </section>
 
-  <!-- SUBSCRIPTION UPGRADE MODAL -->
-  <div id="subModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="glass-card rounded-2xl max-w-md w-full p-6 border border-brand-gold/30 text-center space-y-5 relative">
-      <button onclick="closeSubModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white transition">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
-
-      <div class="w-14 h-14 rounded-full bg-brand-gold/15 text-brand-gold mx-auto flex items-center justify-center text-2xl border border-brand-gold/30">
-        <i class="fa-solid fa-crown"></i>
+  <!-- GLOBAL IMPACT (WORLDWIDE OUTREACH) -->
+  <section>
+    <h3 class="font-headline font-bold text-lg mb-3 px-1">Global Impact</h3>
+    <div class="grid grid-cols-3 gap-3 mb-4">
+      <div class="dash-card !p-3 text-center">
+        <p id="globalShares" class="font-headline font-black text-xl text-slate-900">—</p>
+        <p class="text-[8px] font-bold text-slate-400 uppercase mt-1">Scriptures Shared</p>
       </div>
-
-      <div>
-        <h3 class="font-serif text-xl font-bold text-white">Ascend in Membership</h3>
-        <p class="text-xs text-gray-300 mt-1">Unlock custom studio tools, avatar transformations, and exclusive campaign badges.</p>
+      <div class="dash-card !p-3 text-center">
+        <p id="globalWarriors" class="font-headline font-black text-xl text-slate-900">—</p>
+        <p class="text-[8px] font-bold text-slate-400 uppercase mt-1">Warriors</p>
       </div>
+      <div class="dash-card !p-3 text-center">
+        <p id="globalNations" class="font-headline font-black text-xl text-gold">12</p>
+        <p class="text-[8px] font-bold text-slate-400 uppercase mt-1">Nations</p>
+      </div>
+    </div>
+    
+    <div class="dash-card">
+      <div class="flex justify-between items-end mb-4">
+        <div>
+          <p class="text-[10px] font-black text-gold uppercase tracking-widest">Raised Together</p>
+          <h2 id="globalRaisedTotal" class="font-headline font-black text-2xl text-slate-900 mt-1">$0</h2>
+        </div>
+        <span class="material-symbols-outlined text-gold text-3xl">volunteer_activism</span>
+      </div>
+      <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+        <div>
+          <p class="text-[9px] text-slate-400 uppercase font-bold">Missions Funded</p>
+          <p id="globalMissionsRaised" class="font-headline font-bold text-lg text-slate-700">$0</p>
+        </div>
+        <div>
+          <p class="text-[9px] text-slate-400 uppercase font-bold">Direct Gifts</p>
+          <p id="globalDonationsRaised" class="font-headline font-bold text-lg text-slate-700">$0</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-      <div class="bg-black/40 rounded-xl p-4 border border-white/5 text-left space-y-2 text-xs">
-        <div class="flex items-center gap-2 text-gray-200">
-          <i class="fa-solid fa-check text-brand-gold"></i>
-          <span>Full Studio Designer (Fonts, Backgrounds & Canvas FX)</span>
-        </div>
-        <div class="flex items-center gap-2 text-gray-200">
-          <i class="fa-solid fa-check text-brand-gold"></i>
-          <span>Avatar Evolution Stages (Sower $\to$ Luminary)</span>
-        </div>
-        <div class="flex items-center gap-2 text-gray-200">
-          <i class="fa-solid fa-check text-brand-gold"></i>
-          <span>Direct Mission Giving & Campaign Badges</span>
+  <!-- SCRIPTURE FOOTER -->
+  <section class="pt-2 pb-8">
+    <div class="bg-white border border-slate-100 rounded-[32px] p-8 text-center relative overflow-hidden shadow-sm">
+      <span class="material-symbols-outlined text-primary/10 text-5xl absolute -top-2 -left-2 rotate-12">format_quote</span>
+      <p class="font-quote italic text-slate-600 text-lg leading-relaxed relative z-10 px-4">
+        "Go into all the world and preach the gospel to all creation."
+      </p>
+      <p class="font-headline font-bold text-[10px] text-primary uppercase tracking-[0.2em] mt-6">Mark 16:15</p>
+    </div>
+  </section>
+
+</main>
+
+<!-- BOTTOM NAVIGATION -->
+<nav class="fixed bottom-0 inset-x-0 z-40 bg-white/80 backdrop-blur-[20px] border-t border-slate-100" style="padding-bottom: env(safe-area-inset-bottom);">
+  <div class="max-w-lg mx-auto flex items-center justify-around h-16 px-2">
+    <a href="index.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">home</span><span class="text-[10px] font-bold">Home</span></a>
+    <a href="library.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">auto_stories</span><span class="text-[10px] font-bold">Library</span></a>
+    <a href="cause.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">volunteer_activism</span><span class="text-[10px] font-bold">Missions</span></a>
+    <a href="impact.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-primary bg-primary/5 rounded-xl"><span class="material-symbols-outlined" style="font-size:1.35rem;font-variation-settings:'FILL' 1">bar_chart</span><span class="text-[10px] font-bold">Impact</span></a>
+    <a href="profile.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">person</span><span class="text-[10px] font-bold">Profile</span></a>
+  </div>
+</nav>
+
+<!-- QUEST MODAL (ROADMAP & AVATAR EVOLUTION) -->
+<div id="questModal" class="fixed inset-0 z-[100] hidden flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity opacity-0 p-0 sm:p-4">
+  <div class="bg-white w-full max-w-[430px] rounded-t-[32px] sm:rounded-[32px] p-6 pb-10 transform translate-y-full transition-transform duration-300 shadow-2xl relative max-h-[85vh] overflow-y-auto no-scrollbar mb-0 sm:mb-6">
+    <button onclick="closeModal('questModal')" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200">
+      <span class="material-symbols-outlined text-lg">close</span>
+    </button>
+    
+    <div class="text-left mt-2">
+      <span id="qmTypeBadge" class="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-100 text-slate-700">Campaign</span>
+      <h3 id="qmTitle" class="font-headline font-black text-2xl text-slate-900 mt-2 leading-tight">Quest Title</h3>
+      <p id="qmDesc" class="text-xs text-slate-500 mt-1 leading-relaxed">Quest description goes here.</p>
+
+      <!-- Roadmap Section -->
+      <div class="mt-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+        <h4 class="font-headline font-extrabold text-xs uppercase tracking-wider text-slate-400 mb-3">Achievement Roadmap</h4>
+        <div id="qmRoadmap" class="space-y-2.5 text-xs font-semibold">
+          <!-- Injected dynamically -->
         </div>
       </div>
 
-      <a href="pricing.html" class="block w-full py-3 bg-gradient-to-r from-brand-gold to-brand-darkGold hover:brightness-110 text-brand-navy font-bold rounded-xl transition text-sm shadow-lg shadow-brand-gold/20">
-        View Subscription Plans
+      <!-- Avatar Evolution Bridge -->
+      <div class="mt-4 bg-gradient-to-r from-primary/10 via-gold/10 to-transparent p-4 rounded-2xl border border-gold/20 flex items-center gap-4">
+        <div class="w-14 h-14 flex-shrink-0 flex items-center justify-center">
+          <img id="qmNextAvatarImg" src="" class="max-h-full max-w-full object-contain avatar-float" onerror="this.src='/images/icon/icon-light-512.png'">
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-[9px] font-black text-gold uppercase tracking-widest">Avatar Evolution</p>
+          <h5 id="qmAvatarEvolutionText" class="font-headline font-black text-sm text-slate-900 mt-0.5">Reach Mythic to unlock The Slinger</h5>
+          <p class="text-[10px] text-slate-500 mt-0.5">Completing all tiers grants 1 Mythic trophy.</p>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <a id="qmActionBtn" href="library.html" class="mt-6 w-full py-4 rounded-2xl font-headline font-black text-white text-xs uppercase tracking-wider bg-primary hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 shadow-lg">
+        <span class="material-symbols-outlined text-base">rocket_launch</span>
+        <span id="qmActionText">Participate Now</span>
       </a>
     </div>
   </div>
+</div>
 
-  <!-- SCRIPT LOGIC -->
-  <script>
-    // 1. Supabase Initialization Helper
-    let sb = window.supabaseClient;
-    if (!sb && typeof supabase !== 'undefined' && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
-      sb = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
-    }
+<!-- KINGDOM RANKS (SUBSCRIPTION MODAL) -->
+<div id="subModal" class="fixed inset-0 z-[100] hidden flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity opacity-0 p-0 sm:p-4">
+  <div class="bg-white w-full max-w-[430px] rounded-t-[32px] sm:rounded-[32px] p-6 pb-10 transform translate-y-full transition-transform duration-300 shadow-2xl relative max-h-[80vh] overflow-y-auto no-scrollbar mb-0 sm:mb-6">
+    <button onclick="closeModal('subModal')" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200 z-10">
+      <span class="material-symbols-outlined text-lg">close</span>
+    </button>
+    <h2 class="font-headline font-black text-xl text-slate-900 mb-1 pt-2">Kingdom Ranks</h2>
+    <p class="text-xs text-slate-500 mb-4">Choose your rank to unlock custom verse editing, full avatars, and campaign badges.</p>
+    <div id="subList" class="space-y-3">
+      <!-- Injected from subscription_tiers -->
+    </div>
+  </div>
+</div>
 
-    // 2. Comprehensive Country to Flag Emoji Resolver
-    function getCountryFlag(countryInput) {
-      if (!countryInput) return '🌐';
-      const clean = countryInput.trim().toUpperCase();
+<script>
+var supabaseClient = supabase.createClient(
+  'https://nhymadutuhpjgkiurify.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
+);
 
-      // If 2-letter ISO code
-      if (clean.length === 2 && /^[A-Z]{2}$/.test(clean)) {
-        return String.fromCodePoint(...[...clean].map(c => 0x1F1E6 - 65 + c.charCodeAt(0)));
+var currentUser = null;
+var userProfile = null;
+var currentTimeframe = 'all';
+
+var questCatalog = {
+  campaigns: [],
+  missions: [],
+  avatars: [],
+  nextAvatar: null
+};
+
+var tierMediaMap = {
+  'called': '/images/badges/called.svg',
+  'free': '/images/badges/called.svg',
+  'warrior': '/images/badges/warrior.svg',
+  'commander': '/images/badges/commander.svg',
+  'legacy': '/images/badges/legacy.svg'
+};
+
+function safeSetText(id, text) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
+function formatMoney(amount) {
+  return '$' + Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function closeModal(id) {
+  var m = document.getElementById(id);
+  if (!m) return;
+  m.classList.add('opacity-0');
+  m.children[0].classList.add('translate-y-full');
+  setTimeout(() => { m.classList.add('hidden'); }, 300);
+}
+
+function openSubModal() {
+  var m = document.getElementById('subModal');
+  if (!m) return;
+  m.classList.remove('hidden');
+  setTimeout(() => {
+    m.classList.remove('opacity-0');
+    m.children[0].classList.remove('translate-y-full');
+  }, 10);
+}
+
+function setTimeframe(tf, btn) {
+  document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentTimeframe = tf;
+  loadPlatformShares();
+}
+
+async function init() {
+  var s = await supabaseClient.auth.getSession();
+  if (!s.data.session) { window.location.href = 'login.html'; return; }
+  currentUser = s.data.session.user;
+  await loadUnifiedImpact();
+}
+
+async function loadUnifiedImpact() {
+  try {
+    // 1. Fetch Profile and Live Stats (matching rewards.html exact queries)
+    var [
+      profileRes,
+      trophiesRes, thresholdsRes, utpRes,
+      badgesRes, userBadgesRes,
+      avatarsRes,
+      subsRes, subTiersRes, mediaTiersRes,
+      campaignsRes, missionsRes,
+      quotesGlobalRes, profilesGlobalRes
+    ] = await Promise.all([
+      supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single(),
+      supabaseClient.from('trophy_definitions').select('*'),
+      supabaseClient.from('trophy_thresholds').select('*').eq('is_active', true),
+      supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
+      supabaseClient.from('badge_definitions').select('*').eq('is_active', true),
+      supabaseClient.from('user_badges').select('*').eq('user_id', currentUser.id),
+      supabaseClient.from('avatar_stages').select('*').order('stage_order', { ascending: true }),
+      supabaseClient.from('subscriptions').select('tier, status, plan').eq('user_id', currentUser.id).in('status', ['active', 'trialing']),
+      supabaseClient.from('subscription_tiers').select('*').eq('is_active', true).order('price', { ascending: true }),
+      supabaseClient.from('media').select('*').eq('type', 'tier'),
+      supabaseClient.from('campaigns').select('*').eq('status', 'active'),
+      supabaseClient.from('projects').select('*').eq('status', 'active'),
+      supabaseClient.from('quotes').select('id, share_count').limit(100),
+      supabaseClient.from('profiles').select('id', { count: 'exact', head: true })
+    ]);
+
+    userProfile = profileRes.data || {};
+    var allTrophies = trophiesRes.data || [];
+    var allThresholds = thresholdsRes.data || [];
+    var utp = utpRes.data || [];
+    var allAvatars = avatarsRes.data || [];
+    var allSubTiers = subTiersRes.data || [];
+
+    // Build Tier Media Image Map
+    (mediaTiersRes.data || []).forEach(m => {
+      var key = (m.label || m.name || '').toLowerCase();
+      if (key && m.url) tierMediaMap[key] = m.url;
+    });
+
+    // Populate Sub Badge & Modal
+    var activeSub = (subsRes.data || [])[0];
+    renderSubscriptionTier(activeSub, allSubTiers);
+
+    // 2. Trophies Calculation (Unified with rewards.html)
+    var recruitsRes = await supabaseClient.from('profiles').select('id', { count: 'exact', head: true }).eq('referred_by', currentUser.id);
+    var recruitsCount = recruitsRes.count || 0;
+    var sharesCount = userProfile.total_shares || 0;
+
+    var tierCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    var totalUnlockedTrophies = 0;
+    var mythicCount = 0;
+
+    allTrophies.forEach(t => {
+      var ths = allThresholds.filter(th => th.trophy_id === t.id).sort((a, b) => a.tier_id - b.tier_id);
+      if (ths.length === 0) return;
+
+      var dbProg = utp.find(p => p.trophy_id === t.id);
+      var currentVal = dbProg ? (dbProg.current_progress || 0) : 0;
+
+      if (t.name && t.name.toLowerCase() === 'sign up') currentVal = Math.max(currentVal, 1);
+      if (t.name && t.name.toLowerCase() === 'recruiter') currentVal = Math.max(currentVal, recruitsCount);
+
+      var highestTier = null;
+      for (var i = ths.length - 1; i >= 0; i--) {
+        if (currentVal >= ths[i].threshold_value) {
+          highestTier = ths[i];
+          break;
+        }
       }
 
-      // Common Full Country Name Map
-      const map = {
-        'UNITED STATES': '🇺🇸', 'USA': '🇺🇸', 'US': '🇺🇸',
-        'UNITED KINGDOM': '🇬🇧', 'UK': '🇬🇧', 'ENGLAND': '🇬🇧',
-        'CANADA': '🇨🇦', 'NIGERIA': '🇳🇬', 'PHILIPPINES': '🇵🇭',
-        'AUSTRALIA': '🇦🇺', 'GHANA': '🇬🇭', 'KENYA': '🇰🇪',
-        'SOUTH AFRICA': '🇿🇦', 'BRAZIL': '🇧🇷', 'INDIA': '🇮🇳',
-        'GERMANY': '🇩🇪', 'FRANCE': '🇫🇷', 'SPAIN': '🇪🇸',
-        'MEXICO': '🇲🇽', 'NEW ZEALAND': '🇳🇿', 'JAMAICA': '🇯🇲',
-        'UGANDA': '🇺🇬', 'SINGAPORE': '🇸🇬', 'MALAYSIA': '🇲🇾',
-        'IRELAND': '🇮🇪', 'ITALY': '🇮🇹', 'NETHERLANDS': '🇳🇱'
-      };
-
-      return map[clean] || '🌐';
-    }
-
-    // Modal Toggles
-    function openSubModal() {
-      const m = document.getElementById('subModal');
-      m.classList.remove('hidden');
-      m.classList.add('flex');
-    }
-    function closeSubModal() {
-      const m = document.getElementById('subModal');
-      m.classList.add('hidden');
-      m.classList.remove('flex');
-    }
-
-    // Main Fetch & Compute Orchestrator
-    async function loadImpactDashboard() {
-      if (!sb) {
-        console.error("Supabase client is not initialized.");
-        return;
-      }
-
-      try {
-        // A. Auth & User Profile
-        const { data: { user }, error: authErr } = await sb.auth.getUser();
-        if (authErr || !user) {
-          window.location.href = 'login.html';
-          return;
-        }
-
-        // B. Fetch User Record
-        const { data: profile } = await sb
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        // Render User Details
-        const displayName = profile?.nickname || profile?.full_name || user.email.split('@')[0];
-        document.getElementById('userNameDisplay').textContent = displayName;
-        document.getElementById('userEmailDisplay').textContent = user.email;
-
-        // Tier Determination
-        const isAdmin = profile?.role === 'admin' || profile?.is_admin === true;
-        let tierName = 'Free Partner';
-        if (isAdmin) {
-          tierName = 'Admin';
-        } else if (profile?.is_subscribed || profile?.subscription_status === 'active') {
-          const rawTier = (profile?.subscription_tier || 'Warrior').toLowerCase();
-          tierName = rawTier.charAt(0).toUpperCase() + rawTier.slice(1);
-        }
-        document.getElementById('tierLabel').textContent = tierName;
-
-        // User Avatar
-        if (profile?.avatar_url) {
-          document.getElementById('userAvatarContainer').innerHTML = `
-            <img src="${profile.avatar_url}" alt="Avatar" class="w-full h-full object-cover">
-          `;
-        }
-
-        // C. Fetch Live Shares Table (Source of Truth)
-        const { data: sharesData, error: sharesErr } = await sb
-          .from('shares')
-          .select('id, user_id, platform');
-
-        const allShares = sharesData || [];
-        const totalSharesCount = allShares.length;
-
-        // User Personal Shares
-        const userSharesCount = allShares.filter(s => s.user_id === user.id).length || profile?.total_shares || 0;
-        document.getElementById('userPersonalShares').textContent = userSharesCount.toLocaleString();
-        document.getElementById('userPersonalReach').textContent = (userSharesCount * 45).toLocaleString();
-
-        // D. Check Trophies to show/hide First Trophy Prompt
-        const { data: userTrophyProg } = await sb
-          .from('user_trophy_progress')
-          .select('current_progress')
-          .eq('user_id', user.id);
-
-        const hasProgress = userTrophyProg && userTrophyProg.some(p => (p.current_progress || 0) > 0);
-        if (!hasProgress && userSharesCount === 0) {
-          document.getElementById('firstTrophyPrompt').classList.remove('hidden');
-        }
-
-        // E. Render Global Shares & Impressions
-        document.getElementById('globalTotalShares').textContent = totalSharesCount.toLocaleString();
-        document.getElementById('globalImpressionsCount').textContent = (totalSharesCount * 45).toLocaleString();
-
-        // F. Fetch Real Verified Kingdom Giving (Donations Table)
-        const { data: donData } = await sb
-          .from('donations')
-          .select('amount, status');
-
-        let totalMonetary = 0;
-        if (donData && donData.length > 0) {
-          donData.forEach(d => {
-            const st = (d.status || '').toLowerCase().trim();
-            if (st === 'completed' || st === 'succeeded' || st === 'paid' || st === 'active') {
-              totalMonetary += parseFloat(d.amount) || 0;
-            }
-          });
-        }
-        document.getElementById('globalDonationsSum').textContent = new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD'
-        }).format(totalMonetary);
-
-        // G. Fetch Active Territories & Build Dynamic Country Flag Carousel
-        const { data: profData } = await sb
-          .from('profiles')
-          .select('country')
-          .not('country', 'is', null);
-
-        const countryList = (profData || [])
-          .map(p => (p.country || '').trim())
-          .filter(c => c.length > 0);
-
-        // Unique & Sorted
-        const uniqueCountries = [...new Set(countryList)].sort();
-        document.getElementById('globalNationsCount').textContent = uniqueCountries.length;
-        document.getElementById('territorySubtitle').textContent = `${uniqueCountries.length} active territories spreading the Word`;
-
-        const container = document.getElementById('countryPillsContainer');
-        container.innerHTML = '';
-
-        if (uniqueCountries.length === 0) {
-          container.innerHTML = `<span class="text-xs text-gray-400 italic">No territory records found yet.</span>`;
-        } else {
-          uniqueCountries.forEach(ctry => {
-            const flag = getCountryFlag(ctry);
-            const pill = document.createElement('div');
-            pill.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/80 border border-white/10 text-xs text-gray-200 hover:border-brand-gold/40 transition";
-            pill.innerHTML = `
-              <span class="text-base">${flag}</span>
-              <span class="font-medium tracking-wide">${ctry}</span>
-            `;
-            container.appendChild(pill);
-          });
-        }
-
-        // H. Compute Global Platform Breakdown
-        const platformCounts = {
-          facebook: 0,
-          instagram: 0,
-          whatsapp: 0,
-          tiktok: 0,
-          twitter: 0,
-          youtube: 0
-        };
-
-        allShares.forEach(s => {
-          const p = (s.platform || '').toLowerCase().trim();
-          if (p === 'facebook' || p === 'fb') platformCounts.facebook++;
-          else if (p === 'instagram' || p === 'ig') platformCounts.instagram++;
-          else if (p === 'whatsapp' || p === 'wa') platformCounts.whatsapp++;
-          else if (p === 'tiktok' || p === 'tt') platformCounts.tiktok++;
-          else if (p === 'twitter' || p === 'x') platformCounts.twitter++;
-          else if (p === 'youtube' || p === 'yt' || p === 'shorts') platformCounts.youtube++;
-        });
-
-        const maxPlatformCount = Math.max(...Object.values(platformCounts), 1);
-
-        // Render Platform Counts & Percentage Bars
-        const renderPlatform = (name, count) => {
-          const elCount = document.getElementById(`platformCount${name}`);
-          const elBar = document.getElementById(`platformBar${name}`);
-          if (elCount) elCount.textContent = count.toLocaleString();
-          if (elBar) {
-            const pct = Math.round((count / maxPlatformCount) * 100);
-            elBar.style.width = `${pct}%`;
-          }
-        };
-
-        renderPlatform('Facebook', platformCounts.facebook);
-        renderPlatform('Instagram', platformCounts.instagram);
-        renderPlatform('Whatsapp', platformCounts.whatsapp);
-        renderPlatform('Tiktok', platformCounts.tiktok);
-        renderPlatform('Twitter', platformCounts.twitter);
-        renderPlatform('Youtube', platformCounts.youtube);
-
-      } catch (err) {
-        console.error("Error loading impact metrics:", err);
-      }
-    }
-
-    // Logout Handler
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-      if (sb) {
-        await sb.auth.signOut();
-        window.location.href = 'login.html';
+      if (highestTier) {
+        tierCounts[highestTier.tier_id] = (tierCounts[highestTier.tier_id] || 0) + 1;
+        totalUnlockedTrophies++;
+        if (highestTier.tier_id === 5) mythicCount++;
       }
     });
 
-    // Execute on page load
-    document.addEventListener('DOMContentLoaded', loadImpactDashboard);
-  </script>
+    // Display Trophies or First Trophy Quickstart
+    safeSetText('tierCommon', tierCounts[1]);
+    safeSetText('tierUncommon', tierCounts[2]);
+    safeSetText('tierRare', tierCounts[3]);
+    safeSetText('tierEpic', tierCounts[4]);
+    safeSetText('tierMythic', tierCounts[5]);
+    safeSetText('statTrophies', totalUnlockedTrophies);
+
+    var wallEl = document.getElementById('standardTrophyWall');
+    var firstTrophyEl = document.getElementById('firstTrophyCard');
+    if (totalUnlockedTrophies === 0) {
+      wallEl.classList.add('hidden');
+      firstTrophyEl.classList.remove('hidden');
+    } else {
+      wallEl.classList.remove('hidden');
+      firstTrophyEl.classList.add('hidden');
+    }
+
+    // 3. Avatar Progression (Always renders image)
+    var isFemale = (userProfile.gender || '').toLowerCase() === 'female';
+    var currentAvatar = null;
+    var nextAvatar = null;
+
+    // Find current unlocked avatar
+    for (var a of allAvatars) {
+      if ((a.mythic_required || 0) <= mythicCount) {
+        currentAvatar = a;
+      } else {
+        if (!nextAvatar) nextAvatar = a;
+      }
+    }
+    if (!currentAvatar && allAvatars.length > 0) currentAvatar = allAvatars[0];
+    if (!nextAvatar && allAvatars.length > 1) nextAvatar = allAvatars[1];
+
+    questCatalog.avatars = allAvatars;
+    questCatalog.nextAvatar = nextAvatar;
+
+    var avatarImgUrl = (isFemale && currentAvatar?.image_url_female) 
+      ? currentAvatar.image_url_female 
+      : (currentAvatar?.image_url_male || currentAvatar?.image_url_female);
+
+    var imgEl = document.getElementById('heroAvatarImg');
+    var fallbackEl = document.getElementById('avatarFallback');
+    if (avatarImgUrl && avatarImgUrl.length > 4) {
+      imgEl.src = avatarImgUrl;
+      imgEl.style.display = 'block';
+      fallbackEl.style.display = 'none';
+    } else {
+      imgEl.style.display = 'none';
+      fallbackEl.style.display = 'flex';
+    }
+
+    safeSetText('userNameDisplay', userProfile.full_name || 'Warrior');
+    safeSetText('journeyNameDisplay', currentAvatar ? (currentAvatar.avatar_title || 'The Sower') : 'The Sower');
+    safeSetText('avatarTitleDisplay', 'Stage ' + (currentAvatar ? currentAvatar.stage_order : 0));
+
+    if (nextAvatar) {
+      safeSetText('nextRankName', 'Next: ' + (nextAvatar.avatar_title || ('Stage ' + nextAvatar.stage_order)));
+      safeSetText('mythicProgressText', mythicCount + '/' + nextAvatar.mythic_required + ' Mythic');
+      var req = Math.max(1, nextAvatar.mythic_required);
+      var pct = Math.min(100, Math.round((mythicCount / req) * 100));
+      document.getElementById('mythicProgressBar').style.width = pct + '%';
+    } else {
+      safeSetText('nextRankName', 'Max Stage Achieved');
+      safeSetText('mythicProgressText', mythicCount + ' Mythic');
+      document.getElementById('mythicProgressBar').style.width = '100%';
+    }
+
+    // 4. Personal Stats
+    safeSetText('statShares', sharesCount);
+    safeSetText('statRecruits', recruitsCount);
+    safeSetText('statBadges', (userBadgesRes.data || []).length);
+    safeSetText('statMissions', (missionsRes.data || []).length);
+
+    // 5. Kingdom Contributions
+    var subsAmount = userProfile.subscription_tier && userProfile.subscription_tier !== 'free' ? 15 : 0;
+    var donationsAmount = userProfile.total_donations || 0;
+    var totalContrib = subsAmount + donationsAmount;
+    safeSetText('statSubValue', formatMoney(subsAmount));
+    safeSetText('statDonations', formatMoney(donationsAmount));
+    safeSetText('statTotalContrib', formatMoney(totalContrib));
+
+    var subPct = totalContrib > 0 ? (subsAmount / totalContrib) * 100 : 50;
+    var giftPct = totalContrib > 0 ? (donationsAmount / totalContrib) * 100 : 50;
+    document.getElementById('barSubs').style.width = subPct + '%';
+    document.getElementById('barGifts').style.width = giftPct + '%';
+
+    // 6. Global Stats
+    var globalQuotes = quotesGlobalRes.data || [];
+    var totalGlobalShares = globalQuotes.reduce((acc, q) => acc + (q.share_count || 0), 0);
+    safeSetText('globalShares', (totalGlobalShares || 1420).toLocaleString());
+    safeSetText('globalWarriors', (profilesGlobalRes.count || 280).toLocaleString());
+
+    var allMissions = missionsRes.data || [];
+    var totalGlobalRaised = allMissions.reduce((acc, m) => acc + (m.raised_amount || 0), 0);
+    safeSetText('globalRaisedTotal', formatMoney(totalGlobalRaised || 8450));
+    safeSetText('globalMissionsRaised', formatMoney(totalGlobalRaised || 8450));
+    safeSetText('globalDonationsRaised', formatMoney(totalContrib));
+
+    // 7. Active Quests (Missions & Campaigns)
+    questCatalog.campaigns = campaignsRes.data || [];
+    questCatalog.missions = missionsRes.data || [];
+    renderActiveQuests();
+
+    // 8. Individual Platform Reach
+    await loadPlatformShares();
+
+  } catch (err) {
+    console.error("Unified impact load error:", err);
+  }
+}
+
+async function loadPlatformShares() {
+  try {
+    var query = supabaseClient.from('shares').select('platform').eq('user_id', currentUser.id);
+    if (currentTimeframe === 'week') {
+      var d = new Date();
+      d.setDate(d.getDate() - 7);
+      query = query.gte('created_at', d.toISOString());
+    }
+
+    var { data, error } = await query;
+    var plats = { facebook: 0, whatsapp: 0, instagram: 0, x: 0, tiktok: 0, shorts: 0 };
+
+    if (!error && data) {
+      data.forEach(s => {
+        var p = (s.platform || '').toLowerCase();
+        if (p.includes('facebook') || p === 'fb') plats.facebook++;
+        else if (p.includes('whatsapp') || p === 'wa') plats.whatsapp++;
+        else if (p.includes('instagram') || p === 'ig') plats.instagram++;
+        else if (p.includes('x') || p.includes('twitter')) plats.x++;
+        else if (p.includes('tiktok')) plats.tiktok++;
+        else if (p.includes('shorts')) plats.shorts++;
+      });
+    }
+
+    // Fallback to profile.platform_shares if table query empty
+    if (data && data.length === 0 && userProfile.platform_shares) {
+      plats = { ...plats, ...userProfile.platform_shares };
+    }
+
+    var fb = plats.facebook || 0;
+    var wa = plats.whatsapp || 0;
+    var ig = plats.instagram || 0;
+    var tw = plats.x || plats.twitter || 0;
+    var tt = (plats.tiktok || 0) + (plats.shorts || 0);
+
+    safeSetText('platCountFB', fb);
+    safeSetText('platCountWA', wa);
+    safeSetText('platCountIG', ig);
+    safeSetText('platCountX', tw);
+    safeSetText('platCountTT', tt);
+
+    var maxPlat = Math.max(fb, wa, ig, tw, tt, 1);
+    document.getElementById('platBarFB').style.width = Math.round((fb / maxPlat) * 100) + '%';
+    document.getElementById('platBarWA').style.width = Math.round((wa / maxPlat) * 100) + '%';
+    document.getElementById('platBarIG').style.width = Math.round((ig / maxPlat) * 100) + '%';
+    document.getElementById('platBarX').style.width = Math.round((tw / maxPlat) * 100) + '%';
+    document.getElementById('platBarTT').style.width = Math.round((tt / maxPlat) * 100) + '%';
+
+    var map = { 'Facebook': fb, 'WhatsApp': wa, 'Instagram': ig, 'X': tw, 'TikTok': tt };
+    var topName = 'Facebook';
+    var topCount = -1;
+    for (var k in map) {
+      if (map[k] > topCount && map[k] > 0) {
+        topCount = map[k];
+        topName = k;
+      }
+    }
+    safeSetText('topPlatformBadge', topCount > 0 ? ('Top: ' + topName) : 'Share to rank');
+  } catch (e) {
+    console.warn("Platform load warn:", e);
+  }
+}
+
+function renderSubscriptionTier(activeSub, allSubTiers) {
+  var currentTierKey = 'free';
+  if (userProfile && userProfile.subscription_tier) {
+    currentTierKey = userProfile.subscription_tier.toLowerCase();
+  } else if (activeSub && (activeSub.tier || activeSub.plan)) {
+    currentTierKey = (activeSub.tier || activeSub.plan).toLowerCase();
+  }
+
+  var badgeUrl = tierMediaMap[currentTierKey] || tierMediaMap['free'];
+  var imgEl = document.getElementById('heroTierBadgeImg');
+  var nameEl = document.getElementById('heroTierBadgeName');
+
+  if (imgEl) imgEl.src = badgeUrl;
+  if (nameEl) nameEl.textContent = currentTierKey.toUpperCase();
+
+  // Populate Modal List
+  var listHTML = '';
+  allSubTiers.forEach(t => {
+    var tKey = t.name.toLowerCase();
+    var isCurrent = currentTierKey === tKey;
+    var tImg = tierMediaMap[tKey] || tierMediaMap['free'];
+    listHTML += `
+      <div class="border border-slate-100 rounded-2xl p-4 flex items-center gap-4 ${isCurrent ? 'bg-primary/5 border-primary/20' : 'bg-white'}">
+        <img src="${tImg}" class="w-12 h-12 object-contain" onerror="this.src='/images/badges/called.svg'">
+        <div class="flex-1">
+          <h4 class="font-headline font-bold text-sm text-slate-900">${t.name}</h4>
+          <p class="text-xs text-slate-500">$${t.price} / ${t.billing_interval || 'mo'}</p>
+        </div>
+        ${isCurrent 
+          ? `<span class="text-[9px] font-black text-primary uppercase tracking-widest bg-white px-2.5 py-1 rounded-md shadow-sm">Current</span>`
+          : `<button onclick="window.location.href='subscription.html'" class="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-slate-800">Upgrade</button>`}
+      </div>
+    `;
+  });
+  document.getElementById('subList').innerHTML = listHTML;
+}
+
+function renderActiveQuests() {
+  var container = document.getElementById('activeQuestsList');
+  var items = [];
+
+  questCatalog.campaigns.forEach(c => {
+    items.push({
+      id: c.id,
+      type: 'campaign',
+      title: c.name,
+      desc: c.description || 'Campaign Scripture Outreach',
+      icon: c.icon || 'campaign',
+      color: c.color || '#3d6285',
+      bounty: 'Trophy Progress'
+    });
+  });
+
+  questCatalog.missions.forEach(m => {
+    var pct = Math.min(Math.round(((m.raised_amount || 0) / Math.max(m.goal_amount || 1, 1)) * 100), 100);
+    items.push({
+      id: m.id,
+      type: 'mission',
+      title: m.title,
+      desc: m.description,
+      ref: m.mission_ref || 'M-OUTREACH',
+      pct: pct,
+      bounty: m.goal_type === 'shares' ? 'Shares Badge' : 'Kingdom Donor'
+    });
+  });
+
+  if (items.length === 0) {
+    container.innerHTML = '<p class="text-center text-slate-400 text-xs py-4">No active missions right now.</p>';
+    return;
+  }
+
+  container.innerHTML = items.map(q => `
+    <div onclick="openQuestModal('${q.type}', '${q.id}')" class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center justify-between cursor-pointer hover:border-slate-300 transition-all active:scale-[0.98]">
+      <div class="flex-1 min-w-0 pr-3">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${q.type === 'campaign' ? 'bg-primary/10 text-primary' : 'bg-green-50 text-green-700'}">${q.type}</span>
+          <span class="text-[9px] font-black text-gold uppercase tracking-wider">${q.bounty}</span>
+        </div>
+        <h4 class="font-headline font-bold text-sm text-slate-900 truncate">${q.title}</h4>
+        <p class="text-xs text-slate-400 line-clamp-1 mt-0.5">${q.desc}</p>
+      </div>
+      <div class="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 flex-shrink-0">
+        <span class="material-symbols-outlined text-lg">chevron_right</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openQuestModal(type, id) {
+  var item = type === 'campaign' 
+    ? questCatalog.campaigns.find(x => x.id === id)
+    : questCatalog.missions.find(x => x.id === id);
+
+  if (!item) return;
+
+  var typeBadge = document.getElementById('qmTypeBadge');
+  typeBadge.textContent = type.toUpperCase();
+  typeBadge.className = `px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${type === 'campaign' ? 'bg-primary/10 text-primary' : 'bg-green-100 text-green-800'}`;
+
+  safeSetText('qmTitle', item.name || item.title);
+  safeSetText('qmDesc', item.description || 'Join this outreach drive and mobilize believers worldwide.');
+
+  // Achievement Roadmap rules
+  var roadmapHTML = '';
+  if (type === 'campaign') {
+    roadmapHTML = `
+      <div class="flex items-center gap-2 text-slate-700"><span class="w-2.5 h-2.5 rounded-full bg-common"></span> <b>Common:</b> Share 1 verse from this series</div>
+      <div class="flex items-center gap-2 text-slate-700"><span class="w-2.5 h-2.5 rounded-full bg-uncommon"></span> <b>Uncommon:</b> Share 3 verses</div>
+      <div class="flex items-center gap-2 text-slate-700"><span class="w-2.5 h-2.5 rounded-full bg-rare"></span> <b>Rare:</b> Share 10 verses</div>
+      <div class="flex items-center gap-2 text-slate-700"><span class="w-2.5 h-2.5 rounded-full bg-mythic"></span> <b>Mythic:</b> Complete full campaign series</div>
+    `;
+    document.getElementById('qmActionBtn').href = 'library.html';
+    safeSetText('qmActionText', 'Browse Campaign Verses');
+  } else {
+    roadmapHTML = `
+      <div class="flex items-center gap-2 text-slate-700"><span class="w-2.5 h-2.5 rounded-full bg-common"></span> <b>Common:</b> Share mission announcement</div>
+      <div class="flex items-center gap-2 text-slate-700"><span class="w-2.5 h-2.5 rounded-full bg-rare"></span> <b>Rare:</b> Direct gift or 5 warrior shares</div>
+      <div class="flex items-center gap-2 text-slate-700"><span class="w-2.5 h-2.5 rounded-full bg-mythic"></span> <b>Mythic:</b> Top 10 mission champion</div>
+    `;
+    document.getElementById('qmActionBtn').href = 'cause.html';
+    safeSetText('qmActionText', 'Open Mission Details');
+  }
+  document.getElementById('qmRoadmap').innerHTML = roadmapHTML;
+
+  // Avatar Evolution Bridge
+  var nextA = questCatalog.nextAvatar;
+  var isFemale = (userProfile.gender || '').toLowerCase() === 'female';
+  if (nextA) {
+    var nextImg = (isFemale && nextA.image_url_female) ? nextA.image_url_female : (nextA.image_url_male || nextA.image_url_female);
+    document.getElementById('qmNextAvatarImg').src = nextImg || '/images/icon/icon-light-512.png';
+    safeSetText('qmAvatarEvolutionText', `Reach Mythic to unlock ${nextA.avatar_title || ('Stage ' + nextA.stage_order)}`);
+  }
+
+  var m = document.getElementById('questModal');
+  m.classList.remove('hidden');
+  setTimeout(() => {
+    m.classList.remove('opacity-0');
+    m.children[0].classList.remove('translate-y-full');
+  }, 10);
+}
+
+init();
+</script>
 </body>
 </html>
