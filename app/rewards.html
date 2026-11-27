@@ -2,694 +2,812 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Rewards — Command Center</title>
-  <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rewards & Progression | Go Spread The Word</title>
   
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Lora:ital@1&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
-  
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            'surface': '#f8fafc', 'card': '#ffffff', 'text-main': '#0f172a', 'text-muted': '#64748b',
-            'primary': '#3d6285', 'gold': '#D4A24C',
-            'common': '#94a3b8', 'uncommon': '#16a34a', 'rare': '#2563eb', 'epic': '#9333ea', 'mythic': '#d97706'
+            brand: {
+              gold: '#D4AF37',
+              darkGold: '#AA820A',
+              navy: '#0B132B',
+              slate: '#1C2541',
+              charcoal: '#0b0f19'
+            }
           },
           fontFamily: {
-            'headline': ['Plus Jakarta Sans', 'sans-serif'],
-            'body': ['Manrope', 'sans-serif']
+            serif: ['Cinzel', 'serif'],
+            sans: ['Plus Jakarta Sans', 'sans-serif']
           }
         }
       }
     }
   </script>
 
+  <!-- Supabase JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- App Configuration -->
+  <script src="js/config.js"></script>
+
   <style>
-    body { font-family: 'Manrope', sans-serif; background: #f8fafc; color: #0f172a; }
-    .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    
-    .tab-btn { transition: all 0.2s ease; }
-    .tab-btn.active { background: white; color: #0f172a; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
-    
-    /* Reward Items - Floating / No Containers */
-    .reward-item { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; cursor: pointer; transition: transform 0.15s ease; }
-    .reward-item:active { transform: scale(0.92); }
-    
-    .reward-icon-box { 
-      width: 76px; height: 76px; border-radius: 22px; 
-      display: flex; align-items: center; justify-content: center; 
-      padding: 10px; box-shadow: 0 8px 20px rgba(0,0,0,0.06); 
-      transition: all 0.2s ease; 
+    body {
+      background-color: #0b0f19;
+      color: #f1f5f9;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
-    
-    .reward-item.locked .reward-icon-box { 
-      background-color: #e2e8f0 !important; 
-      box-shadow: none; 
-      filter: grayscale(100%) opacity(0.5); 
+    .glass-card {
+      background: rgba(28, 37, 65, 0.45);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(212, 175, 55, 0.15);
     }
-    .reward-item.locked p { color: #94a3b8; }
-    
-    /* Isolated Sub Badge Button */
-    .sub-badge-btn { transition: transform 0.2s ease; cursor: pointer; }
-    .sub-badge-btn:active { transform: scale(0.9); }
+    .glass-card-current {
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(15, 23, 42, 0.8) 100%);
+      border: 2px solid #D4AF37;
+      box-shadow: 0 0 25px rgba(212, 175, 55, 0.25);
+    }
+    .glass-card-passed {
+      background: rgba(16, 24, 39, 0.6);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+    .glass-card-locked {
+      background: rgba(15, 23, 42, 0.35);
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+      filter: grayscale(100%);
+      opacity: 0.55;
+    }
+    .glass-card-locked:hover {
+      filter: grayscale(40%);
+      opacity: 0.9;
+      border-color: rgba(212, 175, 55, 0.4);
+    }
+    .gold-gradient-text {
+      background: linear-gradient(135deg, #F3E7C4 0%, #D4AF37 50%, #AA820A 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(212, 175, 55, 0.3);
+      border-radius: 8px;
+    }
   </style>
 </head>
-<body class="pb-32">
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-gold selection:text-brand-navy">
 
-<!-- HEADER -->
-<header class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100" style="padding-top: env(safe-area-inset-top);">
-  <div class="max-w-[430px] mx-auto px-6 py-3 flex justify-between items-center">
-    <a href="impact.html" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">
-      <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+  <!-- TOP NAVIGATION -->
+  <nav class="sticky top-0 z-40 bg-[#0b0f19]/90 backdrop-blur-md border-b border-white/10 px-4 sm:px-8 py-3.5 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-3 group">
+      <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-gold to-brand-darkGold flex items-center justify-center text-brand-navy font-bold shadow-md shadow-brand-gold/20">
+        <i class="fa-solid fa-cross"></i>
+      </div>
+      <div>
+        <span class="font-serif font-bold tracking-wide text-base sm:text-lg block text-white group-hover:text-brand-gold transition-colors">GO SPREAD THE WORD</span>
+        <span class="text-[10px] tracking-widest uppercase text-gray-400 block -mt-1">The Great Commission</span>
+      </div>
     </a>
-    <h1 class="font-headline font-extrabold text-lg text-slate-900">Rewards</h1>
-    <div class="w-10 h-10"></div>
-  </div>
-</header>
 
-<main class="px-5 max-w-[430px] mx-auto space-y-6" style="padding-top: calc(5.2rem + env(safe-area-inset-top));">
+    <div class="flex items-center gap-2 sm:gap-4 text-sm font-medium">
+      <a href="editor.html" class="px-3.5 py-1.5 rounded-lg text-gray-300 hover:text-white hover:bg-white/5 transition flex items-center gap-2">
+        <i class="fa-solid fa-paintbrush text-xs text-brand-gold"></i>
+        <span class="hidden sm:inline">Studio</span>
+      </a>
+      <a href="impact.html" class="px-3.5 py-1.5 rounded-lg text-gray-300 hover:text-white hover:bg-white/5 transition flex items-center gap-2">
+        <i class="fa-solid fa-earth-americas text-xs text-brand-gold"></i>
+        <span class="hidden sm:inline">Impact</span>
+      </a>
+      <a href="rewards.html" class="px-3.5 py-1.5 rounded-lg bg-brand-gold/15 text-brand-gold border border-brand-gold/30 flex items-center gap-2 font-semibold">
+        <i class="fa-solid fa-trophy text-xs"></i>
+        <span>Rewards</span>
+      </a>
+      <button id="logoutBtn" class="text-xs text-gray-400 hover:text-red-400 px-2 py-1.5 ml-1 transition" title="Log Out">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      </button>
+    </div>
+  </nav>
 
-  <!-- TOP CENTER: SUB BADGE (ISOLATED WITH TITLE) -->
-  <section class="flex flex-col items-center justify-center pt-2">
-    <div onclick="openSubModal()" class="sub-badge-btn flex flex-col items-center justify-center">
-      <div class="relative flex items-center justify-center h-28 w-28">
-        <img id="currentSubBadge" src="" alt="Subscription Tier" class="h-full w-full object-contain filter drop-shadow-xl" style="display:none;">
-        <div id="subBadgeFallback" class="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-          <span class="material-symbols-outlined text-4xl">workspace_premium</span>
+  <!-- MAIN WRAPPER -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-8 py-8 space-y-12">
+
+    <!-- HERO PROFILE & ACTIVE AVATAR -->
+    <section class="glass-card rounded-2xl p-6 sm:p-8 relative overflow-hidden">
+      <div class="absolute -top-20 -right-20 w-72 h-72 bg-brand-gold/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+        
+        <!-- Active Avatar & Identity -->
+        <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
+          <div class="relative group cursor-pointer" onclick="scrollToAvatars()">
+            <div id="heroAvatarWrapper" class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-slate-900 border-2 border-brand-gold/60 p-1 shadow-xl flex items-center justify-center overflow-hidden">
+              <i class="fa-solid fa-user-astronaut text-4xl text-brand-gold/40"></i>
+            </div>
+            <div class="absolute -bottom-2 -right-2 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-brand-gold text-brand-navy shadow">
+              <span id="heroStageNumber">S1</span>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex items-center gap-2.5 justify-center sm:justify-start flex-wrap">
+              <h1 id="heroAvatarTitle" class="font-serif text-2xl font-bold text-white tracking-wide">The Sower</h1>
+              <span id="heroTierBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-brand-gold/20 text-brand-gold border border-brand-gold/40">
+                Warrior
+              </span>
+            </div>
+            <p id="heroUserName" class="text-sm text-gray-300 font-medium">Kingdom Ambassador</p>
+            <p id="heroEvolutionStatus" class="text-xs text-brand-gold/90 font-medium pt-1">
+              <i class="fa-solid fa-seedling mr-1"></i> Era 1 • The Beginning
+            </p>
+          </div>
+        </div>
+
+        <!-- Metric Badges -->
+        <div class="grid grid-cols-3 gap-3 w-full md:w-auto">
+          <div class="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-center min-w-[95px]">
+            <span class="text-[10px] uppercase font-bold tracking-wider text-gray-400 block">Mythic Trophies</span>
+            <span id="statMythicCount" class="text-xl sm:text-2xl font-black text-brand-gold">0</span>
+          </div>
+          <div class="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-center min-w-[95px]">
+            <span class="text-[10px] uppercase font-bold tracking-wider text-gray-400 block">Badges Earned</span>
+            <span id="statBadgesCount" class="text-xl sm:text-2xl font-black text-white">0</span>
+          </div>
+          <div class="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-center min-w-[95px]">
+            <span class="text-[10px] uppercase font-bold tracking-wider text-gray-400 block">Current Streak</span>
+            <span id="statStreakCount" class="text-xl sm:text-2xl font-black text-emerald-400">0d</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 1: AVATAR EVOLUTION JOURNEY -->
+    <section id="avatarSection" class="space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-white/10 pb-4">
+        <div>
+          <h2 class="font-serif text-2xl font-bold tracking-wide text-white flex items-center gap-2.5">
+            <i class="fa-solid fa-person-military-pointing text-brand-gold text-xl"></i>
+            Avatar Evolution Journey
+          </h2>
+          <p class="text-xs sm:text-sm text-gray-400 mt-1">Unlock new spiritual forms as you earn Mythic Trophies across the Great Commission.</p>
+        </div>
+        <div class="flex items-center gap-3 text-xs text-gray-400">
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Mastered</span>
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-brand-gold"></span> Current</span>
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-gray-500"></span> Locked</span>
         </div>
       </div>
-      <h2 id="currentSubTitle" class="font-headline font-black text-sm text-slate-900 uppercase tracking-[0.2em] mt-2">Loading...</h2>
-    </div>
-  </section>
 
-  <!-- TIER PILLS -->
-  <section class="flex justify-center gap-1.5 flex-wrap px-2">
-    <div class="px-3.5 py-1.5 rounded-full bg-common text-white text-[9px] font-black uppercase tracking-wider shadow-sm">Common</div>
-    <div class="px-3.5 py-1.5 rounded-full bg-uncommon text-white text-[9px] font-black uppercase tracking-wider shadow-sm">Uncommon</div>
-    <div class="px-3.5 py-1.5 rounded-full bg-rare text-white text-[9px] font-black uppercase tracking-wider shadow-sm">Rare</div>
-    <div class="px-3.5 py-1.5 rounded-full bg-epic text-white text-[9px] font-black uppercase tracking-wider shadow-sm">Epic</div>
-    <div class="px-3.5 py-1.5 rounded-full bg-mythic text-white text-[9px] font-black uppercase tracking-wider shadow-sm">Mythic</div>
-  </section>
-
-  <!-- TABS -->
-  <section>
-    <div class="flex bg-slate-100 p-1 rounded-xl mb-6">
-      <button onclick="switchTab('trophies')" id="btn-trophies" class="tab-btn active flex-1 py-2.5 rounded-lg text-[11px] font-extrabold uppercase tracking-wide text-slate-900">Trophies</button>
-      <button onclick="switchTab('badges')" id="btn-badges" class="tab-btn flex-1 py-2.5 rounded-lg text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Badges</button>
-      <button onclick="switchTab('avatars')" id="btn-avatars" class="tab-btn flex-1 py-2.5 rounded-lg text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Avatars</button>
-    </div>
-
-    <!-- TAB CONTENT: TROPHIES -->
-    <div id="tab-trophies">
-      <h3 class="font-headline font-bold text-sm text-slate-400 uppercase tracking-widest mb-4">Your Collection</h3>
-      <div id="earnedTrophies" class="grid grid-cols-4 gap-y-6 gap-x-2 mb-8">
-        <!-- JS Injected -->
-      </div>
-      
-      <h3 class="font-headline font-bold text-sm text-slate-400 uppercase tracking-widest mb-4">Path to Glory</h3>
-      <div id="lockedTrophies" class="grid grid-cols-4 gap-y-6 gap-x-2">
-        <!-- JS Injected -->
-      </div>
-    </div>
-
-    <!-- TAB CONTENT: BADGES -->
-    <div id="tab-badges" class="hidden">
-      <h3 class="font-headline font-bold text-sm text-slate-400 uppercase tracking-widest mb-4">Your Collection</h3>
-      <div id="earnedBadges" class="grid grid-cols-4 gap-y-6 gap-x-2 mb-8">
-        <!-- JS Injected -->
-      </div>
-      
-      <h3 class="font-headline font-bold text-sm text-slate-400 uppercase tracking-widest mb-4">Path to Glory</h3>
-      <div id="lockedBadges" class="grid grid-cols-4 gap-y-6 gap-x-2">
-        <!-- JS Injected -->
-      </div>
-    </div>
-
-    <!-- TAB CONTENT: AVATARS -->
-    <div id="tab-avatars" class="hidden">
-      <h3 class="font-headline font-bold text-sm text-slate-400 uppercase tracking-widest mb-4">Your Collection</h3>
-      <div id="earnedAvatars" class="grid grid-cols-3 gap-y-6 gap-x-2 mb-8">
-        <!-- JS Injected -->
-      </div>
-      
-      <h3 class="font-headline font-bold text-sm text-slate-400 uppercase tracking-widest mb-4">Path to Glory</h3>
-      <div id="lockedAvatars" class="grid grid-cols-3 gap-y-6 gap-x-2">
-        <!-- JS Injected -->
-      </div>
-    </div>
-  </section>
-
-  <!-- BOTTOM: ACTIVE MISSIONS & CAMPAIGNS -->
-  <section class="pt-6 border-t border-slate-200">
-    <h3 class="font-headline font-bold text-lg mb-3 text-slate-900">Active Missions & Campaigns</h3>
-    <div id="missionList" class="space-y-3">
-      <div class="text-center text-slate-400 text-xs py-4">Loading Missions...</div>
-    </div>
-  </section>
-
-</main>
-
-<!-- BOTTOM NAV -->
-<nav class="fixed bottom-0 inset-x-0 z-40 bg-white/80 backdrop-blur-[20px] border-t border-slate-100" style="padding-bottom: env(safe-area-inset-bottom);">
-  <div class="max-w-lg mx-auto flex items-center justify-around h-16 px-2">
-    <a href="index.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">home</span><span class="text-[10px] font-bold">Home</span></a>
-    <a href="library.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">auto_stories</span><span class="text-[10px] font-bold">Library</span></a>
-    <a href="cause.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">volunteer_activism</span><span class="text-[10px] font-bold">Missions</span></a>
-    <a href="impact.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">bar_chart</span><span class="text-[10px] font-bold">Impact</span></a>
-    <a href="profile.html" class="flex flex-col items-center gap-0.5 py-1.5 px-3 text-slate-400"><span class="material-symbols-outlined" style="font-size:1.35rem">person</span><span class="text-[10px] font-bold">Profile</span></a>
-  </div>
-</nav>
-
-<!-- TROPHY MODAL (SLIDES UP FIXED CENTER/BOTTOM) -->
-<div id="trophyModal" class="fixed inset-0 z-[100] hidden flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity opacity-0 p-0 sm:p-4">
-  <div class="bg-white w-full max-w-[430px] rounded-t-[32px] sm:rounded-[32px] p-6 pb-10 transform translate-y-full transition-transform duration-300 shadow-2xl relative max-h-[80vh] overflow-y-auto no-scrollbar mb-0 sm:mb-6">
-    <button onclick="closeModal('trophyModal')" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200">
-      <span class="material-symbols-outlined text-lg">close</span>
-    </button>
-    <div class="flex flex-col items-center text-center mt-2">
-      <div id="modalTrophyIcon" class="w-24 h-24 rounded-3xl mb-4 flex items-center justify-center p-3 shadow-lg" style="background-color: #94a3b8;">
-        <!-- Image injected here -->
-      </div>
-      <h2 id="modalTrophyTitle" class="font-headline font-black text-2xl text-slate-900 leading-tight">Trophy</h2>
-      <p id="modalTrophyDesc" class="text-xs text-slate-500 mt-2 leading-relaxed px-4">Description</p>
-      
-      <!-- Tier Color Pills Display -->
-      <div class="flex gap-1.5 mt-5" id="modalTrophyPills">
-        <!-- Injected -->
-      </div>
-
-      <!-- Neutral Grey Progress Bar -->
-      <div class="w-full mt-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-        <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase mb-2">
-          <span>Overall Progress</span>
-          <span id="modalTrophyProgressText">0/0</span>
+      <!-- Container Populated Dynamically: Grouped by Era -> Journey -> Stage -->
+      <div id="avatarEvolutionContainer" class="space-y-10">
+        <div class="text-center py-12 text-sm text-gray-500">
+          <i class="fa-solid fa-spinner fa-spin text-2xl text-brand-gold/60 mb-3 block"></i>
+          Loading progression path...
         </div>
-        <div class="h-2.5 bg-slate-200 rounded-full overflow-hidden">
-          <div id="modalTrophyProgressBar" class="h-full bg-slate-500 rounded-full transition-all duration-500" style="width: 0%;"></div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: TROPHY CASE -->
+    <section class="space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-white/10 pb-4">
+        <div>
+          <h2 class="font-serif text-2xl font-bold tracking-wide text-white flex items-center gap-2.5">
+            <i class="fa-solid fa-trophy text-brand-gold text-xl"></i>
+            Trophy Showcase
+          </h2>
+          <p class="text-xs sm:text-sm text-gray-400 mt-1">Click any locked or in-progress trophy to reveal its milestone roadmap.</p>
         </div>
         
-        <!-- Milestone Rules List -->
-        <div id="modalTrophyMilestones" class="mt-4 flex flex-col gap-2.5 text-left border-t border-slate-200/60 pt-3">
-          <!-- Injected thresholds -->
+        <!-- Filter Pills -->
+        <div id="trophyFilterBar" class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+          <button onclick="filterTrophies('all')" class="px-3 py-1 rounded-full bg-brand-gold text-brand-navy font-bold transition">All</button>
+          <button onclick="filterTrophies('unlocked')" class="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 transition">Unlocked</button>
+          <button onclick="filterTrophies('locked')" class="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 transition">Locked</button>
         </div>
       </div>
-    </div>
-  </div>
-</div>
 
-<!-- BASIC BADGE / AVATAR MODAL (SLIDES UP FIXED CENTER/BOTTOM) -->
-<div id="basicModal" class="fixed inset-0 z-[100] hidden flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity opacity-0 p-0 sm:p-4">
-  <div class="bg-white w-full max-w-[430px] rounded-t-[32px] sm:rounded-[32px] p-6 pb-10 transform translate-y-full transition-transform duration-300 shadow-2xl relative max-h-[80vh] overflow-y-auto no-scrollbar mb-0 sm:mb-6">
-    <button onclick="closeModal('basicModal')" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200">
-      <span class="material-symbols-outlined text-lg">close</span>
-    </button>
-    <div class="flex flex-col items-center text-center mt-2">
-      <div id="modalBasicIcon" class="w-24 h-24 mb-4 flex items-center justify-center">
-        <!-- Image injected here -->
+      <div id="trophyGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div class="col-span-full text-center py-10 text-gray-500 text-sm">Loading Trophy Case...</div>
       </div>
-      <h2 id="modalBasicTitle" class="font-headline font-black text-2xl text-slate-900 leading-tight">Badge</h2>
-      <p id="modalBasicDesc" class="text-xs text-slate-500 mt-2 leading-relaxed px-4">Description</p>
-      
-      <!-- Colored Progress Bar -->
-      <div class="w-full mt-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-        <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase mb-2">
-          <span>Status</span>
-          <span id="modalBasicProgressText">0/0</span>
+    </section>
+
+    <!-- SECTION 3: BADGES SHOWCASE (CAMPAIGN & MILESTONE BADGES) -->
+    <section class="space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-white/10 pb-4">
+        <div>
+          <h2 class="font-serif text-2xl font-bold tracking-wide text-white flex items-center gap-2.5">
+            <i class="fa-solid fa-medal text-brand-gold text-xl"></i>
+            Honor Badges & Campaigns
+          </h2>
+          <p class="text-xs sm:text-sm text-gray-400 mt-1">Special mission awards and milestone honors. Click locked badges to see how to earn them.</p>
         </div>
-        <div class="h-2.5 bg-slate-200 rounded-full overflow-hidden">
-          <div id="modalBasicProgressBar" class="h-full rounded-full transition-all duration-500" style="width: 0%;"></div>
+
+        <div id="badgeFilterBar" class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+          <button onclick="filterBadges('all')" class="px-3 py-1 rounded-full bg-brand-gold text-brand-navy font-bold transition">All</button>
+          <button onclick="filterBadges('campaign')" class="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 transition">Missions</button>
+          <button onclick="filterBadges('milestone')" class="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 transition">Milestones</button>
         </div>
       </div>
-    </div>
-  </div>
-</div>
 
-<!-- SUBSCRIPTION UPGRADE MODAL (SLIDES UP FIXED CENTER/BOTTOM) -->
-<div id="subModal" class="fixed inset-0 z-[100] hidden flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity opacity-0 p-0 sm:p-4">
-  <div class="bg-white w-full max-w-[430px] rounded-t-[32px] sm:rounded-[32px] p-6 pb-10 transform translate-y-full transition-transform duration-300 shadow-2xl relative max-h-[80vh] overflow-y-auto no-scrollbar mb-0 sm:mb-6">
-    <button onclick="closeModal('subModal')" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200 z-10">
-      <span class="material-symbols-outlined text-lg">close</span>
-    </button>
-    <h2 class="font-headline font-black text-xl text-slate-900 mb-4 pt-2">Kingdom Ranks</h2>
-    <div id="subList" class="space-y-3">
-      <!-- Sub tiers injected here -->
-    </div>
-  </div>
-</div>
+      <div id="badgeGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div class="col-span-full text-center py-10 text-gray-500 text-sm">Loading Badges...</div>
+      </div>
+    </section>
 
-<script>
-var supabaseClient = supabase.createClient(
-  'https://nhymadutuhpjgkiurify.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeW1hZHV0dWhwamdraXVyaWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTI5NzgsImV4cCI6MjA5NTU2ODk3OH0.kC5Ytuoi8Sy97ZTSZ8lEWeH1rngcbeHSxobOMIQahkM'
-);
+  </main>
 
-var currentUser = null;
-var userProfile = null;
+  <!-- DYNAMIC ROADMAP MODAL -->
+  <div id="roadmapModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="glass-card rounded-2xl max-w-lg w-full p-6 sm:p-8 border border-brand-gold/40 relative shadow-2xl space-y-6">
+      <button onclick="closeRoadmapModal()" class="absolute top-5 right-5 text-gray-400 hover:text-white transition">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
 
-window.appData = {
-  trophies: {},
-  badges: {},
-  avatars: {}
-};
-
-const tierColors = {
-  1: '#94a3b8', // Common
-  2: '#16a34a', // Uncommon
-  3: '#2563eb', // Rare
-  4: '#9333ea', // Epic
-  5: '#d97706'  // Mythic
-};
-
-const tierNames = { 1: 'Common', 2: 'Uncommon', 3: 'Rare', 4: 'Epic', 5: 'Mythic' };
-
-const defaultTierBadgeMap = {
-  'called': '/images/badges/called.svg',
-  'free': '/images/badges/called.svg',
-  'warrior': '/images/badges/warrior.svg',
-  'commander': '/images/badges/commander.svg',
-  'legacy': '/images/badges/legacy.svg'
-};
-
-window.switchTab = function(tab) {
-  document.querySelectorAll('.tab-btn').forEach(b => { 
-    b.classList.remove('active', 'text-slate-900'); 
-    b.classList.add('text-slate-400'); 
-  });
-  var btn = document.getElementById('btn-' + tab);
-  if (btn) {
-    btn.classList.add('active', 'text-slate-900');
-    btn.classList.remove('text-slate-400');
-  }
-  
-  document.getElementById('tab-trophies').classList.add('hidden');
-  document.getElementById('tab-badges').classList.add('hidden');
-  document.getElementById('tab-avatars').classList.add('hidden');
-  
-  var activeTabEl = document.getElementById('tab-' + tab);
-  if (activeTabEl) activeTabEl.classList.remove('hidden');
-};
-
-window.openSubModal = function() {
-  var m = document.getElementById('subModal');
-  if (!m) return;
-  m.classList.remove('hidden');
-  setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('translate-y-full'); }, 10);
-};
-
-window.closeModal = function(id) {
-  var m = document.getElementById(id);
-  if (!m) return;
-  m.classList.add('opacity-0'); 
-  m.children[0].classList.add('translate-y-full');
-  setTimeout(() => { m.classList.add('hidden'); }, 300);
-};
-
-window.openBadgeModal = function(id) {
-  var bData = window.appData.badges[id];
-  if (!bData) return;
-  openBasicModal(bData.name, bData.desc, bData.img, bData.isEarned ? '1/1' : '0/1', bData.isEarned ? 100 : 0, bData.color);
-};
-
-window.openAvatarModal = function(id) {
-  var aData = window.appData.avatars[id];
-  if (!aData) return;
-  openBasicModal(aData.title, aData.desc, aData.img, aData.progressText, aData.progPct, aData.color);
-};
-
-window.openTrophyModal = function(trophyId) {
-  var tData = window.appData.trophies[trophyId];
-  if (!tData) return;
-
-  document.getElementById('modalTrophyTitle').textContent = tData.name;
-  document.getElementById('modalTrophyDesc').textContent = tData.desc || 'Level up your stats to earn this trophy.';
-
-  var iconBox = document.getElementById('modalTrophyIcon');
-  iconBox.style.backgroundColor = tData.unlocked ? tData.color : '#e2e8f0';
-  if (tData.img) {
-    iconBox.innerHTML = `<img src="${tData.img}" class="w-full h-full object-contain ${!tData.unlocked ? 'grayscale opacity-60' : ''}">`;
-  } else {
-    iconBox.innerHTML = `<span class="material-symbols-outlined text-4xl text-white">emoji_events</span>`;
-  }
-
-  // Tier pills — always colored by tier; muted if not reached yet
-  var pillsHTML = '';
-  for (var i = 1; i <= 5; i++) {
-    var reached = (tData.unlocked && tData.tier >= i);
-    var bg = tierColors[i];
-    var opacity = reached ? '1' : '0.35';
-    var textCol = reached ? '#ffffff' : '#64748b';
-    pillsHTML += `
-      <div class="px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-wider"
-           style="background-color: ${bg}; color: ${textCol}; opacity: ${opacity};">
-        ${tierNames[i]}
-      </div>`;
-  }
-  document.getElementById('modalTrophyPills').innerHTML = pillsHTML;
-
-  // Milestones — green checkbox when reached
-  var milesHTML = '';
-  var maxVal = 1;
-  tData.thresholds.forEach(function(th) {
-    maxVal = Math.max(maxVal, th.val);
-    var earned = tData.current >= th.val;
-    var icon = earned ? 'check_circle' : 'radio_button_unchecked';
-    var checkColor = earned ? '#16a34a' : '#94a3b8'; // green when reached
-    var tierLabelColor = tierColors[th.tier] || '#94a3b8';
-    milesHTML += `
-      <div class="flex items-center gap-2.5 text-xs font-semibold ${earned ? 'text-slate-800' : 'text-slate-400'}">
-        <span class="material-symbols-outlined text-base flex-shrink-0" style="color: ${checkColor}">${icon}</span>
-        <span>
-          ${th.val} ${tData.statType || 'actions'} unlocks
-          <span class="font-bold uppercase tracking-widest text-[10px] ml-1" style="color: ${tierLabelColor}">
-            ${tierNames[th.tier]}
+      <!-- Header Icon & Status -->
+      <div class="flex items-center gap-4">
+        <div id="modalIconContainer" class="w-16 h-16 rounded-2xl bg-slate-900 border border-brand-gold/40 flex items-center justify-center overflow-hidden shrink-0 shadow-lg">
+          <i class="fa-solid fa-lock text-2xl text-gray-400"></i>
+        </div>
+        <div>
+          <span id="modalCategoryBadge" class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-brand-gold/20 text-brand-gold border border-brand-gold/30">
+            Locked Objective
           </span>
-        </span>
-      </div>`;
-  });
-  document.getElementById('modalTrophyMilestones').innerHTML = milesHTML;
+          <h3 id="modalTitle" class="font-serif text-xl sm:text-2xl font-bold text-white mt-1">Title Placeholder</h3>
+        </div>
+      </div>
 
-  var progPct = Math.min(100, (tData.current / maxVal) * 100);
-  document.getElementById('modalTrophyProgressBar').style.width = progPct + '%';
-  document.getElementById('modalTrophyProgressText').textContent = tData.current + ' / ' + maxVal;
+      <!-- Description & Campaign Brief -->
+      <div class="space-y-3 bg-black/40 rounded-xl p-4 border border-white/5">
+        <p id="modalDescription" class="text-xs sm:text-sm text-gray-300 leading-relaxed"></p>
+        
+        <!-- Attached Campaign Block (Reveals if tied to campaign_id) -->
+        <div id="modalCampaignBlock" class="hidden pt-3 border-t border-white/10 space-y-1">
+          <span class="text-[10px] uppercase font-bold tracking-wider text-brand-gold block">Attached Mission Initiative</span>
+          <h4 id="modalCampaignName" class="text-sm font-bold text-white">Campaign Name</h4>
+          <p id="modalCampaignDesc" class="text-xs text-gray-400"></p>
+        </div>
+      </div>
 
-  var m = document.getElementById('trophyModal');
-  m.classList.remove('hidden');
-  setTimeout(function() {
-    m.classList.remove('opacity-0');
-    m.children[0].classList.remove('translate-y-full');
-  }, 10);
-};
+      <!-- Progress Tracking Bar -->
+      <div class="space-y-2">
+        <div class="flex justify-between text-xs">
+          <span id="modalProgressLabel" class="text-gray-400">Progression</span>
+          <span id="modalProgressStats" class="font-bold text-white">0 / 0</span>
+        </div>
+        <div class="w-full bg-white/5 h-2.5 rounded-full overflow-hidden p-0.5 border border-white/10">
+          <div id="modalProgressBar" class="h-full bg-gradient-to-r from-brand-gold to-brand-darkGold rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+      </div>
 
-function openBasicModal(title, desc, img, progressText, progressPct, color) {
-  document.getElementById('modalBasicTitle').textContent = title || 'Reward';
-  document.getElementById('modalBasicDesc').textContent = desc || 'Continue your journey to unlock this.';
-  document.getElementById('modalBasicProgressText').textContent = progressText || '0/1';
-  document.getElementById('modalBasicProgressBar').style.width = (progressPct || 0) + '%';
-  document.getElementById('modalBasicProgressBar').style.backgroundColor = color || '#2563eb';
-  
-  var iconCont = document.getElementById('modalBasicIcon');
-  if(img && img.length > 5) {
-    iconCont.innerHTML = `<img src="${img}" class="h-full w-auto object-contain drop-shadow-md">`;
-  } else {
-    iconCont.innerHTML = `<div class="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center"><span class="material-symbols-outlined text-4xl text-slate-300">lock</span></div>`;
-  }
+      <!-- Call to Action Button -->
+      <div id="modalCtaContainer" class="pt-2">
+        <a id="modalCtaBtn" href="editor.html" class="w-full py-3 bg-gradient-to-r from-brand-gold to-brand-darkGold hover:brightness-110 text-brand-navy font-bold rounded-xl transition text-center text-sm shadow-lg shadow-brand-gold/20 flex items-center justify-center gap-2">
+          <span>Go to Studio & Advance</span>
+          <i class="fa-solid fa-arrow-right text-xs"></i>
+        </a>
+      </div>
 
-  var m = document.getElementById('basicModal');
-  m.classList.remove('hidden');
-  setTimeout(() => { m.classList.remove('opacity-0'); m.children[0].classList.remove('translate-y-full'); }, 10);
-}
+    </div>
+  </div>
 
-async function init() {
-  var s = await supabaseClient.auth.getSession();
-  if (!s.data.session) { window.location.href = 'login.html'; return; }
-  currentUser = s.data.session.user;
-  await loadCatalog();
-}
+  <!-- SCRIPT LOGIC -->
+  <script>
+    // 1. Initialize Supabase
+    let sb = window.supabaseClient;
+    if (!sb && typeof supabase !== 'undefined' && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+      sb = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    }
 
-async function loadCatalog() {
-  try {
-    var { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-    userProfile = profile || {};
-    
-    // Live Stats
-    var recruitRes = await supabaseClient.from('profiles').select('id', { count: 'exact', head: true }).eq('referred_by', currentUser.id);
-    var recruits = recruitRes.count || 0;
-    var shares = userProfile.total_shares || 0;
+    // Global in-memory cache
+    let appData = {
+      user: null,
+      profile: null,
+      stages: [],
+      trophies: [],
+      thresholds: [],
+      tiers: [],
+      userTrophies: [],
+      userTrophyProgress: [],
+      badges: [],
+      userBadges: [],
+      campaigns: [],
+      mythicCount: 0,
+      currentStage: null
+    };
 
-    // Parallel Database Fetch
-    var [
-      trophiesRes, thresholdsRes, utpRes, 
-      badgesRes, userBadgesRes, 
-      avatarsRes, 
-      subsRes, subTiersRes, mediaTiersRes,
-      campaignsRes
-    ] = await Promise.all([
-      supabaseClient.from('trophy_definitions').select('*'),
-      supabaseClient.from('trophy_thresholds').select('*').eq('is_active', true),
-      supabaseClient.from('user_trophy_progress').select('*').eq('user_id', currentUser.id),
-      supabaseClient.from('badge_definitions').select('*').eq('is_active', true),
-      supabaseClient.from('user_badges').select('*').eq('user_id', currentUser.id),
-      supabaseClient.from('avatar_stages').select('*').order('stage_order', { ascending: true }),
-      supabaseClient.from('subscriptions').select('tier, status, plan').eq('user_id', currentUser.id).in('status', ['active', 'trialing']),
-      supabaseClient.from('subscription_tiers').select('*').eq('is_active', true).order('price', { ascending: true }),
-      supabaseClient.from('media').select('*').eq('type', 'tier'),
-      supabaseClient.from('campaigns').select('*').eq('status', 'active')
-    ]);
+    // Helper: Scroll to Avatars
+    function scrollToAvatars() {
+      document.getElementById('avatarSection').scrollIntoView({ behavior: 'smooth' });
+    }
 
-    // Build Tier Media Image Map
-    var tierMediaMap = { ...defaultTierBadgeMap };
-    (mediaTiersRes.data || []).forEach(m => {
-      var key = (m.label || m.name || '').toLowerCase();
-      if (key && m.url) {
-        tierMediaMap[key] = m.url;
+    // Helper: Rank Journey for Sorting
+    function getJourneyRank(journey) {
+      if (!journey) return 99;
+      const j = journey.toLowerCase().trim();
+      if (j.includes('begin')) return 1;
+      if (j.includes('mid')) return 2;
+      if (j.includes('end')) return 3;
+      return 10;
+    }
+
+    // Helper: Rank Era for Sorting
+    function getEraRank(era) {
+      if (!era) return 99;
+      const match = era.match(/\d+/);
+      return match ? parseInt(match[0], 10) : 99;
+    }
+
+    // Modal Controls
+    function openRoadmapModal(cfg) {
+      document.getElementById('modalTitle').textContent = cfg.title || 'Objective';
+      document.getElementById('modalCategoryBadge').textContent = cfg.badgeLabel || 'Roadmap';
+      document.getElementById('modalDescription').textContent = cfg.description || '';
+
+      // Icon or Image
+      const iconBox = document.getElementById('modalIconContainer');
+      if (cfg.imageUrl) {
+        iconBox.innerHTML = `<img src="${cfg.imageUrl}" class="w-full h-full object-cover">`;
+      } else {
+        iconBox.innerHTML = `<i class="${cfg.icon || 'fa-solid fa-trophy'} text-2xl text-brand-gold"></i>`;
       }
-    });
 
-    // 1. Process Active Subscription & Badge Display
-    var activeSub = (subsRes.data || [])[0];
-    var allSubTiers = subTiersRes.data || [];
-    renderSubscriptions(activeSub, allSubTiers, tierMediaMap);
+      // Campaign Attachment
+      const campBlock = document.getElementById('modalCampaignBlock');
+      if (cfg.campaign) {
+        campBlock.classList.remove('hidden');
+        document.getElementById('modalCampaignName').textContent = cfg.campaign.name || 'Mission Focus';
+        document.getElementById('modalCampaignDesc').textContent = cfg.campaign.description || '';
+      } else {
+        campBlock.classList.add('hidden');
+      }
 
-    // 2. Trophies Processing
-    var allTrophies = trophiesRes.data || [];
-    var allThresholds = thresholdsRes.data || [];
-    var utp = utpRes.data || [];
-    
-    window.appData.trophies = {};
-    var mythicCount = 0;
-    var earnedTHTML = '', lockedTHTML = '';
+      // Progress Bar
+      const current = cfg.currentProgress || 0;
+      const target = cfg.targetProgress || 1;
+      const pct = Math.min(100, Math.round((current / target) * 100));
+      
+      document.getElementById('modalProgressLabel').textContent = cfg.progressLabel || 'Requirements';
+      document.getElementById('modalProgressStats').textContent = `${current.toLocaleString()} / ${target.toLocaleString()} (${pct}%)`;
+      document.getElementById('modalProgressBar').style.width = `${pct}%`;
 
-    allTrophies.forEach(t => {
-      var ths = allThresholds.filter(th => th.trophy_id === t.id).sort((a, b) => a.tier_id - b.tier_id);
-      if (ths.length === 0) return;
+      // CTA Routing
+      const ctaBtn = document.getElementById('modalCtaBtn');
+      ctaBtn.href = cfg.ctaUrl || 'editor.html';
+      ctaBtn.querySelector('span').textContent = cfg.ctaText || 'Go to Studio';
 
-      var dbProg = utp.find(p => p.trophy_id === t.id);
-      var currentVal = dbProg ? (dbProg.current_progress || 0) : 0;
+      const m = document.getElementById('roadmapModal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
 
-      // Fallbacks
-      if (t.name && t.name.toLowerCase() === 'sign up') currentVal = Math.max(currentVal, 1);
-      if (t.name && t.name.toLowerCase() === 'recruiter') currentVal = Math.max(currentVal, recruits);
+    function closeRoadmapModal() {
+      const m = document.getElementById('roadmapModal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
 
-      var unlockedTier = null;
-      for (var i = ths.length - 1; i >= 0; i--) {
-        if (currentVal >= ths[i].threshold_value) {
-          unlockedTier = ths[i];
-          break;
+    // Main App Orchestrator
+    async function initRewardsDashboard() {
+      if (!sb) return console.error("Supabase not initialized.");
+
+      try {
+        // 1. Auth Validation
+        const { data: { user }, error: authErr } = await sb.auth.getUser();
+        if (authErr || !user) {
+          window.location.href = 'login.html';
+          return;
+        }
+        appData.user = user;
+
+        // 2. Fetch User Profile
+        const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+        appData.profile = profile || {};
+
+        // 3. Parallel Fetch of Progression Tables
+        const [
+          stagesRes,
+          trophiesRes,
+          thresholdsRes,
+          tiersRes,
+          userTrophiesRes,
+          userProgressRes,
+          badgesRes,
+          userBadgesRes,
+          campaignsRes
+        ] = await Promise.all([
+          sb.from('avatar_stages').select('*'),
+          sb.from('trophy_definitions').select('*'),
+          sb.from('trophy_thresholds').select('*'),
+          sb.from('trophy_tiers').select('*'),
+          sb.from('user_trophies').select('*').eq('user_id', user.id),
+          sb.from('user_trophy_progress').select('*').eq('user_id', user.id),
+          sb.from('badge_definitions').select('*'),
+          sb.from('user_badges').select('*').eq('user_id', user.id),
+          sb.from('campaigns').select('*')
+        ]);
+
+        appData.stages = stagesRes.data || [];
+        appData.trophies = trophiesRes.data || [];
+        appData.thresholds = thresholdsRes.data || [];
+        appData.tiers = tiersRes.data || [];
+        appData.userTrophies = userTrophiesRes.data || [];
+        appData.userTrophyProgress = userProgressRes.data || [];
+        appData.badges = badgesRes.data || [];
+        appData.userBadges = userBadgesRes.data || [];
+        appData.campaigns = campaignsRes.data || [];
+
+        // 4. Calculate Mythic Trophy Count
+        // Mythic is tier_id = 5 (or name = 'Mythic')
+        const mythicTier = appData.tiers.find(t => (t.name || '').toLowerCase() === 'mythic') || { id: 5 };
+        const unlockedMythicRows = appData.userTrophies.filter(ut => ut.tier_id === mythicTier.id);
+        const progressMythics = appData.userTrophyProgress.filter(p => (p.current_tier_id || 0) >= mythicTier.id);
+        
+        // Take the highest unique trophy count
+        const mythicIds = new Set([
+          ...unlockedMythicRows.map(r => r.trophy_id),
+          ...progressMythics.map(r => r.trophy_id)
+        ]);
+        appData.mythicCount = mythicIds.size;
+
+        // 5. Render All Components
+        renderHeroIdentity();
+        renderAvatarEvolution();
+        renderTrophyCase('all');
+        renderBadgesShowcase('all');
+
+      } catch (err) {
+        console.error("Error loading rewards dashboard:", err);
+      }
+    }
+
+    // Render Hero Card
+    function renderHeroIdentity() {
+      const p = appData.profile;
+      document.getElementById('heroUserName').textContent = p.nickname || p.full_name || appData.user.email.split('@')[0];
+      
+      const isAdmin = p.role === 'admin' || p.is_admin === true;
+      let tier = 'Free Partner';
+      if (isAdmin) tier = 'Admin';
+      else if (p.subscription_status === 'active' || p.is_subscribed) {
+        tier = p.subscription_tier || 'Warrior';
+      }
+      document.getElementById('heroTierBadge').textContent = tier;
+      document.getElementById('statMythicCount').textContent = appData.mythicCount.toLocaleString();
+      document.getElementById('statBadgesCount').textContent = appData.userBadges.length.toLocaleString();
+      document.getElementById('statStreakCount').textContent = `${p.current_streak || 0}d`;
+    }
+
+    // Render Avatar Evolution System
+    function renderAvatarEvolution() {
+      const container = document.getElementById('avatarEvolutionContainer');
+      container.innerHTML = '';
+
+      if (!appData.stages.length) {
+        container.innerHTML = `<div class="text-sm text-gray-500 italic text-center py-6">No avatar progression records configured.</div>`;
+        return;
+      }
+
+      // Explicit Cascade Sort: Era -> Journey -> stage_order
+      const sortedStages = [...appData.stages].sort((a, b) => {
+        const eraA = getEraRank(a.era);
+        const eraB = getEraRank(b.era);
+        if (eraA !== eraB) return eraA - eraB;
+
+        const jA = getJourneyRank(a.journey);
+        const jB = getJourneyRank(b.journey);
+        if (jA !== jB) return jA - jB;
+
+        return (a.stage_order || 0) - (b.stage_order || 0);
+      });
+
+      // Find Current Active Stage based on mythic requirements
+      let currentActiveIndex = 0;
+      for (let i = 0; i < sortedStages.length; i++) {
+        const req = sortedStages[i].mythic_required || 0;
+        if (appData.mythicCount >= req) {
+          currentActiveIndex = i;
         }
       }
-      
-      var isUnlocked = unlockedTier !== null;
-      var tLevel = isUnlocked ? unlockedTier.tier_id : 1;
-      if (isUnlocked && tLevel === 5) mythicCount++;
-      
-      var color = isUnlocked ? tierColors[tLevel] : '#94a3b8';
+      const currentStage = sortedStages[currentActiveIndex];
+      appData.currentStage = currentStage;
 
-      window.appData.trophies[t.id] = {
-        name: t.name, desc: t.description, img: t.image_url, color: color,
-        unlocked: isUnlocked, tier: tLevel, current: currentVal, statType: t.stat_type,
-        thresholds: ths.map(x => ({ tier: x.tier_id, val: x.threshold_value }))
-      };
+      // Update Hero Avatar Card with current active stage
+      const userGender = (appData.profile.gender || 'male').toLowerCase();
+      const currentImg = userGender === 'female' 
+        ? (currentStage.image_url_female || currentStage.image_url_male)
+        : (currentStage.image_url_male || currentStage.image_url_female);
 
-      var itemHTML = `
-        <div class="reward-item ${isUnlocked ? '' : 'locked'}" onclick="openTrophyModal('${t.id}')">
-          <div class="reward-icon-box" style="background-color: ${isUnlocked ? color : '#e2e8f0'}">
-            ${t.image_url ? `<img src="${t.image_url}" class="w-full h-full object-contain">` : `<span class="material-symbols-outlined text-3xl text-white">emoji_events</span>`}
-          </div>
-          <p class="font-headline font-bold text-[10px] text-center leading-tight mt-1 text-slate-900 w-full truncate px-1">${t.name}</p>
-        </div>
+      if (currentImg) {
+        document.getElementById('heroAvatarWrapper').innerHTML = `<img src="${currentImg}" class="w-full h-full object-cover">`;
+      }
+      document.getElementById('heroAvatarTitle').textContent = currentStage.avatar_title || 'The Sower';
+      document.getElementById('heroStageNumber').textContent = `S${currentStage.stage_order || 1}`;
+      document.getElementById('heroEvolutionStatus').innerHTML = `
+        <i class="fa-solid fa-seedling mr-1"></i> ${currentStage.era || 'Era 1'} • ${currentStage.journey || 'The Beginning'}
       `;
 
-      if(isUnlocked) earnedTHTML += itemHTML;
-      else lockedTHTML += itemHTML;
-    });
-
-    document.getElementById('earnedTrophies').innerHTML = earnedTHTML || '<p class="text-slate-400 text-xs col-span-4 py-2">No trophies unlocked yet.</p>';
-    document.getElementById('lockedTrophies').innerHTML = lockedTHTML || '<p class="text-slate-400 text-xs col-span-4 py-2">All caught up!</p>';
-
-        // 3. Badges Processing (With Multiplier Counter Support)
-    var allBadges = badgesRes.data || [];
-    var earnedTable = (userBadgesRes.data || []).map(b => b.badge_id);
-    var earnedJson = userProfile.badges || [];
-    if (typeof earnedJson === 'string') { try { earnedJson = JSON.parse(earnedJson); } catch(e){ earnedJson = []; } }
-    
-    // Count occurrences of each badge ID
-    var badgeCounts = {};
-    earnedTable.forEach(id => { badgeCounts[id] = (badgeCounts[id] || 0) + 1; });
-    
-    window.appData.badges = {};
-    var earnedBHTML = '', lockedBHTML = '';
-    var activeMissionsHTML = '';
-
-    allBadges.forEach(b => {
-      var count = badgeCounts[b.id] || 0;
-      
-      // Fallback check against profiles.badges JSON array
-      if (count === 0) {
-        var jsonMatches = earnedJson.filter(x => x === b.id || x === b.name).length;
-        count = Math.max(count, jsonMatches);
-      }
-
-      // Dynamic stat badge fallbacks
-      if (count === 0 && b.stat_target > 0) {
-        if (b.stat_type === 'recruits' && recruits >= b.stat_target) count = 1;
-        if (b.stat_type === 'shares' && shares >= b.stat_target) count = 1;
-        if (b.stat_type === 'signup') count = 1;
-      }
-
-      var isEarned = count > 0;
-      var color = isEarned ? tierColors[3] : '#cbd5e1';
-
-      window.appData.badges[b.id] = {
-        name: b.name, desc: b.description, img: b.image_url, color: color, isEarned: isEarned, count: count
-      };
-
-      // Multiplier pill badge (e.g. x2, x5)
-      var multiplierBadge = count > 1 ? `<span class="absolute -top-1 -right-1 bg-gold text-slate-900 text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-md">x${count}</span>` : '';
-
-      var itemHTML = `
-        <div class="reward-item ${isEarned ? '' : 'locked'} relative" onclick="openBadgeModal('${b.id}')">
-          <div class="w-16 h-16 flex items-center justify-center relative">
-            ${b.image_url ? `<img src="${b.image_url}" class="w-full h-full object-contain filter drop-shadow-md">` : `<span class="material-symbols-outlined text-4xl text-slate-300">military_tech</span>`}
-            ${multiplierBadge}
-          </div>
-          <p class="font-headline font-bold text-[10px] text-center leading-tight mt-1 text-slate-900 w-full truncate px-1">${b.name}</p>
-        </div>
-      `;
-
-      if (isEarned) earnedBHTML += itemHTML;
-      else lockedBHTML += itemHTML;
-
-      // Participation Missions & Campaigns (Show in active list if ongoing or not earned)
-      if (b.rule_type === 'participation') {
-        var targetUrl = 'cause.html';
-        var campaignMatch = (campaignsRes.data || []).find(c => c.reward_badge_id === b.id || (b.rule_config && b.rule_config.campaign_ids && b.rule_config.campaign_ids.includes(c.id)));
+      // Group Stages by Era for clean sectioning
+      const eraGroups = {};
+      sortedStages.forEach((stage, idx) => {
+        const eraKey = stage.era || 'Era 1';
+        if (!eraGroups[eraKey]) eraGroups[eraKey] = {};
         
-        if (campaignMatch) targetUrl = 'library.html';
+        const journeyKey = stage.journey || 'The Journey';
+        if (!eraGroups[eraKey][journeyKey]) eraGroups[eraKey][journeyKey] = [];
+        
+        eraGroups[eraKey][journeyKey].push({ stage, globalIndex: idx });
+      });
 
-        activeMissionsHTML += `
-          <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center justify-between">
-            <div class="flex-1 pr-4">
-              <div class="flex items-center gap-2">
-                <h4 class="font-headline font-bold text-sm text-slate-900">${b.name}</h4>
-                ${count > 0 ? `<span class="bg-gold/20 text-gold text-[9px] font-extrabold px-2 py-0.5 rounded-full">Earned x${count}</span>` : ''}
-              </div>
-              <p class="text-xs text-slate-500 mt-1 line-clamp-2">${b.description || 'Declare for your city, town, or nation to earn ongoing rewards.'}</p>
-            </div>
-            <a href="${targetUrl}" class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-primary flex-shrink-0 hover:bg-primary hover:text-white transition-colors">
-              <span class="material-symbols-outlined text-xl">arrow_forward</span>
-            </a>
+      // Render Eras
+      Object.keys(eraGroups).sort((a, b) => getEraRank(a) - getEraRank(b)).forEach(eraName => {
+        const eraSection = document.createElement('div');
+        eraSection.className = 'glass-card rounded-2xl p-6 space-y-6';
+
+        const eraHeader = `
+          <div class="flex items-center justify-between border-b border-white/10 pb-3">
+            <h3 class="font-serif text-lg font-bold text-white tracking-wide">${eraName}</h3>
           </div>
         `;
+        eraSection.innerHTML = eraHeader;
+
+        // Render Journeys within Era
+        const journeysObj = eraGroups[eraName];
+        Object.keys(journeysObj).sort((a, b) => getJourneyRank(a) - getJourneyRank(b)).forEach(journeyName => {
+          const journeyBlock = document.createElement('div');
+          journeyBlock.className = 'space-y-3';
+
+          journeyBlock.innerHTML = `
+            <div class="text-[11px] font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
+              <span>${journeyName}</span>
+              <div class="h-px bg-white/10 flex-grow"></div>
+            </div>
+          `;
+
+          // Grid of Avatar Stage Cards
+          const grid = document.createElement('div');
+          grid.className = 'grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-3.5';
+
+          journeysObj[journeyName].forEach(({ stage, globalIndex }) => {
+            const isCurrent = globalIndex === currentActiveIndex;
+            const isPassed = globalIndex < currentActiveIndex;
+            const isLocked = globalIndex > currentActiveIndex;
+
+            const card = document.createElement('div');
+            const cardClass = isCurrent 
+              ? 'glass-card-current' 
+              : isPassed 
+                ? 'glass-card-passed' 
+                : 'glass-card-locked';
+            
+            card.className = `${cardClass} rounded-xl p-3 flex flex-col justify-between items-center text-center cursor-pointer transition relative group`;
+
+            // Artwork URL by Gender
+            const imgUrl = userGender === 'female'
+              ? (stage.image_url_female || stage.image_url_male)
+              : (stage.image_url_male || stage.image_url_female);
+
+            let statusBadge = '';
+            if (isCurrent) {
+              statusBadge = `<span class="absolute -top-2 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-brand-gold text-brand-navy shadow">Current</span>`;
+            } else if (isPassed) {
+              statusBadge = `<span class="absolute -top-2 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-emerald-500 text-white shadow"><i class="fa-solid fa-check text-[8px] mr-0.5"></i>Passed</span>`;
+            } else {
+              statusBadge = `<span class="absolute -top-2 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-black/70 text-gray-400 border border-white/10"><i class="fa-solid fa-lock text-[8px] mr-1"></i>Req: ${stage.mythic_required}</span>`;
+            }
+
+            card.innerHTML = `
+              ${statusBadge}
+              <span class="text-[10px] font-extrabold text-brand-gold/70 self-start">S${stage.stage_order}</span>
+              <div class="w-16 h-20 my-2 flex items-center justify-center overflow-hidden">
+                ${imgUrl 
+                  ? `<img src="${imgUrl}" class="w-full h-full object-contain group-hover:scale-105 transition-transform">`
+                  : `<i class="fa-solid fa-person-praying text-3xl text-gray-500"></i>`
+                }
+              </div>
+              <div class="w-full">
+                <span class="text-xs font-bold text-white block truncate">${stage.avatar_title || 'The Sower'}</span>
+                <span class="text-[10px] text-gray-400 block">${stage.mythic_required || 0} Mythic</span>
+              </div>
+            `;
+
+            // Click Handler: Shows Dynamic Roadmap
+            card.onclick = () => {
+              openRoadmapModal({
+                title: `${stage.avatar_title || 'The Sower'} (Stage ${stage.stage_order})`,
+                badgeLabel: isCurrent ? 'Active Form' : isPassed ? 'Mastered Stage' : 'Locked Evolution',
+                imageUrl: imgUrl,
+                description: isCurrent 
+                  ? `This is your active Great Commission Avatar. Continue sharing quotes to accumulate more Mythic trophies and evolve to the next stage.`
+                  : isPassed
+                    ? `You have already achieved and mastered this stage in your spiritual journey.`
+                    : `This avatar stage requires ${stage.mythic_required} Mythic Trophies. Earn Mythic milestones across the Great Commission to awaken this form.`,
+                currentProgress: appData.mythicCount,
+                targetProgress: stage.mythic_required || 1,
+                progressLabel: 'Mythic Trophies Required',
+                ctaUrl: 'editor.html',
+                ctaText: isLocked ? 'Share to Advance' : 'Create in Studio'
+              });
+            };
+
+            grid.appendChild(card);
+          });
+
+          journeyBlock.appendChild(grid);
+          eraSection.appendChild(journeyBlock);
+        });
+
+        container.appendChild(eraSection);
+      });
+    }
+
+    // Render Trophy Case
+    function renderTrophyCase(filter = 'all') {
+      const grid = document.getElementById('trophyGrid');
+      grid.innerHTML = '';
+
+      if (!appData.trophies.length) {
+        grid.innerHTML = `<div class="col-span-full text-center py-8 text-gray-500 text-sm">No trophies configured.</div>`;
+        return;
+      }
+
+      appData.trophies.forEach(t => {
+        // Find user's progress for this trophy
+        const prog = appData.userTrophyProgress.find(p => p.trophy_id === t.id);
+        const currentProgress = prog ? (prog.current_progress || 0) : 0;
+        const currentTierId = prog ? (prog.current_tier_id || 0) : 0;
+        
+        // Thresholds for this trophy
+        const tThresholds = appData.thresholds.filter(th => th.trophy_id === t.id).sort((a,b) => a.tier_id - b.tier_id);
+        const maxThreshold = tThresholds[tThresholds.length - 1]?.threshold_value || 10;
+        const nextThreshold = tThresholds.find(th => th.threshold_value > currentProgress)?.threshold_value || maxThreshold;
+
+        const isUnlocked = currentTierId > 0;
+        const isMastered = currentTierId >= 5;
+
+        // Apply UI Filters
+        if (filter === 'unlocked' && !isUnlocked) return;
+        if (filter === 'locked' && isUnlocked) return;
+
+        const card = document.createElement('div');
+        const cardStyle = isUnlocked ? 'glass-card border-brand-gold/30 hover:border-brand-gold/70' : 'glass-card-locked';
+        card.className = `${cardStyle} rounded-xl p-4 flex flex-col justify-between items-center text-center cursor-pointer transition group`;
+
+        const pct = Math.min(100, Math.round((currentProgress / nextThreshold) * 100));
+
+        card.innerHTML = `
+          <div class="w-14 h-14 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center overflow-hidden mb-2 shadow group-hover:scale-105 transition-transform">
+            ${t.image_url 
+              ? `<img src="${t.image_url}" class="w-full h-full object-cover">`
+              : `<i class="fa-solid fa-trophy text-2xl ${isUnlocked ? 'text-brand-gold' : 'text-gray-500'}"></i>`
+            }
+          </div>
+          <div class="w-full">
+            <h4 class="font-bold text-xs text-white truncate">${t.name}</h4>
+            <span class="text-[10px] text-gray-400 block mt-0.5">${isMastered ? 'Mythic Master' : isUnlocked ? `Tier ${currentTierId}` : 'Locked'}</span>
+            
+            <div class="w-full bg-white/5 h-1.5 rounded-full mt-2.5 overflow-hidden">
+              <div class="bg-brand-gold h-full rounded-full" style="width: ${pct}%"></div>
+            </div>
+            <span class="text-[9px] text-gray-500 mt-1 block">${currentProgress} / ${nextThreshold}</span>
+          </div>
+        `;
+
+        card.onclick = () => {
+          // Check if trophy is tied to a campaign
+          const tiedCampaign = (t.campaign_ids && t.campaign_ids.length > 0)
+            ? appData.campaigns.find(c => t.campaign_ids.includes(c.id))
+            : null;
+
+          openRoadmapModal({
+            title: t.name,
+            badgeLabel: isMastered ? 'Mastered Trophy' : isUnlocked ? 'Trophy Progress' : 'Locked Trophy',
+            imageUrl: t.image_url,
+            icon: 'fa-solid fa-trophy',
+            description: t.description || `Advance this trophy by actively spreading quotes on supported platforms.`,
+            campaign: tiedCampaign,
+            currentProgress: currentProgress,
+            targetProgress: nextThreshold,
+            progressLabel: `Next Tier Requirement (${t.stat_type || 'shares'})`,
+            ctaUrl: tiedCampaign ? `editor.html?campaign=${tiedCampaign.id}` : 'editor.html',
+            ctaText: tiedCampaign ? 'Share for this Campaign' : 'Advance in Studio'
+          });
+        };
+
+        grid.appendChild(card);
+      });
+    }
+
+    // Render Badges Showcase
+    function renderBadgesShowcase(filter = 'all') {
+      const grid = document.getElementById('badgeGrid');
+      grid.innerHTML = '';
+
+      if (!appData.badges.length) {
+        grid.innerHTML = `<div class="col-span-full text-center py-8 text-gray-500 text-sm">No badges configured.</div>`;
+        return;
+      }
+
+      appData.badges.forEach(b => {
+        const isUnlocked = appData.userBadges.some(ub => ub.badge_id === b.id);
+        const linkedCampaign = appData.campaigns.find(c => c.reward_badge_id === b.id);
+
+        if (filter === 'campaign' && !linkedCampaign) return;
+        if (filter === 'milestone' && linkedCampaign) return;
+
+        const card = document.createElement('div');
+        const cardStyle = isUnlocked ? 'glass-card border-brand-gold/30 hover:border-brand-gold/70' : 'glass-card-locked';
+        card.className = `${cardStyle} rounded-xl p-3.5 flex flex-col justify-between items-center text-center cursor-pointer transition group`;
+
+        card.innerHTML = `
+          <div class="w-12 h-12 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center overflow-hidden mb-2 shadow group-hover:scale-105 transition-transform">
+            ${b.image_url 
+              ? `<img src="${b.image_url}" class="w-full h-full object-cover">`
+              : `<i class="${b.icon || 'fa-solid fa-medal'} text-xl ${isUnlocked ? 'text-brand-gold' : 'text-gray-500'}"></i>`
+            }
+          </div>
+          <div class="w-full">
+            <h4 class="font-bold text-xs text-white truncate">${b.title || b.name}</h4>
+            <span class="text-[10px] ${linkedCampaign ? 'text-blue-400' : 'text-gray-400'} block mt-0.5 truncate">
+              ${linkedCampaign ? 'Mission Badge' : isUnlocked ? 'Awarded' : 'Locked'}
+            </span>
+          </div>
+        `;
+
+        card.onclick = () => {
+          openRoadmapModal({
+            title: b.title || b.name,
+            badgeLabel: linkedCampaign ? 'Mission Campaign Badge' : isUnlocked ? 'Unlocked Honor' : 'Locked Badge',
+            imageUrl: b.image_url,
+            icon: b.icon || 'fa-solid fa-medal',
+            description: b.description || 'Awarded for milestone achievements.',
+            campaign: linkedCampaign,
+            currentProgress: isUnlocked ? (b.stat_target || 1) : 0,
+            targetProgress: b.stat_target || 1,
+            progressLabel: `Objective Target (${b.stat_type || 'Milestone'})`,
+            ctaUrl: linkedCampaign ? `editor.html?campaign=${linkedCampaign.id}` : 'editor.html',
+            ctaText: linkedCampaign ? 'Share for this Mission' : 'Go to Studio'
+          });
+        };
+
+        grid.appendChild(card);
+      });
+    }
+
+    // Filter Buttons Handlers
+    function filterTrophies(type) {
+      renderTrophyCase(type);
+    }
+    function filterBadges(type) {
+      renderBadgesShowcase(type);
+    }
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      if (sb) {
+        await sb.auth.signOut();
+        window.location.href = 'login.html';
       }
     });
 
-    document.getElementById('earnedBadges').innerHTML = earnedBHTML || '<p class="text-slate-400 text-xs col-span-4 py-2">No badges earned yet.</p>';
-    document.getElementById('lockedBadges').innerHTML = lockedBHTML || '<p class="text-slate-400 text-xs col-span-4 py-2">All caught up!</p>';
-    document.getElementById('missionList').innerHTML = activeMissionsHTML || '<p class="text-center text-slate-400 text-xs py-4">No active reward missions or campaigns available.</p>';
-
-    // 4. Avatars Processing (Gender Sensitive)
-    var allAvatars = avatarsRes.data || [];
-    window.appData.avatars = {};
-    var earnedAHTML = '', lockedAHTML = '';
-    var gender = userProfile.gender || 'male';
-
-    allAvatars.forEach(a => {
-      var isUnlocked = mythicCount >= (a.mythic_required || 0);
-      var img = (gender === 'female' && a.image_url_female) ? a.image_url_female : a.image_url_male;
-      var color = isUnlocked ? tierColors[5] : '#cbd5e1';
-      var progPct = Math.min(100, (mythicCount / Math.max(1, a.mythic_required)) * 100);
-
-      window.appData.avatars[a.id] = {
-        title: a.avatar_title || ('Stage ' + a.stage_order),
-        desc: `Requires ${a.mythic_required} Mythic Trophies to unlock.`,
-        img: img || '',
-        progressText: `${mythicCount}/${a.mythic_required}`,
-        progPct: progPct,
-        color: color
-      };
-      
-      var itemHTML = `
-        <div class="reward-item ${isUnlocked ? '' : 'locked'}" onclick="openAvatarModal('${a.id}')">
-          <div class="w-20 h-20 flex items-center justify-center">
-            ${img ? `<img src="${img}" class="w-full h-full object-contain filter drop-shadow-md">` : `<span class="material-symbols-outlined text-4xl text-slate-300">person</span>`}
-          </div>
-          <div class="text-center mt-1 w-full">
-            <h4 class="font-headline font-bold text-[11px] text-slate-900 leading-tight w-full truncate px-1">${a.avatar_title || 'Stage '+a.stage_order}</h4>
-            <p class="text-[8px] font-bold text-slate-400 mt-0.5 uppercase tracking-wider">STAGE ${a.stage_order}</p>
-          </div>
-        </div>
-      `;
-
-      if(isUnlocked) earnedAHTML += itemHTML;
-      else lockedAHTML += itemHTML;
-    });
-
-    document.getElementById('earnedAvatars').innerHTML = earnedAHTML || '<p class="text-slate-400 text-xs col-span-3 py-2">No avatars unlocked.</p>';
-    document.getElementById('lockedAvatars').innerHTML = lockedAHTML || '<p class="text-slate-400 text-xs col-span-3 py-2">Max stage reached!</p>';
-
-  } catch(e) {
-    console.error("Rewards load error:", e);
-  }
-}
-
-function renderSubscriptions(activeSub, allSubTiers, tierMediaMap) {
-  var subBadgeImg = document.getElementById('currentSubBadge');
-  var subFallback = document.getElementById('subBadgeFallback');
-  var subTitleEl = document.getElementById('currentSubTitle');
-  
-  // Prioritize user profile subscription_tier first
-  var currentTierKey = 'free';
-  if (userProfile && userProfile.subscription_tier) {
-    currentTierKey = userProfile.subscription_tier.toLowerCase();
-  } else if (activeSub && (activeSub.tier || activeSub.plan)) {
-    currentTierKey = (activeSub.tier || activeSub.plan).toLowerCase();
-  }
-
-  var badgeUrl = tierMediaMap[currentTierKey] || defaultTierBadgeMap[currentTierKey];
-
-  if(badgeUrl) {
-    subBadgeImg.src = badgeUrl;
-    subBadgeImg.style.display = 'block';
-    subFallback.style.display = 'none';
-  } else {
-    subBadgeImg.style.display = 'none';
-    subFallback.style.display = 'flex';
-  }
-
-  // Set Top Tier Title
-  if (subTitleEl) {
-    subTitleEl.textContent = currentTierKey;
-  }
-
-  // Render Upgrade Modal List (Redirecting to subscription.html)
-  var listHTML = '';
-  allSubTiers.forEach(t => {
-    var tKey = t.name.toLowerCase();
-    var isCurrent = currentTierKey === tKey;
-    var tImg = tierMediaMap[tKey] || defaultTierBadgeMap[tKey];
-
-    listHTML += `
-      <div class="border border-slate-100 rounded-2xl p-4 flex items-center gap-4 ${isCurrent ? 'bg-primary/5 border-primary/20' : 'bg-white'}">
-        ${tImg ? `<img src="${tImg}" class="w-12 h-12 object-contain">` : `<div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center"><span class="material-symbols-outlined text-slate-400">shield</span></div>`}
-        <div class="flex-1">
-          <h4 class="font-headline font-bold text-sm text-slate-900">${t.name}</h4>
-          <p class="text-xs text-slate-500">$${t.price} / ${t.billing_interval || 'mo'}</p>
-        </div>
-        ${isCurrent ? `<span class="text-[10px] font-black text-primary uppercase tracking-widest bg-white px-2 py-1 rounded-md shadow-sm">Active</span>` : `<button onclick="window.location.href='subscription.html'" class="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-slate-800">Upgrade</button>`}
-      </div>
-    `;
-  });
-  document.getElementById('subList').innerHTML = listHTML;
-}
-
-init();
-</script>
+    // Run on Mount
+    document.addEventListener('DOMContentLoaded', initRewardsDashboard);
+  </script>
 </body>
 </html>
